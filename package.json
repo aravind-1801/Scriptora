@@ -3,10 +3,16 @@
   "version": "1.0.4",
   "private": true,
   "description": "Scriptora Screenplay Studio & Narrative Intelligence Engine",
+  "homepage": "https://aravind-1801.github.io/Scriptora",
   "scripts": {
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
     "build:frontend": "npm --prefix frontend run build",
-    "test:backend": "npm --prefix backend test"
+    "test:backend": "npm --prefix backend test",
+    "predeploy": "npm run build:frontend",
+    "deploy": "gh-pages -d frontend/dist"
+  },
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
   }
 }

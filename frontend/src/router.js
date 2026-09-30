@@ -18,6 +18,21 @@ class Router {
     this.currentPath = null;
   }
 
+  getBasePath() {
+    const p = window.location.pathname;
+    if (p.toLowerCase().startsWith('/scriptora')) {
+      return '/Scriptora';
+    }
+    return '';
+  }
+
+  getCurrentLocation() {
+    if (window.location.hash && window.location.hash.startsWith('#/')) {
+      return window.location.hash.slice(1);
+    }
+    return window.location.pathname + window.location.search;
+  }
+
   init(mountSelector = '#app') {
     this.appEl = document.querySelector(mountSelector);
     if (!this.appEl) {
@@ -45,13 +60,16 @@ class Router {
       }
     });
 
-    // Listen to browser Back/Forward
+    // Listen to browser Back/Forward & hash changes
     window.addEventListener('popstate', () => {
-      this.resolve(window.location.pathname + window.location.search);
+      this.resolve(this.getCurrentLocation());
+    });
+    window.addEventListener('hashchange', () => {
+      this.resolve(this.getCurrentLocation());
     });
 
     // Initial resolution
-    this.resolve(window.location.pathname + window.location.search);
+    this.resolve(this.getCurrentLocation());
   }
 
   navigate(path, replace = false) {
@@ -59,18 +77,35 @@ class Router {
       store.pushHistory(this.currentPath);
     }
 
+    const base = this.getBasePath();
+    const cleanPath = (base && path.toLowerCase().startsWith(base.toLowerCase()))
+      ? path.slice(base.length) || '/'
+      : path;
+    const fullTarget = (base && !path.startsWith(base))
+      ? `${base}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`
+      : path;
+
     if (replace) {
-      window.history.replaceState(null, '', path);
+      window.history.replaceState(null, '', fullTarget);
     } else {
-      window.history.pushState(null, '', path);
+      window.history.pushState(null, '', fullTarget);
     }
 
-    this.resolve(path);
+    this.resolve(cleanPath);
   }
 
   resolve(fullPath) {
     const [pathPart, queryPart] = fullPath.split('?');
-    const path = pathPart.replace(/\/+$/, '') || '/';
+    let path = pathPart.replace(/\/+$/, '') || '/';
+    
+    // Strip repository subpath if present (e.g. /Scriptora)
+    const base = this.getBasePath();
+    if (base && path.toLowerCase().startsWith(base.toLowerCase())) {
+      path = path.slice(base.length) || '/';
+    }
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
     const query = new URLSearchParams(queryPart || '');
     this.currentPath = fullPath;
 
