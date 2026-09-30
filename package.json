@@ -7,7 +7,7 @@
   "scripts": {
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
-    "build:frontend": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build && node -e \"const fs=require('fs'); fs.copyFileSync('frontend/dist/index.html','index.html'); fs.copyFileSync('frontend/dist/404.html','404.html'); fs.copyFileSync('frontend/dist/favicon.png','favicon.png'); fs.cpSync('frontend/dist/assets','assets',{recursive:true});\"",
     "test:backend": "npm --prefix backend test",
     "predeploy": "npm run build:frontend",
     "deploy": "gh-pages -d frontend/dist"
