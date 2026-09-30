@@ -27,12 +27,214 @@ async function request(endpoint, options = {}) {
 }
 
 // 1. AUTH API
+// Canonical default scripts portfolio
+export const DEFAULT_SCRIPTS = [
+  {
+    id: "chronicles-of-dust",
+    title: "Chronicles of Dust",
+    draft: "Draft 4.2",
+    genre: "Drama",
+    format: "Feature",
+    industry: "International / Hollywood",
+    pages: 96,
+    updated: "12m ago",
+    currentScene: "Scene 18",
+    isCurrentDraft: true,
+    archived: false,
+    joinCode: "A7K9-XP42",
+    logline: "When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.",
+    synopsis: "In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves.",
+    context: {
+      format: "Feature",
+      industry: "International / Hollywood",
+      hours: 1,
+      minutes: 36,
+      seconds: 0,
+      plannedDuration: "01:36:00"
+    },
+    analysisScores: {
+      overall: 86,
+      pacing: 82,
+      dialogue: 89,
+      emotion: 91,
+      characterArc: 84,
+      continuity: 78,
+      storyStructure: 87,
+      theme: 90,
+      cinema: 85,
+      formatting: 94,
+      production: 80
+    }
+  },
+  {
+    id: "the-neon-horizon",
+    title: "The Neon Horizon",
+    draft: "Draft 2.1",
+    genre: "Sci-Fi",
+    format: "Pilot",
+    industry: "Streaming Television",
+    pages: 62,
+    updated: "2h ago",
+    currentScene: "Scene 4",
+    isCurrentDraft: false,
+    archived: false,
+    joinCode: "N3ON-H0RZ",
+    context: {
+      format: "Pilot",
+      industry: "Streaming Television",
+      hours: 0,
+      minutes: 52,
+      seconds: 0,
+      plannedDuration: "00:52:00"
+    },
+    analysisScores: {
+      overall: 79,
+      pacing: 75,
+      dialogue: 84,
+      emotion: 80,
+      characterArc: 78,
+      continuity: 82,
+      storyStructure: 76,
+      theme: 88,
+      cinema: 83,
+      formatting: 90,
+      production: 72
+    }
+  },
+  {
+    id: "velvet-shadows",
+    title: "Velvet Shadows",
+    draft: "Draft 1.0",
+    genre: "Noir",
+    format: "Feature",
+    industry: "Independent / Festival",
+    pages: 114,
+    updated: "Yesterday",
+    currentScene: "Scene 1",
+    isCurrentDraft: false,
+    archived: false,
+    joinCode: "V3LV-SHDW",
+    analysisScores: {
+      overall: 81,
+      pacing: 80,
+      dialogue: 86,
+      emotion: 79,
+      characterArc: 85,
+      continuity: 80,
+      storyStructure: 82,
+      theme: 84,
+      cinema: 88,
+      formatting: 92,
+      production: 76
+    }
+  },
+  {
+    id: "silent-echoes",
+    title: "Silent Echoes",
+    draft: "Draft 3.0",
+    genre: "Psychological Thriller",
+    format: "Feature",
+    industry: "International / Hollywood",
+    pages: 104,
+    updated: "3d ago",
+    currentScene: "Scene 22",
+    isCurrentDraft: false,
+    archived: false,
+    joinCode: "SLNT-ECH0",
+    analysisScores: {
+      overall: 84,
+      pacing: 86,
+      dialogue: 81,
+      emotion: 88,
+      characterArc: 83,
+      continuity: 85,
+      storyStructure: 89,
+      theme: 82,
+      cinema: 84,
+      formatting: 91,
+      production: 78
+    }
+  },
+  {
+    id: "glass-kingdoms",
+    title: "Glass Kingdoms",
+    draft: "Draft 1.4",
+    genre: "Fantasy",
+    format: "Pilot",
+    industry: "Streaming Television",
+    pages: 58,
+    updated: "1w ago",
+    currentScene: "Scene 8",
+    isCurrentDraft: false,
+    archived: false,
+    joinCode: "GLSS-KNGD",
+    analysisScores: {
+      overall: 78,
+      pacing: 74,
+      dialogue: 80,
+      emotion: 76,
+      characterArc: 82,
+      continuity: 75,
+      storyStructure: 80,
+      theme: 86,
+      cinema: 82,
+      formatting: 88,
+      production: 70
+    }
+  },
+  {
+    id: "red-shift",
+    title: "Red Shift",
+    draft: "Draft 2.0",
+    genre: "Action",
+    format: "Short",
+    industry: "Independent / Festival",
+    pages: 28,
+    updated: "2w ago",
+    currentScene: "Scene 5",
+    isCurrentDraft: false,
+    archived: false,
+    joinCode: "RED2-SHFT",
+    analysisScores: {
+      overall: 83,
+      pacing: 90,
+      dialogue: 78,
+      emotion: 75,
+      characterArc: 80,
+      continuity: 88,
+      storyStructure: 84,
+      theme: 80,
+      cinema: 89,
+      formatting: 95,
+      production: 82
+    }
+  }
+];
+
 export async function getCurrentUser() {
   try {
     const data = await request('/auth/me');
     return data.user;
   } catch {
-    return JSON.parse(localStorage.getItem('scriptora_user') || 'null');
+    const saved = localStorage.getItem('scriptora_user');
+    if (saved) {
+      try {
+        const u = JSON.parse(saved);
+        if (u && u.displayName) return u;
+      } catch {}
+    }
+    const defaultUser = {
+      id: "user-1",
+      name: "Arun Kumar",
+      displayName: "Arun Kumar",
+      headline: "Screenwriter & Narrative Director",
+      email: "arun.kumar@scriptora.studio",
+      badge: "Member Pro",
+      initials: "AK",
+      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+    };
+    localStorage.setItem('scriptora_user', JSON.stringify(defaultUser));
+    return defaultUser;
   }
 }
 
@@ -121,27 +323,43 @@ export async function getScripts(query = '') {
   try {
     const endpoint = query ? `/scripts?q=${encodeURIComponent(query)}` : '/scripts';
     const data = await request(endpoint);
-    return data.scripts;
-  } catch {
-    // Local fallback
-    const saved = localStorage.getItem('scriptora_scripts');
-    if (saved) {
-      let list = JSON.parse(saved);
-      if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
-      return list;
+    if (data.scripts && data.scripts.length > 0) {
+      localStorage.setItem('scriptora_scripts', JSON.stringify(data.scripts));
+      return data.scripts;
     }
-    return [];
+  } catch {
+    // Backend offline / static deploy fallback
   }
+
+  const saved = localStorage.getItem('scriptora_scripts');
+  let list;
+  if (saved) {
+    try {
+      list = JSON.parse(saved);
+      if (!Array.isArray(list) || list.length === 0) {
+        list = [...DEFAULT_SCRIPTS];
+        localStorage.setItem('scriptora_scripts', JSON.stringify(list));
+      }
+    } catch {
+      list = [...DEFAULT_SCRIPTS];
+      localStorage.setItem('scriptora_scripts', JSON.stringify(list));
+    }
+  } else {
+    list = [...DEFAULT_SCRIPTS];
+    localStorage.setItem('scriptora_scripts', JSON.stringify(list));
+  }
+  if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
+  return list;
 }
 
 export async function getScript(id) {
   try {
     const data = await request(`/scripts/${id}`);
-    return data.script;
-  } catch {
-    const scripts = await getScripts();
-    return scripts.find(s => s.id === id) || null;
-  }
+    if (data.script) return data.script;
+  } catch {}
+
+  const scripts = await getScripts();
+  return scripts.find(s => s.id === id) || DEFAULT_SCRIPTS.find(s => s.id === id) || scripts[0] || null;
 }
 
 export async function createScript(scriptData) {
@@ -150,22 +368,52 @@ export async function createScript(scriptData) {
       method: 'POST',
       body: JSON.stringify(scriptData)
     });
-    return data.script;
-  } catch {
-    const newScript = {
-      id: (scriptData.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      title: scriptData.title || "Untitled Screenplay",
-      draft: "Draft 1.0",
-      genre: scriptData.genre || "Drama",
+    if (data.script) {
+      const scripts = await getScripts();
+      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...scripts.filter(s => s.id !== data.script.id)]));
+      return data.script;
+    }
+  } catch {}
+
+  const newScript = {
+    id: (scriptData.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    title: scriptData.title || "Untitled Screenplay",
+    draft: "Draft 1.0",
+    genre: scriptData.genre || "Drama",
+    format: scriptData.format || "Feature",
+    industry: scriptData.industry || "International / Hollywood",
+    pages: 1,
+    updated: "Just now",
+    currentScene: "Scene 1",
+    joinCode: "SCRP-1001",
+    archived: false,
+    context: {
       format: scriptData.format || "Feature",
       industry: scriptData.industry || "International / Hollywood",
-      pages: 1,
-      updated: "Just now",
-      currentScene: "Scene 1",
-      joinCode: "SCRP-1001"
-    };
-    return newScript;
-  }
+      hours: 1,
+      minutes: 30,
+      seconds: 0,
+      plannedDuration: "01:30:00"
+    },
+    analysisScores: {
+      overall: 80,
+      pacing: 78,
+      dialogue: 80,
+      emotion: 80,
+      characterArc: 78,
+      continuity: 80,
+      storyStructure: 80,
+      theme: 80,
+      cinema: 80,
+      formatting: 90,
+      production: 75
+    }
+  };
+
+  const scripts = await getScripts();
+  const updated = [newScript, ...scripts.filter(s => s.id !== newScript.id)];
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  return newScript;
 }
 
 export async function updateScript(id, updates) {
@@ -174,41 +422,63 @@ export async function updateScript(id, updates) {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
-    return data.script;
-  } catch {
-    return { id, ...updates, updated: "Just now" };
-  }
+    if (data.script) {
+      const scripts = await getScripts();
+      const updated = scripts.map(s => s.id === id ? data.script : s);
+      localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+      return data.script;
+    }
+  } catch {}
+
+  const scripts = await getScripts();
+  const updated = scripts.map(s => s.id === id ? { ...s, ...updates, updated: "Just now" } : s);
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  return { id, ...updates, updated: "Just now" };
 }
 
 export async function deleteScript(id) {
   try {
-    return await request(`/scripts/${id}`, { method: 'DELETE' });
-  } catch {
-    return { success: true };
-  }
+    await request(`/scripts/${id}`, { method: 'DELETE' });
+  } catch {}
+
+  const scripts = await getScripts();
+  const updated = scripts.filter(s => s.id !== id);
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  return { success: true };
 }
 
 export async function duplicateScript(id) {
   try {
     const data = await request(`/scripts/${id}/duplicate`, { method: 'POST' });
-    return data.script;
-  } catch {
-    const orig = await getScript(id);
-    return {
-      ...orig,
-      id: `${id}-copy`,
-      title: `${orig?.title || 'Script'} (Copy)`,
-      updated: "Just now"
-    };
-  }
+    if (data.script) {
+      const scripts = await getScripts();
+      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...scripts]));
+      return data.script;
+    }
+  } catch {}
+
+  const orig = await getScript(id);
+  const copy = {
+    ...orig,
+    id: `${id}-copy-${Date.now().toString().slice(-4)}`,
+    title: `${orig?.title || 'Script'} (Copy)`,
+    updated: "Just now"
+  };
+  const scripts = await getScripts();
+  const updated = [copy, ...scripts];
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  return copy;
 }
 
 export async function archiveScript(id) {
   try {
-    return await request(`/scripts/${id}/archive`, { method: 'POST' });
-  } catch {
-    return { success: true };
-  }
+    await request(`/scripts/${id}/archive`, { method: 'POST' });
+  } catch {}
+
+  const scripts = await getScripts();
+  const updated = scripts.map(s => s.id === id ? { ...s, archived: true, updated: "Just now" } : s);
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  return { success: true };
 }
 
 // 3. SCREENPLAY API
@@ -654,14 +924,15 @@ export async function getIntelligenceAnalysis(scriptId) {
     const data = await request(`/intelligence/${scriptId}/analysis`);
     return data;
   } catch {
+    const script = await getScript(scriptId);
     return {
       script: {
-        id: scriptId,
-        title: "Chronicles of Dust",
-        draft: "Draft 4.2",
-        pages: 96
+        id: script?.id || scriptId,
+        title: script?.title || "Chronicles of Dust",
+        draft: script?.draft || "Draft 4.2",
+        pages: script?.pages || 96
       },
-      scores: {
+      scores: script?.analysisScores || {
         overall: 86,
         pacing: 82,
         dialogue: 89,
