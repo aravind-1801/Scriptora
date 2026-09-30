@@ -1,4 +1,4 @@
-(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const n of document.querySelectorAll('link[rel="modulepreload"]'))s(n);new MutationObserver(n=>{for(const l of n)if(l.type==="childList")for(const u of l.addedNodes)u.tagName==="LINK"&&u.rel==="modulepreload"&&s(u)}).observe(document,{childList:!0,subtree:!0});function a(n){const l={};return n.integrity&&(l.integrity=n.integrity),n.referrerPolicy&&(l.referrerPolicy=n.referrerPolicy),n.crossOrigin==="use-credentials"?l.credentials="include":n.crossOrigin==="anonymous"?l.credentials="omit":l.credentials="same-origin",l}function s(n){if(n.ep)return;n.ep=!0;const l=a(n);fetch(n.href,l)}})();const ue="http://localhost:8000/api";async function I(t,e={}){const a=`${ue}${t}`,s={headers:{"Content-Type":"application/json",...e.headers},...e};try{const n=await fetch(a,s);if(!n.ok){const l=await n.json().catch(()=>({}));throw new Error(l.error||`HTTP error ${n.status}`)}return await n.json()}catch(n){throw console.warn(`API call ${t} failed, falling back to local store:`,n.message),n}}async function le(){try{return(await I("/auth/me")).user}catch{return JSON.parse(localStorage.getItem("scriptora_user")||"null")}}async function te(t){try{const e=await I("/auth/login",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-1",name:t.email?t.email.split("@")[0]:"Arun Kumar",displayName:t.email?t.email.split("@")[0]:"Arun Kumar",email:t.email||"arun.kumar@scriptora.studio",headline:"Screenwriter & Narrative Director",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function pe(t){try{const e=await I("/auth/register",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:`user-${Date.now()}`,name:t.name||"New Writer",displayName:t.name||"New Writer",email:t.email||"writer@scriptora.studio",headline:"Screenwriter",badge:"Member Pro",initials:(t.name||"NW").slice(0,2).toUpperCase(),stats:{drafts:1,coAuthors:0,healthIndex:"100%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function xe(t){try{const e=await I("/auth/otp",{method:"POST",body:JSON.stringify({phone:t})});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-phone",name:"Verified Writer",displayName:"Verified Writer",headline:"Screenwriter",email:t,badge:"Member Pro",initials:"VW",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function J(){try{await I("/auth/logout",{method:"POST"})}catch{}return localStorage.removeItem("scriptora_user"),!0}async function q(t=""){try{const e=t?`/scripts?q=${encodeURIComponent(t)}`:"/scripts";return(await I(e)).scripts}catch{const e=localStorage.getItem("scriptora_scripts");if(e){let a=JSON.parse(e);return t&&(a=a.filter(s=>s.title.toLowerCase().includes(t.toLowerCase()))),a}return[]}}async function ie(t){try{return(await I(`/scripts/${t}`)).script}catch{return(await q()).find(a=>a.id===t)||null}}async function fe(t){try{return(await I("/scripts",{method:"POST",body:JSON.stringify(t)})).script}catch{return{id:(t.title||"untitled").toLowerCase().replace(/[^a-z0-9]+/g,"-"),title:t.title||"Untitled Screenplay",draft:"Draft 1.0",genre:t.genre||"Drama",format:t.format||"Feature",industry:t.industry||"International / Hollywood",pages:1,updated:"Just now",currentScene:"Scene 1",joinCode:"SCRP-1001"}}}async function me(t,e){try{return(await I(`/scripts/${t}`,{method:"PUT",body:JSON.stringify(e)})).script}catch{return{id:t,...e,updated:"Just now"}}}async function be(t){try{return await I(`/scripts/${t}`,{method:"DELETE"})}catch{return{success:!0}}}async function ge(t){try{return(await I(`/scripts/${t}/duplicate`,{method:"POST"})).script}catch{const e=await ie(t);return{...e,id:`${t}-copy`,title:`${e?.title||"Script"} (Copy)`,updated:"Just now"}}}async function he(t){try{return await I(`/scripts/${t}/archive`,{method:"POST"})}catch{return{success:!0}}}async function ve(t,e){localStorage.setItem(`scriptora_screenplay_${t}`,JSON.stringify(e));try{return await I(`/screenplay/${t}`,{method:"PUT",body:JSON.stringify({screenplay:e})})}catch{return{success:!0}}}async function ye(t){try{return(await I(`/versions/${t}`)).versions}catch{return[{id:"v-4.2",name:"Draft 4.2",tag:"Current Active",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:"Refined Meera O.S. dialogue and hydro-sensor action line.",isCurrent:!0},{id:"v-3.0",name:"Draft 3.0",tag:"Production Polish",timestamp:"Yesterday, 4:15 PM",author:"JD",stats:"94 pages · 13,950 words",notes:"Incorporated director notes on floodgate transition pacing.",isCurrent:!1},{id:"v-2.0",name:"Draft 2.0",tag:"First Table Read",timestamp:"Oct 12, 2024",author:"JD",stats:"90 pages · 13,200 words",notes:"Table read revision for Acts I & II character arcs.",isCurrent:!1}]}}async function we(t,e){try{return(await I(`/versions/${t}`,{method:"POST",body:JSON.stringify(e)})).version}catch{return{id:`v-${Date.now()}`,name:e.name,tag:"Milestone Snapshot",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:e.notes||"",isCurrent:!0}}}async function Se(t){try{return(await I(`/collaborators/${t}`)).collaborators}catch{return[{id:"c-1",name:"Heamanth S.",email:"heamanth@studio.com",initials:"HS",role:"Editor",avatarBg:"bg-blue-100 text-blue-700",status:"Active",added:"2d ago"},{id:"c-2",name:"Elena Rostova",email:"elena@cineworks.io",initials:"ER",role:"Script Doctor",avatarBg:"bg-amber-100 text-amber-700",status:"Active",added:"1w ago"},{id:"c-3",name:"Marcus Vance",email:"vance.prod@paramount.com",initials:"MV",role:"Producer",avatarBg:"bg-purple-100 text-purple-700",status:"Viewer",added:"2w ago"}]}}async function Ee(t,e){try{return(await I(`/collaborators/${t}/invite`,{method:"POST",body:JSON.stringify(e)})).collaborator}catch{return{id:`c-${Date.now()}`,name:e.email.split("@")[0],email:e.email,initials:e.email.substring(0,2).toUpperCase(),role:e.role==="editor"?"Editor":"Viewer",avatarBg:"bg-emerald-100 text-emerald-700",status:"Active",added:"Just now"}}}async function Ie(t,e){try{return await I(`/collaborators/${t}/${e}`,{method:"DELETE"})}catch{return{success:!0}}}async function Ce(t){try{return(await I("/join-code/generate",{method:"POST",body:JSON.stringify({scriptId:t})})).joinCode}catch{return Math.random().toString(36).substring(2,6).toUpperCase()+"-"+Math.random().toString(36).substring(2,6).toUpperCase()}}async function ke(t){try{return await I("/join-code/validate",{method:"POST",body:JSON.stringify({code:t})})}catch{return(t||"").toUpperCase().trim()==="A7K9-XP42"?{valid:!0,script:{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",pages:96,collaboratorCount:3}}:{valid:!1,error:"Invalid or expired join code"}}}async function Be(t){try{return await I("/join-code/redeem",{method:"POST",body:JSON.stringify({code:t})})}catch{return{success:!0,scriptId:"chronicles-of-dust",title:"Chronicles of Dust"}}}async function oe(){try{return await I("/notifications")}catch{return{notifications:[{id:1,sender:"HS",senderName:"Heamanth",type:"collaboration_invite",title:"Heamanth invited you to collaborate",body:'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',time:"12m ago",group:"today",unread:!0,tags:["Draft 4.2","Role: Editor"],actionLabel:"Review Access →",actionRoute:"/profile/collaborators"},{id:2,sender:"icon:description",type:"export_ready",title:"Your export is ready",body:'"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',time:"45m ago",group:"today",unread:!0,tags:["PDF","96 Pages"],actionLabel:"Open Screenplay →",actionRoute:"/editor/chronicles-of-dust"},{id:3,sender:"AK",senderName:"Arun K.",type:"join_code_request",title:"Join-code access request",body:'Requested Editor access to "Anbin Mozhi" via join-code A7K9-XP42.',time:"2h ago",group:"today",unread:!0,tags:["Code: A7K9-XP42"],actionLabel:"Manage Collaborators →",actionRoute:"/profile/collaborators"}],unreadCount:3}}}async function je(t){try{return await I(`/notifications/${t}/read`,{method:"POST"})}catch{return{success:!0}}}async function Ae(){try{return await I("/notifications/read-all",{method:"POST"})}catch{return{success:!0}}}async function se(){return(await oe()).unreadCount||0}async function $e(t){try{const e=await I("/profile",{method:"PUT",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.profile)),e.profile}catch{const a={...await le()||{},...t};return localStorage.setItem("scriptora_user",JSON.stringify(a)),a}}async function Te(){try{return(await I("/settings")).settings}catch{const t=localStorage.getItem("scriptora_settings");return t?JSON.parse(t):{editor:{autoSceneHeading:!0,autoCharacter:!0,autoTransition:!0,enterAfterAction:!0,tabAfterAction:!0,autoCapitalize:!0,continueDialogue:!0,showSceneNumbers:!0,lockSceneNumbers:!1,fontSize:"Courier Prime 12pt",lineSpacing:"1.5 line",focusMode:!1},language:"English (US)",appearance:"Light",notifications:{collaborationInvites:!0,collaborationEdits:!0,mentions:!0,versionMilestones:!0},intelligence:{querySuggestions:!0,analysisSuggestions:!0}}}}async function Pe(t,e){try{return(await I(`/intelligence/${t}/context`,{method:"PUT",body:JSON.stringify(e)})).context}catch{return e}}async function re(t,e){try{return(await I("/intelligence/query",{method:"POST",body:JSON.stringify({query:t,scriptId:e})})).answer}catch{return"Analysis: In this screenplay, scene tempo and dialogue density align with core narrative milestones. Characters express distinct agendas in each beat."}}class Ne{constructor(){this.state={currentUser:null,selectedScriptId:localStorage.getItem("scriptora_selected_script")||"chronicles-of-dust",selectedVersionId:"Draft 4.2",currentSceneId:18,unreadNotifications:3,scripts:[],activeScript:null,screenplay:null,settings:null,historyStack:[]},this.listeners=new Set}subscribe(e){return this.listeners.add(e),()=>this.listeners.delete(e)}notify(){for(const e of this.listeners)try{e(this.state)}catch(a){console.error("Store listener error:",a)}}setState(e){this.state={...this.state,...e},e.selectedScriptId&&localStorage.setItem("scriptora_selected_script",e.selectedScriptId),this.notify()}pushHistory(e){this.state.historyStack[this.state.historyStack.length-1]!==e&&this.state.historyStack.push(e)}getPreviousRoute(e="/workspace"){return this.state.historyStack.length>1?(this.state.historyStack.pop(),this.state.historyStack.pop()):e}async init(){try{const e=await le(),a=await q(),s=await se(),n=await Te(),l=a.find(u=>u.id===this.state.selectedScriptId)||a[0];this.setState({currentUser:e,scripts:a,activeScript:l,unreadNotifications:s,settings:n})}catch(e){console.error("Init store error:",e)}}async selectScript(e){const a=this.state.scripts.find(s=>s.id===e)||await ie(e);this.setState({selectedScriptId:e,activeScript:a})}async refreshNotifications(){const e=await se();this.setState({unreadNotifications:e})}async refreshScripts(){const e=await q(),a=e.find(s=>s.id===this.state.selectedScriptId)||e[0];this.setState({scripts:e,activeScript:a})}}const i=new Ne;function f(t,e="success"){const a=document.getElementById("global-toast"),s=document.getElementById("toast-message"),n=document.getElementById("toast-icon");if(!a||!s){console.log(`[Toast ${e}]`,t);return}s.textContent=t,n&&(e==="error"?(n.textContent="error",n.className="material-symbols-outlined text-[18px] text-red-400"):e==="info"?(n.textContent="info",n.className="material-symbols-outlined text-[18px] text-blue-300"):(n.textContent="check_circle",n.className="material-symbols-outlined text-[18px] text-emerald-300")),a.classList.remove("opacity-0","pointer-events-none"),a.classList.add("opacity-100"),clearTimeout(a._timeout),a._timeout=setTimeout(()=>{a.classList.remove("opacity-100"),a.classList.add("opacity-0","pointer-events-none")},2400)}function Le(){return`
+(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const l of document.querySelectorAll('link[rel="modulepreload"]'))s(l);new MutationObserver(l=>{for(const n of l)if(n.type==="childList")for(const p of n.addedNodes)p.tagName==="LINK"&&p.rel==="modulepreload"&&s(p)}).observe(document,{childList:!0,subtree:!0});function a(l){const n={};return l.integrity&&(n.integrity=l.integrity),l.referrerPolicy&&(n.referrerPolicy=l.referrerPolicy),l.crossOrigin==="use-credentials"?n.credentials="include":l.crossOrigin==="anonymous"?n.credentials="omit":n.credentials="same-origin",n}function s(l){if(l.ep)return;l.ep=!0;const n=a(l);fetch(l.href,n)}})();const pe="http://localhost:8000/api";async function k(t,e={}){const a=`${pe}${t}`,s={headers:{"Content-Type":"application/json",...e.headers},...e};try{const l=await fetch(a,s);if(!l.ok){const n=await l.json().catch(()=>({}));throw new Error(n.error||`HTTP error ${l.status}`)}return await l.json()}catch(l){throw console.warn(`API call ${t} failed, falling back to local store:`,l.message),l}}async function ne(){try{return(await k("/auth/me")).user}catch{return JSON.parse(localStorage.getItem("scriptora_user")||"null")}}async function te(t){try{const e=await k("/auth/login",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-1",name:t.email?t.email.split("@")[0]:"Arun Kumar",displayName:t.email?t.email.split("@")[0]:"Arun Kumar",email:t.email||"arun.kumar@scriptora.studio",headline:"Screenwriter & Narrative Director",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function ue(t){try{const e=await k("/auth/register",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:`user-${Date.now()}`,name:t.name||"New Writer",displayName:t.name||"New Writer",email:t.email||"writer@scriptora.studio",headline:"Screenwriter",badge:"Member Pro",initials:(t.name||"NW").slice(0,2).toUpperCase(),stats:{drafts:1,coAuthors:0,healthIndex:"100%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function xe(t){try{const e=await k("/auth/otp",{method:"POST",body:JSON.stringify({phone:t})});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-phone",name:"Verified Writer",displayName:"Verified Writer",headline:"Screenwriter",email:t,badge:"Member Pro",initials:"VW",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function V(){try{await k("/auth/logout",{method:"POST"})}catch{}return localStorage.removeItem("scriptora_user"),!0}async function H(t=""){try{const e=t?`/scripts?q=${encodeURIComponent(t)}`:"/scripts";return(await k(e)).scripts}catch{const e=localStorage.getItem("scriptora_scripts");if(e){let a=JSON.parse(e);return t&&(a=a.filter(s=>s.title.toLowerCase().includes(t.toLowerCase()))),a}return[]}}async function ie(t){try{return(await k(`/scripts/${t}`)).script}catch{return(await H()).find(a=>a.id===t)||null}}async function fe(t){try{return(await k("/scripts",{method:"POST",body:JSON.stringify(t)})).script}catch{return{id:(t.title||"untitled").toLowerCase().replace(/[^a-z0-9]+/g,"-"),title:t.title||"Untitled Screenplay",draft:"Draft 1.0",genre:t.genre||"Drama",format:t.format||"Feature",industry:t.industry||"International / Hollywood",pages:1,updated:"Just now",currentScene:"Scene 1",joinCode:"SCRP-1001"}}}async function me(t,e){try{return(await k(`/scripts/${t}`,{method:"PUT",body:JSON.stringify(e)})).script}catch{return{id:t,...e,updated:"Just now"}}}async function be(t){try{return await k(`/scripts/${t}`,{method:"DELETE"})}catch{return{success:!0}}}async function ge(t){try{return(await k(`/scripts/${t}/duplicate`,{method:"POST"})).script}catch{const e=await ie(t);return{...e,id:`${t}-copy`,title:`${e?.title||"Script"} (Copy)`,updated:"Just now"}}}async function he(t){try{return await k(`/scripts/${t}/archive`,{method:"POST"})}catch{return{success:!0}}}async function ve(t,e){localStorage.setItem(`scriptora_screenplay_${t}`,JSON.stringify(e));try{return await k(`/screenplay/${t}`,{method:"PUT",body:JSON.stringify({screenplay:e})})}catch{return{success:!0}}}async function ye(t){try{return(await k(`/versions/${t}`)).versions}catch{return[{id:"v-4.2",name:"Draft 4.2",tag:"Current Active",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:"Refined Meera O.S. dialogue and hydro-sensor action line.",isCurrent:!0},{id:"v-3.0",name:"Draft 3.0",tag:"Production Polish",timestamp:"Yesterday, 4:15 PM",author:"JD",stats:"94 pages · 13,950 words",notes:"Incorporated director notes on floodgate transition pacing.",isCurrent:!1},{id:"v-2.0",name:"Draft 2.0",tag:"First Table Read",timestamp:"Oct 12, 2024",author:"JD",stats:"90 pages · 13,200 words",notes:"Table read revision for Acts I & II character arcs.",isCurrent:!1}]}}async function we(t,e){try{return(await k(`/versions/${t}`,{method:"POST",body:JSON.stringify(e)})).version}catch{return{id:`v-${Date.now()}`,name:e.name,tag:"Milestone Snapshot",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:e.notes||"",isCurrent:!0}}}async function Se(t){try{return(await k(`/collaborators/${t}`)).collaborators}catch{return[{id:"c-1",name:"Heamanth S.",email:"heamanth@studio.com",initials:"HS",role:"Editor",avatarBg:"bg-blue-100 text-blue-700",status:"Active",added:"2d ago"},{id:"c-2",name:"Elena Rostova",email:"elena@cineworks.io",initials:"ER",role:"Script Doctor",avatarBg:"bg-amber-100 text-amber-700",status:"Active",added:"1w ago"},{id:"c-3",name:"Marcus Vance",email:"vance.prod@paramount.com",initials:"MV",role:"Producer",avatarBg:"bg-purple-100 text-purple-700",status:"Viewer",added:"2w ago"}]}}async function Ie(t,e){try{return(await k(`/collaborators/${t}/invite`,{method:"POST",body:JSON.stringify(e)})).collaborator}catch{return{id:`c-${Date.now()}`,name:e.email.split("@")[0],email:e.email,initials:e.email.substring(0,2).toUpperCase(),role:e.role==="editor"?"Editor":"Viewer",avatarBg:"bg-emerald-100 text-emerald-700",status:"Active",added:"Just now"}}}async function ke(t,e){try{return await k(`/collaborators/${t}/${e}`,{method:"DELETE"})}catch{return{success:!0}}}async function Ce(t){try{return(await k("/join-code/generate",{method:"POST",body:JSON.stringify({scriptId:t})})).joinCode}catch{return Math.random().toString(36).substring(2,6).toUpperCase()+"-"+Math.random().toString(36).substring(2,6).toUpperCase()}}async function Ee(t){try{return await k("/join-code/validate",{method:"POST",body:JSON.stringify({code:t})})}catch{return(t||"").toUpperCase().trim()==="A7K9-XP42"?{valid:!0,script:{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",pages:96,collaboratorCount:3}}:{valid:!1,error:"Invalid or expired join code"}}}async function Ae(t){try{return await k("/join-code/redeem",{method:"POST",body:JSON.stringify({code:t})})}catch{return{success:!0,scriptId:"chronicles-of-dust",title:"Chronicles of Dust"}}}async function oe(){try{return await k("/notifications")}catch{return{notifications:[{id:1,sender:"HS",senderName:"Heamanth",type:"collaboration_invite",title:"Heamanth invited you to collaborate",body:'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',time:"12m ago",group:"today",unread:!0,tags:["Draft 4.2","Role: Editor"],actionLabel:"Review Access →",actionRoute:"/profile/collaborators"},{id:2,sender:"icon:description",type:"export_ready",title:"Your export is ready",body:'"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',time:"45m ago",group:"today",unread:!0,tags:["PDF","96 Pages"],actionLabel:"Open Screenplay →",actionRoute:"/editor/chronicles-of-dust"},{id:3,sender:"AK",senderName:"Arun K.",type:"join_code_request",title:"Join-code access request",body:'Requested Editor access to "Anbin Mozhi" via join-code A7K9-XP42.',time:"2h ago",group:"today",unread:!0,tags:["Code: A7K9-XP42"],actionLabel:"Manage Collaborators →",actionRoute:"/profile/collaborators"}],unreadCount:3}}}async function Be(t){try{return await k(`/notifications/${t}/read`,{method:"POST"})}catch{return{success:!0}}}async function je(){try{return await k("/notifications/read-all",{method:"POST"})}catch{return{success:!0}}}async function se(){return(await oe()).unreadCount||0}async function Te(t){try{const e=await k("/profile",{method:"PUT",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.profile)),e.profile}catch{const a={...await ne()||{},...t};return localStorage.setItem("scriptora_user",JSON.stringify(a)),a}}async function Pe(){try{return(await k("/settings")).settings}catch{const t=localStorage.getItem("scriptora_settings");return t?JSON.parse(t):{editor:{autoSceneHeading:!0,autoCharacter:!0,autoTransition:!0,enterAfterAction:!0,tabAfterAction:!0,autoCapitalize:!0,continueDialogue:!0,showSceneNumbers:!0,lockSceneNumbers:!1,fontSize:"Courier Prime 12pt",lineSpacing:"1.5 line",focusMode:!1},language:"English (US)",appearance:"Light",notifications:{collaborationInvites:!0,collaborationEdits:!0,mentions:!0,versionMilestones:!0},intelligence:{querySuggestions:!0,analysisSuggestions:!0}}}}async function $e(t,e){try{return(await k(`/intelligence/${t}/context`,{method:"PUT",body:JSON.stringify(e)})).context}catch{return e}}async function re(t,e){try{return(await k("/intelligence/query",{method:"POST",body:JSON.stringify({query:t,scriptId:e})})).answer}catch{return"Analysis: In this screenplay, scene tempo and dialogue density align with core narrative milestones. Characters express distinct agendas in each beat."}}class Ne{constructor(){this.state={currentUser:null,selectedScriptId:localStorage.getItem("scriptora_selected_script")||"chronicles-of-dust",selectedVersionId:"Draft 4.2",currentSceneId:18,unreadNotifications:3,scripts:[],activeScript:null,screenplay:null,settings:null,historyStack:[]},this.listeners=new Set}subscribe(e){return this.listeners.add(e),()=>this.listeners.delete(e)}notify(){for(const e of this.listeners)try{e(this.state)}catch(a){console.error("Store listener error:",a)}}setState(e){this.state={...this.state,...e},e.selectedScriptId&&localStorage.setItem("scriptora_selected_script",e.selectedScriptId),this.notify()}pushHistory(e){this.state.historyStack[this.state.historyStack.length-1]!==e&&this.state.historyStack.push(e)}getPreviousRoute(e="/workspace"){return this.state.historyStack.length>1?(this.state.historyStack.pop(),this.state.historyStack.pop()):e}async init(){try{const e=await ne(),a=await H(),s=await se(),l=await Pe(),n=a.find(p=>p.id===this.state.selectedScriptId)||a[0];this.setState({currentUser:e,scripts:a,activeScript:n,unreadNotifications:s,settings:l})}catch(e){console.error("Init store error:",e)}}async selectScript(e){const a=this.state.scripts.find(s=>s.id===e)||await ie(e);this.setState({selectedScriptId:e,activeScript:a})}async refreshNotifications(){const e=await se();this.setState({unreadNotifications:e})}async refreshScripts(){const e=await H(),a=e.find(s=>s.id===this.state.selectedScriptId)||e[0];this.setState({scripts:e,activeScript:a})}}const i=new Ne;function u(t,e="success"){const a=document.getElementById("global-toast"),s=document.getElementById("toast-message"),l=document.getElementById("toast-icon");if(!a||!s){console.log(`[Toast ${e}]`,t);return}s.textContent=t,l&&(e==="error"?(l.textContent="error",l.className="material-symbols-outlined text-[18px] text-red-400"):e==="info"?(l.textContent="info",l.className="material-symbols-outlined text-[18px] text-blue-300"):(l.textContent="check_circle",l.className="material-symbols-outlined text-[18px] text-emerald-300")),a.classList.remove("opacity-0","pointer-events-none"),a.classList.add("opacity-100"),clearTimeout(a._timeout),a._timeout=setTimeout(()=>{a.classList.remove("opacity-100"),a.classList.add("opacity-0","pointer-events-none")},2400)}function Le(){return`
     <main class="flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen justify-center items-center px-4">
       <div class="flex flex-col w-full max-w-sm py-8 fade-in">
         <!-- Brand & Logo Header -->
@@ -155,7 +155,7 @@
         </p>
       </div>
     </main>
-  `}function Me(t){const e=document.getElementById("tab-signin"),a=document.getElementById("tab-register"),s=document.getElementById("tab-otp"),n=document.getElementById("flow-signin"),l=document.getElementById("flow-register"),u=document.getElementById("flow-otp");function r(b){[e,a,s].forEach(v=>{v.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 text-on-surface-variant hover:text-on-surface"}),[n,l,u].forEach(v=>v.classList.add("hidden")),b==="signin"?(e.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",n.classList.remove("hidden")):b==="register"?(a.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",l.classList.remove("hidden")):b==="otp"&&(s.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold flex items-center justify-center gap-1",u.classList.remove("hidden"))}e&&(e.onclick=()=>r("signin")),a&&(a.onclick=()=>r("register")),s&&(s.onclick=()=>r("otp"));const c=document.getElementById("toggle-pw-signin"),o=document.getElementById("signin-password");c&&o&&(c.onclick=()=>{const b=o.type==="password";o.type=b?"text":"password",c.innerHTML=`<span class="material-symbols-outlined text-[18px]">${b?"visibility_off":"visibility"}</span>`});const d=document.getElementById("btn-google-login");d&&(d.onclick=async()=>{f("Connecting with Google...");const b=await te({email:"arun.kumar@scriptora.studio",provider:"google"});i.setState({currentUser:b}),t("/welcome")});const y=document.getElementById("form-signin");y&&(y.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("signin-email").value,w=o.value;try{const p=await te({email:v,password:w});i.setState({currentUser:p}),f(`Welcome back, ${p.displayName||p.name}`),t("/welcome")}catch(p){f(p.message,"error")}});const m=document.getElementById("form-register");m&&(m.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("reg-name").value,w=document.getElementById("reg-email").value,p=document.getElementById("reg-password").value;try{const B=await pe({name:v,email:w,password:p});i.setState({currentUser:B}),f("Account created successfully"),t("/welcome")}catch(B){f(B.message,"error")}});const h=document.getElementById("form-otp");h&&(h.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("otp-phone").value;try{const w=await xe(v);i.setState({currentUser:w}),f("Phone verified successfully"),t("/welcome")}catch(w){f(w.message,"error")}});const E=document.getElementById("btn-forgot-pw");E&&(E.onclick=()=>{f("Password reset link sent to registered email","info")})}function _e(){return i.state.currentUser,`
+  `}function Me(t){const e=document.getElementById("tab-signin"),a=document.getElementById("tab-register"),s=document.getElementById("tab-otp"),l=document.getElementById("flow-signin"),n=document.getElementById("flow-register"),p=document.getElementById("flow-otp");function o(b){[e,a,s].forEach(v=>{v.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 text-on-surface-variant hover:text-on-surface"}),[l,n,p].forEach(v=>v.classList.add("hidden")),b==="signin"?(e.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",l.classList.remove("hidden")):b==="register"?(a.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",n.classList.remove("hidden")):b==="otp"&&(s.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold flex items-center justify-center gap-1",p.classList.remove("hidden"))}e&&(e.onclick=()=>o("signin")),a&&(a.onclick=()=>o("register")),s&&(s.onclick=()=>o("otp"));const r=document.getElementById("toggle-pw-signin"),c=document.getElementById("signin-password");r&&c&&(r.onclick=()=>{const b=c.type==="password";c.type=b?"text":"password",r.innerHTML=`<span class="material-symbols-outlined text-[18px]">${b?"visibility_off":"visibility"}</span>`});const d=document.getElementById("btn-google-login");d&&(d.onclick=async()=>{u("Connecting with Google...");const b=await te({email:"arun.kumar@scriptora.studio",provider:"google"});i.setState({currentUser:b}),t("/welcome")});const y=document.getElementById("form-signin");y&&(y.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("signin-email").value,w=c.value;try{const x=await te({email:v,password:w});i.setState({currentUser:x}),u(`Welcome back, ${x.displayName||x.name}`),t("/welcome")}catch(x){u(x.message,"error")}});const m=document.getElementById("form-register");m&&(m.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("reg-name").value,w=document.getElementById("reg-email").value,x=document.getElementById("reg-password").value;try{const A=await ue({name:v,email:w,password:x});i.setState({currentUser:A}),u("Account created successfully"),t("/welcome")}catch(A){u(A.message,"error")}});const h=document.getElementById("form-otp");h&&(h.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("otp-phone").value;try{const w=await xe(v);i.setState({currentUser:w}),u("Phone verified successfully"),t("/welcome")}catch(w){u(w.message,"error")}});const I=document.getElementById("btn-forgot-pw");I&&(I.onclick=()=>{u("Password reset link sent to registered email","info")})}function De(){return i.state.currentUser,`
     <main class="flex-1 flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen">
       <div class="flex flex-col w-full min-h-screen px-4 justify-between items-center text-center select-none py-6 max-w-sm mx-auto flex-1 fade-in">
         
@@ -221,7 +221,7 @@
 
       </div>
     </main>
-  `}function De(t){const e=document.getElementById("welcome-sign-out");e&&(e.onclick=async()=>{await J(),i.setState({currentUser:null}),f("Signed out successfully"),t("/auth")})}function $(t="Workspace",e="Your writing space."){const a=i.state.unreadNotifications,s=i.state.currentUser?.initials||"JD";return`
+  `}function Oe(t){const e=document.getElementById("welcome-sign-out");e&&(e.onclick=async()=>{await V(),i.setState({currentUser:null}),u("Signed out successfully"),t("/auth")})}function T(t="Workspace",e="Your writing space."){const a=i.state.unreadNotifications,s=i.state.currentUser?.initials||"JD";return`
     <header class="fixed top-0 w-full z-40 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60">
       <div class="h-14 px-4 flex items-center justify-between max-w-2xl mx-auto">
         <a href="/workspace" class="flex items-center gap-2.5 min-w-0 no-underline text-inherit cursor-pointer active:opacity-80 transition-opacity">
@@ -246,7 +246,7 @@
         </div>
       </div>
     </header>
-  `}function T(t="workspace"){const e=t==="workspace",a=t==="intelligence",s=t==="profile";return`
+  `}function P(t="workspace"){const e=t==="workspace",a=t==="intelligence",s=t==="profile";return`
     <nav class="fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60">
       <div class="h-14 px-6 flex items-center justify-around max-w-2xl mx-auto">
         <!-- 1. Workspace Tab -->
@@ -271,8 +271,8 @@
         </a>
       </div>
     </nav>
-  `}function Oe(){const t=i.state.scripts||[],e=t.find(s=>s.isCurrentDraft)||t[0],a=t.slice(0,3);return`
-    ${$("Workspace","Your writing space.")}
+  `}function _e(){const t=i.state.scripts||[],e=t.find(s=>s.isCurrentDraft)||t[0],a=t.slice(0,3);return`
+    ${T("Workspace","Your writing space.")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-5 fade-in">
@@ -478,8 +478,8 @@
       </button>
     </div>
 
-    ${T("workspace")}
-  `}function Re(t){let e=null;const a=document.getElementById("btn-continue-writing");a&&(a.onclick=()=>{const m=a.getAttribute("data-script-id");i.selectScript(m),t(`/editor/${m}?scene=18`)}),document.querySelectorAll(".script-item-row").forEach(m=>{m.onclick=h=>{if(h.target.closest(".script-more-btn"))return;const E=m.getAttribute("data-script-id");i.selectScript(E),t(`/editor/${E}`)}});const s=document.getElementById("screenplay-search");s&&(s.oninput=m=>{const h=m.target.value.toLowerCase().trim();document.querySelectorAll("#screenplays-library-list .script-item-row").forEach(b=>{const v=b.querySelector(".font-semibold")?.textContent.toLowerCase()||"";b.style.display=v.includes(h)?"flex":"none"})});const n=document.getElementById("btn-new-script"),l=document.getElementById("new-script-modal"),u=document.getElementById("close-new-script-modal"),r=document.getElementById("cancel-new-script-btn"),c=document.getElementById("form-new-script");function o(m){l&&(m?(l.classList.remove("hidden"),l.classList.add("flex"),document.getElementById("new-script-title")?.focus()):(l.classList.add("hidden"),l.classList.remove("flex")))}n&&(n.onclick=()=>o(!0)),u&&(u.onclick=()=>o(!1)),r&&(r.onclick=()=>o(!1)),c&&(c.onsubmit=async m=>{m.preventDefault();const h=document.getElementById("new-script-title").value.trim(),E=document.getElementById("new-script-format").value,b=document.getElementById("new-script-genre").value;if(h)try{const v=await fe({title:h,format:E,genre:b});await i.refreshScripts(),i.selectScript(v.id),o(!1),f(`Created "${v.title}"`),t(`/editor/${v.id}`)}catch(v){f(v.message,"error")}});const d=document.getElementById("script-menu-popover");document.querySelectorAll(".script-more-btn").forEach(m=>{m.onclick=h=>{h.stopPropagation(),e=m.getAttribute("data-script-id");const E=m.getBoundingClientRect();d.style.top=`${E.bottom+window.scrollY+4}px`,d.style.left=`${Math.min(E.left-130,window.innerWidth-180)}px`,d.classList.remove("hidden")}}),window.onclick=m=>{!m.target.closest("#script-menu-popover")&&!m.target.closest(".script-more-btn")&&d?.classList.add("hidden")},document.getElementById("menu-opt-open")?.addEventListener("click",()=>{d.classList.add("hidden"),e&&(i.selectScript(e),t(`/editor/${e}`))}),document.getElementById("menu-opt-rename")?.addEventListener("click",async()=>{d.classList.add("hidden");const m=prompt("Enter new title for this screenplay:");m&&m.trim()&&(await me(e,{title:m.trim()}),await i.refreshScripts(),f("Screenplay renamed"),t("/workspace"))}),document.getElementById("menu-opt-duplicate")?.addEventListener("click",async()=>{d.classList.add("hidden"),await ge(e),await i.refreshScripts(),f("Screenplay duplicated"),t("/workspace")}),document.getElementById("menu-opt-archive")?.addEventListener("click",async()=>{d.classList.add("hidden"),await he(e),await i.refreshScripts(),f("Screenplay archived"),t("/workspace")}),document.getElementById("menu-opt-delete")?.addEventListener("click",async()=>{d.classList.add("hidden"),confirm("Are you sure you want to delete this screenplay? This action cannot be undone.")&&(await be(e),await i.refreshScripts(),f("Screenplay deleted"),t("/workspace"))});const y=document.getElementById("btn-export-library");y&&(y.onclick=()=>{const m="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(i.state.scripts,null,2)),h=document.createElement("a");h.setAttribute("href",m),h.setAttribute("download",`scriptora_library_${Date.now()}.json`),document.body.appendChild(h),h.click(),h.remove(),f("Exported library manifest (.json)")})}function Fe(t,e=null){const a=i.state.scripts.find(n=>n.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2"},s=i.state.currentUser?.initials||"JD";return`
+    ${P("workspace")}
+  `}function Re(t){let e=null;const a=document.getElementById("btn-continue-writing");a&&(a.onclick=()=>{const m=a.getAttribute("data-script-id");i.selectScript(m),t(`/editor/${m}?scene=18`)}),document.querySelectorAll(".script-item-row").forEach(m=>{m.onclick=h=>{if(h.target.closest(".script-more-btn"))return;const I=m.getAttribute("data-script-id");i.selectScript(I),t(`/editor/${I}`)}});const s=document.getElementById("screenplay-search");s&&(s.oninput=m=>{const h=m.target.value.toLowerCase().trim();document.querySelectorAll("#screenplays-library-list .script-item-row").forEach(b=>{const v=b.querySelector(".font-semibold")?.textContent.toLowerCase()||"";b.style.display=v.includes(h)?"flex":"none"})});const l=document.getElementById("btn-new-script"),n=document.getElementById("new-script-modal"),p=document.getElementById("close-new-script-modal"),o=document.getElementById("cancel-new-script-btn"),r=document.getElementById("form-new-script");function c(m){n&&(m?(n.classList.remove("hidden"),n.classList.add("flex"),document.getElementById("new-script-title")?.focus()):(n.classList.add("hidden"),n.classList.remove("flex")))}l&&(l.onclick=()=>c(!0)),p&&(p.onclick=()=>c(!1)),o&&(o.onclick=()=>c(!1)),r&&(r.onsubmit=async m=>{m.preventDefault();const h=document.getElementById("new-script-title").value.trim(),I=document.getElementById("new-script-format").value,b=document.getElementById("new-script-genre").value;if(h)try{const v=await fe({title:h,format:I,genre:b});await i.refreshScripts(),i.selectScript(v.id),c(!1),u(`Created "${v.title}"`),t(`/editor/${v.id}`)}catch(v){u(v.message,"error")}});const d=document.getElementById("script-menu-popover");document.querySelectorAll(".script-more-btn").forEach(m=>{m.onclick=h=>{h.stopPropagation(),e=m.getAttribute("data-script-id");const I=m.getBoundingClientRect();d.style.top=`${I.bottom+window.scrollY+4}px`,d.style.left=`${Math.min(I.left-130,window.innerWidth-180)}px`,d.classList.remove("hidden")}}),window.onclick=m=>{!m.target.closest("#script-menu-popover")&&!m.target.closest(".script-more-btn")&&d?.classList.add("hidden")},document.getElementById("menu-opt-open")?.addEventListener("click",()=>{d.classList.add("hidden"),e&&(i.selectScript(e),t(`/editor/${e}`))}),document.getElementById("menu-opt-rename")?.addEventListener("click",async()=>{d.classList.add("hidden");const m=prompt("Enter new title for this screenplay:");m&&m.trim()&&(await me(e,{title:m.trim()}),await i.refreshScripts(),u("Screenplay renamed"),t("/workspace"))}),document.getElementById("menu-opt-duplicate")?.addEventListener("click",async()=>{d.classList.add("hidden"),await ge(e),await i.refreshScripts(),u("Screenplay duplicated"),t("/workspace")}),document.getElementById("menu-opt-archive")?.addEventListener("click",async()=>{d.classList.add("hidden"),await he(e),await i.refreshScripts(),u("Screenplay archived"),t("/workspace")}),document.getElementById("menu-opt-delete")?.addEventListener("click",async()=>{d.classList.add("hidden"),confirm("Are you sure you want to delete this screenplay? This action cannot be undone.")&&(await be(e),await i.refreshScripts(),u("Screenplay deleted"),t("/workspace"))});const y=document.getElementById("btn-export-library");y&&(y.onclick=()=>{const m="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(i.state.scripts,null,2)),h=document.createElement("a");h.setAttribute("href",m),h.setAttribute("download",`scriptora_library_${Date.now()}.json`),document.body.appendChild(h),h.click(),h.remove(),u("Exported library manifest (.json)")})}function Fe(t,e=null){const a=i.state.scripts.find(l=>l.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2"},s=i.state.currentUser?.initials||"JD";return`
     <div id="editor-wrapper" class="flex flex-col min-h-screen bg-surface w-full relative transition-all duration-200">
       
       <!-- Top Fixed Editor Header -->
@@ -894,7 +894,7 @@
       </div>
 
     </div>
-  `}function Je(t,e){const a=document.getElementById("editor-back-btn");a&&(a.onclick=()=>{e("/workspace")});const s=document.getElementById("btn-open-production");s&&(s.onclick=()=>{e("/intelligence/analysis/production")});const n=document.getElementById("sceneNumberToggle"),l=document.getElementById("sceneNumberToggleText");let u=!0;n&&(n.onclick=()=>{u=!u,l.textContent=`Scene #s: ${u?"On":"Off"}`,document.querySelectorAll(".scene-num-indicator").forEach(C=>{C.style.opacity=u?"1":"0"}),f(`Scene numbers ${u?"enabled":"hidden"}`)});const r=document.getElementById("focusModeToggle"),c=document.getElementById("focusModeText");let o=!1;r&&(r.onclick=()=>{o=!o,c.textContent=o?"Exit Focus":"Focus Mode",document.getElementById("editor-toolbar-strip").style.display=o?"none":"flex",document.getElementById("editor-accessory-tray").style.display=o?"none":"flex",f(o?"Focus Mode active (distraction-free)":"Exited Focus Mode")});const d=document.getElementById("langToggleBtn"),y=document.getElementById("langToggleText"),m=document.getElementById("tamilLangBadge");let h="EN";d&&(d.onclick=()=>{h=h==="EN"?"TA":"EN",y.textContent=h==="EN"?"EN / தமிழ்":"தமிழ் / EN",m&&(m.textContent=h==="TA"?"தமிழ் விசைப்பலகை: இயங்குகிறது":"Tamil IME: Ready"),f(`Screenplay language set to ${h==="TA"?"Tamil":"English"}`)});const E=document.getElementById("btn-insert-intext"),b=document.getElementById("editableLine");E&&b&&(E.onclick=()=>{b.focus(),document.execCommand("insertText",!1,"INT/EXT. ")});const v=document.getElementById("sceneJumpSelect");v&&(v.onchange=C=>{const k=C.target.value,A=document.getElementById(k==="scene-19"?"anchor-scene-19":"anchor-scene-18");A&&(A.scrollIntoView({behavior:"smooth",block:"center"}),A.classList.add("bg-blue-50/50"),setTimeout(()=>A.classList.remove("bg-blue-50/50"),1200))}),document.querySelectorAll(".format-btn").forEach(C=>{C.onclick=()=>{const k=C.getAttribute("data-type");b&&(b.focus(),k==="scene"?b.className="outline-none mb-4 text-slate-900 font-bold uppercase tracking-wider p-1 rounded focus:bg-blue-50/50":k==="character"?b.className="outline-none mb-2 text-slate-900 font-bold uppercase text-center w-7/12 mx-auto tracking-wide p-1 rounded focus:bg-blue-50/50":k==="parenthetical"?b.className="outline-none mb-2 text-slate-500 italic text-center w-6/12 mx-auto p-1 rounded focus:bg-blue-50/50":k==="dialogue"?b.className="outline-none mb-4 text-slate-900 w-9/12 sm:w-8/12 mx-auto text-left p-1 rounded focus:bg-blue-50/50":b.className="outline-none mb-4 text-slate-900 p-1 rounded focus:bg-blue-50/50")}});const w=document.getElementById("btn-undo"),p=document.getElementById("btn-redo");w&&(w.onclick=()=>document.execCommand("undo")),p&&(p.onclick=()=>document.execCommand("redo"));let B=null;const x=document.getElementById("editor-save-status");document.getElementById("screenplay-page")?.addEventListener("input",()=>{x&&(x.textContent="Saving changes..."),clearTimeout(B),B=setTimeout(async()=>{const C=document.getElementById("editableLine")?.innerText;await ve(t,{lastEdit:C}),x&&(x.textContent="Autosaved Just now")},1e3)});const g=document.getElementById("exportModal"),S=document.getElementById("exportModalBtn"),j=document.getElementById("closeExportModal"),_=document.getElementById("cancelExportBtn"),H=document.getElementById("startExportBtn"),U=document.getElementById("exportProgressArea"),O=document.getElementById("exportProgressBar"),R=document.getElementById("exportStatusText");function D(C){g&&(C?(g.classList.remove("hidden"),g.classList.add("flex")):(g.classList.add("hidden"),g.classList.remove("flex"),U?.classList.add("hidden")))}S&&(S.onclick=()=>D(!0)),j&&(j.onclick=()=>D(!1)),_&&(_.onclick=()=>D(!1)),H&&(H.onclick=()=>{const C=document.getElementById("exportFormatSelect")?.value||"pdf";U.classList.remove("hidden"),O.style.width="20%",R.textContent="Typesetting Courier Prime screenplay pages...",setTimeout(()=>{O.style.width="70%",R.textContent=`Formatting ${C.toUpperCase()} structure & scene locks...`},500),setTimeout(()=>{O.style.width="100%",R.textContent=`Completed! Packaging ${C.toUpperCase()} download...`;const k=`CHRONICLES OF DUST
+  `}function Ve(t,e){const a=document.getElementById("editor-back-btn");a&&(a.onclick=()=>{e("/workspace")});const s=document.getElementById("btn-open-production");s&&(s.onclick=()=>{e("/intelligence/analysis/production")});const l=document.getElementById("sceneNumberToggle"),n=document.getElementById("sceneNumberToggleText");let p=!0;l&&(l.onclick=()=>{p=!p,n.textContent=`Scene #s: ${p?"On":"Off"}`,document.querySelectorAll(".scene-num-indicator").forEach(C=>{C.style.opacity=p?"1":"0"}),u(`Scene numbers ${p?"enabled":"hidden"}`)});const o=document.getElementById("focusModeToggle"),r=document.getElementById("focusModeText");let c=!1;o&&(o.onclick=()=>{c=!c,r.textContent=c?"Exit Focus":"Focus Mode",document.getElementById("editor-toolbar-strip").style.display=c?"none":"flex",document.getElementById("editor-accessory-tray").style.display=c?"none":"flex",u(c?"Focus Mode active (distraction-free)":"Exited Focus Mode")});const d=document.getElementById("langToggleBtn"),y=document.getElementById("langToggleText"),m=document.getElementById("tamilLangBadge");let h="EN";d&&(d.onclick=()=>{h=h==="EN"?"TA":"EN",y.textContent=h==="EN"?"EN / தமிழ்":"தமிழ் / EN",m&&(m.textContent=h==="TA"?"தமிழ் விசைப்பலகை: இயங்குகிறது":"Tamil IME: Ready"),u(`Screenplay language set to ${h==="TA"?"Tamil":"English"}`)});const I=document.getElementById("btn-insert-intext"),b=document.getElementById("editableLine");I&&b&&(I.onclick=()=>{b.focus(),document.execCommand("insertText",!1,"INT/EXT. ")});const v=document.getElementById("sceneJumpSelect");v&&(v.onchange=C=>{const E=C.target.value,j=document.getElementById(E==="scene-19"?"anchor-scene-19":"anchor-scene-18");j&&(j.scrollIntoView({behavior:"smooth",block:"center"}),j.classList.add("bg-blue-50/50"),setTimeout(()=>j.classList.remove("bg-blue-50/50"),1200))}),document.querySelectorAll(".format-btn").forEach(C=>{C.onclick=()=>{const E=C.getAttribute("data-type");b&&(b.focus(),E==="scene"?b.className="outline-none mb-4 text-slate-900 font-bold uppercase tracking-wider p-1 rounded focus:bg-blue-50/50":E==="character"?b.className="outline-none mb-2 text-slate-900 font-bold uppercase text-center w-7/12 mx-auto tracking-wide p-1 rounded focus:bg-blue-50/50":E==="parenthetical"?b.className="outline-none mb-2 text-slate-500 italic text-center w-6/12 mx-auto p-1 rounded focus:bg-blue-50/50":E==="dialogue"?b.className="outline-none mb-4 text-slate-900 w-9/12 sm:w-8/12 mx-auto text-left p-1 rounded focus:bg-blue-50/50":b.className="outline-none mb-4 text-slate-900 p-1 rounded focus:bg-blue-50/50")}});const w=document.getElementById("btn-undo"),x=document.getElementById("btn-redo");w&&(w.onclick=()=>document.execCommand("undo")),x&&(x.onclick=()=>document.execCommand("redo"));let A=null;const f=document.getElementById("editor-save-status");document.getElementById("screenplay-page")?.addEventListener("input",()=>{f&&(f.textContent="Saving changes..."),clearTimeout(A),A=setTimeout(async()=>{const C=document.getElementById("editableLine")?.innerText;await ve(t,{lastEdit:C}),f&&(f.textContent="Autosaved Just now")},1e3)});const g=document.getElementById("exportModal"),S=document.getElementById("exportModalBtn"),B=document.getElementById("closeExportModal"),D=document.getElementById("cancelExportBtn"),U=document.getElementById("startExportBtn"),q=document.getElementById("exportProgressArea"),_=document.getElementById("exportProgressBar"),R=document.getElementById("exportStatusText");function O(C){g&&(C?(g.classList.remove("hidden"),g.classList.add("flex")):(g.classList.add("hidden"),g.classList.remove("flex"),q?.classList.add("hidden")))}S&&(S.onclick=()=>O(!0)),B&&(B.onclick=()=>O(!1)),D&&(D.onclick=()=>O(!1)),U&&(U.onclick=()=>{const C=document.getElementById("exportFormatSelect")?.value||"pdf";q.classList.remove("hidden"),_.style.width="20%",R.textContent="Typesetting Courier Prime screenplay pages...",setTimeout(()=>{_.style.width="70%",R.textContent=`Formatting ${C.toUpperCase()} structure & scene locks...`},500),setTimeout(()=>{_.style.width="100%",R.textContent=`Completed! Packaging ${C.toUpperCase()} download...`;const E=`CHRONICLES OF DUST
 Draft 4.2
 
 SCENE 18
@@ -912,26 +912,26 @@ CUT TO:
 
 SCENE 19
 EXT. FLOODGATE GANTRY - CONTINUOUS
-Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/pdf":"text/plain"}),de=URL.createObjectURL(A),N=document.createElement("a");N.href=de,N.download=`Chronicles_of_Dust_Draft4.2.${C}`,document.body.appendChild(N),N.click(),N.remove(),f(`Exported "${N.download}" successfully`),setTimeout(()=>D(!1),900)},1100)});const P=document.getElementById("versionsModal"),V=document.getElementById("versionsModalBtn"),ce=document.getElementById("closeVersionsModal"),W=document.getElementById("versionsListContainer");async function z(){const C=await ye(t);W&&(W.innerHTML=C.map(k=>`
-      <div class="p-3 rounded-xl border ${k.isCurrent?"border-2 border-blue-600 bg-blue-50/30":"border-slate-200 bg-white hover:bg-slate-50"} transition-colors flex flex-col gap-1.5">
+Sirens pulse through the red fog.`,j=new Blob([E],{type:C==="pdf"?"application/pdf":"text/plain"}),de=URL.createObjectURL(j),N=document.createElement("a");N.href=de,N.download=`Chronicles_of_Dust_Draft4.2.${C}`,document.body.appendChild(N),N.click(),N.remove(),u(`Exported "${N.download}" successfully`),setTimeout(()=>O(!1),900)},1100)});const $=document.getElementById("versionsModal"),J=document.getElementById("versionsModalBtn"),ce=document.getElementById("closeVersionsModal"),G=document.getElementById("versionsListContainer");async function W(){const C=await ye(t);G&&(G.innerHTML=C.map(E=>`
+      <div class="p-3 rounded-xl border ${E.isCurrent?"border-2 border-blue-600 bg-blue-50/30":"border-slate-200 bg-white hover:bg-slate-50"} transition-colors flex flex-col gap-1.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="font-heading font-bold text-sm text-slate-900">${k.name}</span>
-            <span class="px-2 py-0.5 rounded-full ${k.isCurrent?"bg-blue-600 text-white font-semibold":"bg-slate-100 text-slate-600 font-medium"} text-[10px]">${k.tag}</span>
+            <span class="font-heading font-bold text-sm text-slate-900">${E.name}</span>
+            <span class="px-2 py-0.5 rounded-full ${E.isCurrent?"bg-blue-600 text-white font-semibold":"bg-slate-100 text-slate-600 font-medium"} text-[10px]">${E.tag}</span>
           </div>
-          <span class="text-[11px] text-slate-400 font-caption">${k.timestamp}</span>
+          <span class="text-[11px] text-slate-400 font-caption">${E.timestamp}</span>
         </div>
-        <p class="text-xs text-slate-600">${k.notes||"Point-in-time snapshot."}</p>
+        <p class="text-xs text-slate-600">${E.notes||"Point-in-time snapshot."}</p>
         <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-          <span>Edited by ${k.author}</span>
+          <span>Edited by ${E.author}</span>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-slate-700">${k.stats}</span>
-            ${k.isCurrent?"":`<button class="restore-version-btn text-blue-600 font-semibold hover:underline" data-vname="${k.name}">Restore</button>`}
+            <span class="font-medium text-slate-700">${E.stats}</span>
+            ${E.isCurrent?"":`<button class="restore-version-btn text-blue-600 font-semibold hover:underline" data-vname="${E.name}">Restore</button>`}
           </div>
         </div>
       </div>
-    `).join(""),document.querySelectorAll(".restore-version-btn").forEach(k=>{k.onclick=()=>{const A=k.getAttribute("data-vname");f(`Restored version "${A}"`),document.getElementById("currentVersionTag").textContent=A,P.classList.add("hidden")}}))}V&&(V.onclick=()=>{P.classList.remove("hidden"),P.classList.add("flex"),z()}),ce&&(P.onclick=C=>{(C.target===P||C.target.closest("#closeVersionsModal"))&&(P.classList.add("hidden"),P.classList.remove("flex"))});const L=document.getElementById("newVersionModal"),G=document.getElementById("openNewVersionPrompt"),K=document.getElementById("closeNewVersionModal"),X=document.getElementById("cancelNewVersionBtn"),Y=document.getElementById("saveNewVersionBtn");G&&(G.onclick=()=>{L.classList.remove("hidden"),L.classList.add("flex")}),K&&(K.onclick=()=>L.classList.add("hidden")),X&&(X.onclick=()=>L.classList.add("hidden")),Y&&(Y.onclick=async()=>{const C=document.getElementById("newVersionNameInput")?.value.trim(),k=document.getElementById("newVersionNotesInput")?.value.trim();C&&(await we(t,{name:C,notes:k}),f(`Created version snapshot "${C}"`),document.getElementById("currentVersionTag").textContent=C,L.classList.add("hidden"),z())});const M=document.getElementById("compareModal"),Q=document.getElementById("openCompareBtn"),Z=document.getElementById("closeCompareModal"),ee=document.getElementById("closeCompareBtn2");function F(C){M&&(C?(M.classList.remove("hidden"),M.classList.add("flex")):(M.classList.add("hidden"),M.classList.remove("flex")))}Q&&(Q.onclick=()=>F(!0)),Z&&(Z.onclick=()=>F(!1)),ee&&(ee.onclick=()=>F(!1))}function qe(){const t=i.state.scripts||[],e=i.state.selectedScriptId||"chronicles-of-dust",a=t.find(s=>s.id===e)||t[0]||{title:"Chronicles of Dust"};return`
-    ${$("Intelligence","Script Selector")}
+    `).join(""),document.querySelectorAll(".restore-version-btn").forEach(E=>{E.onclick=()=>{const j=E.getAttribute("data-vname");u(`Restored version "${j}"`),document.getElementById("currentVersionTag").textContent=j,$.classList.add("hidden")}}))}J&&(J.onclick=()=>{$.classList.remove("hidden"),$.classList.add("flex"),W()}),ce&&($.onclick=C=>{(C.target===$||C.target.closest("#closeVersionsModal"))&&($.classList.add("hidden"),$.classList.remove("flex"))});const L=document.getElementById("newVersionModal"),z=document.getElementById("openNewVersionPrompt"),K=document.getElementById("closeNewVersionModal"),Y=document.getElementById("cancelNewVersionBtn"),X=document.getElementById("saveNewVersionBtn");z&&(z.onclick=()=>{L.classList.remove("hidden"),L.classList.add("flex")}),K&&(K.onclick=()=>L.classList.add("hidden")),Y&&(Y.onclick=()=>L.classList.add("hidden")),X&&(X.onclick=async()=>{const C=document.getElementById("newVersionNameInput")?.value.trim(),E=document.getElementById("newVersionNotesInput")?.value.trim();C&&(await we(t,{name:C,notes:E}),u(`Created version snapshot "${C}"`),document.getElementById("currentVersionTag").textContent=C,L.classList.add("hidden"),W())});const M=document.getElementById("compareModal"),Q=document.getElementById("openCompareBtn"),Z=document.getElementById("closeCompareModal"),ee=document.getElementById("closeCompareBtn2");function F(C){M&&(C?(M.classList.remove("hidden"),M.classList.add("flex")):(M.classList.add("hidden"),M.classList.remove("flex")))}Q&&(Q.onclick=()=>F(!0)),Z&&(Z.onclick=()=>F(!1)),ee&&(ee.onclick=()=>F(!1))}function He(){const t=i.state.scripts||[],e=i.state.selectedScriptId||"chronicles-of-dust",a=t.find(s=>s.id===e)||t[0]||{title:"Chronicles of Dust"};return`
+    ${T("Intelligence","Script Selector")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -975,22 +975,22 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
 
           <!-- Screenplays Selection Radio Cards -->
           <div class="flex flex-col gap-2" role="radiogroup" id="selector-script-cards">
-            ${t.map(s=>{const n=s.id===e;return`
-                <div data-script-id="${s.id}" data-script-title="${s.title}" class="script-select-card relative p-3.5 rounded-xl border ${n?"border-blue-600 bg-blue-50/70":"border-slate-200/80 bg-white hover:bg-slate-50"} transition-all cursor-pointer flex items-center justify-between group shadow-xs">
+            ${t.map(s=>{const l=s.id===e;return`
+                <div data-script-id="${s.id}" data-script-title="${s.title}" class="script-select-card relative p-3.5 rounded-xl border ${l?"border-blue-600 bg-blue-50/70":"border-slate-200/80 bg-white hover:bg-slate-50"} transition-all cursor-pointer flex items-center justify-between group shadow-xs">
                   <div class="flex items-center gap-3 min-w-0 relative z-10">
-                    <div class="shrink-0 w-9 h-9 rounded-lg ${n?"bg-white border-blue-200 text-blue-600":"bg-slate-50 border-slate-200 text-slate-600"} border flex items-center justify-center shadow-xs">
+                    <div class="shrink-0 w-9 h-9 rounded-lg ${l?"bg-white border-blue-200 text-blue-600":"bg-slate-50 border-slate-200 text-slate-600"} border flex items-center justify-center shadow-xs">
                       <span class="material-symbols-outlined text-[20px]">movie</span>
                     </div>
                     <div class="flex flex-col min-w-0">
                       <div class="flex items-center gap-2">
                         <span class="text-xs font-semibold text-slate-900 truncate uppercase">${s.title}</span>
-                        <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${n?"bg-blue-100 text-blue-700":"bg-slate-100 text-slate-600"} shrink-0">${s.draft||"Draft 1.0"}</span>
+                        <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${l?"bg-blue-100 text-blue-700":"bg-slate-100 text-slate-600"} shrink-0">${s.draft||"Draft 1.0"}</span>
                       </div>
                       <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.format||"Screenplay"} · ${s.pages} pages · Updated ${s.updated||"recently"}</span>
                     </div>
                   </div>
-                  <div class="script-select-indicator w-6 h-6 rounded-full ${n?"bg-blue-600 text-white shadow-xs":"bg-slate-100 text-slate-400"} flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-[16px] font-bold">${n?"check":"arrow_forward"}</span>
+                  <div class="script-select-indicator w-6 h-6 rounded-full ${l?"bg-blue-600 text-white shadow-xs":"bg-slate-100 text-slate-400"} flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[16px] font-bold">${l?"check":"arrow_forward"}</span>
                   </div>
                 </div>
               `}).join("")}
@@ -1015,9 +1015,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
 
     </main>
 
-    ${T("intelligence")}
-  `}function He(t){let e=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".script-select-card").forEach(n=>{n.onclick=()=>{const l=n.getAttribute("data-script-id"),u=n.getAttribute("data-script-title");e=l,i.selectScript(l),document.querySelectorAll(".script-select-card").forEach(o=>{o.className="script-select-card relative p-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const d=o.querySelector(".script-select-indicator");d&&(d.className="script-select-indicator w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0",d.innerHTML='<span class="material-symbols-outlined text-[16px]">arrow_forward</span>')}),n.className="script-select-card relative p-3.5 rounded-xl border border-blue-600 bg-blue-50/70 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const r=n.querySelector(".script-select-indicator");r&&(r.className="script-select-indicator w-6 h-6 rounded-full bg-blue-600 text-white shadow-xs flex items-center justify-center shrink-0",r.innerHTML='<span class="material-symbols-outlined text-[16px] font-bold">check</span>');const c=document.getElementById("selector-btn-label");c&&(c.textContent=`Continue to Context (${u})`)}});const a=document.getElementById("submit-continue-analysis-btn");a&&(a.onclick=()=>{i.selectScript(e),t("/intelligence/context")});const s=document.getElementById("btn-import-script-modal");s&&(s.onclick=()=>{f("Select screenplay file (.fountain, .fdx, .pdf) to parse","info")})}function Ue(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",format:"Feature",industry:"International / Hollywood"},a=e.context||{format:e.format||"Feature",industry:e.industry||"International / Hollywood",hours:1,minutes:36,seconds:0};return`
-    ${$("Intelligence","Context Calibration")}
+    ${P("intelligence")}
+  `}function Ue(t){let e=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".script-select-card").forEach(l=>{l.onclick=()=>{const n=l.getAttribute("data-script-id"),p=l.getAttribute("data-script-title");e=n,i.selectScript(n),document.querySelectorAll(".script-select-card").forEach(c=>{c.className="script-select-card relative p-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const d=c.querySelector(".script-select-indicator");d&&(d.className="script-select-indicator w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0",d.innerHTML='<span class="material-symbols-outlined text-[16px]">arrow_forward</span>')}),l.className="script-select-card relative p-3.5 rounded-xl border border-blue-600 bg-blue-50/70 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const o=l.querySelector(".script-select-indicator");o&&(o.className="script-select-indicator w-6 h-6 rounded-full bg-blue-600 text-white shadow-xs flex items-center justify-center shrink-0",o.innerHTML='<span class="material-symbols-outlined text-[16px] font-bold">check</span>');const r=document.getElementById("selector-btn-label");r&&(r.textContent=`Continue to Context (${p})`)}});const a=document.getElementById("submit-continue-analysis-btn");a&&(a.onclick=()=>{i.selectScript(e),t("/intelligence/context")});const s=document.getElementById("btn-import-script-modal");s&&(s.onclick=()=>{u("Select screenplay file (.fountain, .fdx, .pdf) to parse","info")})}function qe(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",format:"Feature",industry:"International / Hollywood"},a=e.context||{format:e.format||"Feature",industry:e.industry||"International / Hollywood",hours:1,minutes:36,seconds:0};return`
+    ${T("Intelligence","Context Calibration")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
@@ -1142,9 +1142,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
 
     </main>
 
-    ${T("intelligence")}
-  `}function Ve(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let a="Feature",s=1,n=36,l=0;document.querySelectorAll(".format-card").forEach(c=>{c.onclick=()=>{a=c.getAttribute("data-format"),document.querySelectorAll(".format-card").forEach(o=>{o.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 transition-all cursor-pointer hover:bg-slate-50"}),c.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer",a==="Short"?(s=0,n=25):a==="Pilot"?(s=0,n=50):(s=1,n=45),u()}});function u(){const c=d=>String(d).padStart(2,"0");document.getElementById("val-hr").textContent=c(s),document.getElementById("val-min").textContent=c(n),document.getElementById("val-sec").textContent=c(l);const o=s*60+n+Math.round(l/60);document.getElementById("pacing-projection").textContent=`~${o} standard script pages`}document.querySelectorAll(".stepper-btn").forEach(c=>{c.onclick=()=>{const o=c.getAttribute("data-unit"),d=parseInt(c.getAttribute("data-delta"));o==="hr"&&(s=Math.max(0,Math.min(8,s+d))),o==="min"&&(n=Math.max(0,Math.min(59,(n+d+60)%60))),o==="sec"&&(l=Math.max(0,Math.min(59,(l+d+60)%60))),u()}});const r=document.getElementById("btn-submit-context");r&&(r.onclick=async()=>{const c=document.getElementById("industry-select")?.value||"International / Hollywood";r.innerHTML='<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Calibrating SCRIPTORA...</span>',r.disabled=!0;const o=y=>String(y).padStart(2,"0"),d={format:a,industry:c,hours:s,minutes:n,seconds:l,plannedDuration:`${o(s)}:${o(n)}:${o(l)}`};await Pe(e,d),f("Narrative parameters calibrated"),t("/intelligence/dashboard")})}function We(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",pages:96,format:"Feature"},a=e.analysisScores||{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80};return`
-    ${$("Intelligence","Script Analysis")}
+    ${P("intelligence")}
+  `}function Je(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let a="Feature",s=1,l=36,n=0;document.querySelectorAll(".format-card").forEach(r=>{r.onclick=()=>{a=r.getAttribute("data-format"),document.querySelectorAll(".format-card").forEach(c=>{c.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 transition-all cursor-pointer hover:bg-slate-50"}),r.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer",a==="Short"?(s=0,l=25):a==="Pilot"?(s=0,l=50):(s=1,l=45),p()}});function p(){const r=d=>String(d).padStart(2,"0");document.getElementById("val-hr").textContent=r(s),document.getElementById("val-min").textContent=r(l),document.getElementById("val-sec").textContent=r(n);const c=s*60+l+Math.round(n/60);document.getElementById("pacing-projection").textContent=`~${c} standard script pages`}document.querySelectorAll(".stepper-btn").forEach(r=>{r.onclick=()=>{const c=r.getAttribute("data-unit"),d=parseInt(r.getAttribute("data-delta"));c==="hr"&&(s=Math.max(0,Math.min(8,s+d))),c==="min"&&(l=Math.max(0,Math.min(59,(l+d+60)%60))),c==="sec"&&(n=Math.max(0,Math.min(59,(n+d+60)%60))),p()}});const o=document.getElementById("btn-submit-context");o&&(o.onclick=async()=>{const r=document.getElementById("industry-select")?.value||"International / Hollywood";o.innerHTML='<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Calibrating SCRIPTORA...</span>',o.disabled=!0;const c=y=>String(y).padStart(2,"0"),d={format:a,industry:r,hours:s,minutes:l,seconds:n,plannedDuration:`${c(s)}:${c(l)}:${c(n)}`};await $e(e,d),u("Narrative parameters calibrated"),t("/intelligence/dashboard")})}function Ge(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",pages:96,format:"Feature"},a=e.analysisScores||{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80};return`
+    ${T("Intelligence","Script Analysis")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -1330,9 +1330,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
 
     </main>
 
-    ${T("intelligence")}
-  `}function ze(t){const e=i.state.selectedScriptId||"chronicles-of-dust",a=i.state.scripts.find(w=>w.id===e)||i.state.scripts[0],s=document.getElementById("btn-gen-logline"),n=document.getElementById("btn-gen-synopsis"),l=document.getElementById("ai-generated-container"),u=document.getElementById("ai-generated-title"),r=document.getElementById("ai-generated-body"),c=document.getElementById("ai-close-btn"),o=document.getElementById("ai-copy-btn"),d=document.getElementById("ai-copy-text"),y=document.getElementById("ai-query-input"),m=document.getElementById("ai-query-submit");function h(w){l&&(l.classList.remove("hidden"),u.textContent=w==="logline"?"Generated Logline":"Generated Synopsis",r.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Generating with narrative telemetry...</span>',setTimeout(()=>{r.textContent=w==="logline"?a?.logline||"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.":a?.synopsis||"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves."},400))}if(s&&(s.onclick=()=>h("logline")),n&&(n.onclick=()=>h("synopsis")),c&&(c.onclick=()=>l.classList.add("hidden")),o&&(o.onclick=()=>{navigator.clipboard?.writeText(r.textContent||""),d.textContent="Copied!",setTimeout(()=>{d.textContent="Copy"},1800),f("Copied to clipboard")}),m&&y){const w=async()=>{const p=y.value.trim();if(!p)return;l.classList.remove("hidden"),u.textContent="Intelligence AI Answer",r.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing draft semantics...</span>';const B=await re(p,e);r.textContent=B,y.value=""};m.onclick=w,y.onkeydown=p=>{p.key==="Enter"&&w()}}const E=document.getElementById("script-switcher-modal"),b=document.getElementById("script-selector-trigger"),v=document.getElementById("close-script-switcher-modal");b&&(b.onclick=()=>E?.classList.remove("hidden")),v&&(v.onclick=()=>E?.classList.add("hidden")),document.querySelectorAll(".script-switch-opt").forEach(w=>{w.onclick=()=>{const p=w.getAttribute("data-id");i.selectScript(p),E?.classList.add("hidden"),t("/intelligence")}})}function Ge(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96},a=[{type:"pacing",title:"Pacing",desc:"See where the story moves too fast or too slowly.",icon:"speed",score:82,telemetry:`${e.pages||96} Pages Telemetry`},{type:"dialogue",title:"Dialogue",desc:"Cadence, subtext density and character voice rhythm.",icon:"chat",score:89,telemetry:"42 Dialogue Exchanges"},{type:"emotion",title:"Emotion",desc:"Emotional heatmaps, catharsis curves and sentiment.",icon:"favorite",score:91,telemetry:"Peak Catharsis: Act II"},{type:"character-arc",title:"Character Arc",desc:"Want vs. need trajectories and transformation tracking.",icon:"alt_route",score:84,telemetry:"4 Major Protagonists"},{type:"continuity",title:"Continuity",desc:"Props, character locations, and temporal logic rules.",icon:"linear_scale",score:78,telemetry:"2 Minor Prop Conflicts"},{type:"story-structure",title:"Story Structure",desc:"Beat breakdowns, midpoint shifts and turning points.",icon:"account_tree",score:87,telemetry:"3-Act Paradigm Standard"},{type:"theme",title:"Theme",desc:"Core philosophical spines, motifs and moral arguments.",icon:"lightbulb",score:90,telemetry:"3 Tracked Motifs"},{type:"cinema",title:"Cinema",desc:"Visual storytelling, shot economy and set-piece power.",icon:"videocam",score:85,telemetry:"Cinematic Visual Index"},{type:"scene",title:"Scene Analysis",desc:"Deep dive breakdown of goals, conflict and polarity.",icon:"movie",score:86,telemetry:"Scene 18 Active Scope"},{type:"formatting",title:"Formatting",desc:"Standard industry margins, sluglines and font rules.",icon:"rule",score:94,telemetry:"Standard Guild Rules"},{type:"production",title:"Production",desc:"Locations, shooting cast, props and cost estimators.",icon:"movie_creation",score:80,telemetry:"24 Practical Locations"}];return`
-    ${$("Intelligence","Analyse Individually")}
+    ${P("intelligence")}
+  `}function We(t){const e=i.state.selectedScriptId||"chronicles-of-dust",a=i.state.scripts.find(w=>w.id===e)||i.state.scripts[0],s=document.getElementById("btn-gen-logline"),l=document.getElementById("btn-gen-synopsis"),n=document.getElementById("ai-generated-container"),p=document.getElementById("ai-generated-title"),o=document.getElementById("ai-generated-body"),r=document.getElementById("ai-close-btn"),c=document.getElementById("ai-copy-btn"),d=document.getElementById("ai-copy-text"),y=document.getElementById("ai-query-input"),m=document.getElementById("ai-query-submit");function h(w){n&&(n.classList.remove("hidden"),p.textContent=w==="logline"?"Generated Logline":"Generated Synopsis",o.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Generating with narrative telemetry...</span>',setTimeout(()=>{o.textContent=w==="logline"?a?.logline||"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.":a?.synopsis||"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves."},400))}if(s&&(s.onclick=()=>h("logline")),l&&(l.onclick=()=>h("synopsis")),r&&(r.onclick=()=>n.classList.add("hidden")),c&&(c.onclick=()=>{navigator.clipboard?.writeText(o.textContent||""),d.textContent="Copied!",setTimeout(()=>{d.textContent="Copy"},1800),u("Copied to clipboard")}),m&&y){const w=async()=>{const x=y.value.trim();if(!x)return;n.classList.remove("hidden"),p.textContent="Intelligence AI Answer",o.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing draft semantics...</span>';const A=await re(x,e);o.textContent=A,y.value=""};m.onclick=w,y.onkeydown=x=>{x.key==="Enter"&&w()}}const I=document.getElementById("script-switcher-modal"),b=document.getElementById("script-selector-trigger"),v=document.getElementById("close-script-switcher-modal");b&&(b.onclick=()=>I?.classList.remove("hidden")),v&&(v.onclick=()=>I?.classList.add("hidden")),document.querySelectorAll(".script-switch-opt").forEach(w=>{w.onclick=()=>{const x=w.getAttribute("data-id");i.selectScript(x),I?.classList.add("hidden"),t("/intelligence")}})}function ze(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96},a=[{type:"pacing",title:"Pacing",desc:"See where the story moves too fast or too slowly.",icon:"speed",score:82,telemetry:`${e.pages||96} Pages Telemetry`},{type:"dialogue",title:"Dialogue",desc:"Cadence, subtext density and character voice rhythm.",icon:"chat",score:89,telemetry:"42 Dialogue Exchanges"},{type:"emotion",title:"Emotion",desc:"Emotional heatmaps, catharsis curves and sentiment.",icon:"favorite",score:91,telemetry:"Peak Catharsis: Act II"},{type:"character-arc",title:"Character Arc",desc:"Want vs. need trajectories and transformation tracking.",icon:"alt_route",score:84,telemetry:"4 Major Protagonists"},{type:"continuity",title:"Continuity",desc:"Props, character locations, and temporal logic rules.",icon:"linear_scale",score:78,telemetry:"2 Minor Prop Conflicts"},{type:"story-structure",title:"Story Structure",desc:"Beat breakdowns, midpoint shifts and turning points.",icon:"account_tree",score:87,telemetry:"3-Act Paradigm Standard"},{type:"theme",title:"Theme",desc:"Core philosophical spines, motifs and moral arguments.",icon:"lightbulb",score:90,telemetry:"3 Tracked Motifs"},{type:"cinema",title:"Cinema",desc:"Visual storytelling, shot economy and set-piece power.",icon:"videocam",score:85,telemetry:"Cinematic Visual Index"},{type:"scene",title:"Scene Analysis",desc:"Deep dive breakdown of goals, conflict and polarity.",icon:"movie",score:86,telemetry:"Scene 18 Active Scope"},{type:"formatting",title:"Formatting",desc:"Standard industry margins, sluglines and font rules.",icon:"rule",score:94,telemetry:"Standard Guild Rules"},{type:"production",title:"Production",desc:"Locations, shooting cast, props and cost estimators.",icon:"movie_creation",score:80,telemetry:"24 Practical Locations"}];return`
+    ${T("Intelligence","Analyse Individually")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -1389,14 +1389,779 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
       </div>
     </main>
 
-    ${T("intelligence")}
-  `}function Ke(t){const e=document.getElementById("analysis-filter-input");e&&(e.oninput=a=>{const s=a.target.value.toLowerCase().trim();document.querySelectorAll("#analysis-tiles-grid .analysis-tile").forEach(n=>{const l=n.getAttribute("data-keyword")||"";n.style.display=l.includes(s)?"flex":"none"})})}const ae={pacing:{title:"Pacing Analysis",score:82,icon:"speed",desc:"Scene duration variance, narrative tempo and page-turn velocity.",questions:["Where does the pace drag in Act II?","Find scenes over 4 pages","Show action-to-dialogue ratios"],findings:[{scene:"SCENE 14 · Dockside Perimeter · Pg 36",act:"Act II",title:"Action beats slow down before major confrontation",desc:"Extended exposition between dock guards lowers tension prior to container breach.",targetScene:14},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II Midpoint",title:"Peak narrative rhythm",desc:"Fast intercut dialogue creates maximum urgency before floodgate breach.",targetScene:18},{scene:"SCENE 26 · Coastal Highway · Pg 68",act:"Act III",title:"High velocity turning point",desc:"Pursuit cadence maintains optimal beats per page.",targetScene:26}]},dialogue:{title:"Dialogue Analysis",score:89,icon:"chat",desc:"Cadence, subtext density, distinctive character voice profiles.",questions:["Are character voices distinctive?","Find on-the-nose exposition lines","Analyze dialogue subtext in Scene 18"],findings:[{scene:"SCENE 08 · Waterfront Diner · Pg 19",act:"Act I",title:"Subtext is understated and powerful",desc:"Kevin avoids speaking about his brother directly, communicating through silence and tea rituals.",targetScene:8},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Meera O.S. dialogue establishes authority",desc:"Radio chatter avoids fluff and communicates technical stakes concisely.",targetScene:18}]},emotion:{title:"Emotion Analysis",score:91,icon:"favorite",desc:"Catharsis trajectory, emotional resonance curves, character empathy indices.",questions:["Where does emotional vulnerability peak?","Track empathy trajectory for Kevin","Catharsis resolution in Act III"],findings:[{scene:"SCENE 12 · Father’s Workshop · Pg 28",act:"Act I",title:"Emotional anchor established",desc:"Familial debt and generational sacrifice ground Kevin’s reluctance to blow the whistle.",targetScene:12},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Desperation under rising water",desc:"Kevin’s fear of failing Meera is palpable as water rises past junction box.",targetScene:18}]},"character-arc":{title:"Character Arc Analysis",score:84,icon:"alt_route",desc:"Want vs. Need conflict, psychological transformation, fatal flaw resolution.",questions:["Does Kevin overcome his passivity?","Meera character transformation","Antagonist motivation clarity"],findings:[{scene:"SCENE 04 · Port Audit Room · Pg 09",act:"Act I",title:"Fatal Flaw: Silent Compliance",desc:"Kevin stamps irregular cargo manifests to keep peace with union superiors.",targetScene:4},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"The Point of No Return",desc:"Kevin cuts the emergency seal, consciously choosing rebellion over survival.",targetScene:18}]},continuity:{title:"Continuity Analysis",score:78,icon:"linear_scale",desc:"Prop tracking, character spatial locations, timeline consistency checks.",questions:["Check prop handover in Scene 18","Is time of day consistent across Act II?","Track the brass seal location"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Hydro-sensor probe referenced before retrieval",desc:"Verify Kevin picked up copper probe in Scene 16 or carries it on belt.",targetScene:18},{scene:"SCENE 22 · Pumping Station · Pg 58",act:"Act II",title:"Flashlight state discrepancy",desc:"Ensure flashlight was retrieved after water surge in Scene 19.",targetScene:22}]},"story-structure":{title:"Story Structure Analysis",score:87,icon:"account_tree",desc:"Inciting incident, plot points, midpoint shift, climax architecture.",questions:["Is midpoint clearly defined?","Evaluate climax timing on page 88","Are 3-act beats aligned?"],findings:[{scene:"SCENE 06 · Customs Registry · Pg 14",act:"Inciting Incident",title:"Off-manifest container discovered",desc:"The inciting anomaly sets Kevin on irreversible investigative path.",targetScene:6},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Midpoint (Pg 48/96)",title:"Stakes escalate from civil to criminal",desc:"Kevin realizes his own brother commands the smuggling cartel.",targetScene:18}]},theme:{title:"Theme Analysis",score:90,icon:"lightbulb",desc:"Primary narrative spine: Complicity vs. Duty and moral accountability.",questions:["What is the central theme?","Where is loyalty tested?","Show recurring thematic motifs"],findings:[{scene:"SCENE 09 · Family Kitchen · Pg 22",act:"Act I",title:"Familial pressure as thematic catalyst",desc:"Kevin hides eviction notice, showing economic desperation fueling institutional silence.",targetScene:9},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Moral test faced directly",desc:"Kevin must decide whether to save his brother or save the port city from flooding.",targetScene:18},{scene:"SCENE 36 · Rooftop Overlook · Pg 94",act:"Act III",title:"Theme delivers its final statement",desc:"Accountability over self-preservation.",targetScene:36}]},cinema:{title:"Cinema & Visual Storytelling",score:85,icon:"videocam",desc:"Visual set-piece density, image systems, lighting and camera intentionality.",questions:["Check visual contrast between acts","Highlight cinematic set-pieces","Analyze color palette cues in action lines"],findings:[{scene:"SCENE 01 · Harbor Drone View · Pg 01",act:"Act I",title:"Strong establishing visual metaphor",desc:"Rusted shipping containers stacked like monoliths beneath smog.",targetScene:1},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"High visual tension",desc:"Red emergency beacons reflected in rising brackish water.",targetScene:18}]},scene:{title:"Scene Analysis",score:86,icon:"movie",desc:"Micro-structure of Scene 18: Objective, obstacle, polarity change.",questions:["What is the scene objective?","Where does tension peak?","How does polarity shift?"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Objective: Reroute electrical relay before surge",desc:"Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).",targetScene:18}]},formatting:{title:"Formatting & Guild Compliance",score:94,icon:"rule",desc:"Industry standard margin measurements, capitalization, slugline syntax.",questions:["Check standard industry margins","Find non-standard scene sluglines","Verify dialogue capitalization rules"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Perfect Courier Prime 12pt slugline",desc:"Margins, dual dialogue spacing, and transition tags meet Writers Guild standards.",targetScene:18}]},production:{title:"Production Breakdown",score:80,icon:"movie_creation",desc:"Locations, shooting days, practical elements, cast size breakdown.",questions:["How many practical locations?","Show scenes with special props","List one-off speaking roles"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Location: Wet Stage / Customs Interior",desc:"Requires controlled water flooding tank, hydro-sensor prop box, wet comm-link gear.",targetScene:18}]}};function Xe(t="pacing"){const e=ae[t]||ae.pacing,a=i.state.selectedScriptId||"chronicles-of-dust",s=i.state.scripts.find(n=>n.id===a)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2"};return`
-    ${$("Intelligence",e.title)}
+    ${P("intelligence")}
+  `}function Ke(t){const e=document.getElementById("analysis-filter-input");e&&(e.oninput=a=>{const s=a.target.value.toLowerCase().trim();document.querySelectorAll("#analysis-tiles-grid .analysis-tile").forEach(l=>{const n=l.getAttribute("data-keyword")||"";l.style.display=n.includes(s)?"flex":"none"})})}const ae={pacing:{title:"Pacing Analysis",score:82,icon:"speed",desc:"Scene duration variance, narrative tempo and page-turn velocity.",questions:["Where does the pace drag in Act II?","Find scenes over 4 pages","Show action-to-dialogue ratios"],findings:[{scene:"SCENE 14 · Dockside Perimeter · Pg 36",act:"Act II",title:"Action beats slow down before major confrontation",desc:"Extended exposition between dock guards lowers tension prior to container breach.",targetScene:14},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II Midpoint",title:"Peak narrative rhythm",desc:"Fast intercut dialogue creates maximum urgency before floodgate breach.",targetScene:18},{scene:"SCENE 26 · Coastal Highway · Pg 68",act:"Act III",title:"High velocity turning point",desc:"Pursuit cadence maintains optimal beats per page.",targetScene:26}]},dialogue:{title:"Dialogue Analysis",score:89,icon:"chat",desc:"Cadence, subtext density, distinctive character voice profiles.",questions:["Are character voices distinctive?","Find on-the-nose exposition lines","Analyze dialogue subtext in Scene 18"],findings:[{scene:"SCENE 08 · Waterfront Diner · Pg 19",act:"Act I",title:"Subtext is understated and powerful",desc:"Kevin avoids speaking about his brother directly, communicating through silence and tea rituals.",targetScene:8},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Meera O.S. dialogue establishes authority",desc:"Radio chatter avoids fluff and communicates technical stakes concisely.",targetScene:18}]},emotion:{title:"Emotion Analysis",score:91,icon:"favorite",desc:"Catharsis trajectory, emotional resonance curves, character empathy indices.",questions:["Where does emotional vulnerability peak?","Track empathy trajectory for Kevin","Catharsis resolution in Act III"],findings:[{scene:"SCENE 12 · Father’s Workshop · Pg 28",act:"Act I",title:"Emotional anchor established",desc:"Familial debt and generational sacrifice ground Kevin’s reluctance to blow the whistle.",targetScene:12},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Desperation under rising water",desc:"Kevin’s fear of failing Meera is palpable as water rises past junction box.",targetScene:18}]},"character-arc":{title:"Character Arc Analysis",score:84,icon:"alt_route",desc:"Want vs. Need conflict, psychological transformation, fatal flaw resolution.",questions:["Does Kevin overcome his passivity?","Meera character transformation","Antagonist motivation clarity"],findings:[{scene:"SCENE 04 · Port Audit Room · Pg 09",act:"Act I",title:"Fatal Flaw: Silent Compliance",desc:"Kevin stamps irregular cargo manifests to keep peace with union superiors.",targetScene:4},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"The Point of No Return",desc:"Kevin cuts the emergency seal, consciously choosing rebellion over survival.",targetScene:18}]},continuity:{title:"Continuity Analysis",score:78,icon:"linear_scale",desc:"Prop tracking, character spatial locations, timeline consistency checks.",questions:["Check prop handover in Scene 18","Is time of day consistent across Act II?","Track the brass seal location"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Hydro-sensor probe referenced before retrieval",desc:"Verify Kevin picked up copper probe in Scene 16 or carries it on belt.",targetScene:18},{scene:"SCENE 22 · Pumping Station · Pg 58",act:"Act II",title:"Flashlight state discrepancy",desc:"Ensure flashlight was retrieved after water surge in Scene 19.",targetScene:22}]},"story-structure":{title:"Story Structure Analysis",score:87,icon:"account_tree",desc:"Inciting incident, plot points, midpoint shift, climax architecture.",questions:["Is midpoint clearly defined?","Evaluate climax timing on page 88","Are 3-act beats aligned?"],findings:[{scene:"SCENE 06 · Customs Registry · Pg 14",act:"Inciting Incident",title:"Off-manifest container discovered",desc:"The inciting anomaly sets Kevin on irreversible investigative path.",targetScene:6},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Midpoint (Pg 48/96)",title:"Stakes escalate from civil to criminal",desc:"Kevin realizes his own brother commands the smuggling cartel.",targetScene:18}]},theme:{title:"Theme Analysis",score:90,icon:"lightbulb",desc:"Primary narrative spine: Complicity vs. Duty and moral accountability.",questions:["What is the central theme?","Where is loyalty tested?","Show recurring thematic motifs"],findings:[{scene:"SCENE 09 · Family Kitchen · Pg 22",act:"Act I",title:"Familial pressure as thematic catalyst",desc:"Kevin hides eviction notice, showing economic desperation fueling institutional silence.",targetScene:9},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Moral test faced directly",desc:"Kevin must decide whether to save his brother or save the port city from flooding.",targetScene:18},{scene:"SCENE 36 · Rooftop Overlook · Pg 94",act:"Act III",title:"Theme delivers its final statement",desc:"Accountability over self-preservation.",targetScene:36}]},cinema:{title:"Cinema & Visual Storytelling",score:85,icon:"videocam",desc:"Visual set-piece density, image systems, lighting and camera intentionality.",questions:["Check visual contrast between acts","Highlight cinematic set-pieces","Analyze color palette cues in action lines"],findings:[{scene:"SCENE 01 · Harbor Drone View · Pg 01",act:"Act I",title:"Strong establishing visual metaphor",desc:"Rusted shipping containers stacked like monoliths beneath smog.",targetScene:1},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"High visual tension",desc:"Red emergency beacons reflected in rising brackish water.",targetScene:18}]},scene:{title:"Scene Analysis",score:86,icon:"movie",desc:"Micro-structure of Scene 18: Objective, obstacle, polarity change.",questions:["What is the scene objective?","Where does tension peak?","How does polarity shift?"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Objective: Reroute electrical relay before surge",desc:"Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).",targetScene:18}]},formatting:{title:"Formatting & Guild Compliance",score:94,icon:"rule",desc:"Industry standard margin measurements, capitalization, slugline syntax.",questions:["Check standard industry margins","Find non-standard scene sluglines","Verify dialogue capitalization rules"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Perfect Courier Prime 12pt slugline",desc:"Margins, dual dialogue spacing, and transition tags meet Writers Guild standards.",targetScene:18}]},production:{title:"Production Breakdown",score:80,icon:"movie_creation",desc:"Locations, shooting days, practical elements, cast size breakdown.",questions:["How many practical locations?","Show scenes with special props","List one-off speaking roles"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Location: Wet Stage / Customs Interior",desc:"Requires controlled water flooding tank, hydro-sensor prop box, wet comm-link gear.",targetScene:18}]}};function Ye(t,e){const a=e.pages||96;switch(t){case"pacing":return`
+        <!-- 1. PACING: Main Pacing Curve Graph -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">show_chart</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Timeline Pace</h2>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
+              <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+              <span>${a} Pages Analyzed</span>
+            </div>
+          </div>
+
+          <!-- SVG Curve Container -->
+          <div class="relative w-full h-44 my-1 select-none bg-slate-50/60 rounded-xl p-2 border border-slate-100 overflow-hidden">
+            <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 340 140">
+              <defs>
+                <linearGradient id="pacingGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+                  <stop offset="0%" stop-color="#2563eb" stop-opacity="0.25"></stop>
+                  <stop offset="65%" stop-color="#2563eb" stop-opacity="0.05"></stop>
+                  <stop offset="100%" stop-color="#2563eb" stop-opacity="0.0"></stop>
+                </linearGradient>
+              </defs>
+              <!-- Average Tempo Guideline -->
+              <line stroke="#cbd5e1" stroke-dasharray="3 4" stroke-width="1" x1="10" x2="330" y1="75" y2="75"></line>
+              <text x="14" y="71" fill="#94a3b8" font-size="8" font-family="Inter" font-weight="600">Avg Tempo</text>
+
+              <!-- Area Fill -->
+              <path d="M 12 76 C 40 70, 60 45, 95 38 C 130 32, 160 115, 195 110 C 230 105, 260 25, 290 28 C 310 30, 325 55, 332 60 L 332 135 L 12 135 Z" fill="url(#pacingGradient)"></path>
+
+              <!-- Smooth Curve -->
+              <path d="M 12 76 C 40 70, 60 45, 95 38 C 130 32, 160 115, 195 110 C 230 105, 260 25, 290 28 C 310 30, 325 55, 332 60" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-width="2.5"></path>
+
+              <!-- Scene 04 Dot -->
+              <g class="cursor-pointer group" data-jump-scene="4">
+                <circle cx="58" cy="56" fill="#ffffff" r="4.5" stroke="#2563eb" stroke-width="2"></circle>
+                <text fill="#64748b" font-family="Inter" font-size="8.5" font-weight="600" text-anchor="middle" x="58" y="45">Sc. 04</text>
+              </g>
+
+              <!-- Scene 18 Dot (Highlighted Peak) -->
+              <g class="cursor-pointer group" data-jump-scene="18">
+                <circle class="animate-ping" cx="106" cy="38" fill="#2563eb" fill-opacity="0.2" r="7"></circle>
+                <circle cx="106" cy="38" fill="#2563eb" r="5" stroke="#ffffff" stroke-width="2"></circle>
+                <text fill="#1d4ed8" font-family="Plus Jakarta Sans" font-size="9.5" font-weight="700" text-anchor="middle" x="106" y="24">Sc. 18 (Peak)</text>
+              </g>
+
+              <!-- Scene 24 Dot (Pacing Dip) -->
+              <g class="cursor-pointer group" data-jump-scene="24">
+                <circle cx="195" cy="110" fill="#ffffff" r="4.5" stroke="#f59e0b" stroke-width="2"></circle>
+                <text fill="#d97706" font-family="Inter" font-size="8.5" font-weight="600" text-anchor="middle" x="195" y="127">Sc. 24 (Dip)</text>
+              </g>
+
+              <!-- Scene 31 Dot (Climax Surge) -->
+              <g class="cursor-pointer group" data-jump-scene="31">
+                <circle cx="282" cy="28" fill="#ffffff" r="4.5" stroke="#2563eb" stroke-width="2"></circle>
+                <text fill="#1e293b" font-family="Inter" font-size="8.5" font-weight="600" text-anchor="middle" x="282" y="17">Sc. 31</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Act Timeline Progress Labels -->
+          <div class="grid grid-cols-5 text-center text-[11px] text-slate-500 font-medium pt-1 border-t border-slate-100">
+            <span>Beginning</span>
+            <span>Act I</span>
+            <span class="text-blue-600 font-semibold">Act II Mid</span>
+            <span>Act III Climax</span>
+            <span>Ending</span>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">insights</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              The story moves steadily at first, slows down in the middle (Scene 14–24), and accelerates into peak velocity leading into the climax.
+            </p>
+          </div>
+        </section>
+      `;case"dialogue":return`
+        <!-- 2. DIALOGUE: Waveform Distribution Chart -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">chat</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Dialogue Distribution & Density</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">42 Exchanges</span>
+          </div>
+
+          <!-- Bar Sequence Graph -->
+          <div class="bg-slate-50/60 rounded-xl p-3 border border-slate-100 flex flex-col gap-2">
+            <div class="h-28 w-full flex items-end justify-between gap-1 sm:gap-1.5 px-1">
+              <!-- Act I: Lean -->
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act I: Sc. 01-04">
+                <div class="w-full bg-blue-200 rounded-t-sm transition-all group-hover:bg-blue-400" style="height: 28%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act I: Sc. 05-08">
+                <div class="w-full bg-blue-300 rounded-t-sm transition-all group-hover:bg-blue-400" style="height: 38%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act I: Sc. 09-12">
+                <div class="w-full bg-blue-400 rounded-t-sm transition-all group-hover:bg-blue-500" style="height: 48%;"></div>
+              </div>
+              <!-- Act II-A: Heaviest Dialogue -->
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II: Sc. 14">
+                <div class="w-full bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-700" style="height: 74%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II Midpoint: Sc. 18 (Peak)">
+                <div class="w-full bg-blue-700 rounded-t-sm ring-2 ring-blue-300 transition-all" style="height: 94%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II: Sc. 20">
+                <div class="w-full bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-700" style="height: 82%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II: Sc. 24">
+                <div class="w-full bg-blue-500 rounded-t-sm transition-all group-hover:bg-blue-600" style="height: 68%;"></div>
+              </div>
+              <!-- Act II-B: Exposition -->
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II: Sc. 28">
+                <div class="w-full bg-blue-600 rounded-t-sm transition-all group-hover:bg-blue-700" style="height: 84%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act II: Sc. 30">
+                <div class="w-full bg-blue-400 rounded-t-sm transition-all group-hover:bg-blue-500" style="height: 56%;"></div>
+              </div>
+              <!-- Act III: Visual & Action Sparse -->
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act III: Climax Sc. 32">
+                <div class="w-full bg-blue-300 rounded-t-sm transition-all group-hover:bg-blue-400" style="height: 34%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Act III: Sc. 34">
+                <div class="w-full bg-blue-200 rounded-t-sm transition-all group-hover:bg-blue-400" style="height: 24%;"></div>
+              </div>
+              <div class="flex-1 flex flex-col items-center justify-end h-full group" title="Ending: Sc. 36">
+                <div class="w-full bg-blue-200 rounded-t-sm transition-all group-hover:bg-blue-300" style="height: 18%;"></div>
+              </div>
+            </div>
+
+            <!-- Axis Labels -->
+            <div class="flex justify-between items-center text-[10px] text-slate-400 pt-1 font-medium">
+              <span>Beginning</span>
+              <span>Act I</span>
+              <span class="text-blue-600 font-bold">Act II (Dense Exchanges)</span>
+              <span>Act III (Action Sparse)</span>
+              <span>Ending</span>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">record_voice_over</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              Dialogue density peaks around Act II midpoint (Scene 18), shifting into sparse, visual action exchanges during the Act III climax.
+            </p>
+          </div>
+        </section>
+      `;case"emotion":return`
+        <!-- 3. EMOTION: Emotional Movement Curve -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">favorite</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Emotional Trajectory & Catharsis</h2>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Calm</span>
+              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span>Tension</span>
+            </div>
+          </div>
+
+          <!-- SVG Organic Emotional Curve -->
+          <div class="relative w-full h-44 my-1 select-none bg-slate-50/60 rounded-xl p-2 border border-slate-100 overflow-hidden">
+            <svg class="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 340 140">
+              <defs>
+                <linearGradient id="emotionGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+                  <stop offset="0%" stop-color="#2563eb" stop-opacity="0.22"></stop>
+                  <stop offset="100%" stop-color="#2563eb" stop-opacity="0.0"></stop>
+                </linearGradient>
+              </defs>
+              <line stroke="#e2e8f0" stroke-dasharray="3 3" stroke-width="1" x1="10" x2="330" y1="35" y2="35"></line>
+              <line stroke="#e2e8f0" stroke-dasharray="3 3" stroke-width="1" x1="10" x2="330" y1="75" y2="75"></line>
+              <line stroke="#e2e8f0" stroke-dasharray="3 3" stroke-width="1" x1="10" x2="330" y1="115" y2="115"></line>
+
+              <!-- Curve Fill -->
+              <path d="M 15 110 C 45 112, 60 102, 75 92 C 105 72, 135 78, 160 55 C 190 28, 220 70, 245 42 C 275 14, 295 18, 325 85 L 325 130 L 15 130 Z" fill="url(#emotionGradient)"></path>
+              <!-- Curve Stroke -->
+              <path d="M 15 110 C 45 112, 60 102, 75 92 C 105 72, 135 78, 160 55 C 190 28, 220 70, 245 42 C 275 14, 295 18, 325 85" fill="none" stroke="#2563eb" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+
+              <!-- Scene 07 Marker (Quiet Setup) -->
+              <g class="cursor-pointer group" data-jump-scene="7">
+                <circle cx="75" cy="92" fill="#ffffff" r="4.5" stroke="#2563eb" stroke-width="2"></circle>
+                <text fill="#64748b" font-family="Inter" font-size="8" font-weight="600" text-anchor="middle" x="75" y="82">Sc. 07 (Calm)</text>
+              </g>
+
+              <!-- Scene 18 Marker (Rising Shift) -->
+              <g class="cursor-pointer group" data-jump-scene="18">
+                <circle cx="160" cy="55" fill="#ffffff" r="4.5" stroke="#2563eb" stroke-width="2"></circle>
+                <text fill="#2563eb" font-family="Inter" font-size="8" font-weight="700" text-anchor="middle" x="160" y="44">Sc. 18 (Surge)</text>
+              </g>
+
+              <!-- Scene 31 Marker (Climactic Peak) -->
+              <g class="cursor-pointer group" data-jump-scene="31">
+                <circle class="animate-ping" cx="275" cy="18" fill="#2563eb" fill-opacity="0.3" r="6"></circle>
+                <circle cx="275" cy="18" fill="#2563eb" r="5" stroke="#ffffff" stroke-width="2"></circle>
+                <text fill="#1d4ed8" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" text-anchor="middle" x="275" y="10">Sc. 31 (Peak Catharsis)</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- Phase Labels -->
+          <div class="grid grid-cols-5 text-center text-[10px] text-slate-500 font-medium pt-1 border-t border-slate-100">
+            <span>Opening</span>
+            <span>Act I Setup</span>
+            <span class="text-blue-600 font-semibold">Act II Tension</span>
+            <span>Act III Climax</span>
+            <span>Resolution</span>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">sentiment_content</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              The emotional level stays calm and reflective at first, escalates under moral jeopardy in Act II, and delivers cathartic release in the final sequences.
+            </p>
+          </div>
+        </section>
+      `;case"character-arc":return`
+        <!-- 4. CHARACTER ARC: Beginning -> Middle -> Ending Journey Diagram -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">alt_route</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Character Journey & Transformation</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">Active Protagonist</span>
+          </div>
+
+          <!-- Character Selector Pills -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1" id="char-arc-selector">
+            <button type="button" class="char-pill active px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs" data-char="kevin">
+              <span class="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center text-[10px]">K</span>
+              <span>Kevin (Protagonist · 48 scenes)</span>
+            </button>
+            <button type="button" class="char-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors" data-char="meera">
+              <span class="w-4 h-4 rounded-full bg-slate-300 flex items-center justify-center text-[10px]">M</span>
+              <span>Meera (Confidante · 22 scenes)</span>
+            </button>
+          </div>
+
+          <!-- Journey Step Diagram (Beginning -> Middle -> Ending) -->
+          <div class="relative flex flex-col gap-4 pl-2 py-1">
+            <!-- Step 1: Beginning -->
+            <div class="relative flex items-start gap-3">
+              <div class="absolute left-3.5 top-6 bottom-0 w-0.5 bg-slate-200"></div>
+              <div class="w-7 h-7 rounded-full bg-slate-100 border-2 border-slate-300 flex items-center justify-center shrink-0 z-10 text-slate-600 text-xs font-bold">1</div>
+              <div class="flex flex-col min-w-0 pt-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-slate-900 uppercase tracking-wide">Beginning · Scene 01–11</span>
+                  <span class="px-2 py-0.5 rounded bg-slate-100 text-[10px] text-slate-600 font-mono">Fatal Flaw</span>
+                </div>
+                <h3 class="text-xs font-bold text-slate-800 mt-1">Silent Compliance & Institutional Fear</h3>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Hesitant and guarded, Kevin stamps irregular manifests to keep peace with superiors and protect familial debt.</p>
+              </div>
+            </div>
+
+            <!-- Step 2: Middle / Turning Point -->
+            <div class="relative flex items-start gap-3">
+              <div class="absolute left-3.5 top-6 bottom-0 w-0.5 bg-blue-300"></div>
+              <div class="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 z-10 text-xs font-bold shadow-xs">2</div>
+              <div class="flex flex-col min-w-0 pt-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-blue-600 uppercase tracking-wide">Middle · Scene 18 (Midpoint)</span>
+                  <span class="px-2 py-0.5 rounded bg-blue-50 text-[10px] text-blue-700 font-semibold font-mono">Turning Point</span>
+                </div>
+                <h3 class="text-xs font-bold text-slate-900 mt-1">The Point of No Return</h3>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Cuts the emergency floodgate seal, actively defying union directives to prevent port catastrophe.</p>
+              </div>
+            </div>
+
+            <!-- Step 3: Ending / Resolution -->
+            <div class="relative flex items-start gap-3">
+              <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 z-10 text-xs font-bold shadow-xs">3</div>
+              <div class="flex flex-col min-w-0 pt-0.5">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-emerald-700 uppercase tracking-wide">Ending · Scene 36–38</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-50 text-[10px] text-emerald-700 font-semibold font-mono">Resolution</span>
+                </div>
+                <h3 class="text-xs font-bold text-slate-900 mt-1">Selfless Moral Accountability</h3>
+                <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">Hands over the ledger to the public audit without demanding personal immunity, completing moral transformation.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">psychology</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              The protagonist completes a verified 3-stage transformation: overcoming passivity at the midpoint and prioritizing moral duty over self-preservation in the climax.
+            </p>
+          </div>
+        </section>
+      `;case"continuity":return`
+        <!-- 5. CONTINUITY: Continuity Timeline & Track Matrix -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">linear_scale</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Continuity Timeline & Logic Matrix</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">118 Pages Indexed</span>
+          </div>
+
+          <!-- Act Flow Visualizer Track -->
+          <div class="bg-slate-50/60 rounded-xl p-3.5 border border-slate-100 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-1">
+              <span>Act I (Pg 1-32)</span>
+              <span>Act II (Pg 33-88)</span>
+              <span>Act III (Pg 89-118)</span>
+            </div>
+            
+            <div class="relative w-full h-8 flex items-center my-1">
+              <div class="absolute inset-x-2 h-2 bg-slate-200 rounded-full"></div>
+              <div class="absolute left-2 w-1/3 h-2 bg-blue-300 rounded-full"></div>
+              <div class="absolute left-1/3 w-1/2 h-2 bg-blue-600 rounded-full"></div>
+              
+              <!-- Track Nodes -->
+              <div class="relative w-full flex items-center justify-between px-2">
+                <div class="flex flex-col items-center">
+                  <span class="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-white shadow-xs"></span>
+                  <span class="text-[9px] font-semibold text-slate-500 mt-1">Sc. 01</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="w-4 h-4 rounded-full bg-amber-500 ring-4 ring-amber-100 flex items-center justify-center animate-pulse">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  </span>
+                  <span class="text-[9px] font-bold text-amber-600 mt-1">Sc. 14 (Prop)</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-white shadow-xs"></span>
+                  <span class="text-[9px] font-semibold text-slate-500 mt-1">Sc. 18</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="w-4 h-4 rounded-full bg-amber-500 ring-4 ring-amber-100 flex items-center justify-center">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  </span>
+                  <span class="text-[9px] font-bold text-amber-600 mt-1">Sc. 22 (Time)</span>
+                </div>
+                <div class="flex flex-col items-center">
+                  <span class="w-3.5 h-3.5 rounded-full bg-blue-600 ring-4 ring-white shadow-xs"></span>
+                  <span class="text-[9px] font-semibold text-slate-500 mt-1">Sc. 36</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Dimensions Grid -->
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">location_on</span>
+                Locations (24)
+              </span>
+              <span class="text-slate-500 text-[11px]">14 Int · 10 Ext verified across sequence</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">schedule</span>
+                Time Progression
+              </span>
+              <span class="text-slate-500 text-[11px]">Continuous night rainfall timeline</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">group</span>
+                Characters (18)
+              </span>
+              <span class="text-slate-500 text-[11px]">Spatial presence synchronized in rooms</span>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-amber-600">construction</span>
+                Props (32)
+              </span>
+              <span class="text-amber-700 font-semibold text-[11px]">1 handover flagged in Scene 18</span>
+            </div>
+          </div>
+        </section>
+      `;case"story-structure":return`
+        <!-- 6. STORY STRUCTURE: Narrative Structure Map -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">account_tree</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Narrative Structure Map</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">3-Act Framework</span>
+          </div>
+
+          <!-- Multi-Beat Segmented Progress Bar -->
+          <div class="bg-slate-50/60 rounded-xl p-3.5 border border-slate-100 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500">
+              <span>Beginning (Act I · 25%)</span>
+              <span class="text-blue-600">Middle (Act II · 55%)</span>
+              <span>Ending (Act III · 20%)</span>
+            </div>
+
+            <div class="relative w-full h-3 rounded-full bg-slate-200 flex overflow-hidden">
+              <div class="h-full bg-blue-300" style="width: 25%;"></div>
+              <div class="h-full bg-blue-600" style="width: 55%;"></div>
+              <div class="h-full bg-indigo-700" style="width: 20%;"></div>
+            </div>
+
+            <!-- Milestone Grid -->
+            <div class="grid grid-cols-4 gap-1 pt-1 text-[11px]">
+              <div class="flex flex-col">
+                <span class="font-bold text-blue-700">Inciting Event</span>
+                <span class="text-slate-500">Sc. 06 (p. 14)</span>
+              </div>
+              <div class="flex flex-col text-center">
+                <span class="font-bold text-blue-700">Midpoint Shift</span>
+                <span class="text-slate-500">Sc. 18 (p. 48)</span>
+              </div>
+              <div class="flex flex-col text-center">
+                <span class="font-bold text-blue-700">Climax Crisis</span>
+                <span class="text-slate-500">Sc. 31 (p. 82)</span>
+              </div>
+              <div class="flex flex-col text-right">
+                <span class="font-bold text-slate-900">Resolution</span>
+                <span class="text-slate-500">Sc. 36 (p. 94)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="mt-1 p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">hub</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              The screenplay displays a canonical three-act foundation with an impactful midpoint turn. Act II maintains high narrative tension without losing forward momentum.
+            </p>
+          </div>
+        </section>
+      `;case"theme":return`
+        <!-- 7. THEME: Main Thematic Representation & Relationship Tree -->
+        <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">hub</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Thematic Core & Motifs</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">3 Motifs Tracked</span>
+          </div>
+
+          <!-- Primary Spine Card -->
+          <div class="bg-blue-50/70 border border-blue-100 rounded-xl p-4 flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-700 font-mono">Primary Narrative Spine</span>
+              <span class="material-symbols-outlined text-[16px] text-blue-600">verified</span>
+            </div>
+            <h3 class="font-heading text-base font-bold text-slate-900">Complicity vs. Duty</h3>
+            <p class="text-xs text-slate-600 leading-relaxed">The burden of moral responsibility when survival demands silence.</p>
+          </div>
+
+          <!-- 2 Sub-themes in Compact Cards -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col gap-1">
+              <div class="flex items-center gap-1.5 text-slate-800">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">groups</span>
+                <span class="text-xs font-bold">Family & Debt</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-snug">The recurring pressure of generational expectations.</p>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col gap-1">
+              <div class="flex items-center gap-1.5 text-slate-800">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">corporate_fare</span>
+                <span class="text-xs font-bold">Institutional Silence</span>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-snug">Systems that compel honest characters to compromise.</p>
+            </div>
+          </div>
+
+          <!-- Thematic Relationship Structure / Connections -->
+          <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80 flex flex-col gap-2.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 font-heading">Thematic Scene Connections</span>
+            
+            <div class="flex flex-col gap-2 font-mono text-[11px] text-slate-700 pl-1">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+                <span class="font-bold text-slate-900">PRIMARY: Complicity vs Duty</span>
+              </div>
+              <div class="pl-4 border-l-2 border-slate-200 flex flex-col gap-1.5 text-slate-600">
+                <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                  <span>├── Moral accountability</span>
+                  <span class="text-blue-600 font-semibold font-sans text-[10px]">Scene 18 · Midpoint</span>
+                </div>
+                <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                  <span>├── Family economic pressure</span>
+                  <span class="text-slate-500 font-semibold font-sans text-[10px]">Scene 09 · Kitchen</span>
+                </div>
+                <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200/60">
+                  <span>└── Public accountability</span>
+                  <span class="text-blue-600 font-semibold font-sans text-[10px]">Scene 36 · Rooftop</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Context Quote / Synthesis Card -->
+          <div class="bg-slate-100/70 rounded-xl p-3 flex items-start gap-2 border border-slate-200/50">
+            <span class="material-symbols-outlined text-slate-400 text-[18px] shrink-0 mt-0.5">format_quote</span>
+            <p class="text-xs text-slate-600 italic leading-relaxed">
+              "The thematic framework consistently reinforces moral accountability, resonating through character choices in every act."
+            </p>
+          </div>
+        </section>
+      `;case"cinema":return`
+        <!-- 8. CINEMA: Cinematic Dynamics & Visual Opportunities -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">videocam</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Cinematic Dynamics & Visual Storytelling</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">Visual Grammar</span>
+          </div>
+
+          <!-- Visual Breakdown: Density across Act I, II, III -->
+          <div class="bg-slate-50/60 rounded-xl p-4 border border-slate-100 flex flex-col gap-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800">Visual Action vs. Dialogue Exposition</span>
+              <div class="flex items-center gap-3 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600"></span>Visual Density</span>
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span>Exposition</span>
+              </div>
+            </div>
+
+            <!-- Act Meters -->
+            <div class="space-y-2.5">
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-600 mb-1">
+                  <span>Act I: Setup & Atmosphere</span>
+                  <span class="font-bold text-slate-900">88% Visual</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-600 rounded-full" style="width: 88%;"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-600 mb-1">
+                  <span>Act II: Confrontation & Rising Surge</span>
+                  <span class="font-bold text-slate-900">76% Visual</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-600 rounded-full" style="width: 76%;"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-[11px] text-slate-600 mb-1">
+                  <span>Act III: Climax & Resolution</span>
+                  <span class="font-bold text-slate-900">91% Visual</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-full bg-blue-600 rounded-full" style="width: 91%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Set-Pieces Visual Opportunities -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">photo_camera</span>
+                Visual Metaphor
+              </span>
+              <p class="text-slate-500 text-[11px]">Rusted shipping containers stacked like monoliths beneath smog (Scene 01).</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1">
+              <span class="font-bold text-slate-900 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">light_mode</span>
+                Lighting & Color Cues
+              </span>
+              <p class="text-slate-500 text-[11px]">Red emergency beacons reflected in rising brackish water (Scene 18).</p>
+            </div>
+          </div>
+        </section>
+      `;case"formatting":return`
+        <!-- 9. FORMATTING: Formatting Health Visual & Guild Compliance -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">rule</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Screenplay Formatting Health</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">Standard Guild Rules</span>
+          </div>
+
+          <!-- Compliance Checklist & Meters -->
+          <div class="bg-slate-50/60 rounded-xl p-4 border border-slate-100 space-y-3">
+            <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Compliance across ${a} pages</span>
+              <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[15px]">check_circle</span>
+                Guild Approved
+              </span>
+            </div>
+
+            <!-- Metric 1: Headings -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-700 font-medium">Scene Heading Syntax (INT./EXT.)</span>
+                <span class="text-slate-900 font-bold">96% ✓</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width: 96%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 2: Indentation -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-700 font-medium">Character & Dialogue Indentation</span>
+                <span class="text-slate-900 font-bold">98% ✓</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width: 98%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 3: Sluglines -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-700 font-medium">Slugline Conventions & Capitalization</span>
+                <span class="text-slate-900 font-bold">91% ✓</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width: 91%;"></div>
+              </div>
+            </div>
+
+            <!-- Metric 4: Action Density -->
+            <div class="space-y-1">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-700 font-medium">Action Paragraph Density (&le;4 lines)</span>
+                <span class="text-slate-900 font-bold">94% ✓</span>
+              </div>
+              <div class="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width: 94%;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-emerald-600 text-[18px] shrink-0 mt-0.5">verified</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              Screenplay strictly follows standard Writers Guild Courier Prime formatting conventions with standard margins and scene slugline structure.
+            </p>
+          </div>
+        </section>
+      `;case"production":return`
+        <!-- 10. PRODUCTION: Production Summary & Logistics Breakdown -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">movie_creation</span>
+              <h2 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight">Production Breakdown & Practical Elements</h2>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">Practical Elements</span>
+          </div>
+
+          <!-- 4-Grid Metric Blocks -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">LOCATIONS</span>
+              <span class="font-heading text-xl font-bold text-slate-900">24</span>
+              <span class="text-[11px] text-slate-500 mt-0.5">14 Int · 10 Ext</span>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">CHARACTERS</span>
+              <span class="font-heading text-xl font-bold text-slate-900">18</span>
+              <span class="text-[11px] text-slate-500 mt-0.5">9 Speaking · 9 Background</span>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">PROPS</span>
+              <span class="font-heading text-xl font-bold text-slate-900">32</span>
+              <span class="text-[11px] text-slate-500 mt-0.5">5 Key Story Props</span>
+            </div>
+
+            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200/70 flex flex-col">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">SPECIAL REQS</span>
+              <span class="font-heading text-xl font-bold text-slate-900">4</span>
+              <span class="text-[11px] text-slate-500 mt-0.5">Night Rain, Wet Tank, FX</span>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">warehouse</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              Extracted practical elements across ${a} pages. Primary production weight resides in Act II harbor logistics and wet stage setups (Scenes 14–22).
+            </p>
+          </div>
+        </section>
+      `;case"scene":return`
+        <!-- 11. SCENE ANALYSIS: Dominant Scene Breakdown (Purpose, Conflict, What Changes) -->
+        <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-4">
+          <!-- Slugline Header Banner -->
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-blue-600 font-mono">Target Scene Slugline</span>
+              <span class="text-[11px] font-medium text-slate-500">Act II Midpoint · Pg 48 · ~3.5 min est.</span>
+            </div>
+            <h2 class="font-heading font-bold text-base text-slate-900 tracking-tight">
+              SCENE 18 · INT. CUSTOMS OFFICE - NIGHT
+            </h2>
+          </div>
+
+          <!-- 3 Dominant Analysis Rows -->
+          <div class="flex flex-col divide-y divide-slate-100 rounded-xl border border-slate-200/80 bg-white overflow-hidden">
+            <!-- Purpose Row -->
+            <div class="p-3.5 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">flag</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">PURPOSE</span>
+                <p class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
+                  Kevin attempts to reroute the electrical relay before the surge floods the basement archives.
+                </p>
+              </div>
+            </div>
+
+            <!-- Conflict Row -->
+            <div class="p-3.5 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">crisis_alert</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">CONFLICT</span>
+                <p class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
+                  Rising water breaches the junction box while automated emergency flood doors trigger lockouts, trapping him inside.
+                </p>
+              </div>
+            </div>
+
+            <!-- What Changes Row -->
+            <div class="p-3.5 flex items-start gap-3">
+              <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">WHAT CHANGES</span>
+                <p class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
+                  Kevin cuts the emergency seal and refuses to sign the false manifest, irreversibly shifting from passive worker to active resistance.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plain English Synthesis -->
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">movie</span>
+            <p class="text-xs text-slate-700 leading-relaxed">
+              Polarity shifts from cautious optimism (+1) to catastrophic physical trap and moral awakening (-2), marking the central pivot of the screenplay.
+            </p>
+          </div>
+        </section>
+      `;default:return""}}function Xe(t="pacing"){const e=ae[t]||ae.pacing,a=i.state.selectedScriptId||"chronicles-of-dust",s=i.state.scripts.find(l=>l.id===a)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96};return`
+    ${T("Intelligence",e.title)}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
-        <!-- Sub-header Navigation Row -->
+        <!-- 1. SUB-HEADER NAVIGATION ROW -->
         <div class="flex items-center justify-between">
           <a href="/intelligence/analysis" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -1408,11 +2173,11 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           </div>
         </div>
 
-        <!-- Section Title -->
+        <!-- Section Title Header -->
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-600 text-[20px]">${e.icon}</span>
+              <span class="material-symbols-outlined text-blue-600 text-[22px]">${e.icon}</span>
               <h1 class="font-heading text-xl font-bold text-slate-900 tracking-tight">${e.title}</h1>
             </div>
             <p class="text-xs text-slate-500 mt-0.5">${e.desc}</p>
@@ -1423,7 +2188,7 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           </div>
         </div>
 
-        <!-- AI Query Box with Suggestion Pills -->
+        <!-- 2. AI QUERY BOX with Suggestion Pills -->
         <div class="flex flex-col gap-2">
           <div class="relative flex items-center bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-xs focus-within:border-blue-600 transition-colors">
             <span class="material-symbols-outlined text-[18px] text-blue-600 mr-2 shrink-0">auto_awesome</span>
@@ -1434,9 +2199,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           </div>
 
           <div class="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
-            ${e.questions.map(n=>`
-              <button type="button" class="query-pill shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700 hover:bg-slate-50 transition-colors shadow-xs active:scale-95" data-query="${n}">
-                ${n}
+            ${e.questions.map(l=>`
+              <button type="button" class="query-pill shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700 hover:bg-slate-50 transition-colors shadow-xs active:scale-95" data-query="${l}">
+                ${l}
               </button>
             `).join("")}
           </div>
@@ -1445,27 +2210,39 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           <div id="vector-ai-answer" class="hidden bg-white border border-blue-100 rounded-xl p-3 text-xs text-slate-700 shadow-xs leading-relaxed"></div>
         </div>
 
-        <!-- Findings List -->
+        <!-- 3. SCORE CARD (GLOBAL REQUIRED STRUCTURE) -->
+        <div class="bg-white rounded-2xl py-4 px-6 shadow-xs border border-slate-200/80 flex items-center justify-center">
+          <div class="flex items-baseline gap-1.5">
+            <span class="font-heading font-extrabold text-3xl sm:text-4xl text-blue-600 tracking-tight">${e.score}</span>
+            <span class="text-xs font-semibold text-slate-400">/ 100 Index</span>
+          </div>
+        </div>
+
+        <!-- 4. MAIN ANALYSIS VISUAL / CONTENT (MANDATORY & RESTORED) -->
+        ${Ye(t,s)}
+
+        <!-- 5. IMPORTANT FINDINGS (KEY SCENE FINDINGS) -->
         <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-500 font-heading">Key Scene Findings</span>
             <span class="text-[11px] text-slate-400 font-medium">${e.findings.length} findings tracked</span>
           </div>
 
-          ${e.findings.map(n=>`
+          ${e.findings.map(l=>`
             <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${n.scene}</span>
-                <span class="text-[11px] font-medium text-slate-400">${n.act}</span>
+                <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${l.scene}</span>
+                <span class="text-[11px] font-medium text-slate-400">${l.act}</span>
               </div>
               <div class="flex flex-col">
-                <h3 class="text-xs sm:text-sm font-bold text-slate-900">${n.title}</h3>
-                <p class="text-xs text-slate-600 mt-1 leading-relaxed">${n.desc}</p>
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900">${l.title}</h3>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">${l.desc}</p>
               </div>
               <div class="pt-2 flex justify-end border-t border-slate-100">
-                <button type="button" class="btn-open-editor-scene px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs transition-all" data-scene="${n.targetScene}">
+                <!-- 6. OPEN IN EDITOR BUTTON -->
+                <button type="button" class="btn-open-editor-scene px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs transition-all" data-scene="${l.targetScene}">
                   <span class="material-symbols-outlined text-[15px]">edit_note</span>
-                  <span>Open in Editor (Scene ${n.targetScene})</span>
+                  <span>Open in Editor (Scene ${l.targetScene})</span>
                 </button>
               </div>
             </div>
@@ -1475,9 +2252,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
       </div>
     </main>
 
-    ${T("intelligence")}
-  `}function Ye(t,e){const a=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".btn-open-editor-scene").forEach(r=>{r.onclick=()=>{const c=r.getAttribute("data-scene");i.setState({currentSceneId:c}),f(`Jumping to Scene ${c} in Editor`),e(`/editor/${a}?scene=${c}`)}});const s=document.getElementById("vector-ai-input"),n=document.getElementById("vector-ai-submit"),l=document.getElementById("vector-ai-answer");async function u(r){if(!r||!l)return;l.classList.remove("hidden"),l.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing narrative beats...</span>';const c=await re(r,a);l.textContent=c}n&&s&&(n.onclick=()=>u(s.value.trim()),s.onkeydown=r=>{r.key==="Enter"&&u(s.value.trim())}),document.querySelectorAll(".query-pill").forEach(r=>{r.onclick=()=>{const c=r.getAttribute("data-query");s&&(s.value=c),u(c)}})}function Qe(){const t=i.state.currentUser||{name:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return i.state.settings,`
-    ${$("Profile","Account & preferences.")}
+    ${P("intelligence")}
+  `}function Qe(t,e){const a=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".btn-open-editor-scene").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-scene");i.setState({currentSceneId:r}),u(`Jumping to Scene ${r} in Editor`),e(`/editor/${a}?scene=${r}`)}}),document.querySelectorAll("[data-jump-scene]").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-jump-scene");i.setState({currentSceneId:r}),u(`Jumping to Scene ${r} in Editor`),e(`/editor/${a}?scene=${r}`)}}),document.querySelectorAll("#char-arc-selector .char-pill").forEach(o=>{o.onclick=()=>{document.querySelectorAll("#char-arc-selector .char-pill").forEach(c=>{c.className="char-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"}),o.className="char-pill active px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs";const r=o.getAttribute("data-char");u(`Switched active character focus to ${r==="meera"?"Meera":"Kevin"}`)}});const s=document.getElementById("vector-ai-input"),l=document.getElementById("vector-ai-submit"),n=document.getElementById("vector-ai-answer");async function p(o){if(!o||!n)return;n.classList.remove("hidden"),n.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing narrative beats...</span>';const r=await re(o,a);n.textContent=r}l&&s&&(l.onclick=()=>p(s.value.trim()),s.onkeydown=o=>{o.key==="Enter"&&p(s.value.trim())}),document.querySelectorAll(".query-pill").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-query");s&&(s.value=r),p(r)}})}function Ze(){const t=i.state.currentUser||{name:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return i.state.settings,`
+    ${T("Profile","Account & preferences.")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
@@ -1706,9 +2483,9 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
 
     </main>
 
-    ${T("profile")}
-  `}function Ze(t){const e=document.getElementById("settings-search-input");e&&(e.oninput=x=>{const g=x.target.value.toLowerCase().trim();document.querySelectorAll("#settings-list .setting-item").forEach(S=>{const j=S.textContent.toLowerCase();S.style.display=j.includes(g)?"flex":"none"})}),document.querySelectorAll(".setting-item").forEach(x=>{x.onclick=()=>{const g=x.querySelector(".font-semibold")?.textContent;f(`${g} settings are up to date`)}});const a=document.getElementById("modal-edit-profile"),s=document.getElementById("trigger-modal-email"),n=document.getElementById("edit-avatar-btn"),l=document.getElementById("form-update-profile");function u(x){x?a?.classList.remove("hidden"):a?.classList.add("hidden")}s&&(s.onclick=()=>u(!0)),n&&(n.onclick=()=>u(!0)),document.querySelectorAll(".close-profile-modal").forEach(x=>x.onclick=()=>u(!1)),l&&(l.onsubmit=async x=>{x.preventDefault();const g=document.getElementById("prof-input-name").value,S=document.getElementById("prof-input-headline").value,j=document.getElementById("prof-input-email").value;await $e({name:g,headline:S,email:j}),u(!1),f("Profile updated successfully"),t("/profile")});const r=document.getElementById("modal-security"),c=document.getElementById("trigger-modal-password"),o=document.getElementById("form-update-pw");function d(x){x?r?.classList.remove("hidden"):r?.classList.add("hidden")}c&&(c.onclick=()=>d(!0)),document.querySelectorAll(".close-security-modal").forEach(x=>x.onclick=()=>d(!1)),o&&(o.onsubmit=x=>{x.preventDefault(),d(!1),f("Password updated securely")});const y=document.getElementById("action-modal"),m=document.getElementById("action-modal-title"),h=document.getElementById("action-modal-desc"),E=document.getElementById("action-modal-icon"),b=document.getElementById("action-modal-icon-box"),v=document.getElementById("action-modal-confirm"),w=document.getElementById("action-modal-cancel");let p="signout";function B(x){p=x,x==="signout"?(m.textContent="Sign Out",h.textContent="Are you sure you want to end your active session on this device?",E.textContent="logout",b.className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900",v.textContent="Sign Out"):(m.textContent="Delete Account",h.textContent="This action will permanently delete your portfolio, scripts, and collaborator access. This cannot be undone.",E.textContent="warning",b.className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700",v.textContent="Delete Forever"),y?.classList.remove("hidden")}document.getElementById("btn-trigger-signout")?.addEventListener("click",()=>B("signout")),document.getElementById("btn-trigger-delete-acc")?.addEventListener("click",()=>B("delete")),w&&(w.onclick=()=>y?.classList.add("hidden")),v&&(v.onclick=async()=>{y?.classList.add("hidden"),p==="signout"?(await J(),i.setState({currentUser:null}),f("Signed out of Scriptora"),t("/auth")):(await J(),i.setState({currentUser:null,scripts:[]}),f("Account deleted"),t("/auth"))})}function et(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(a=>a.id===t)||i.state.scripts[0]||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",joinCode:"A7K9-XP42"};return`
-    ${$("Profile","Collaborators")}
+    ${P("profile")}
+  `}function et(t){const e=document.getElementById("settings-search-input");e&&(e.oninput=f=>{const g=f.target.value.toLowerCase().trim();document.querySelectorAll("#settings-list .setting-item").forEach(S=>{const B=S.textContent.toLowerCase();S.style.display=B.includes(g)?"flex":"none"})}),document.querySelectorAll(".setting-item").forEach(f=>{f.onclick=()=>{const g=f.querySelector(".font-semibold")?.textContent;u(`${g} settings are up to date`)}});const a=document.getElementById("modal-edit-profile"),s=document.getElementById("trigger-modal-email"),l=document.getElementById("edit-avatar-btn"),n=document.getElementById("form-update-profile");function p(f){f?a?.classList.remove("hidden"):a?.classList.add("hidden")}s&&(s.onclick=()=>p(!0)),l&&(l.onclick=()=>p(!0)),document.querySelectorAll(".close-profile-modal").forEach(f=>f.onclick=()=>p(!1)),n&&(n.onsubmit=async f=>{f.preventDefault();const g=document.getElementById("prof-input-name").value,S=document.getElementById("prof-input-headline").value,B=document.getElementById("prof-input-email").value;await Te({name:g,headline:S,email:B}),p(!1),u("Profile updated successfully"),t("/profile")});const o=document.getElementById("modal-security"),r=document.getElementById("trigger-modal-password"),c=document.getElementById("form-update-pw");function d(f){f?o?.classList.remove("hidden"):o?.classList.add("hidden")}r&&(r.onclick=()=>d(!0)),document.querySelectorAll(".close-security-modal").forEach(f=>f.onclick=()=>d(!1)),c&&(c.onsubmit=f=>{f.preventDefault(),d(!1),u("Password updated securely")});const y=document.getElementById("action-modal"),m=document.getElementById("action-modal-title"),h=document.getElementById("action-modal-desc"),I=document.getElementById("action-modal-icon"),b=document.getElementById("action-modal-icon-box"),v=document.getElementById("action-modal-confirm"),w=document.getElementById("action-modal-cancel");let x="signout";function A(f){x=f,f==="signout"?(m.textContent="Sign Out",h.textContent="Are you sure you want to end your active session on this device?",I.textContent="logout",b.className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900",v.textContent="Sign Out"):(m.textContent="Delete Account",h.textContent="This action will permanently delete your portfolio, scripts, and collaborator access. This cannot be undone.",I.textContent="warning",b.className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700",v.textContent="Delete Forever"),y?.classList.remove("hidden")}document.getElementById("btn-trigger-signout")?.addEventListener("click",()=>A("signout")),document.getElementById("btn-trigger-delete-acc")?.addEventListener("click",()=>A("delete")),w&&(w.onclick=()=>y?.classList.add("hidden")),v&&(v.onclick=async()=>{y?.classList.add("hidden"),x==="signout"?(await V(),i.setState({currentUser:null}),u("Signed out of Scriptora"),t("/auth")):(await V(),i.setState({currentUser:null,scripts:[]}),u("Account deleted"),t("/auth"))})}function tt(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(a=>a.id===t)||i.state.scripts[0]||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",joinCode:"A7K9-XP42"};return`
+    ${T("Profile","Collaborators")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
@@ -1880,26 +2657,26 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
       </div>
     </main>
 
-    ${T("profile")}
-  `}function tt(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let a="A7K9-XP42";async function s(){const g=await Se(e),S=document.getElementById("collaborators-list");if(S){if(g.length===0){S.innerHTML='<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code to invite teammates.</div>';return}S.innerHTML=g.map(j=>`
+    ${P("profile")}
+  `}function st(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let a="A7K9-XP42";async function s(){const g=await Se(e),S=document.getElementById("collaborators-list");if(S){if(g.length===0){S.innerHTML='<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code to invite teammates.</div>';return}S.innerHTML=g.map(B=>`
       <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors">
         <div class="flex items-center gap-3 min-w-0 pr-2">
-          <div class="w-9 h-9 rounded-full ${j.avatarBg||"bg-blue-100 text-blue-700"} flex items-center justify-center font-bold text-xs shrink-0">
-            ${j.initials}
+          <div class="w-9 h-9 rounded-full ${B.avatarBg||"bg-blue-100 text-blue-700"} flex items-center justify-center font-bold text-xs shrink-0">
+            ${B.initials}
           </div>
           <div class="flex flex-col min-w-0">
-            <span class="text-xs font-bold text-slate-900 truncate">${j.name}</span>
-            <span class="text-[11px] text-slate-500 truncate">${j.email}</span>
+            <span class="text-xs font-bold text-slate-900 truncate">${B.name}</span>
+            <span class="text-[11px] text-slate-500 truncate">${B.email}</span>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">${j.role}</span>
-          <button class="remove-collab-btn text-slate-400 hover:text-red-600 p-1" data-id="${j.id}" title="Remove access">
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">${B.role}</span>
+          <button class="remove-collab-btn text-slate-400 hover:text-red-600 p-1" data-id="${B.id}" title="Remove access">
             <span class="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>
       </div>
-    `).join(""),document.querySelectorAll(".remove-collab-btn").forEach(j=>{j.onclick=async()=>{const _=j.getAttribute("data-id");confirm("Remove collaborator access for this user?")&&(await Ie(e,_),f("Collaborator access removed"),s())}})}}s();const n=document.getElementById("projectSelectBtn"),l=document.getElementById("projectDropdown");n&&(n.onclick=()=>l?.classList.toggle("hidden")),document.querySelectorAll(".switch-script-opt").forEach(g=>{g.onclick=()=>{const S=g.getAttribute("data-id");i.selectScript(S),l?.classList.add("hidden"),t("/profile/collaborators")}});const u=document.getElementById("openInviteBtn"),r=document.getElementById("closeInviteBtn"),c=document.getElementById("inviteCard"),o=document.getElementById("sendInviteBtn");u&&(u.onclick=()=>c?.classList.remove("hidden")),r&&(r.onclick=()=>c?.classList.add("hidden")),o&&(o.onclick=async()=>{const g=document.getElementById("inviteEmailInput")?.value.trim(),S=document.querySelector('input[name="inviteRole"]:checked')?.value||"editor";g&&(await Ee(e,{email:g,role:S}),f(`Invited ${g} as ${S}`),c?.classList.add("hidden"),s())});const d=document.getElementById("tabGenCodeBtn"),y=document.getElementById("tabEnterCodeBtn"),m=document.getElementById("paneGenerateCode"),h=document.getElementById("paneEnterCode");d&&(d.onclick=()=>{d.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",y.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",m?.classList.remove("hidden"),h?.classList.add("hidden")}),y&&(y.onclick=()=>{y.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",d.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",h?.classList.remove("hidden"),m?.classList.add("hidden")});const E=document.getElementById("copyJoinCodeBtn"),b=document.getElementById("copyJoinCodeLabel");E&&(E.onclick=()=>{const g=document.getElementById("displayJoinCode")?.textContent||a;navigator.clipboard?.writeText(g),b.textContent="Copied!",setTimeout(()=>{b.textContent="Copy"},1800),f(`Copied code: ${g}`)});const v=document.getElementById("regenJoinCodeBtn");v&&(v.onclick=async()=>{const g=await Ce(e);a=g;const S=document.getElementById("displayJoinCode");S&&(S.textContent=g),f(`Generated new join code: ${g}`)});const w=document.getElementById("verifyCodeBtn"),p=document.getElementById("joinCodeInput"),B=document.getElementById("joinCodeResultCard"),x=document.getElementById("confirmJoinScriptBtn");p&&(p.oninput=g=>{let S=g.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");S.length>4&&(S=S.slice(0,4)+"-"+S.slice(4,8)),g.target.value=S}),w&&p&&(w.onclick=async()=>{const g=p.value.trim();if(!g)return;w.innerHTML='<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';const S=await ke(g);w.innerHTML="<span>Verify</span>",S.valid?(B?.classList.remove("hidden"),document.getElementById("verifiedScriptTitle").textContent=S.script.title,document.getElementById("verifiedScriptFormat").textContent=`${S.script.format} · ${S.script.pages} pages`,f("Valid join code")):(B?.classList.add("hidden"),f("Invalid or expired join code","error"))}),x&&p&&(x.onclick=async()=>{const g=p.value.trim();await Be(g),f("Successfully joined screenplay workspace!"),t("/workspace")})}function st(){return`
+    `).join(""),document.querySelectorAll(".remove-collab-btn").forEach(B=>{B.onclick=async()=>{const D=B.getAttribute("data-id");confirm("Remove collaborator access for this user?")&&(await ke(e,D),u("Collaborator access removed"),s())}})}}s();const l=document.getElementById("projectSelectBtn"),n=document.getElementById("projectDropdown");l&&(l.onclick=()=>n?.classList.toggle("hidden")),document.querySelectorAll(".switch-script-opt").forEach(g=>{g.onclick=()=>{const S=g.getAttribute("data-id");i.selectScript(S),n?.classList.add("hidden"),t("/profile/collaborators")}});const p=document.getElementById("openInviteBtn"),o=document.getElementById("closeInviteBtn"),r=document.getElementById("inviteCard"),c=document.getElementById("sendInviteBtn");p&&(p.onclick=()=>r?.classList.remove("hidden")),o&&(o.onclick=()=>r?.classList.add("hidden")),c&&(c.onclick=async()=>{const g=document.getElementById("inviteEmailInput")?.value.trim(),S=document.querySelector('input[name="inviteRole"]:checked')?.value||"editor";g&&(await Ie(e,{email:g,role:S}),u(`Invited ${g} as ${S}`),r?.classList.add("hidden"),s())});const d=document.getElementById("tabGenCodeBtn"),y=document.getElementById("tabEnterCodeBtn"),m=document.getElementById("paneGenerateCode"),h=document.getElementById("paneEnterCode");d&&(d.onclick=()=>{d.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",y.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",m?.classList.remove("hidden"),h?.classList.add("hidden")}),y&&(y.onclick=()=>{y.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",d.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",h?.classList.remove("hidden"),m?.classList.add("hidden")});const I=document.getElementById("copyJoinCodeBtn"),b=document.getElementById("copyJoinCodeLabel");I&&(I.onclick=()=>{const g=document.getElementById("displayJoinCode")?.textContent||a;navigator.clipboard?.writeText(g),b.textContent="Copied!",setTimeout(()=>{b.textContent="Copy"},1800),u(`Copied code: ${g}`)});const v=document.getElementById("regenJoinCodeBtn");v&&(v.onclick=async()=>{const g=await Ce(e);a=g;const S=document.getElementById("displayJoinCode");S&&(S.textContent=g),u(`Generated new join code: ${g}`)});const w=document.getElementById("verifyCodeBtn"),x=document.getElementById("joinCodeInput"),A=document.getElementById("joinCodeResultCard"),f=document.getElementById("confirmJoinScriptBtn");x&&(x.oninput=g=>{let S=g.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");S.length>4&&(S=S.slice(0,4)+"-"+S.slice(4,8)),g.target.value=S}),w&&x&&(w.onclick=async()=>{const g=x.value.trim();if(!g)return;w.innerHTML='<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';const S=await Ee(g);w.innerHTML="<span>Verify</span>",S.valid?(A?.classList.remove("hidden"),document.getElementById("verifiedScriptTitle").textContent=S.script.title,document.getElementById("verifiedScriptFormat").textContent=`${S.script.format} · ${S.script.pages} pages`,u("Valid join code")):(A?.classList.add("hidden"),u("Invalid or expired join code","error"))}),f&&x&&(f.onclick=async()=>{const g=x.value.trim();await Ae(g),u("Successfully joined screenplay workspace!"),t("/workspace")})}function at(){return`
     <div class="flex flex-col min-h-screen bg-surface w-full relative">
       <!-- Fixed Header with Back Button and Mark Read Action -->
       <header class="fixed top-0 w-full z-50 pt-safe bg-surface/90 backdrop-blur-xl border-b border-slate-100 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
@@ -1987,7 +2764,7 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
         </div>
       </main>
     </div>
-  `}function at(t){const e=document.getElementById("btn-back-notif");e&&(e.onclick=()=>{const y=i.getPreviousRoute("/workspace");t(y)});let a="all",s="normal",n=[];async function l(){const y=document.getElementById("notif-feed-container");if(!y)return;if(s==="loading"){y.innerHTML=`
+  `}function lt(t){const e=document.getElementById("btn-back-notif");e&&(e.onclick=()=>{const y=i.getPreviousRoute("/workspace");t(y)});let a="all",s="normal",l=[];async function n(){const y=document.getElementById("notif-feed-container");if(!y)return;if(s==="loading"){y.innerHTML=`
         <div class="space-y-3 animate-pulse">
           <div class="h-20 bg-slate-100 rounded-xl"></div>
           <div class="h-20 bg-slate-100 rounded-xl"></div>
@@ -2002,7 +2779,7 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
             Retry Connection
           </button>
         </div>
-      `,document.getElementById("btn-retry-sync")?.addEventListener("click",()=>{s="normal",l()});return}if(n=(await oe()).notifications||[],s==="empty"||a==="unread"&&n.filter(p=>p.unread).length===0){y.innerHTML=`
+      `,document.getElementById("btn-retry-sync")?.addEventListener("click",()=>{s="normal",n()});return}if(l=(await oe()).notifications||[],s==="empty"||a==="unread"&&l.filter(x=>x.unread).length===0){y.innerHTML=`
         <div class="p-8 bg-white border border-slate-200/80 rounded-2xl flex flex-col items-center text-center gap-2">
           <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
             <span class="material-symbols-outlined text-2xl">check_circle</span>
@@ -2010,34 +2787,34 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           <h3 class="font-bold text-sm text-slate-900">You’re all caught up!</h3>
           <p class="text-xs text-slate-500 max-w-xs">No pending notifications or requests requiring your review.</p>
         </div>
-      `;return}const h=n.filter(p=>p.unread).length;document.getElementById("badge-all-count").textContent=n.length,document.getElementById("badge-unread-count").textContent=h,i.setState({unreadNotifications:h});let E=n;a==="unread"&&(E=E.filter(p=>p.unread));const b=E.filter(p=>p.group==="today"),v=E.filter(p=>p.group!=="today");function w(p,B){return B.length===0?"":`
+      `;return}const h=l.filter(x=>x.unread).length;document.getElementById("badge-all-count").textContent=l.length,document.getElementById("badge-unread-count").textContent=h,i.setState({unreadNotifications:h});let I=l;a==="unread"&&(I=I.filter(x=>x.unread));const b=I.filter(x=>x.group==="today"),v=I.filter(x=>x.group!=="today");function w(x,A){return A.length===0?"":`
         <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between px-1">
-            <h2 class="text-xs font-bold text-slate-400 tracking-wider uppercase font-heading">${p}</h2>
+            <h2 class="text-xs font-bold text-slate-400 tracking-wider uppercase font-heading">${x}</h2>
           </div>
           <div class="flex flex-col gap-2">
-            ${B.map(x=>`
-              <div class="notif-row relative flex items-start gap-3 p-3.5 rounded-xl bg-white border ${x.unread?"border-l-4 border-l-blue-600 border-slate-200/80 shadow-xs":"border-slate-200/60 opacity-80"} hover:shadow-sm transition-all cursor-pointer" data-id="${x.id}" data-route="${x.actionRoute}">
+            ${A.map(f=>`
+              <div class="notif-row relative flex items-start gap-3 p-3.5 rounded-xl bg-white border ${f.unread?"border-l-4 border-l-blue-600 border-slate-200/80 shadow-xs":"border-slate-200/60 opacity-80"} hover:shadow-sm transition-all cursor-pointer" data-id="${f.id}" data-route="${f.actionRoute}">
                 <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
-                  ${x.sender.startsWith("icon:")?`<span class="material-symbols-outlined text-[18px] text-blue-600">${x.sender.replace("icon:","")}</span>`:x.sender}
+                  ${f.sender.startsWith("icon:")?`<span class="material-symbols-outlined text-[18px] text-blue-600">${f.sender.replace("icon:","")}</span>`:f.sender}
                 </div>
                 <div class="flex flex-col flex-1 min-w-0">
                   <div class="flex items-baseline justify-between gap-2">
-                    <h3 class="text-xs font-bold text-slate-900 truncate">${x.title}</h3>
-                    <span class="text-[10px] text-slate-400 shrink-0">${x.time}</span>
+                    <h3 class="text-xs font-bold text-slate-900 truncate">${f.title}</h3>
+                    <span class="text-[10px] text-slate-400 shrink-0">${f.time}</span>
                   </div>
-                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">${x.body}</p>
+                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">${f.body}</p>
                   <div class="mt-2 flex items-center gap-1.5 flex-wrap">
-                    ${(x.tags||[]).map(g=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${g}</span>`).join("")}
-                    <span class="text-blue-600 text-[11px] font-semibold ml-auto">${x.actionLabel||"View →"}</span>
+                    ${(f.tags||[]).map(g=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${g}</span>`).join("")}
+                    <span class="text-blue-600 text-[11px] font-semibold ml-auto">${f.actionLabel||"View →"}</span>
                   </div>
                 </div>
-                ${x.unread?'<div class="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1"></div>':""}
+                ${f.unread?'<div class="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1"></div>':""}
               </div>
             `).join("")}
           </div>
         </div>
-      `}y.innerHTML=w("Today",b)+w("Earlier",v),document.querySelectorAll(".notif-row").forEach(p=>{p.onclick=async()=>{const B=parseInt(p.getAttribute("data-id")),x=p.getAttribute("data-route");await je(B),await i.refreshNotifications(),x?t(x):l()}})}l();const u=document.getElementById("filter-all-btn"),r=document.getElementById("filter-unread-btn");u&&(u.onclick=()=>{a="all",u.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",r.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()}),r&&(r.onclick=()=>{a="unread",r.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",u.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()});const c=document.getElementById("btn-mark-all-read");c&&(c.onclick=async()=>{await Ae(),await i.refreshNotifications(),f("All notifications marked as read"),l()});const o=document.getElementById("btn-toggle-sim"),d=document.getElementById("sim-menu-dropdown");o&&(o.onclick=()=>d?.classList.toggle("hidden")),document.querySelectorAll(".sim-opt").forEach(y=>{y.onclick=()=>{s=y.getAttribute("data-state"),d?.classList.add("hidden"),l(),f(`Simulating ${s} state`)}})}class nt{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(e="#app"){if(this.appEl=document.querySelector(e),!this.appEl){console.error(`Mount element ${e} not found.`);return}document.body.addEventListener("click",a=>{const s=a.target.closest("a");if(s&&s.href&&s.origin===window.location.origin&&!s.hasAttribute("download")&&s.getAttribute("target")!=="_blank"&&!s.getAttribute("rel")?.includes("external")){const n=new URL(s.href),l=n.pathname+n.search+n.hash;l.startsWith("/api")||(a.preventDefault(),this.navigate(l))}}),window.addEventListener("popstate",()=>{this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(e,a=!1){this.currentPath&&i.pushHistory(this.currentPath);const s=this.getBasePath(),n=s&&e.toLowerCase().startsWith(s.toLowerCase())?e.slice(s.length)||"/":e,l=s&&!e.startsWith(s)?`${s}${n.startsWith("/")?"":"/"}${n}`:e;a?window.history.replaceState(null,"",l):window.history.pushState(null,"",l),this.resolve(n)}resolve(e){const[a,s]=e.split("?");let n=a.replace(/\/+$/,"")||"/";const l=this.getBasePath();l&&n.toLowerCase().startsWith(l.toLowerCase())&&(n=n.slice(l.length)||"/"),n.startsWith("/")||(n="/"+n);const u=new URLSearchParams(s||"");this.currentPath=e;const r=!!i.state.currentUser;if(!r&&!["/welcome","/auth"].includes(n)){this.navigate("/auth",!0);return}if(r&&n==="/auth"){this.navigate("/workspace",!0);return}if(n==="/"){r?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(n==="/welcome"){this.render(_e(),()=>De(this.navigate.bind(this)));return}if(n==="/auth"){this.render(Le(),()=>Me(this.navigate.bind(this)));return}if(n==="/workspace"){this.render(Oe(),()=>Re(this.navigate.bind(this)));return}if(n==="/editor"){const o=i.state.selectedScriptId||"chronicles-of-dust",d=u.get("scene");this.navigate(`/editor/${o}${d?`?scene=${d}`:""}`,!0);return}if(n.startsWith("/editor/")){const o=n.split("/")[2],d=u.get("scene");i.setState({selectedScriptId:o}),this.render(Fe(o,d),()=>Je(o,this.navigate.bind(this)));return}if(n==="/intelligence"||n==="/intelligence/select"){this.render(qe(),()=>He(this.navigate.bind(this)));return}if(n==="/intelligence/context"){this.render(Ue(),()=>Ve(this.navigate.bind(this)));return}if(n==="/intelligence/dashboard"||n==="/intelligence/overview"){this.render(We(),()=>ze(this.navigate.bind(this)));return}if(n==="/intelligence/analysis"||n==="/intelligence/analysis/select"){this.render(Ge(),()=>Ke(this.navigate.bind(this)));return}if(n.startsWith("/intelligence/analysis/")){const o=n.split("/")[3]||"pacing";this.render(Xe(o),()=>Ye(o,this.navigate.bind(this)));return}if(n==="/profile"){this.render(Qe(),()=>Ze(this.navigate.bind(this)));return}if(n==="/profile/collaborators"){this.render(et(),()=>tt(this.navigate.bind(this)));return}if(n==="/notifications"){this.render(st(),()=>at(this.navigate.bind(this)));return}this.renderNotFound(n)}render(e,a){if(this.appEl&&(this.appEl.innerHTML=e,window.scrollTo({top:0,behavior:"instant"}),typeof a=="function"))try{a()}catch(s){console.error("Error attaching screen events:",s)}}renderNotFound(e){this.appEl.innerHTML=`
+      `}y.innerHTML=w("Today",b)+w("Earlier",v),document.querySelectorAll(".notif-row").forEach(x=>{x.onclick=async()=>{const A=parseInt(x.getAttribute("data-id")),f=x.getAttribute("data-route");await Be(A),await i.refreshNotifications(),f?t(f):n()}})}n();const p=document.getElementById("filter-all-btn"),o=document.getElementById("filter-unread-btn");p&&(p.onclick=()=>{a="all",p.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",o.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",n()}),o&&(o.onclick=()=>{a="unread",o.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",p.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",n()});const r=document.getElementById("btn-mark-all-read");r&&(r.onclick=async()=>{await je(),await i.refreshNotifications(),u("All notifications marked as read"),n()});const c=document.getElementById("btn-toggle-sim"),d=document.getElementById("sim-menu-dropdown");c&&(c.onclick=()=>d?.classList.toggle("hidden")),document.querySelectorAll(".sim-opt").forEach(y=>{y.onclick=()=>{s=y.getAttribute("data-state"),d?.classList.add("hidden"),n(),u(`Simulating ${s} state`)}})}class nt{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(e="#app"){if(this.appEl=document.querySelector(e),!this.appEl){console.error(`Mount element ${e} not found.`);return}document.body.addEventListener("click",a=>{const s=a.target.closest("a");if(s&&s.href&&s.origin===window.location.origin&&!s.hasAttribute("download")&&s.getAttribute("target")!=="_blank"&&!s.getAttribute("rel")?.includes("external")){const l=new URL(s.href),n=l.pathname+l.search+l.hash;n.startsWith("/api")||(a.preventDefault(),this.navigate(n))}}),window.addEventListener("popstate",()=>{this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(e,a=!1){this.currentPath&&i.pushHistory(this.currentPath);const s=this.getBasePath(),l=s&&e.toLowerCase().startsWith(s.toLowerCase())?e.slice(s.length)||"/":e,n=s&&!e.startsWith(s)?`${s}${l.startsWith("/")?"":"/"}${l}`:e;a?window.history.replaceState(null,"",n):window.history.pushState(null,"",n),this.resolve(l)}resolve(e){const[a,s]=e.split("?");let l=a.replace(/\/+$/,"")||"/";const n=this.getBasePath();n&&l.toLowerCase().startsWith(n.toLowerCase())&&(l=l.slice(n.length)||"/"),l.startsWith("/")||(l="/"+l);const p=new URLSearchParams(s||"");this.currentPath=e;const o=!!i.state.currentUser;if(!o&&!["/welcome","/auth"].includes(l)){this.navigate("/auth",!0);return}if(o&&l==="/auth"){this.navigate("/workspace",!0);return}if(l==="/"){o?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(l==="/welcome"){this.render(De(),()=>Oe(this.navigate.bind(this)));return}if(l==="/auth"){this.render(Le(),()=>Me(this.navigate.bind(this)));return}if(l==="/workspace"){this.render(_e(),()=>Re(this.navigate.bind(this)));return}if(l==="/editor"){const c=i.state.selectedScriptId||"chronicles-of-dust",d=p.get("scene");this.navigate(`/editor/${c}${d?`?scene=${d}`:""}`,!0);return}if(l.startsWith("/editor/")){const c=l.split("/")[2],d=p.get("scene");i.setState({selectedScriptId:c}),this.render(Fe(c,d),()=>Ve(c,this.navigate.bind(this)));return}if(l==="/intelligence"||l==="/intelligence/select"){this.render(He(),()=>Ue(this.navigate.bind(this)));return}if(l==="/intelligence/context"){this.render(qe(),()=>Je(this.navigate.bind(this)));return}if(l==="/intelligence/dashboard"||l==="/intelligence/overview"){this.render(Ge(),()=>We(this.navigate.bind(this)));return}if(l==="/intelligence/analysis"||l==="/intelligence/analysis/select"){this.render(ze(),()=>Ke(this.navigate.bind(this)));return}if(l.startsWith("/intelligence/analysis/")){const c=l.split("/")[3]||"pacing";this.render(Xe(c),()=>Qe(c,this.navigate.bind(this)));return}if(l==="/profile"){this.render(Ze(),()=>et(this.navigate.bind(this)));return}if(l==="/profile/collaborators"){this.render(tt(),()=>st(this.navigate.bind(this)));return}if(l==="/notifications"){this.render(at(),()=>lt(this.navigate.bind(this)));return}this.renderNotFound(l)}render(e,a){if(this.appEl&&(this.appEl.innerHTML=e,window.scrollTo({top:0,behavior:"instant"}),typeof a=="function"))try{a()}catch(s){console.error("Error attaching screen events:",s)}}renderNotFound(e){this.appEl.innerHTML=`
       <div class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-surface">
         <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
           <span class="material-symbols-outlined text-[32px]">sentiment_dissatisfied</span>
@@ -2048,4 +2825,4 @@ Sirens pulse through the red fog.`,A=new Blob([k],{type:C==="pdf"?"application/p
           Return to Workspace
         </button>
       </div>
-    `;const a=document.getElementById("notfound-home");a&&(a.onclick=()=>this.navigate("/workspace"))}}const lt=new nt;async function ne(){try{await i.init(),lt.init("#app"),window.addEventListener("online",()=>{f("Back online. Synchronizing changes..."),i.refreshScripts(),i.refreshNotifications()}),window.addEventListener("offline",()=>{f("Offline mode active. Edits saved locally.","info")}),console.log("Scriptora initialized successfully in production-ready mode.")}catch(t){console.error("Scriptora bootstrap failed:",t)}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",ne):ne();
+    `;const a=document.getElementById("notfound-home");a&&(a.onclick=()=>this.navigate("/workspace"))}}const it=new nt;async function le(){try{await i.init(),it.init("#app"),window.addEventListener("online",()=>{u("Back online. Synchronizing changes..."),i.refreshScripts(),i.refreshNotifications()}),window.addEventListener("offline",()=>{u("Offline mode active. Edits saved locally.","info")}),console.log("Scriptora initialized successfully in production-ready mode.")}catch(t){console.error("Scriptora bootstrap failed:",t)}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",le):le();
