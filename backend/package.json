@@ -1,0 +1,11 @@
+{
+  "name": "scriptora-backend",
+  "version": "1.0.4",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node app/server.js",
+    "dev": "node app/server.js",
+    "test": "node tests/test.js"
+  }
+}

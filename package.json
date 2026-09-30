@@ -1,0 +1,12 @@
+{
+  "name": "scriptora",
+  "version": "1.0.4",
+  "private": true,
+  "description": "Scriptora Screenplay Studio & Narrative Intelligence Engine",
+  "scripts": {
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "test:backend": "npm --prefix backend test"
+  }
+}

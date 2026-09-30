@@ -1,0 +1,364 @@
+<!DOCTYPE html><html lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_tab" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#f9f9f8;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "outline": "#747686", "tertiary-container": "#4d5d73", "on-secondary-fixed": "#131b2e", "on-primary-container": "#cad3ff", "on-tertiary-fixed": "#0b1c30", "primary-fixed-dim": "#b7c4ff", "on-tertiary": "#ffffff", "surface-container-highest": "#e2e2e2", "primary": "#0037b0", "surface-container-lowest": "#ffffff", "on-error-container": "#93000a", "on-surface": "#1a1c1c", "error-container": "#ffdad6", "secondary": "#565e74", "primary-container": "#1d4ed8", "tertiary-fixed-dim": "#b7c8e1", "surface-tint": "#2151da", "on-secondary": "#ffffff", "secondary-container": "#dae2fd", "background": "#f9f9f8", "surface-variant": "#e2e2e2", "inverse-surface": "#2f3130", "on-background": "#1a1c1c", "on-tertiary-fixed-variant": "#38485d", "tertiary-fixed": "#d3e4fe", "surface-container-low": "#f3f4f3", "on-primary-fixed-variant": "#0039b5", "tertiary": "#36455b", "on-tertiary-container": "#c5d6f0", "on-primary": "#ffffff", "on-secondary-fixed-variant": "#3f465c", "surface-container-high": "#e8e8e7", "error": "#ba1a1a", "inverse-on-surface": "#f1f1f0", "secondary-fixed": "#dae2fd", "on-secondary-container": "#5c647a", "surface": "#f9f9f8", "on-primary-fixed": "#001551", "on-error": "#ffffff", "secondary-fixed-dim": "#bec6e0", "surface-bright": "#f9f9f8", "on-surface-variant": "#434655", "surface-dim": "#dadad9", "inverse-primary": "#b7c4ff", "outline-variant": "#c4c5d7", "primary-fixed": "#dce1ff", "surface-container": "#eeeeed" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-xs": "0.25rem", "space-sm": "0.5rem", "margin": "1.25rem", "space-xl": "2rem", "space-lg": "1.5rem", "space-md": "1rem", "gutter": "1rem", "gutter-mobile": "1rem", "margin-mobile": "1rem" }, fontFamily: { "navigation": ["Inter"], "body-medium": ["Inter"], "display-mobile": ["Plus Jakarta Sans"], "display": ["Plus Jakarta Sans"], "secondary": ["Inter"], "caption": ["Inter"], "section_heading": ["Plus Jakarta Sans"], "body": ["Inter"], "heading": ["Plus Jakarta Sans"], "button": ["Inter"] }, fontSize: { "navigation": ["12px", { "lineHeight": "16px", "fontWeight": "500" }], "body-medium": ["15px", { "lineHeight": "24px", "fontWeight": "500" }], "display-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "display": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "secondary": ["13px", { "lineHeight": "20px", "fontWeight": "400" }], "caption": ["11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" }], "section_heading": ["18px", { "lineHeight": "26px", "letterSpacing": "-0.005em", "fontWeight": "600" }], "body": ["15px", { "lineHeight": "24px", "fontWeight": "400" }], "heading": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "button": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }] } } } };</script><style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head><body class="bg-surface font-body text-on-surface flex flex-col min-h-screen antialiased"><header class="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 pt-safe"><div class="px-4 py-3 flex items-center justify-between"><div class="flex items-center gap-3"><img alt="Scriptora" class="w-8 h-8 rounded-lg object-contain shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqUgOP2MAAml8R1BTbPRqAB5uyl7X6t0W7eXqDQL4zleVgS81eW-v996wNe7ld3wpzyFrqbDtxF_cgoN8Ih2wwydSIQXfGeloOms3qh83MlWe-BZTVWLa5i13smOwyH1DhIO2psLZLlbt2CLoO8aomXGB5eVWQiiJ6bARUyD_ddX7Mp4SWCg6IyApcyZ-MmXlG-4STPqUKY-bshCLEyQEt0q3h2WbcorgkN-x7d1cr4_wB2NKk_b11lEm86KovJqZdWUQ"><div class="flex flex-col"><span class="text-base font-bold text-slate-900 tracking-tight leading-none">Scriptora</span><span class="text-xs text-slate-500 font-medium leading-tight mt-0.5">Intelligence</span></div></div><div class="flex items-center gap-2"><button class="relative w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span></button><div class="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-sm select-none">JD</div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-2 pb-24 bg-[#f9f9f8]"><div class="flex flex-col w-full">
+<div class="px-margin-mobile flex flex-col gap-space-lg">
+<!-- Breadcrumb & Draft Indicator -->
+<div class="flex items-center justify-between pt-space-xs">
+<a class="inline-flex items-center gap-1.5 text-secondary hover:text-on-surface transition-colors py-1" href="#/intelligence/select" data-target="#/intelligence/select"><span class="material-symbols-outlined text-[18px]">arrow_back</span><span class="font-caption text-caption tracking-wider uppercase font-semibold">Script Selector</span></a>
+<div class="flex items-center gap-1.5 bg-secondary-container/60 px-2.5 py-1 rounded-full shadow-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+<span class="font-caption text-caption text-on-secondary-fixed font-medium truncate max-w-[150px]">Anbin Mozhi · D4.2</span>
+</div>
+</div>
+<!-- Header Block -->
+<div class="flex flex-col gap-1.5">
+<div class="flex items-center gap-2 mb-1">
+<div class="w-6 h-6 rounded-md overflow-hidden bg-primary-fixed flex items-center justify-center shrink-0">
+<img alt="Scriptora" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaMBIqYNdBcvnFN5b9b1JzZMjq7beEZqqeFfyEpk1sxvAp35dtdYTa1LnlSMYMpE8ostA754vqmHdXczVDP_VB2fmvbn8UGcV8ypHp2wZc0LyZdcm8O0PTbqtmIEF6-qvAUImgNAsVdnaPQtVX5x0y6bZ79Z1CZLpdX6s7l0xqqojcWWIpljhCaBXFEn9IbU4DFGySWScIwps3CAwNHNfxC78QUiXMGDdxzwL3121DeOZ8I3Kvy3lGy3j92weFCFDNV90">
+</div>
+<span class="font-caption text-caption text-primary font-semibold tracking-widest uppercase">Context Calibration</span>
+</div>
+<h1 class="font-display-mobile text-display-mobile text-on-surface font-bold tracking-tight">Tell us about your screenplay</h1>
+<p class="font-body text-body text-secondary">Set a few narrative parameters so SCRIPTORA can tailor pacing, scene economy, and character metrics.</p>
+</div>
+<!-- Section 1: Project Type Selection -->
+<section class="flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<label class="font-section_heading text-section_heading text-on-surface font-semibold flex items-center gap-2">
+<span class="">What are you making?</span>
+</label>
+<span class="font-caption text-caption text-secondary">Required</span>
+</div>
+<div class="grid grid-cols-3 gap-2" id="format-picker">
+<!-- Short Film -->
+<button class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm transition-all duration-150 min-h-[96px] text-center group cursor-pointer hover:bg-surface-container-low" onclick="selectFormat('short', this)" type="button">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-secondary">
+<span class="material-symbols-outlined text-[19px]">movie</span>
+</div>
+<span class="font-button text-button font-semibold leading-tight text-on-surface">Short</span>
+<span class="font-caption text-[10px] text-secondary mt-0.5">~15–30m</span>
+<div class="check-pill absolute top-1.5 right-1.5 hidden w-4 h-4 rounded-full bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] leading-none">check</span>
+</div>
+</button>
+<!-- Pilot -->
+<button class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm transition-all duration-150 min-h-[96px] text-center group cursor-pointer hover:bg-surface-container-low" onclick="selectFormat('pilot', this)" type="button">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center mb-1.5 group-hover:scale-105 transition-transform text-secondary">
+<span class="material-symbols-outlined text-[19px]">live_tv</span>
+</div>
+<span class="font-button text-button font-semibold leading-tight text-on-surface">Pilot</span>
+<span class="font-caption text-[10px] text-secondary mt-0.5">~45–60m</span>
+<div class="check-pill absolute top-1.5 right-1.5 hidden w-4 h-4 rounded-full bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] leading-none">check</span>
+</div>
+</button>
+<!-- Feature (Default Active) -->
+<button class="format-card active relative flex flex-col items-center justify-center p-3 rounded-xl bg-secondary-container/50 text-on-secondary-fixed shadow-sm transition-all duration-150 min-h-[96px] text-center group cursor-pointer" onclick="selectFormat('feature', this)" type="button">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center mb-1.5 shadow-sm">
+<span class="material-symbols-outlined text-[19px]">theaters</span>
+</div>
+<span class="font-button text-button font-bold leading-tight text-on-secondary-fixed">Feature</span>
+<span class="font-caption text-[10px] text-secondary font-medium mt-0.5">~90–140m</span>
+<div class="check-pill absolute top-1.5 right-1.5 flex w-4 h-4 rounded-full bg-primary-container text-on-primary items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[12px] leading-none">check</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Section 2: Industry / Cinematic Tradition -->
+<section class="flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<label class="font-section_heading text-section_heading text-on-surface font-semibold">Which industry is this for?</label>
+<span class="font-caption text-caption text-secondary">Structure presets</span>
+</div>
+<!-- Trigger Selector -->
+<div class="relative">
+<button class="w-full flex items-center justify-between p-3.5 rounded-xl bg-surface-container-lowest text-on-surface shadow-sm hover:bg-surface-container-low transition-colors text-left group" id="industry-selector-btn" onclick="toggleIndustrySheet()" type="button">
+<div class="flex items-center gap-3 min-w-0">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[20px]">translate</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-caption text-caption text-secondary">Cinema Framework</span>
+<span class="font-body-medium text-body-medium font-semibold text-on-surface truncate" id="selected-industry-label">Tamil (Kollywood)</span>
+</div>
+</div>
+<div class="flex items-center gap-1.5 shrink-0 text-secondary group-hover:text-on-surface transition-colors">
+<span class="font-caption text-caption font-medium bg-surface-container px-2 py-0.5 rounded-md">Change</span>
+<span class="material-symbols-outlined text-[20px] transition-transform duration-200" id="industry-chevron">expand_more</span>
+</div>
+</button>
+<!-- Dropdown Selection Tray -->
+<div class="hidden mt-2 p-3 rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-2.5 transition-all" id="industry-sheet">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-secondary text-[18px]">search</span>
+<input class="w-full pl-9 pr-3 py-2 rounded-lg bg-surface-container-low font-body text-secondary text-on-surface outline-none placeholder:text-secondary focus:bg-surface-container-lowest focus:shadow-inner" id="industry-search-input" onkeyup="filterIndustries(this.value)" placeholder="Search industry or film market..." type="text">
+</div>
+<!-- Industry Quick Grid -->
+<div class="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1" id="industry-list">
+<button class="industry-opt text-left px-3 py-2 rounded-lg bg-secondary-container/50 text-on-secondary-fixed font-button text-button font-semibold flex items-center justify-between" onclick="setIndustry('Tamil (Kollywood)')" type="button">
+<span class="">Tamil (Kollywood)</span>
+<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Telugu (Tollywood)')" type="button">
+<span class="">Telugu (Tollywood)</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Malayalam (Mollywood)')" type="button">
+<span class="">Malayalam (Mollywood)</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Hindi (Bollywood)')" type="button">
+<span class="">Hindi (Bollywood)</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Kannada (Sandalwood)')" type="button">
+<span class="">Kannada</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Bengali')" type="button">
+<span class="">Bengali</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('Marathi')" type="button">
+<span class="">Marathi</span>
+</button>
+<button class="industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between" onclick="setIndustry('English (Hollywood / Ind.)')" type="button">
+<span class="">English / Global</span>
+</button>
+<button class="industry-opt col-span-2 text-left px-3 py-2 rounded-lg hover:bg-surface-container text-primary font-button text-button font-medium flex items-center gap-1.5" onclick="showCustomIndustryInput()" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="">Other (Custom Industry / Region)</span>
+</button>
+</div>
+<!-- Custom Input Row (Hidden initially) -->
+<div class="hidden flex items-center gap-2 pt-1" id="custom-industry-box">
+<input class="flex-1 px-3 py-2 rounded-lg bg-surface-container-low font-body text-secondary text-on-surface outline-none placeholder:text-secondary" id="custom-industry-text" placeholder="Specify cinematic region or culture..." type="text">
+<button class="px-3.5 py-2 rounded-lg bg-primary text-on-primary font-button text-button font-medium shrink-0 shadow-sm hover:opacity-95" onclick="applyCustomIndustry()" type="button">Save</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 3: Targeted Running Time Picker -->
+<section class="flex flex-col gap-2.5">
+<div class="flex items-center justify-between">
+<label class="font-section_heading text-section_heading text-on-surface font-semibold flex items-center gap-1.5">
+<span class="">How long are you planning it to be?</span>
+</label>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded text-on-surface-variant font-caption text-caption">
+<span class="material-symbols-outlined text-[13px]">timer</span>
+<span class="">Runtime</span>
+</div>
+</div>
+<!-- Time Stepper Wheel UI Card -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col gap-3">
+<div class="grid grid-cols-5 items-center justify-items-center py-1">
+<!-- Hours Column -->
+<div class="flex flex-col items-center gap-1">
+<span class="font-caption text-caption tracking-wider text-secondary font-semibold uppercase">HR</span>
+<button aria-label="Increase hours" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('hr', 1)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+</button>
+<div class="font-display-mobile text-display-mobile font-bold text-on-surface w-12 text-center select-none py-0.5" id="val-hr">02</div>
+<button aria-label="Decrease hours" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('hr', -1)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+</div>
+<!-- Separator -->
+<div class="font-display-mobile text-display-mobile font-bold text-outline-variant pb-2 select-none">:</div>
+<!-- Minutes Column -->
+<div class="flex flex-col items-center gap-1">
+<span class="font-caption text-caption tracking-wider text-secondary font-semibold uppercase">MIN</span>
+<button aria-label="Increase minutes" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('min', 1)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+</button>
+<div class="font-display-mobile text-display-mobile font-bold text-on-surface w-12 text-center select-none py-0.5" id="val-min">14</div>
+<button aria-label="Decrease minutes" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('min', -1)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+</div>
+<!-- Separator -->
+<div class="font-display-mobile text-display-mobile font-bold text-outline-variant pb-2 select-none">:</div>
+<!-- Seconds Column -->
+<div class="flex flex-col items-center gap-1">
+<span class="font-caption text-caption tracking-wider text-secondary font-semibold uppercase">SEC</span>
+<button aria-label="Increase seconds" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('sec', 5)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_up</span>
+</button>
+<div class="font-display-mobile text-display-mobile font-bold text-on-surface w-12 text-center select-none py-0.5" id="val-sec">00</div>
+<button aria-label="Decrease seconds" class="w-8 h-7 rounded bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-colors" onclick="adjustTime('sec', -5)" type="button">
+<span class="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
+</button>
+</div>
+</div>
+<!-- Calculated Pacing Meta -->
+<div class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-surface-container-low text-secondary font-secondary text-secondary">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-primary">auto_stories</span>
+<span id="pacing-projection" class="">~134 standard script pages</span>
+</div>
+<span class="font-caption text-caption font-semibold uppercase tracking-wider text-on-surface-variant">1 min = 1 page</span>
+</div>
+</div>
+</section>
+<!-- Context Intelligence Banner Card -->
+<div class="p-3.5 rounded-xl bg-surface-container-low shadow-sm flex items-start gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">speed</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-button text-button font-semibold text-on-surface">Target Running Time: <span class="text-primary" id="summary-runtime-text">2h 14m 00s</span></h4>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5">Kollywood 3-act pacing models will be calibrated for intermission beat drops and dynamic act-climax curves.</p>
+</div>
+</div>
+<!-- Sticky Bottom CTA Area -->
+<div class="mt-2 flex flex-col gap-2">
+<a class="w-full h-12 px-4 rounded-xl bg-primary-container text-on-primary font-button text-button font-semibold flex items-center justify-center gap-2 shadow-sm hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer" href="{{DATA:SCREEN:SCREEN_10}}" data-target="{{DATA:SCREEN:SCREEN_10}}"><span class="">Continue to Analysis</span><span class="material-symbols-outlined text-[18px]">arrow_forward</span></a>
+<div class="flex items-center justify-center gap-1 text-secondary">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<p class="font-caption text-caption text-center">Preserving context for Anbin Mozhi (Draft 4.2)</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+  let state = {
+    format: 'feature',
+    industry: 'Tamil (Kollywood)',
+    hr: 2,
+    min: 14,
+    sec: 0
+  };
+
+  function selectFormat(type, el) {
+    state.format = type;
+    document.querySelectorAll('.format-card').forEach(card => {
+      card.classList.remove('active', 'bg-secondary-container/50', 'text-on-secondary-fixed');
+      card.classList.add('bg-surface-container-lowest', 'text-on-surface');
+      const iconWrap = card.querySelector('div:first-child');
+      iconWrap.classList.remove('bg-primary-container', 'text-on-primary', 'shadow-sm');
+      iconWrap.classList.add('bg-surface-container', 'text-secondary');
+      const check = card.querySelector('.check-pill');
+      if (check) check.classList.add('hidden');
+    });
+
+    el.classList.add('active', 'bg-secondary-container/50', 'text-on-secondary-fixed');
+    el.classList.remove('bg-surface-container-lowest', 'text-on-surface');
+    const iconWrap = el.querySelector('div:first-child');
+    iconWrap.classList.remove('bg-surface-container', 'text-secondary');
+    iconWrap.classList.add('bg-primary-container', 'text-on-primary', 'shadow-sm');
+    const check = el.querySelector('.check-pill');
+    if (check) check.classList.remove('hidden');
+
+    if (type === 'short' && state.hr > 0) {
+      state.hr = 0;
+      state.min = 20;
+      state.sec = 0;
+      updateTimeDisplays();
+    } else if (type === 'pilot' && (state.hr > 1 || state.hr === 0)) {
+      state.hr = 0;
+      state.min = 52;
+      state.sec = 0;
+      updateTimeDisplays();
+    } else if (type === 'feature' && state.hr === 0) {
+      state.hr = 2;
+      state.min = 14;
+      state.sec = 0;
+      updateTimeDisplays();
+    }
+  }
+
+  function toggleIndustrySheet() {
+    const sheet = document.getElementById('industry-sheet');
+    const chevron = document.getElementById('industry-chevron');
+    const isHidden = sheet.classList.contains('hidden');
+    if (isHidden) {
+      sheet.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      sheet.classList.add('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  function setIndustry(name) {
+    state.industry = name;
+    document.getElementById('selected-industry-label').innerText = name;
+    document.querySelectorAll('.industry-opt').forEach(opt => {
+      const text = opt.querySelector('span:first-child')?.innerText || opt.innerText;
+      if (text.includes(name.split(' ')[0])) {
+        opt.className = "industry-opt text-left px-3 py-2 rounded-lg bg-secondary-container/50 text-on-secondary-fixed font-button text-button font-semibold flex items-center justify-between";
+        if (!opt.querySelector('.material-symbols-outlined')) {
+          opt.innerHTML += `<span class="material-symbols-outlined text-[16px] text-primary">check_circle</span>`;
+        }
+      } else if (!opt.classList.contains('col-span-2')) {
+        opt.className = "industry-opt text-left px-3 py-2 rounded-lg hover:bg-surface-container text-on-surface font-button text-button flex items-center justify-between";
+        const icon = opt.querySelector('.material-symbols-outlined');
+        if (icon) icon.remove();
+      }
+    });
+    toggleIndustrySheet();
+  }
+
+  function showCustomIndustryInput() {
+    const box = document.getElementById('custom-industry-box');
+    box.classList.remove('hidden');
+    document.getElementById('custom-industry-text').focus();
+  }
+
+  function applyCustomIndustry() {
+    const val = document.getElementById('custom-industry-text').value.trim();
+    if (val) {
+      setIndustry(val);
+      document.getElementById('custom-industry-box').classList.add('hidden');
+    }
+  }
+
+  function filterIndustries(term) {
+    const cleanTerm = term.toLowerCase();
+    document.querySelectorAll('#industry-list .industry-opt').forEach(btn => {
+      const txt = btn.innerText.toLowerCase();
+      btn.style.display = txt.includes(cleanTerm) ? 'flex' : 'none';
+    });
+  }
+
+  function adjustTime(unit, delta) {
+    if (unit === 'hr') {
+      state.hr = Math.max(0, Math.min(9, state.hr + delta));
+    } else if (unit === 'min') {
+      state.min = (state.min + delta + 60) % 60;
+    } else if (unit === 'sec') {
+      state.sec = (state.sec + delta + 60) % 60;
+    }
+    updateTimeDisplays();
+  }
+
+  function updateTimeDisplays() {
+    const pad = (n) => String(n).padStart(2, '0');
+    document.getElementById('val-hr').innerText = pad(state.hr);
+    document.getElementById('val-min').innerText = pad(state.min);
+    document.getElementById('val-sec').innerText = pad(state.sec);
+
+    const totalMinutes = (state.hr * 60) + state.min + (state.sec / 60);
+    const approxPages = Math.round(totalMinutes);
+    document.getElementById('pacing-projection').innerText = `~${approxPages} standard script pages`;
+    document.getElementById('summary-runtime-text').innerText = `${state.hr}h ${pad(state.min)}m ${pad(state.sec)}s`;
+  }
+
+  function submitContext() {
+    const cta = event.currentTarget;
+    cta.innerHTML = `<span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span><span>Calibrating SCRIPTORA...</span>`;
+    cta.disabled = true;
+    setTimeout(() => {
+      window.location.hash = '#/intelligence/analysis';
+    }, 600);
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-white/95 backdrop-blur-md border-t border-slate-100"><div class="h-14 px-6 flex items-center justify-around"><a class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors" href="{{DATA:SCREEN:SCREEN_88}}"><span class="material-symbols-outlined text-[22px]">description</span><span class="text-[11px] font-medium mt-0.5">Workspace</span></a><a class="flex flex-col items-center justify-center text-blue-600 font-semibold" href="{{DATA:SCREEN:SCREEN_76}}"><span class="material-symbols-outlined text-[22px]">insights</span><span class="text-[11px] font-semibold mt-0.5">Intelligence</span></a><a class="flex flex-col items-center justify-center text-slate-400 hover:text-slate-600 transition-colors" href="{{DATA:SCREEN:SCREEN_82}}"><span class="material-symbols-outlined text-[22px]">account_circle</span><span class="text-[11px] font-medium mt-0.5">Profile</span></a></div></nav>
+
+
+
+
+
+
+</body></html>

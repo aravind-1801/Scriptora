@@ -1,0 +1,613 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"><meta content="mobile_stack" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{width:100vw;margin:0;padding:0;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary": "#0037b0", "error-container": "#ffdad6", "surface-bright": "#f9f9f8", "on-secondary-fixed-variant": "#3f465c", "on-primary-fixed": "#001551", "primary-fixed": "#dce1ff", "tertiary": "#36455b", "on-secondary-fixed": "#131b2e", "surface-variant": "#e2e2e2", "surface-container-low": "#f3f4f3", "on-secondary-container": "#5c647a", "primary-fixed-dim": "#b7c4ff", "on-error": "#ffffff", "tertiary-fixed": "#d3e4fe", "on-secondary": "#ffffff", "secondary-container": "#dae2fd", "surface-container-highest": "#e2e2e2", "secondary": "#565e74", "on-surface": "#1a1c1c", "surface-container": "#eeeeed", "surface-tint": "#2151da", "on-tertiary-container": "#c5d6f0", "on-tertiary-fixed-variant": "#38485d", "surface-container-lowest": "#ffffff", "background": "#f9f9f8", "outline-variant": "#c4c5d7", "tertiary-container": "#4d5d73", "inverse-on-surface": "#f1f1f0", "surface": "#f9f9f8", "inverse-primary": "#b7c4ff", "on-tertiary-fixed": "#0b1c30", "on-primary-container": "#cad3ff", "on-primary": "#ffffff", "on-tertiary": "#ffffff", "tertiary-fixed-dim": "#b7c8e1", "on-background": "#1a1c1c", "secondary-fixed": "#dae2fd", "secondary-fixed-dim": "#bec6e0", "primary-container": "#1d4ed8", "surface-dim": "#dadad9", "on-surface-variant": "#434655", "outline": "#747686", "surface-container-high": "#e8e8e7", "on-primary-fixed-variant": "#0039b5", "inverse-surface": "#2f3130", "on-error-container": "#93000a", "error": "#ba1a1a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-lg": "1.5rem", "margin-mobile": "1rem", "space-md": "1rem", "gutter-mobile": "1rem", "margin": "1.25rem", "space-xs": "0.25rem", "space-xl": "2rem", "gutter": "1rem", "space-sm": "0.5rem" }, "fontFamily": { "display-mobile": [ "Plus Jakarta Sans" ], "secondary": [ "Inter" ], "body": [ "Inter" ], "caption": [ "Inter" ], "section_heading": [ "Plus Jakarta Sans" ], "button": [ "Inter" ], "heading": [ "Plus Jakarta Sans" ], "body-medium": [ "Inter" ], "navigation": [ "Inter" ], "display": [ "Plus Jakarta Sans" ] }, "fontSize": { "display-mobile": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "700" } ], "secondary": [ "13px", { "lineHeight": "20px", "fontWeight": "400" } ], "body": [ "15px", { "lineHeight": "24px", "fontWeight": "400" } ], "caption": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500" } ], "section_heading": [ "18px", { "lineHeight": "26px", "letterSpacing": "-0.005em", "fontWeight": "600" } ], "button": [ "14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" } ], "heading": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "body-medium": [ "15px", { "lineHeight": "24px", "fontWeight": "500" } ], "navigation": [ "12px", { "lineHeight": "16px", "fontWeight": "500" } ], "display": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" } ] } } } }</script></head><body class="bg-surface font-body text-on-surface min-h-screen flex flex-col selection:bg-secondary-container selection:text-on-secondary-fixed"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)]"><div class="px-margin-mobile py-2.5 flex items-center justify-between border-b border-surface-container-high bg-surface-container-lowest/90 backdrop-blur-xl"><div class="flex items-center gap-2"><button aria-label="Go back" class="w-9 h-9 -ml-1 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full active:scale-95 transition-colors" onclick="history.back()" type="button"><span class="material-symbols-outlined text-[20px]">arrow_back</span></button><div class="flex items-center gap-2"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0olklHE0ENsURIyo4D7SMmCPVkBcolX25YToqANoWFYd79_trW5Vcpi6nEhi2WS1pwiQIGVWB7HOBJwMj4fOvvGxrcHAC2kf1BTltfu77W-BOORVAiUM4jVCa-ZM8FMLlITHLi2eiDM7qm3cBm7TmPDDcP3qKVBKxxdOe-5Oxhwn9N5nD7l8Yvh8OdSOCvnQpgBd414ztRkP_JWDoM93thkj04HJpBNNtbUpcDk4YnxMF8exrkAGuTu-89zFWiIcEYQU" alt="Scriptora Logo" class="h-6 w-6 object-contain rounded"><div class="flex flex-col"><span class="font-section_heading text-[15px] font-bold text-on-surface tracking-tight leading-none">Scriptora</span><span class="font-caption text-[11px] text-secondary font-medium tracking-normal leading-none mt-0.5">Notifications</span></div></div></div><div class="flex items-center gap-2.5"><button class="min-h-[44px] px-2 flex items-center justify-center font-button text-[13px] text-primary hover:text-primary-container active:scale-95 transition-all" type="button" onclick="markAllRead()"><span class="material-symbols-outlined text-[16px] mr-1">done_all</span><span class="">Mark read</span></button><div class="relative flex items-center justify-center"><button aria-label="Alerts" class="w-9 h-9 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface-variant transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span></button><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary-container"></span></div><button aria-label="User Profile" class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-heading text-[12px] font-bold shadow-sm active:scale-95 transition-all" type="button">JD</button></div></div></header><main class="flex flex-col relative w-full pt-14 px-margin-mobile pb-safe bg-surface min-h-screen pb-24"><div class="flex flex-col w-full pb-10">
+<!-- Top Meta Bar: Unread Pill & Filter Tabs -->
+<div class="flex items-center justify-between pt-2 pb-3">
+<div class="flex items-center gap-space-xs">
+<button class="h-8 px-3 rounded-full bg-on-surface text-surface font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5 shadow-sm" id="filter-all-btn" onclick="setFilter('all')">
+<span class="">All</span>
+<span class="px-1.5 py-0.5 rounded-full bg-surface/20 text-[10px] font-semibold tracking-normal" id="all-count-badge">6</span>
+</button>
+<button class="h-8 px-3 rounded-full bg-surface-container text-on-surface-variant font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5" id="filter-unread-btn" onclick="setFilter('unread')">
+<span class="">Unread</span>
+<span class="px-1.5 py-0.5 rounded-full bg-primary-container text-on-primary text-[10px] font-semibold tracking-normal" id="unread-count-pill">3</span>
+</button>
+</div>
+<!-- State Simulation Dev Bar Toggle -->
+<div class="relative">
+<button class="h-8 px-2.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-caption text-caption flex items-center gap-1 transition-colors" id="dev-menu-btn" onclick="toggleSimMenu()">
+<span class="material-symbols-outlined text-[15px]">tune</span>
+<span class="font-secondary">Simulate</span>
+</button>
+<!-- Sim Menu Dropdown -->
+<div class="hidden absolute right-0 mt-1.5 w-44 bg-surface-container-lowest rounded-xl shadow-lg p-1.5 z-40" id="sim-menu">
+<button class="w-full text-left px-2.5 py-1.5 rounded-lg text-secondary text-caption hover:bg-surface-container-low flex items-center justify-between" onclick="setSimState('normal')">
+<span class="">Active State</span>
+<span class="material-symbols-outlined text-[14px] text-primary" id="sim-normal-icon">check</span>
+</button>
+<button class="w-full text-left px-2.5 py-1.5 rounded-lg text-secondary text-caption hover:bg-surface-container-low flex items-center justify-between" onclick="setSimState('loading')">
+<span class="">Loading Skeleton</span>
+<span class="material-symbols-outlined text-[14px] text-primary hidden" id="sim-loading-icon">check</span>
+</button>
+<button class="w-full text-left px-2.5 py-1.5 rounded-lg text-secondary text-caption hover:bg-surface-container-low flex items-center justify-between" onclick="setSimState('empty')">
+<span class="">Empty (Caught Up)</span>
+<span class="material-symbols-outlined text-[14px] text-primary hidden" id="sim-empty-icon">check</span>
+</button>
+<button class="w-full text-left px-2.5 py-1.5 rounded-lg text-secondary text-caption hover:bg-surface-container-low flex items-center justify-between" onclick="setSimState('error')">
+<span class="">Sync Error</span>
+<span class="material-symbols-outlined text-[14px] text-primary hidden" id="sim-error-icon">check</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Real-time sync feedback bar -->
+<div class="flex items-center justify-between px-3 py-1.5 mb-3 rounded-lg bg-surface-container-low text-secondary" id="sync-telemetry-banner">
+<div class="flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-caption text-caption tracking-normal text-on-surface-variant">Scriptora Cloud Sync Engine Active</span>
+</div>
+<span class="font-caption text-caption text-secondary">v4.2.1</span>
+</div>
+<!-- MAIN LIST CONTAINER -->
+<div class="flex flex-col gap-4" id="notifications-stream">
+<!-- SECTION: TODAY -->
+<div class="section-group flex flex-col gap-2" id="group-today">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-caption text-caption text-on-surface-variant tracking-wider uppercase">Today</h2>
+<span class="font-caption text-caption text-secondary" id="today-unread-tag">3 pending actions</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Notification 1 (HS Collaboration) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99] border-l-2 border-primary-container" id="notif-card-1" onclick="handleNotificationClick(1, '/profile/collaborators')">
+<!-- Avatar Icon -->
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-secondary-container text-on-secondary-fixed flex items-center justify-center font-section_heading text-[13px] font-bold">
+            HS
+            <span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px]">person_add</span>
+</span>
+</div>
+<!-- Body Text -->
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">Heamanth invited you to collaborate</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">12m ago</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              Added you as an Editor on <span class="font-medium text-on-surface">"Chronicles of Dust"</span> (Draft 4.2).
+            </p>
+<div class="mt-2.5 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-caption text-caption">Draft 4.2</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-caption text-caption">Role: Editor</span>
+<span class="text-primary-container font-caption text-caption ml-auto flex items-center font-medium">Review Access →</span>
+</div>
+</div>
+<!-- Unread Dot -->
+<div class="unread-dot w-2 h-2 rounded-full bg-primary-container flex-shrink-0 mt-1.5"></div>
+</div>
+<!-- Notification 2 (Export Ready) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99] border-l-2 border-primary-container" id="notif-card-2" onclick="handleNotificationClick(2, '/scripts/chronicles-of-dust/export')">
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-tertiary text-on-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px]">arrow_downward</span>
+</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">Your export is ready</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">45m ago</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              "Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.
+            </p>
+<div class="mt-2.5 flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors font-caption text-caption flex items-center gap-1 active:scale-95" onclick="event.stopPropagation(); triggerDownloadSimulation();">
+<span class="material-symbols-outlined text-[13px] text-primary">download</span>
+<span class="">Download .PDF (1.8 MB)</span>
+</button>
+</div>
+</div>
+<div class="unread-dot w-2 h-2 rounded-full bg-primary-container flex-shrink-0 mt-1.5"></div>
+</div>
+<!-- Notification 3 (Access / Join Code Request) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99] border-l-2 border-primary-container" id="notif-card-3" onclick="handleNotificationClick(3, '/scripts/anbin-mozhi/permissions')">
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-surface-container-high text-on-surface flex items-center justify-center">
+<span class="material-symbols-outlined text-[19px]">key</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">Arun requested access</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">2h ago</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              Requested Editor access to <span class="font-medium text-on-surface">"Anbin Mozhi"</span> via join-code <span class="font-mono px-1 py-0.5 rounded bg-surface-container-low text-[11px] font-semibold text-on-surface">A7K9-XP42</span>.
+            </p>
+<div class="mt-2.5 flex items-center gap-2">
+<button class="px-2.5 py-1 rounded bg-primary-container text-on-primary hover:bg-primary transition-colors font-caption text-caption font-medium active:scale-95" onclick="event.stopPropagation(); quickApprove(3);">
+                Approve
+              </button>
+<button class="px-2 py-1 rounded text-on-surface-variant hover:bg-surface-container-low transition-colors font-caption text-caption active:scale-95" onclick="event.stopPropagation(); quickDismiss(3);">
+                Deny
+              </button>
+</div>
+</div>
+<div class="unread-dot w-2 h-2 rounded-full bg-primary-container flex-shrink-0 mt-1.5"></div>
+</div>
+</div>
+</div>
+<!-- SECTION: YESTERDAY -->
+<div class="section-group flex flex-col gap-2" id="group-yesterday">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-caption text-caption text-on-surface-variant tracking-wider uppercase">Yesterday</h2>
+<span class="font-caption text-caption text-secondary">2 entries</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Notification 4 (Version Restore / Diff) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99]" id="notif-card-4" onclick="handleNotificationClick(4, '/scripts/chronicles-of-dust/versions/4.1')">
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-surface-container text-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">history</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">Version 4.1 was restored</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">Yesterday, 4:20 PM</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              Snapshot restored by <span class="font-medium text-on-surface">Dharshini R.</span> with 18 scenes updated.
+            </p>
+<div class="mt-2 flex items-center gap-2">
+<span class="font-caption text-caption text-primary-container flex items-center font-medium">View Semantic Diff →</span>
+</div>
+</div>
+</div>
+<!-- Notification 5 (Scene Changes) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99]" id="notif-card-5" onclick="handleNotificationClick(5, '/scripts/chronicles-of-dust/editor?scene=18')">
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center font-section_heading text-[13px] font-bold">
+            DR
+          </div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">Dharshini made changes to Scene 18</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">Yesterday, 2:15 PM</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              Updated dialogue pacing for Kevin in <span class="font-mono text-[12px] text-on-surface font-medium">INT. CUSTOMS OFFICE</span>.
+            </p>
+<div class="mt-2 flex items-center gap-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-mono text-[10px]">SCENE 18</span>
+<span class="font-caption text-caption text-secondary">+12 lines modified</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SECTION: EARLIER -->
+<div class="section-group flex flex-col gap-2" id="group-earlier">
+<div class="flex items-center justify-between px-1">
+<h2 class="font-caption text-caption text-on-surface-variant tracking-wider uppercase">Earlier</h2>
+<span class="font-caption text-caption text-secondary">Verified</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Notification 6 (Offline Sync Verified) -->
+<div class="notif-item relative flex items-start gap-3 p-3.5 rounded-xl bg-surface-container-lowest shadow-sm hover:shadow transition-all cursor-pointer select-none active:scale-[0.99]" id="notif-card-6" onclick="handleNotificationClick(6, '/profile/storage')">
+<div class="relative flex-shrink-0 w-10 h-10 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">cloud_done</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-2">
+<h3 class="font-body-medium text-body-medium text-on-surface font-semibold truncate">IndexedDB offline sync complete</h3>
+<span class="font-caption text-caption text-secondary flex-shrink-0">3 days ago</span>
+</div>
+<p class="font-secondary text-secondary text-on-surface-variant mt-0.5 line-clamp-2 leading-snug">
+              118 pages verified and backed up to cloud zero-knowledge vault.
+            </p>
+<div class="mt-2 flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-secondary font-caption text-caption flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+<span class="">SHA-256 Validated</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SKELETON LOADING STATE VIEW -->
+<div class="hidden flex flex-col gap-4 animate-pulse pt-1" id="state-loading">
+<div class="h-3 w-20 bg-surface-container-high rounded mb-1"></div>
+<div class="flex flex-col gap-2">
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container"></div>
+<div class="flex-1 flex flex-col gap-2">
+<div class="h-4 bg-surface-container rounded w-3/4"></div>
+<div class="h-3 bg-surface-container rounded w-full"></div>
+<div class="h-3 bg-surface-container-low rounded w-1/2"></div>
+</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container"></div>
+<div class="flex-1 flex flex-col gap-2">
+<div class="h-4 bg-surface-container rounded w-2/3"></div>
+<div class="h-3 bg-surface-container rounded w-5/6"></div>
+<div class="h-3 bg-surface-container-low rounded w-1/3"></div>
+</div>
+</div>
+<div class="p-3.5 rounded-xl bg-surface-container-lowest shadow-sm flex items-start gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container"></div>
+<div class="flex-1 flex flex-col gap-2">
+<div class="h-4 bg-surface-container rounded w-3/5"></div>
+<div class="h-3 bg-surface-container rounded w-4/5"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- EMPTY STATE VIEW -->
+<div class="hidden flex flex-col items-center justify-center py-16 px-6 text-center" id="state-empty">
+<div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant mb-4">
+<span class="material-symbols-outlined text-[28px]">done_all</span>
+</div>
+<h3 class="font-heading text-heading text-on-surface font-semibold tracking-tight">You’re all caught up</h3>
+<p class="font-body text-body text-secondary mt-1.5 max-w-xs leading-normal">
+      No pending collaboration requests, scene edits, or background job exports right now.
+    </p>
+<button class="mt-6 h-9 px-4 rounded-lg bg-surface-container-high text-on-surface font-button text-button active:scale-95 transition-all" onclick="setSimState('normal')">
+      Refresh Feed
+    </button>
+</div>
+<!-- ERROR STATE VIEW -->
+<div class="hidden flex flex-col items-center justify-center py-16 px-6 text-center" id="state-error">
+<div class="w-14 h-14 rounded-full bg-error-container text-on-error-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-[28px]">cloud_off</span>
+</div>
+<h3 class="font-heading text-heading text-on-surface font-semibold tracking-tight">Couldn’t load notifications</h3>
+<p class="font-body text-body text-secondary mt-1.5 max-w-xs leading-normal">
+      Unable to retrieve the collaboration journal from the SCRIPTORA live relay socket.
+    </p>
+<button class="mt-6 h-10 px-5 rounded-lg bg-primary-container text-on-primary font-button text-button flex items-center gap-2 active:scale-95 transition-all shadow-sm" onclick="setSimState('normal')">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+<span class="">Try Again</span>
+</button>
+</div>
+<!-- Toast Notification simulation -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl bg-inverse-surface text-inverse-on-surface font-body text-secondary shadow-xl transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50 flex items-center gap-2" id="action-toast">
+<span class="material-symbols-outlined text-[18px] text-primary-fixed" id="toast-icon">check_circle</span>
+<span id="toast-message" class="">Export PDF downloaded</span>
+</div>
+</div>
+<script>
+  // Canonical SCRIPTORA Notifications Data Model
+  window.SCRIPTORA_NOTIFICATIONS = [
+    {
+      id: 1,
+      userId: "usr_lead_99",
+      type: "collaboration_invitation",
+      title: "Heamanth invited you to collaborate",
+      message: 'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',
+      createdAt: new Date(Date.now() - 12 * 60 * 1000).toISOString(),
+      readAt: null,
+      projectId: "proj_cod_2025",
+      scriptId: "scr_cod_draft4_2",
+      versionId: "v4.2",
+      sceneId: null,
+      actorUserId: "usr_heamanth_s",
+      deepLink: "/profile/collaborators"
+    },
+    {
+      id: 2,
+      userId: "usr_lead_99",
+      type: "export_complete",
+      title: "Your export is ready",
+      message: '"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',
+      createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      readAt: null,
+      projectId: "proj_cod_2025",
+      scriptId: "scr_cod_draft4_2",
+      versionId: "v4.2",
+      sceneId: null,
+      actorUserId: "system_exporter",
+      deepLink: "/scripts/chronicles-of-dust/export"
+    },
+    {
+      id: 3,
+      userId: "usr_lead_99",
+      type: "join_code_request",
+      title: "Arun requested access to Anbin Mozhi",
+      message: "Requested Editor access via join-code A7K9-XP42.",
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      readAt: null,
+      projectId: "proj_am_2024",
+      scriptId: "scr_anbin_mozhi",
+      versionId: null,
+      sceneId: null,
+      actorUserId: "usr_arun_m",
+      deepLink: "/scripts/anbin-mozhi/permissions"
+    },
+    {
+      id: 4,
+      userId: "usr_lead_99",
+      type: "version_restore",
+      title: "Version 4.1 was restored",
+      message: "Snapshot restored by Dharshini R. with 18 scenes updated.",
+      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      readAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+      projectId: "proj_cod_2025",
+      scriptId: "scr_cod_draft4_2",
+      versionId: "v4.1",
+      sceneId: null,
+      actorUserId: "usr_dharshini_r",
+      deepLink: "/scripts/chronicles-of-dust/versions/4.1"
+    },
+    {
+      id: 5,
+      userId: "usr_lead_99",
+      type: "scene_edit",
+      title: "Dharshini made changes to Scene 18",
+      message: "Updated dialogue pacing for Kevin in INT. CUSTOMS OFFICE.",
+      createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+      readAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      projectId: "proj_cod_2025",
+      scriptId: "scr_cod_draft4_2",
+      versionId: "v4.2",
+      sceneId: 18,
+      actorUserId: "usr_dharshini_r",
+      deepLink: "/scripts/chronicles-of-dust/editor?scene=18"
+    },
+    {
+      id: 6,
+      userId: "usr_lead_99",
+      type: "storage_sync",
+      title: "IndexedDB offline sync complete",
+      message: "118 pages verified and backed up to cloud encryption vault.",
+      createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+      readAt: new Date(Date.now() - 50 * 60 * 60 * 1000).toISOString(),
+      projectId: null,
+      scriptId: null,
+      versionId: null,
+      sceneId: null,
+      actorUserId: "system_vault",
+      deepLink: "/profile/storage"
+    }
+  ];
+
+  let currentFilter = 'all';
+
+  function updateUnreadCounter() {
+    const unreadItems = window.SCRIPTORA_NOTIFICATIONS.filter(n => !n.readAt);
+    const unreadCount = unreadItems.length;
+    const pill = document.getElementById('unread-count-pill');
+    const todayUnreadTag = document.getElementById('today-unread-tag');
+    
+    if (pill) {
+      pill.textContent = unreadCount;
+      if (unreadCount === 0) {
+        pill.classList.remove('bg-primary-container', 'text-on-primary');
+        pill.classList.add('bg-surface-container', 'text-secondary');
+      } else {
+        pill.classList.add('bg-primary-container', 'text-on-primary');
+        pill.classList.remove('bg-surface-container', 'text-secondary');
+      }
+    }
+
+    if (todayUnreadTag) {
+      todayUnreadTag.textContent = unreadCount > 0 ? `${unreadCount} pending actions` : 'All reviewed';
+    }
+  }
+
+  function handleNotificationClick(id, link) {
+    const item = window.SCRIPTORA_NOTIFICATIONS.find(n => n.id === id);
+    if (!item) return;
+
+    if (!item.readAt) {
+      item.readAt = new Date().toISOString();
+      const card = document.getElementById(`notif-card-${id}`);
+      if (card) {
+        card.classList.remove('border-l-2', 'border-primary-container');
+        const dot = card.querySelector('.unread-dot');
+        if (dot) dot.remove();
+      }
+      updateUnreadCounter();
+      showToast('Notification marked as read');
+    }
+
+    if (currentFilter === 'unread') {
+      applyFilter();
+    }
+  }
+
+  function markAllRead() {
+    window.SCRIPTORA_NOTIFICATIONS.forEach(n => {
+      n.readAt = n.readAt || new Date().toISOString();
+      const card = document.getElementById(`notif-card-${n.id}`);
+      if (card) {
+        card.classList.remove('border-l-2', 'border-primary-container');
+        const dot = card.querySelector('.unread-dot');
+        if (dot) dot.remove();
+      }
+    });
+
+    updateUnreadCounter();
+    showToast('All notifications marked as read');
+
+    if (currentFilter === 'unread') {
+      applyFilter();
+    }
+  }
+
+  // Hook into Shell's "Mark all read" button in Header
+  document.addEventListener('DOMContentLoaded', () => {
+    const headerMarkBtn = Array.from(document.querySelectorAll('header button')).find(btn => 
+      btn.textContent.includes('Mark all read')
+    );
+    if (headerMarkBtn) {
+      headerMarkBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        markAllRead();
+      });
+    }
+  });
+
+  function setFilter(filterType) {
+    currentFilter = filterType;
+    const allBtn = document.getElementById('filter-all-btn');
+    const unreadBtn = document.getElementById('filter-unread-btn');
+
+    if (filterType === 'all') {
+      allBtn.className = "h-8 px-3 rounded-full bg-on-surface text-surface font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5 shadow-sm";
+      unreadBtn.className = "h-8 px-3 rounded-full bg-surface-container text-on-surface-variant font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5";
+    } else {
+      unreadBtn.className = "h-8 px-3 rounded-full bg-on-surface text-surface font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5 shadow-sm";
+      allBtn.className = "h-8 px-3 rounded-full bg-surface-container text-on-surface-variant font-caption text-caption transition-all active:scale-95 flex items-center gap-1.5";
+    }
+
+    applyFilter();
+  }
+
+  function applyFilter() {
+    const unreadGroupToday = document.getElementById('group-today');
+    const groupYesterday = document.getElementById('group-yesterday');
+    const groupEarlier = document.getElementById('group-earlier');
+    const stream = document.getElementById('notifications-stream');
+
+    if (currentFilter === 'unread') {
+      groupYesterday.classList.add('hidden');
+      groupEarlier.classList.add('hidden');
+
+      // Check which today items are unread
+      window.SCRIPTORA_NOTIFICATIONS.forEach(n => {
+        const card = document.getElementById(`notif-card-${n.id}`);
+        if (card) {
+          if (n.readAt) {
+            card.classList.add('hidden');
+          } else {
+            card.classList.remove('hidden');
+          }
+        }
+      });
+
+      const unreadCount = window.SCRIPTORA_NOTIFICATIONS.filter(n => !n.readAt).length;
+      if (unreadCount === 0) {
+        unreadGroupToday.classList.add('hidden');
+        showSubEmptyState(true);
+      } else {
+        unreadGroupToday.classList.remove('hidden');
+        showSubEmptyState(false);
+      }
+    } else {
+      groupYesterday.classList.remove('hidden');
+      groupEarlier.classList.remove('hidden');
+      unreadGroupToday.classList.remove('hidden');
+      window.SCRIPTORA_NOTIFICATIONS.forEach(n => {
+        const card = document.getElementById(`notif-card-${n.id}`);
+        if (card) card.classList.remove('hidden');
+      });
+      showSubEmptyState(false);
+    }
+  }
+
+  function showSubEmptyState(show) {
+    let subEmpty = document.getElementById('sub-empty-unread');
+    if (show) {
+      if (!subEmpty) {
+        subEmpty = document.createElement('div');
+        subEmpty.id = 'sub-empty-unread';
+        subEmpty.className = "p-8 text-center bg-surface-container-lowest rounded-xl shadow-sm my-4";
+        subEmpty.innerHTML = `
+          <span class="material-symbols-outlined text-[32px] text-primary-container">check_circle</span>
+          <p class="font-body-medium text-body-medium text-on-surface mt-2 font-medium">No unread alerts</p>
+          <p class="font-secondary text-secondary text-secondary mt-1">You've responded to all updates.</p>
+        `;
+        document.getElementById('notifications-stream').appendChild(subEmpty);
+      }
+      subEmpty.classList.remove('hidden');
+    } else if (subEmpty) {
+      subEmpty.classList.add('hidden');
+    }
+  }
+
+  function toggleSimMenu() {
+    const menu = document.getElementById('sim-menu');
+    menu.classList.toggle('hidden');
+  }
+
+  function setSimState(state) {
+    document.getElementById('sim-menu').classList.add('hidden');
+
+    const stream = document.getElementById('notifications-stream');
+    const loadingView = document.getElementById('state-loading');
+    const emptyView = document.getElementById('state-empty');
+    const errorView = document.getElementById('state-error');
+
+    // Reset icons
+    ['normal', 'loading', 'empty', 'error'].forEach(s => {
+      const icon = document.getElementById(`sim-${s}-icon`);
+      if (icon) icon.classList.add('hidden');
+    });
+    const activeIcon = document.getElementById(`sim-${state}-icon`);
+    if (activeIcon) activeIcon.classList.remove('hidden');
+
+    stream.classList.add('hidden');
+    loadingView.classList.add('hidden');
+    emptyView.classList.add('hidden');
+    errorView.classList.add('hidden');
+
+    if (state === 'normal') {
+      stream.classList.remove('hidden');
+    } else if (state === 'loading') {
+      loadingView.classList.remove('hidden');
+    } else if (state === 'empty') {
+      emptyView.classList.remove('hidden');
+    } else if (state === 'error') {
+      errorView.classList.remove('hidden');
+    }
+  }
+
+  function triggerDownloadSimulation() {
+    showToast('Starting PDF file download...');
+    setTimeout(() => {
+      showToast('Chronicles_of_Dust_D4.2.pdf downloaded');
+    }, 1200);
+  }
+
+  function quickApprove(id) {
+    handleNotificationClick(id);
+    showToast('Access permission granted to Arun');
+  }
+
+  function quickDismiss(id) {
+    handleNotificationClick(id);
+    const card = document.getElementById(`notif-card-${id}`);
+    if (card) {
+      card.style.opacity = '0.5';
+    }
+    showToast('Join-code request dismissed');
+  }
+
+  let toastTimeout;
+  function showToast(msg) {
+    const toast = document.getElementById('action-toast');
+    const msgEl = document.getElementById('toast-message');
+    if (!toast || !msgEl) return;
+    
+    msgEl.textContent = msg;
+    clearTimeout(toastTimeout);
+    toast.classList.remove('opacity-0', 'translate-y-3', 'pointer-events-none');
+    toast.classList.add('opacity-100', 'translate-y-0');
+
+    toastTimeout = setTimeout(() => {
+      toast.classList.add('opacity-0', 'translate-y-3', 'pointer-events-none');
+      toast.classList.remove('opacity-100', 'translate-y-0');
+    }, 2800);
+  }
+
+  // Close dev menu on outside click
+  window.addEventListener('click', (e) => {
+    const btn = document.getElementById('dev-menu-btn');
+    const menu = document.getElementById('sim-menu');
+    if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
+      menu.classList.add('hidden');
+    }
+  });
+
+  updateUnreadCounter();
+</script></main>
+
+<nav class="fixed bottom-0 left-0 right-0 z-50 bg-surface-container-lowest border-t border-surface-container-high pb-safe shadow-lg"><div class="h-14 px-6 flex items-center justify-around"><a href="#" class="flex flex-col items-center justify-center gap-0.5 text-secondary hover:text-primary transition-colors active:scale-95"><span class="material-symbols-outlined text-[22px]">description</span><span class="font-navigation text-[11px] font-medium tracking-tight">Workspace</span></a><a href="#" class="flex flex-col items-center justify-center gap-0.5 text-primary active:scale-95 transition-colors relative"><span class="material-symbols-outlined text-[22px]">auto_awesome</span><span class="font-navigation text-[11px] font-semibold tracking-tight">Intelligence</span><span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span></a><a href="#" class="flex flex-col items-center justify-center gap-0.5 text-secondary hover:text-primary transition-colors active:scale-95"><span class="material-symbols-outlined text-[22px]">account_circle</span><span class="font-navigation text-[11px] font-medium tracking-tight">Profile</span></a></div></nav></body></html>
