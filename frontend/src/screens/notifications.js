@@ -1,6 +1,7 @@
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { LOGO_URL } from '../utils/brand.js';
 
 export function renderNotificationsScreen() {
   const userInitials = store.state.currentUser?.initials || 'JD';
@@ -15,7 +16,7 @@ export function renderNotificationsScreen() {
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
             <div class="flex items-center gap-2">
-              <img src="/assets/scriptora-logo.png" alt="Scriptora" class="w-6 h-6 object-contain shrink-0" />
+              <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-6 h-6 object-contain shrink-0" />
               <div class="flex flex-col">
                 <span class="font-heading text-sm font-bold text-slate-900 leading-tight">Scriptora</span>
                 <span class="text-[11px] text-slate-500 font-medium leading-none">Notifications</span>

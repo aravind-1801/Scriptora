@@ -1,6 +1,7 @@
 import * as api from '../services/api.js';
 import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
+import { LOGO_URL } from '../utils/brand.js';
 
 export function renderAuthScreen() {
   return `
@@ -8,7 +9,7 @@ export function renderAuthScreen() {
       <div class="flex flex-col w-full max-w-sm py-8 fade-in">
         <!-- Brand & Logo Header -->
         <header class="flex flex-col items-center justify-center pb-4 text-center">
-          <img src="/assets/scriptora-logo.png" alt="Scriptora Logo" class="w-16 h-16 object-contain mb-3 drop-shadow-sm" />
+          <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-16 h-16 object-contain mb-3 drop-shadow-sm" />
           <h1 class="text-on-surface tracking-tight font-heading text-2xl font-bold">
             Where stories take shape.
           </h1>

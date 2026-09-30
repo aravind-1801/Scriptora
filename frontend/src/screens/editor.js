@@ -1,6 +1,7 @@
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { LOGO_URL } from '../utils/brand.js';
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
@@ -24,7 +25,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
             <div class="flex items-center gap-2 select-none min-w-0">
-              <img src="/assets/scriptora-logo.png" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
+              <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
               <div class="flex flex-col min-w-0 leading-tight">
                 <span class="font-heading font-bold text-xs sm:text-sm text-slate-900 truncate">${script.title}</span>
                 <span class="text-[10px] text-slate-500 truncate" id="editor-save-status">Autosaved Just now</span>

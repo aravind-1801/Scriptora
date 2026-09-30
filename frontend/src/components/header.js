@@ -1,4 +1,5 @@
 import { store } from '../state/store.js';
+import { LOGO_URL } from '../utils/brand.js';
 
 export function renderHeader(sectionTitle = 'Workspace', subtitle = 'Your writing space.') {
   const unreadCount = store.state.unreadNotifications;
@@ -8,7 +9,7 @@ export function renderHeader(sectionTitle = 'Workspace', subtitle = 'Your writin
     <header class="fixed top-0 w-full z-40 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60">
       <div class="h-14 px-4 flex items-center justify-between max-w-2xl mx-auto">
         <a href="/workspace" class="flex items-center gap-2.5 min-w-0 no-underline text-inherit cursor-pointer active:opacity-80 transition-opacity">
-          <img src="/assets/scriptora-logo.png" alt="Scriptora" class="w-8 h-8 object-contain shrink-0" />
+          <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-8 h-8 object-contain shrink-0" />
           <div class="flex flex-col min-w-0 leading-tight">
             <span class="font-heading font-bold text-base tracking-tight text-on-surface">Scriptora</span>
             <span class="text-[11px] text-slate-500 font-medium truncate">${sectionTitle}</span>

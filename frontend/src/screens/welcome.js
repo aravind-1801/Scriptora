@@ -1,6 +1,7 @@
 import * as api from '../services/api.js';
 import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
+import { LOGO_URL } from '../utils/brand.js';
 
 export function renderWelcomeScreen() {
   const user = store.state.currentUser;
@@ -24,7 +25,7 @@ export function renderWelcomeScreen() {
         <!-- Center Cohesive Cluster -->
         <div class="flex flex-col items-center justify-center my-auto w-full py-4">
           <!-- Logo Emblem -->
-          <img src="/assets/scriptora-logo.png" alt="Scriptora Logo" class="w-20 h-20 object-contain mb-5 drop-shadow-sm" />
+          <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-20 h-20 object-contain mb-5 drop-shadow-sm" />
 
           <!-- Main Editorial Display Statement -->
           <h1 class="font-display-mobile text-2xl sm:text-3xl text-slate-900 font-bold tracking-tight leading-tight">
