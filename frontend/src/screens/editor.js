@@ -940,8 +940,89 @@ function escapeHtml(text) {
 }
 
 // =========================================================================
-// BLOCK INPUT & CURSOR INTEGRITY
+// BLOCK INPUT & CURSOR INTEGRITY & SENTENCE AUTO-CAPITALIZATION
 // =========================================================================
+
+// Sentence Auto-Capitalization for Action & Dialogue lines:
+// Capitalizes first word at the beginning and after full stops (and sentence terminators)
+export function capitalizeSentenceStarters(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  // 1. Beginning of line/paragraph (ignoring leading whitespace and optional quotes/parentheses)
+  let result = text.replace(/^(\s*["'“‘(]*)([a-z\u00E0-\u00FC])/u, (m, prefix, char) => {
+    return prefix + char.toUpperCase();
+  });
+
+  // 2. After a full stop (or ! or ?) followed by optional closing punctuation, whitespace and optional opening quotes/brackets
+  result = result.replace(/([.!?]["'”’)]*\s+["'“‘(]*)([a-z\u00E0-\u00FC])/gu, (m, prefix, char) => {
+    return prefix + char.toUpperCase();
+  });
+
+  // 3. After newline / paragraph break
+  result = result.replace(/(\n\s*["'“‘(]*)([a-z\u00E0-\u00FC])/gu, (m, prefix, char) => {
+    return prefix + char.toUpperCase();
+  });
+
+  return result;
+}
+
+function getCaretCharacterOffsetWithin(element) {
+  let caretOffset = 0;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    const range = sel.getRangeAt(0);
+    const preCaretRange = range.cloneRange();
+    preCaretRange.selectNodeContents(element);
+    preCaretRange.setEnd(range.endContainer, range.endOffset);
+    caretOffset = preCaretRange.toString().length;
+  }
+  return caretOffset;
+}
+
+function setCaretCharacterOffsetWithin(element, offset) {
+  const sel = window.getSelection();
+  if (!sel) return;
+  const range = document.createRange();
+
+  if (offset <= 0) {
+    range.selectNodeContents(element);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return;
+  }
+
+  let currentOffset = 0;
+  let found = false;
+
+  function traverseNodes(node) {
+    if (found) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const len = node.nodeValue.length;
+      if (currentOffset + len >= offset) {
+        range.setStart(node, Math.min(offset - currentOffset, len));
+        range.collapse(true);
+        found = true;
+        return;
+      }
+      currentOffset += len;
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        traverseNodes(node.childNodes[i]);
+        if (found) return;
+      }
+    }
+  }
+
+  traverseNodes(element);
+  if (!found) {
+    range.selectNodeContents(element);
+    range.collapse(false);
+  }
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
 function attachSingleBlockListeners(block) {
   const editable = block.hasAttribute('contenteditable') ? block : block.querySelector('[contenteditable="true"]');
   if (!editable) return;
@@ -954,6 +1035,19 @@ function attachSingleBlockListeners(block) {
 
   editable.oninput = () => {
     hasUnsavedChanges = true;
+    const type = block.getAttribute('data-block-type') || 'action';
+
+    // Auto-capitalize first letter of sentence in Action and Dialogue
+    if (type === 'action' || type === 'dialogue') {
+      const originalText = editable.innerText;
+      const formattedText = capitalizeSentenceStarters(originalText);
+      if (formattedText !== originalText) {
+        const caretOffset = getCaretCharacterOffsetWithin(editable);
+        editable.innerText = formattedText;
+        setCaretCharacterOffsetWithin(editable, caretOffset);
+      }
+    }
+
     updateBlockModel(block, editable.innerText);
     updateSaveStatus('Unsaved');
     
@@ -963,6 +1057,34 @@ function attachSingleBlockListeners(block) {
     }
     triggerAutocomplete(block, editable);
     updateTelemetry();
+  };
+
+  editable.onblur = () => {
+    const type = block.getAttribute('data-block-type') || 'action';
+    if (type === 'action' || type === 'dialogue') {
+      const originalText = editable.innerText;
+      const formattedText = capitalizeSentenceStarters(originalText);
+      if (formattedText !== originalText) {
+        editable.innerText = formattedText;
+        updateBlockModel(block, formattedText);
+      }
+    }
+  };
+
+  editable.onpaste = () => {
+    const type = block.getAttribute('data-block-type') || 'action';
+    if (type === 'action' || type === 'dialogue') {
+      setTimeout(() => {
+        const originalText = editable.innerText;
+        const formattedText = capitalizeSentenceStarters(originalText);
+        if (formattedText !== originalText) {
+          const caretOffset = getCaretCharacterOffsetWithin(editable);
+          editable.innerText = formattedText;
+          setCaretCharacterOffsetWithin(editable, caretOffset);
+          updateBlockModel(block, formattedText);
+        }
+      }, 0);
+    }
   };
 
   editable.onkeydown = (e) => {
@@ -1269,6 +1391,9 @@ function convertBlockType(blockEl, newType) {
   if (newType === 'character') {
     b.content = b.content.toUpperCase();
   }
+  if (newType === 'action' || newType === 'dialogue') {
+    b.content = capitalizeSentenceStarters(b.content);
+  }
   
   // Section 9: Parenthetical creates () without spaces, cursor placed exactly between ()
   if (newType === 'parenthetical') {
@@ -1467,6 +1592,19 @@ async function performSave(isManual = false) {
   if (isSaving || !currentScreenplay) return;
   isSaving = true;
   updateSaveStatus('Saving...');
+
+  // Ensure all action and dialogue blocks have sentence capitalization before save
+  if (currentScreenplay.scenes) {
+    currentScreenplay.scenes.forEach(scene => {
+      if (scene.blocks) {
+        scene.blocks.forEach(b => {
+          if ((b.type === 'action' || b.type === 'dialogue') && b.content) {
+            b.content = capitalizeSentenceStarters(b.content);
+          }
+        });
+      }
+    });
+  }
 
   try {
     await api.saveScreenplay(currentScreenplay.id, currentScreenplay);
