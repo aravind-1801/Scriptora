@@ -58,13 +58,14 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           <!-- Right Controls: Unified Save + Auto-Save Pill, Collaborate, Avatar -->
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            <!-- Combined Save & Auto-Save Control (Single compact pill) -->
-            <div class="inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all overflow-hidden border border-blue-700/50">
-              <button id="editor-save-btn" class="flex items-center justify-center p-1.5 hover:bg-blue-700/80 active:scale-95 transition-all text-white" title="Save screenplay now (Ctrl+S)" aria-label="Save Screenplay">
-                <span class="material-symbols-outlined text-[17px]" id="editor-save-icon">save</span>
+            <!-- Combined Save & Auto-Save Control (Light pill like Export button: blue symbol and normal text) -->
+            <div class="inline-flex items-center rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:border-slate-300 shadow-2xs transition-all overflow-hidden h-7">
+              <button id="editor-save-btn" class="flex items-center justify-center pl-2 pr-1.5 h-full text-blue-600 hover:text-blue-700 hover:bg-slate-50 active:scale-95 transition-all" title="Save screenplay now (Ctrl+S)" aria-label="Save Screenplay">
+                <span class="material-symbols-outlined text-[16px] text-blue-600" id="editor-save-icon">save</span>
               </button>
-              <button id="btn-toggle-autosave" class="flex items-center gap-1 px-2 py-1.5 hover:bg-blue-700/80 active:scale-95 transition-all text-[11px] font-semibold text-white/95 border-l border-blue-500/70" title="Toggle Auto-save (Current: ${autoSaveEnabled ? 'ON' : 'OFF'})">
-                <span class="w-1.5 h-1.5 rounded-full ${autoSaveEnabled ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300'}" id="autosave-dot"></span>
+              <span class="w-[1px] h-3.5 bg-slate-200 shrink-0"></span>
+              <button id="btn-toggle-autosave" class="flex items-center gap-1.5 pl-1.5 pr-2.5 h-full hover:bg-slate-50 active:scale-95 transition-all text-xs font-medium text-slate-700 hover:text-slate-900" title="Toggle Auto-save (Current: ${autoSaveEnabled ? 'ON' : 'OFF'})">
+                <span class="w-1.5 h-1.5 rounded-full ${autoSaveEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}" id="autosave-dot"></span>
                 <span id="autosave-toggle-label">${autoSaveEnabled ? 'Auto' : 'Off'}</span>
               </button>
             </div>
@@ -759,7 +760,7 @@ function setupAutoSaveToggle() {
       localStorage.setItem('scriptora_autosave', String(autoSaveEnabled));
 
       if (autoSaveEnabled) {
-        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse';
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
         if (label) label.textContent = 'Auto';
         toggleBtn.title = 'Toggle Auto-save (Current: ON)';
         showToast('Auto-save enabled');
@@ -767,7 +768,7 @@ function setupAutoSaveToggle() {
           scheduleAutosave();
         }
       } else {
-        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-300';
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
         if (label) label.textContent = 'Off';
         toggleBtn.title = 'Toggle Auto-save (Current: OFF)';
         clearTimeout(saveDebounceTimer);
