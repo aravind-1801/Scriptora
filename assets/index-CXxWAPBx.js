@@ -1,9 +1,9 @@
-(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const n of document.querySelectorAll('link[rel="modulepreload"]'))a(n);new MutationObserver(n=>{for(const l of n)if(l.type==="childList")for(const d of l.addedNodes)d.tagName==="LINK"&&d.rel==="modulepreload"&&a(d)}).observe(document,{childList:!0,subtree:!0});function s(n){const l={};return n.integrity&&(l.integrity=n.integrity),n.referrerPolicy&&(l.referrerPolicy=n.referrerPolicy),n.crossOrigin==="use-credentials"?l.credentials="include":n.crossOrigin==="anonymous"?l.credentials="omit":l.credentials="same-origin",l}function a(n){if(n.ep)return;n.ep=!0;const l=s(n);fetch(n.href,l)}})();const xe="http://localhost:8000/api";async function C(t,e={}){const s=`${xe}${t}`,a={headers:{"Content-Type":"application/json",...e.headers},...e};try{const n=await fetch(s,a);if(!n.ok){const l=await n.json().catch(()=>({}));throw new Error(l.error||`HTTP error ${n.status}`)}return await n.json()}catch(n){throw console.warn(`API call ${t} failed, falling back to local store:`,n.message),n}}const F=[{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",industry:"International / Hollywood",pages:96,updated:"12m ago",currentScene:"Scene 18",isCurrentDraft:!0,archived:!1,joinCode:"A7K9-XP42",logline:"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.",synopsis:"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves.",context:{format:"Feature",industry:"International / Hollywood",hours:1,minutes:36,seconds:0,plannedDuration:"01:36:00"},analysisScores:{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80}},{id:"the-neon-horizon",title:"The Neon Horizon",draft:"Draft 2.1",genre:"Sci-Fi",format:"Pilot",industry:"Streaming Television",pages:62,updated:"2h ago",currentScene:"Scene 4",isCurrentDraft:!1,archived:!1,joinCode:"N3ON-H0RZ",context:{format:"Pilot",industry:"Streaming Television",hours:0,minutes:52,seconds:0,plannedDuration:"00:52:00"},analysisScores:{overall:79,pacing:75,dialogue:84,emotion:80,characterArc:78,continuity:82,storyStructure:76,theme:88,cinema:83,formatting:90,production:72}},{id:"velvet-shadows",title:"Velvet Shadows",draft:"Draft 1.0",genre:"Noir",format:"Feature",industry:"Independent / Festival",pages:114,updated:"Yesterday",currentScene:"Scene 1",isCurrentDraft:!1,archived:!1,joinCode:"V3LV-SHDW",analysisScores:{overall:81,pacing:80,dialogue:86,emotion:79,characterArc:85,continuity:80,storyStructure:82,theme:84,cinema:88,formatting:92,production:76}},{id:"silent-echoes",title:"Silent Echoes",draft:"Draft 3.0",genre:"Psychological Thriller",format:"Feature",industry:"International / Hollywood",pages:104,updated:"3d ago",currentScene:"Scene 22",isCurrentDraft:!1,archived:!1,joinCode:"SLNT-ECH0",analysisScores:{overall:84,pacing:86,dialogue:81,emotion:88,characterArc:83,continuity:85,storyStructure:89,theme:82,cinema:84,formatting:91,production:78}},{id:"glass-kingdoms",title:"Glass Kingdoms",draft:"Draft 1.4",genre:"Fantasy",format:"Pilot",industry:"Streaming Television",pages:58,updated:"1w ago",currentScene:"Scene 8",isCurrentDraft:!1,archived:!1,joinCode:"GLSS-KNGD",analysisScores:{overall:78,pacing:74,dialogue:80,emotion:76,characterArc:82,continuity:75,storyStructure:80,theme:86,cinema:82,formatting:88,production:70}},{id:"red-shift",title:"Red Shift",draft:"Draft 2.0",genre:"Action",format:"Short",industry:"Independent / Festival",pages:28,updated:"2w ago",currentScene:"Scene 5",isCurrentDraft:!1,archived:!1,joinCode:"RED2-SHFT",analysisScores:{overall:83,pacing:90,dialogue:78,emotion:75,characterArc:80,continuity:88,storyStructure:84,theme:80,cinema:89,formatting:95,production:82}}];async function oe(){try{return(await C("/auth/me")).user}catch{const t=localStorage.getItem("scriptora_user");if(t)try{const s=JSON.parse(t);if(s&&s.displayName)return s}catch{}const e={id:"user-1",name:"Arun Kumar",displayName:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function ae(t){try{const e=await C("/auth/login",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-1",name:t.email?t.email.split("@")[0]:"Arun Kumar",displayName:t.email?t.email.split("@")[0]:"Arun Kumar",email:t.email||"arun.kumar@scriptora.studio",headline:"Screenwriter & Narrative Director",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function fe(t){try{const e=await C("/auth/register",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:`user-${Date.now()}`,name:t.name||"New Writer",displayName:t.name||"New Writer",email:t.email||"writer@scriptora.studio",headline:"Screenwriter",badge:"Member Pro",initials:(t.name||"NW").slice(0,2).toUpperCase(),stats:{drafts:1,coAuthors:0,healthIndex:"100%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function me(t){try{const e=await C("/auth/otp",{method:"POST",body:JSON.stringify({phone:t})});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-phone",name:"Verified Writer",displayName:"Verified Writer",headline:"Screenwriter",email:t,badge:"Member Pro",initials:"VW",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function U(){try{await C("/auth/logout",{method:"POST"})}catch{}return localStorage.removeItem("scriptora_user"),!0}async function B(t=""){try{const a=t?`/scripts?q=${encodeURIComponent(t)}`:"/scripts",n=await C(a);if(n.scripts&&n.scripts.length>0)return localStorage.setItem("scriptora_scripts",JSON.stringify(n.scripts)),n.scripts}catch{}const e=localStorage.getItem("scriptora_scripts");let s;if(e)try{s=JSON.parse(e),(!Array.isArray(s)||s.length===0)&&(s=[...F],localStorage.setItem("scriptora_scripts",JSON.stringify(s)))}catch{s=[...F],localStorage.setItem("scriptora_scripts",JSON.stringify(s))}else s=[...F],localStorage.setItem("scriptora_scripts",JSON.stringify(s));return t&&(s=s.filter(a=>a.title.toLowerCase().includes(t.toLowerCase()))),s}async function re(t){try{const s=await C(`/scripts/${t}`);if(s.script)return s.script}catch{}const e=await B();return e.find(s=>s.id===t)||F.find(s=>s.id===t)||e[0]||null}async function be(t){try{const n=await C("/scripts",{method:"POST",body:JSON.stringify(t)});if(n.script){const l=await B();return localStorage.setItem("scriptora_scripts",JSON.stringify([n.script,...l.filter(d=>d.id!==n.script.id)])),n.script}}catch{}const e={id:(t.title||"untitled").toLowerCase().replace(/[^a-z0-9]+/g,"-"),title:t.title||"Untitled Screenplay",draft:"Draft 1.0",genre:t.genre||"Drama",format:t.format||"Feature",industry:t.industry||"International / Hollywood",pages:1,updated:"Just now",currentScene:"Scene 1",joinCode:"SCRP-1001",archived:!1,context:{format:t.format||"Feature",industry:t.industry||"International / Hollywood",hours:1,minutes:30,seconds:0,plannedDuration:"01:30:00"},analysisScores:{overall:80,pacing:78,dialogue:80,emotion:80,characterArc:78,continuity:80,storyStructure:80,theme:80,cinema:80,formatting:90,production:75}},s=await B(),a=[e,...s.filter(n=>n.id!==e.id)];return localStorage.setItem("scriptora_scripts",JSON.stringify(a)),e}async function ge(t,e){try{const n=await C(`/scripts/${t}`,{method:"PUT",body:JSON.stringify(e)});if(n.script){const d=(await B()).map(o=>o.id===t?n.script:o);return localStorage.setItem("scriptora_scripts",JSON.stringify(d)),n.script}}catch{}const a=(await B()).map(n=>n.id===t?{...n,...e,updated:"Just now"}:n);return localStorage.setItem("scriptora_scripts",JSON.stringify(a)),{id:t,...e,updated:"Just now"}}async function he(t){try{await C(`/scripts/${t}`,{method:"DELETE"})}catch{}const s=(await B()).filter(a=>a.id!==t);return localStorage.setItem("scriptora_scripts",JSON.stringify(s)),{success:!0}}async function ve(t){try{const l=await C(`/scripts/${t}/duplicate`,{method:"POST"});if(l.script){const d=await B();return localStorage.setItem("scriptora_scripts",JSON.stringify([l.script,...d])),l.script}}catch{}const e=await re(t),s={...e,id:`${t}-copy-${Date.now().toString().slice(-4)}`,title:`${e?.title||"Script"} (Copy)`,updated:"Just now"},a=await B(),n=[s,...a];return localStorage.setItem("scriptora_scripts",JSON.stringify(n)),s}async function ye(t){try{await C(`/scripts/${t}/archive`,{method:"POST"})}catch{}const s=(await B()).map(a=>a.id===t?{...a,archived:!0,updated:"Just now"}:a);return localStorage.setItem("scriptora_scripts",JSON.stringify(s)),{success:!0}}async function we(t,e){localStorage.setItem(`scriptora_screenplay_${t}`,JSON.stringify(e));try{return await C(`/screenplay/${t}`,{method:"PUT",body:JSON.stringify({screenplay:e})})}catch{return{success:!0}}}async function Se(t){try{return(await C(`/versions/${t}`)).versions}catch{return[{id:"v-4.2",name:"Draft 4.2",tag:"Current Active",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:"Refined Meera O.S. dialogue and hydro-sensor action line.",isCurrent:!0},{id:"v-3.0",name:"Draft 3.0",tag:"Production Polish",timestamp:"Yesterday, 4:15 PM",author:"JD",stats:"94 pages · 13,950 words",notes:"Incorporated director notes on floodgate transition pacing.",isCurrent:!1},{id:"v-2.0",name:"Draft 2.0",tag:"First Table Read",timestamp:"Oct 12, 2024",author:"JD",stats:"90 pages · 13,200 words",notes:"Table read revision for Acts I & II character arcs.",isCurrent:!1}]}}async function Ie(t,e){try{return(await C(`/versions/${t}`,{method:"POST",body:JSON.stringify(e)})).version}catch{return{id:`v-${Date.now()}`,name:e.name,tag:"Milestone Snapshot",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:e.notes||"",isCurrent:!0}}}async function Ce(t){try{return(await C(`/collaborators/${t}`)).collaborators}catch{return[{id:"c-1",name:"Heamanth S.",email:"heamanth@studio.com",initials:"HS",role:"Editor",avatarBg:"bg-blue-100 text-blue-700",status:"Active",added:"2d ago"},{id:"c-2",name:"Elena Rostova",email:"elena@cineworks.io",initials:"ER",role:"Script Doctor",avatarBg:"bg-amber-100 text-amber-700",status:"Active",added:"1w ago"},{id:"c-3",name:"Marcus Vance",email:"vance.prod@paramount.com",initials:"MV",role:"Producer",avatarBg:"bg-purple-100 text-purple-700",status:"Viewer",added:"2w ago"}]}}async function ke(t,e){try{return(await C(`/collaborators/${t}/invite`,{method:"POST",body:JSON.stringify(e)})).collaborator}catch{return{id:`c-${Date.now()}`,name:e.email.split("@")[0],email:e.email,initials:e.email.substring(0,2).toUpperCase(),role:e.role==="editor"?"Editor":"Viewer",avatarBg:"bg-emerald-100 text-emerald-700",status:"Active",added:"Just now"}}}async function Ee(t,e){try{return await C(`/collaborators/${t}/${e}`,{method:"DELETE"})}catch{return{success:!0}}}async function Ae(t){try{return(await C("/join-code/generate",{method:"POST",body:JSON.stringify({scriptId:t})})).joinCode}catch{return Math.random().toString(36).substring(2,6).toUpperCase()+"-"+Math.random().toString(36).substring(2,6).toUpperCase()}}async function je(t){try{return await C("/join-code/validate",{method:"POST",body:JSON.stringify({code:t})})}catch{return(t||"").toUpperCase().trim()==="A7K9-XP42"?{valid:!0,script:{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",pages:96,collaboratorCount:3}}:{valid:!1,error:"Invalid or expired join code"}}}async function Be(t){try{return await C("/join-code/redeem",{method:"POST",body:JSON.stringify({code:t})})}catch{return{success:!0,scriptId:"chronicles-of-dust",title:"Chronicles of Dust"}}}async function ce(){try{return await C("/notifications")}catch{return{notifications:[{id:1,sender:"HS",senderName:"Heamanth",type:"collaboration_invite",title:"Heamanth invited you to collaborate",body:'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',time:"12m ago",group:"today",unread:!0,tags:["Draft 4.2","Role: Editor"],actionLabel:"Review Access →",actionRoute:"/profile/collaborators"},{id:2,sender:"icon:description",type:"export_ready",title:"Your export is ready",body:'"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',time:"45m ago",group:"today",unread:!0,tags:["PDF","96 Pages"],actionLabel:"Open Screenplay →",actionRoute:"/editor/chronicles-of-dust"},{id:3,sender:"AK",senderName:"Arun K.",type:"join_code_request",title:"Join-code access request",body:'Requested Editor access to "Anbin Mozhi" via join-code A7K9-XP42.',time:"2h ago",group:"today",unread:!0,tags:["Code: A7K9-XP42"],actionLabel:"Manage Collaborators →",actionRoute:"/profile/collaborators"}],unreadCount:3}}}async function Te(t){try{return await C(`/notifications/${t}/read`,{method:"POST"})}catch{return{success:!0}}}async function Pe(){try{return await C("/notifications/read-all",{method:"POST"})}catch{return{success:!0}}}async function ne(){return(await ce()).unreadCount||0}async function $e(t){try{const e=await C("/profile",{method:"PUT",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.profile)),e.profile}catch{const s={...await oe()||{},...t};return localStorage.setItem("scriptora_user",JSON.stringify(s)),s}}async function Ne(){try{return(await C("/settings")).settings}catch{const t=localStorage.getItem("scriptora_settings");return t?JSON.parse(t):{editor:{autoSceneHeading:!0,autoCharacter:!0,autoTransition:!0,enterAfterAction:!0,tabAfterAction:!0,autoCapitalize:!0,continueDialogue:!0,showSceneNumbers:!0,lockSceneNumbers:!1,fontSize:"Courier Prime 12pt",lineSpacing:"1.5 line",focusMode:!1},language:"English (US)",appearance:"Light",notifications:{collaborationInvites:!0,collaborationEdits:!0,mentions:!0,versionMilestones:!0},intelligence:{querySuggestions:!0,analysisSuggestions:!0}}}}async function Le(t,e){try{return(await C(`/intelligence/${t}/context`,{method:"PUT",body:JSON.stringify(e)})).context}catch{return e}}async function de(t,e){try{return(await C("/intelligence/query",{method:"POST",body:JSON.stringify({query:t,scriptId:e})})).answer}catch{return"Analysis: In this screenplay, scene tempo and dialogue density align with core narrative milestones. Characters express distinct agendas in each beat."}}class Me{constructor(){this.state={currentUser:null,selectedScriptId:localStorage.getItem("scriptora_selected_script")||"chronicles-of-dust",selectedVersionId:"Draft 4.2",currentSceneId:18,unreadNotifications:3,scripts:[],activeScript:null,screenplay:null,settings:null,historyStack:[]},this.listeners=new Set}subscribe(e){return this.listeners.add(e),()=>this.listeners.delete(e)}notify(){for(const e of this.listeners)try{e(this.state)}catch(s){console.error("Store listener error:",s)}}setState(e){this.state={...this.state,...e},e.selectedScriptId&&localStorage.setItem("scriptora_selected_script",e.selectedScriptId),this.notify()}pushHistory(e){this.state.historyStack[this.state.historyStack.length-1]!==e&&this.state.historyStack.push(e)}getPreviousRoute(e="/workspace"){return this.state.historyStack.length>1?(this.state.historyStack.pop(),this.state.historyStack.pop()):e}async init(){try{const e=await oe(),s=await B(),a=await ne(),n=await Ne(),l=s.find(d=>d.id===this.state.selectedScriptId)||s[0];this.setState({currentUser:e,scripts:s,activeScript:l,unreadNotifications:a,settings:n})}catch(e){console.error("Init store error:",e)}}async selectScript(e){const s=this.state.scripts.find(a=>a.id===e)||await re(e);this.setState({selectedScriptId:e,activeScript:s})}async refreshNotifications(){const e=await ne();this.setState({unreadNotifications:e})}async refreshScripts(){const e=await B(),s=e.find(a=>a.id===this.state.selectedScriptId)||e[0];this.setState({scripts:e,activeScript:s})}}const i=new Me;function u(t,e="success"){const s=document.getElementById("global-toast"),a=document.getElementById("toast-message"),n=document.getElementById("toast-icon");if(!s||!a){console.log(`[Toast ${e}]`,t);return}a.textContent=t,n&&(e==="error"?(n.textContent="error",n.className="material-symbols-outlined text-[18px] text-red-400"):e==="info"?(n.textContent="info",n.className="material-symbols-outlined text-[18px] text-blue-300"):(n.textContent="check_circle",n.className="material-symbols-outlined text-[18px] text-emerald-300")),s.classList.remove("opacity-0","pointer-events-none"),s.classList.add("opacity-100"),clearTimeout(s._timeout),s._timeout=setTimeout(()=>{s.classList.remove("opacity-100"),s.classList.add("opacity-0","pointer-events-none")},2400)}const De=""+new URL("logo-BG9jZ7UG.png",import.meta.url).href,O=De;function Oe(){return`
+(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const a of document.querySelectorAll('link[rel="modulepreload"]'))s(a);new MutationObserver(a=>{for(const l of a)if(l.type==="childList")for(const o of l.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function n(a){const l={};return a.integrity&&(l.integrity=a.integrity),a.referrerPolicy&&(l.referrerPolicy=a.referrerPolicy),a.crossOrigin==="use-credentials"?l.credentials="include":a.crossOrigin==="anonymous"?l.credentials="omit":l.credentials="same-origin",l}function s(a){if(a.ep)return;a.ep=!0;const l=n(a);fetch(a.href,l)}})();const _e="http://localhost:8000/api";async function k(t,e={}){const n=`${_e}${t}`,s={headers:{"Content-Type":"application/json",...e.headers},...e};try{const a=await fetch(n,s);if(!a.ok){const l=await a.json().catch(()=>({}));throw new Error(l.error||`HTTP error ${a.status}`)}return await a.json()}catch(a){throw console.warn(`API call ${t} failed, falling back to local store:`,a.message),a}}const ae=[{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",industry:"International / Hollywood",pages:96,updated:"12m ago",currentScene:"Scene 18",isCurrentDraft:!0,archived:!1,joinCode:"A7K9-XP42",logline:"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.",synopsis:"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves.",context:{format:"Feature",industry:"International / Hollywood",hours:1,minutes:36,seconds:0,plannedDuration:"01:36:00"},analysisScores:{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80}},{id:"the-neon-horizon",title:"The Neon Horizon",draft:"Draft 2.1",genre:"Sci-Fi",format:"Pilot",industry:"Streaming Television",pages:62,updated:"2h ago",currentScene:"Scene 4",isCurrentDraft:!1,archived:!1,joinCode:"N3ON-H0RZ",context:{format:"Pilot",industry:"Streaming Television",hours:0,minutes:52,seconds:0,plannedDuration:"00:52:00"},analysisScores:{overall:79,pacing:75,dialogue:84,emotion:80,characterArc:78,continuity:82,storyStructure:76,theme:88,cinema:83,formatting:90,production:72}},{id:"velvet-shadows",title:"Velvet Shadows",draft:"Draft 1.0",genre:"Noir",format:"Feature",industry:"Independent / Festival",pages:114,updated:"Yesterday",currentScene:"Scene 1",isCurrentDraft:!1,archived:!1,joinCode:"V3LV-SHDW",analysisScores:{overall:81,pacing:80,dialogue:86,emotion:79,characterArc:85,continuity:80,storyStructure:82,theme:84,cinema:88,formatting:92,production:76}},{id:"silent-echoes",title:"Silent Echoes",draft:"Draft 3.0",genre:"Psychological Thriller",format:"Feature",industry:"International / Hollywood",pages:104,updated:"3d ago",currentScene:"Scene 22",isCurrentDraft:!1,archived:!1,joinCode:"SLNT-ECH0",analysisScores:{overall:84,pacing:86,dialogue:81,emotion:88,characterArc:83,continuity:85,storyStructure:89,theme:82,cinema:84,formatting:91,production:78}},{id:"glass-kingdoms",title:"Glass Kingdoms",draft:"Draft 1.4",genre:"Fantasy",format:"Pilot",industry:"Streaming Television",pages:58,updated:"1w ago",currentScene:"Scene 8",isCurrentDraft:!1,archived:!1,joinCode:"GLSS-KNGD",analysisScores:{overall:78,pacing:74,dialogue:80,emotion:76,characterArc:82,continuity:75,storyStructure:80,theme:86,cinema:82,formatting:88,production:70}},{id:"red-shift",title:"Red Shift",draft:"Draft 2.0",genre:"Action",format:"Short",industry:"Independent / Festival",pages:28,updated:"2w ago",currentScene:"Scene 5",isCurrentDraft:!1,archived:!1,joinCode:"RED2-SHFT",analysisScores:{overall:83,pacing:90,dialogue:78,emotion:75,characterArc:80,continuity:88,storyStructure:84,theme:80,cinema:89,formatting:95,production:82}}];async function $e(){try{return(await k("/auth/me")).user}catch{const t=localStorage.getItem("scriptora_user");if(t)try{const n=JSON.parse(t);if(n&&n.displayName)return n}catch{}const e={id:"user-1",name:"Arun Kumar",displayName:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function ke(t){try{const e=await k("/auth/login",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-1",name:t.email?t.email.split("@")[0]:"Arun Kumar",displayName:t.email?t.email.split("@")[0]:"Arun Kumar",email:t.email||"arun.kumar@scriptora.studio",headline:"Screenwriter & Narrative Director",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function Fe(t){try{const e=await k("/auth/register",{method:"POST",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:`user-${Date.now()}`,name:t.name||"New Writer",displayName:t.name||"New Writer",email:t.email||"writer@scriptora.studio",headline:"Screenwriter",badge:"Member Pro",initials:(t.name||"NW").slice(0,2).toUpperCase(),stats:{drafts:1,coAuthors:0,healthIndex:"100%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function Ue(t){try{const e=await k("/auth/otp",{method:"POST",body:JSON.stringify({phone:t})});return localStorage.setItem("scriptora_user",JSON.stringify(e.user)),e.user}catch{const e={id:"user-phone",name:"Verified Writer",displayName:"Verified Writer",headline:"Screenwriter",email:t,badge:"Member Pro",initials:"VW",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return localStorage.setItem("scriptora_user",JSON.stringify(e)),e}}async function de(){try{await k("/auth/logout",{method:"POST"})}catch{}return localStorage.removeItem("scriptora_user"),!0}async function $(t=""){try{const s=t?`/scripts?q=${encodeURIComponent(t)}`:"/scripts",a=await k(s);if(a.scripts&&a.scripts.length>0)return localStorage.setItem("scriptora_scripts",JSON.stringify(a.scripts)),a.scripts}catch{}const e=localStorage.getItem("scriptora_scripts");let n;if(e)try{n=JSON.parse(e),(!Array.isArray(n)||n.length===0)&&(n=[...ae],localStorage.setItem("scriptora_scripts",JSON.stringify(n)))}catch{n=[...ae],localStorage.setItem("scriptora_scripts",JSON.stringify(n))}else n=[...ae],localStorage.setItem("scriptora_scripts",JSON.stringify(n));return t&&(n=n.filter(s=>s.title.toLowerCase().includes(t.toLowerCase()))),n}async function xe(t){try{const n=await k(`/scripts/${t}`);if(n.script)return n.script}catch{}const e=await $();return e.find(n=>n.id===t)||ae.find(n=>n.id===t)||e[0]||null}async function He(t){try{const a=await k("/scripts",{method:"POST",body:JSON.stringify(t)});if(a.script){const l=await $();return localStorage.setItem("scriptora_scripts",JSON.stringify([a.script,...l.filter(o=>o.id!==a.script.id)])),a.script}}catch{}const e={id:(t.title||"untitled").toLowerCase().replace(/[^a-z0-9]+/g,"-"),title:t.title||"Untitled Screenplay",draft:"Draft 1.0",genre:t.genre||"Drama",format:t.format||"Feature",industry:t.industry||"International / Hollywood",pages:1,updated:"Just now",currentScene:"Scene 1",joinCode:"SCRP-1001",archived:!1,context:{format:t.format||"Feature",industry:t.industry||"International / Hollywood",hours:1,minutes:30,seconds:0,plannedDuration:"01:30:00"},analysisScores:{overall:80,pacing:78,dialogue:80,emotion:80,characterArc:78,continuity:80,storyStructure:80,theme:80,cinema:80,formatting:90,production:75}},n=await $(),s=[e,...n.filter(a=>a.id!==e.id)];return localStorage.setItem("scriptora_scripts",JSON.stringify(s)),e}async function Ve(t,e){try{const a=await k(`/scripts/${t}`,{method:"PUT",body:JSON.stringify(e)});if(a.script){const o=(await $()).map(i=>i.id===t?a.script:i);return localStorage.setItem("scriptora_scripts",JSON.stringify(o)),a.script}}catch{}const s=(await $()).map(a=>a.id===t?{...a,...e,updated:"Just now"}:a);return localStorage.setItem("scriptora_scripts",JSON.stringify(s)),{id:t,...e,updated:"Just now"}}async function qe(t){try{await k(`/scripts/${t}`,{method:"DELETE"})}catch{}const n=(await $()).filter(s=>s.id!==t);return localStorage.setItem("scriptora_scripts",JSON.stringify(n)),{success:!0}}async function Ge(t){try{const l=await k(`/scripts/${t}/duplicate`,{method:"POST"});if(l.script){const o=await $();return localStorage.setItem("scriptora_scripts",JSON.stringify([l.script,...o])),l.script}}catch{}const e=await xe(t),n={...e,id:`${t}-copy-${Date.now().toString().slice(-4)}`,title:`${e?.title||"Script"} (Copy)`,updated:"Just now"},s=await $(),a=[n,...s];return localStorage.setItem("scriptora_scripts",JSON.stringify(a)),n}async function Je(t){try{await k(`/scripts/${t}/archive`,{method:"POST"})}catch{}const n=(await $()).map(s=>s.id===t?{...s,archived:!0,updated:"Just now"}:s);return localStorage.setItem("scriptora_scripts",JSON.stringify(n)),{success:!0}}const We={id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",pageCount:5,wordCount:14280,titlePage:{title:"CHRONICLES OF DUST",author:"Arun Kumar",contact:"Scriptora Studio · arun.kumar@scriptora.studio · +1 (555) 019-2834",notes:"An original screenplay. Draft 4.2 Production Cut."},settings:{sceneNumbers:!0,sceneNumberSide:"left",smartFormatting:!0,fontSize:"12pt",lineSpacing:"1.5",language:"English"},acts:[{id:"act-1",name:"ACT I - The Broken Siphon"},{id:"act-2",name:"ACT II - The Pressure Surge"},{id:"act-3",name:"ACT III - The Floodgate Standoff"}],characters:["KEVIN","MEERA","VANCE","ELENA","ARAVIND","CHIEF CHEN"],locations:["DESERT BADLANDS","BORDER OUTPOST RESERVOIR","PUMP STATION SUB-LEVEL","CUSTOMS OFFICE","FLOODGATE GANTRY","CONTROL TOWER","SPILLWAY DRAINAGE BASIN","KPR INSTITUTE"],times:["DAY","NIGHT","CONTINUOUS","DAWN","DUSK","LATER","MORNING","EVENING"],transitions:["CUT TO:","FADE IN:","FADE OUT.","DISSOLVE TO:","SMASH CUT TO:","MATCH CUT TO:","JUMP CUT TO:"],scenes:[{id:"scene-1",number:1,actId:"act-1",slugline:"EXT. DESERT BADLANDS - DAY",blocks:[{id:"b-1-1",type:"scene",content:"EXT. DESERT BADLANDS - DAY"},{id:"b-1-2",type:"action",content:"Sun-baked salt flats stretch to the horizon. Heat waves ripple across an elevated steel aqueduct, shimmering in the fierce midday glare."},{id:"b-1-3",type:"action",content:"Kevin adjusts his respirator mask as a handheld pressure gauge rattles violently against his knuckles. The needle drops below redline."},{id:"b-1-4",type:"character",content:"KEVIN"},{id:"b-1-5",type:"parenthetical",content:"(checking telemetry)"},{id:"b-1-6",type:"dialogue",content:"Line twelve lost forty bars in twenty minutes. That's not evaporation. Someone drilled the municipal siphon."},{id:"b-1-7",type:"transition",content:"CUT TO:"}]},{id:"scene-2",number:2,actId:"act-1",slugline:"EXT. BORDER OUTPOST RESERVOIR - CONTINUOUS",blocks:[{id:"b-2-1",type:"scene",content:"EXT. BORDER OUTPOST RESERVOIR - CONTINUOUS"},{id:"b-2-2",type:"action",content:"Massive concrete retaining walls loom over a dry river canyon. Armed private contractors patrol the chain-link perimeter."},{id:"b-2-3",type:"character",content:"VANCE"},{id:"b-2-4",type:"dialogue",content:"If the hydro-engineer approaches the terminal perimeter, lock down the intake gates immediately."},{id:"b-2-5",type:"character",content:"ELENA"},{id:"b-2-6",type:"parenthetical",content:"(stepping forward)"},{id:"b-2-7",type:"dialogue",content:"He designed the regional routing matrix, Vance. You can't just seal the gates without triggering the emergency backflow."},{id:"b-2-8",type:"transition",content:"DISSOLVE TO:"}]},{id:"scene-17",number:17,actId:"act-2",slugline:"INT. PUMP STATION SUB-LEVEL - DUSK",blocks:[{id:"b-17-1",type:"scene",content:"INT. PUMP STATION SUB-LEVEL - DUSK"},{id:"b-17-2",type:"action",content:"Emergency warning beacons pulse rhythmic amber pulses against wet concrete. Water surges through rusty catwalk grates."},{id:"b-17-3",type:"character",content:"MEERA"},{id:"b-17-4",type:"parenthetical",content:"(over crackling radio)"},{id:"b-17-5",type:"dialogue",content:"Kevin, the bypass manifold is wide open. They're siphoning thirty thousand liters a minute straight into the corporate silos."},{id:"b-17-6",type:"character",content:"KEVIN"},{id:"b-17-7",type:"dialogue",content:"Head up to the customs outpost. I'll tap the telemetry relay from the junction box before they cut the grid."},{id:"b-17-8",type:"transition",content:"CUT TO:"}]},{id:"scene-18",number:18,actId:"act-2",slugline:"INT. CUSTOMS OFFICE - NIGHT",blocks:[{id:"b-18-1",type:"scene",content:"INT. CUSTOMS OFFICE - NIGHT"},{id:"b-18-2",type:"action",content:"Kevin kneels over the cracked hydro-sensor junction box. Static hiss whispers through the damp comm-link. A lone flicker illuminates the tarnished brass seal."},{id:"b-18-3",type:"action",content:"Water droplets bead along the corroded circuit wires. He slides a copper probe between the connectors."},{id:"b-18-4",type:"character",content:"KEVIN"},{id:"b-18-5",type:"parenthetical",content:"(whispering into comm)"},{id:"b-18-6",type:"dialogue",content:"If the seals break before dawn, the sector won't hold the surge."},{id:"b-18-7",type:"character",content:"MEERA (O.S.)"},{id:"b-18-8",type:"dialogue",content:"Then don't let them break. Reroute the secondary relay through the floodgate breaker."},{id:"b-18-9",type:"transition",content:"CUT TO:"}]},{id:"scene-19",number:19,actId:"act-3",slugline:"EXT. FLOODGATE GANTRY - CONTINUOUS",blocks:[{id:"b-19-1",type:"scene",content:"EXT. FLOODGATE GANTRY - CONTINUOUS"},{id:"b-19-2",type:"action",content:"Sirens pulse through the red fog. Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below."},{id:"b-19-3",type:"character",content:"MEERA"},{id:"b-19-4",type:"dialogue",content:"Pressure holding at four-eighty. Give me three minutes."},{id:"b-19-5",type:"action",content:"A massive metallic groan reverberates across the gorge as the emergency intake opens."},{id:"b-19-6",type:"character",content:"KEVIN"},{id:"b-19-7",type:"dialogue",content:"The intake is clear! Open the main channel before the valves freeze!"},{id:"b-19-8",type:"transition",content:"FADE OUT."}]}]};async function Ke(t){try{const s=await k(`/screenplay/${t}`);if(s.screenplay&&s.screenplay.scenes&&s.screenplay.scenes.length>0)return s.screenplay}catch{}const e=localStorage.getItem(`scriptora_screenplay_${t}`);if(e)try{const s=JSON.parse(e);if(s&&s.scenes&&s.scenes.length>0)return s}catch{}const n=JSON.parse(JSON.stringify(We));if(t&&t!=="chronicles-of-dust"){n.id=t;const s=await xe(t);s&&(n.title=s.title,n.draft=s.draft,n.titlePage.title=s.title.toUpperCase())}return localStorage.setItem(`scriptora_screenplay_${t}`,JSON.stringify(n)),n}async function ze(t,e){localStorage.setItem(`scriptora_screenplay_${t}`,JSON.stringify(e));try{return await k(`/screenplay/${t}`,{method:"PUT",body:JSON.stringify({screenplay:e})})}catch{return{success:!0}}}async function Xe(t){try{return(await k(`/versions/${t}`)).versions}catch{return[{id:"v-4.2",name:"Draft 4.2",tag:"Current Active",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:"Refined Meera O.S. dialogue and hydro-sensor action line.",isCurrent:!0},{id:"v-3.0",name:"Draft 3.0",tag:"Production Polish",timestamp:"Yesterday, 4:15 PM",author:"JD",stats:"94 pages · 13,950 words",notes:"Incorporated director notes on floodgate transition pacing.",isCurrent:!1},{id:"v-2.0",name:"Draft 2.0",tag:"First Table Read",timestamp:"Oct 12, 2024",author:"JD",stats:"90 pages · 13,200 words",notes:"Table read revision for Acts I & II character arcs.",isCurrent:!1}]}}async function Ye(t,e){try{return(await k(`/versions/${t}`,{method:"POST",body:JSON.stringify(e)})).version}catch{return{id:`v-${Date.now()}`,name:e.name,tag:"Milestone Snapshot",timestamp:"Just now",author:"JD",stats:"96 pages · 14,280 words",notes:e.notes||"",isCurrent:!0}}}async function Qe(t){try{return(await k(`/collaborators/${t}`)).collaborators}catch{return[{id:"c-1",name:"Heamanth S.",email:"heamanth@studio.com",initials:"HS",role:"Editor",avatarBg:"bg-blue-100 text-blue-700",status:"Active",added:"2d ago"},{id:"c-2",name:"Elena Rostova",email:"elena@cineworks.io",initials:"ER",role:"Script Doctor",avatarBg:"bg-amber-100 text-amber-700",status:"Active",added:"1w ago"},{id:"c-3",name:"Marcus Vance",email:"vance.prod@paramount.com",initials:"MV",role:"Producer",avatarBg:"bg-purple-100 text-purple-700",status:"Viewer",added:"2w ago"}]}}async function Ze(t,e){try{return(await k(`/collaborators/${t}/invite`,{method:"POST",body:JSON.stringify(e)})).collaborator}catch{return{id:`c-${Date.now()}`,name:e.email.split("@")[0],email:e.email,initials:e.email.substring(0,2).toUpperCase(),role:e.role==="editor"?"Editor":"Viewer",avatarBg:"bg-emerald-100 text-emerald-700",status:"Active",added:"Just now"}}}async function et(t,e){try{return await k(`/collaborators/${t}/${e}`,{method:"DELETE"})}catch{return{success:!0}}}async function tt(t){try{return(await k("/join-code/generate",{method:"POST",body:JSON.stringify({scriptId:t})})).joinCode}catch{return Math.random().toString(36).substring(2,6).toUpperCase()+"-"+Math.random().toString(36).substring(2,6).toUpperCase()}}async function st(t){try{return await k("/join-code/validate",{method:"POST",body:JSON.stringify({code:t})})}catch{return(t||"").toUpperCase().trim()==="A7K9-XP42"?{valid:!0,script:{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",genre:"Drama",format:"Feature",pages:96,collaboratorCount:3}}:{valid:!1,error:"Invalid or expired join code"}}}async function nt(t){try{return await k("/join-code/redeem",{method:"POST",body:JSON.stringify({code:t})})}catch{return{success:!0,scriptId:"chronicles-of-dust",title:"Chronicles of Dust"}}}async function Le(){try{return await k("/notifications")}catch{return{notifications:[{id:1,sender:"HS",senderName:"Heamanth",type:"collaboration_invite",title:"Heamanth invited you to collaborate",body:'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',time:"12m ago",group:"today",unread:!0,tags:["Draft 4.2","Role: Editor"],actionLabel:"Review Access →",actionRoute:"/profile/collaborators"},{id:2,sender:"icon:description",type:"export_ready",title:"Your export is ready",body:'"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',time:"45m ago",group:"today",unread:!0,tags:["PDF","96 Pages"],actionLabel:"Open Screenplay →",actionRoute:"/editor/chronicles-of-dust"},{id:3,sender:"AK",senderName:"Arun K.",type:"join_code_request",title:"Join-code access request",body:'Requested Editor access to "Anbin Mozhi" via join-code A7K9-XP42.',time:"2h ago",group:"today",unread:!0,tags:["Code: A7K9-XP42"],actionLabel:"Manage Collaborators →",actionRoute:"/profile/collaborators"}],unreadCount:3}}}async function at(t){try{return await k(`/notifications/${t}/read`,{method:"POST"})}catch{return{success:!0}}}async function lt(){try{return await k("/notifications/read-all",{method:"POST"})}catch{return{success:!0}}}async function Ae(){return(await Le()).unreadCount||0}async function it(t){try{const e=await k("/profile",{method:"PUT",body:JSON.stringify(t)});return localStorage.setItem("scriptora_user",JSON.stringify(e.profile)),e.profile}catch{const n={...await $e()||{},...t};return localStorage.setItem("scriptora_user",JSON.stringify(n)),n}}async function ot(){try{return(await k("/settings")).settings}catch{const t=localStorage.getItem("scriptora_settings");return t?JSON.parse(t):{editor:{autoSceneHeading:!0,autoCharacter:!0,autoTransition:!0,enterAfterAction:!0,tabAfterAction:!0,autoCapitalize:!0,continueDialogue:!0,showSceneNumbers:!0,lockSceneNumbers:!1,fontSize:"Courier Prime 12pt",lineSpacing:"1.5 line",focusMode:!1},language:"English (US)",appearance:"Light",notifications:{collaborationInvites:!0,collaborationEdits:!0,mentions:!0,versionMilestones:!0},intelligence:{querySuggestions:!0,analysisSuggestions:!0}}}}async function rt(t,e){try{return(await k(`/intelligence/${t}/context`,{method:"PUT",body:JSON.stringify(e)})).context}catch{return e}}async function Me(t,e){try{return(await k("/intelligence/query",{method:"POST",body:JSON.stringify({query:t,scriptId:e})})).answer}catch{return"Analysis: In this screenplay, scene tempo and dialogue density align with core narrative milestones. Characters express distinct agendas in each beat."}}class ct{constructor(){this.state={currentUser:null,selectedScriptId:localStorage.getItem("scriptora_selected_script")||"chronicles-of-dust",selectedVersionId:"Draft 4.2",currentSceneId:18,unreadNotifications:3,scripts:[],activeScript:null,screenplay:null,settings:null,historyStack:[]},this.listeners=new Set}subscribe(e){return this.listeners.add(e),()=>this.listeners.delete(e)}notify(){for(const e of this.listeners)try{e(this.state)}catch(n){console.error("Store listener error:",n)}}setState(e){this.state={...this.state,...e},e.selectedScriptId&&localStorage.setItem("scriptora_selected_script",e.selectedScriptId),this.notify()}pushHistory(e){this.state.historyStack[this.state.historyStack.length-1]!==e&&this.state.historyStack.push(e)}getPreviousRoute(e="/workspace"){return this.state.historyStack.length>1?(this.state.historyStack.pop(),this.state.historyStack.pop()):e}async init(){try{const e=await $e(),n=await $(),s=await Ae(),a=await ot(),l=n.find(o=>o.id===this.state.selectedScriptId)||n[0];this.setState({currentUser:e,scripts:n,activeScript:l,unreadNotifications:s,settings:a})}catch(e){console.error("Init store error:",e)}}async selectScript(e){const n=this.state.scripts.find(s=>s.id===e)||await xe(e);this.setState({selectedScriptId:e,activeScript:n})}async refreshNotifications(){const e=await Ae();this.setState({unreadNotifications:e})}async refreshScripts(){const e=await $(),n=e.find(s=>s.id===this.state.selectedScriptId)||e[0];this.setState({scripts:e,activeScript:n})}}const d=new ct;function f(t,e="success"){const n=document.getElementById("global-toast"),s=document.getElementById("toast-message"),a=document.getElementById("toast-icon");if(!n||!s){console.log(`[Toast ${e}]`,t);return}s.textContent=t,a&&(e==="error"?(a.textContent="error",a.className="material-symbols-outlined text-[18px] text-red-400"):e==="info"?(a.textContent="info",a.className="material-symbols-outlined text-[18px] text-blue-300"):(a.textContent="check_circle",a.className="material-symbols-outlined text-[18px] text-emerald-300")),n.classList.remove("opacity-0","pointer-events-none"),n.classList.add("opacity-100"),clearTimeout(n._timeout),n._timeout=setTimeout(()=>{n.classList.remove("opacity-100"),n.classList.add("opacity-0","pointer-events-none")},2400)}const dt=""+new URL("logo-BG9jZ7UG.png",import.meta.url).href,ee=dt;function pt(){return`
     <main class="flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen justify-center items-center px-4">
       <div class="flex flex-col w-full max-w-sm py-8 fade-in">
         <!-- Brand & Logo Header -->
         <header class="flex flex-col items-center justify-center pb-4 text-center">
-          <img src="${O}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-16 h-16 object-contain mb-3 drop-shadow-sm" />
+          <img src="${ee}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-16 h-16 object-contain mb-3 drop-shadow-sm" />
           <h1 class="text-on-surface tracking-tight font-heading text-2xl font-bold">
             Where stories take shape.
           </h1>
@@ -155,7 +155,7 @@
         </p>
       </div>
     </main>
-  `}function _e(t){const e=document.getElementById("tab-signin"),s=document.getElementById("tab-register"),a=document.getElementById("tab-otp"),n=document.getElementById("flow-signin"),l=document.getElementById("flow-register"),d=document.getElementById("flow-otp");function o(b){[e,s,a].forEach(v=>{v.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 text-on-surface-variant hover:text-on-surface"}),[n,l,d].forEach(v=>v.classList.add("hidden")),b==="signin"?(e.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",n.classList.remove("hidden")):b==="register"?(s.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",l.classList.remove("hidden")):b==="otp"&&(a.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold flex items-center justify-center gap-1",d.classList.remove("hidden"))}e&&(e.onclick=()=>o("signin")),s&&(s.onclick=()=>o("register")),a&&(a.onclick=()=>o("otp"));const r=document.getElementById("toggle-pw-signin"),c=document.getElementById("signin-password");r&&c&&(r.onclick=()=>{const b=c.type==="password";c.type=b?"text":"password",r.innerHTML=`<span class="material-symbols-outlined text-[18px]">${b?"visibility_off":"visibility"}</span>`});const p=document.getElementById("btn-google-login");p&&(p.onclick=async()=>{u("Connecting with Google...");const b=await ae({email:"arun.kumar@scriptora.studio",provider:"google"});i.setState({currentUser:b}),t("/welcome")});const y=document.getElementById("form-signin");y&&(y.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("signin-email").value,w=c.value;try{const x=await ae({email:v,password:w});i.setState({currentUser:x}),u(`Welcome back, ${x.displayName||x.name}`),t("/welcome")}catch(x){u(x.message,"error")}});const m=document.getElementById("form-register");m&&(m.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("reg-name").value,w=document.getElementById("reg-email").value,x=document.getElementById("reg-password").value;try{const A=await fe({name:v,email:w,password:x});i.setState({currentUser:A}),u("Account created successfully"),t("/welcome")}catch(A){u(A.message,"error")}});const h=document.getElementById("form-otp");h&&(h.onsubmit=async b=>{b.preventDefault();const v=document.getElementById("otp-phone").value;try{const w=await me(v);i.setState({currentUser:w}),u("Phone verified successfully"),t("/welcome")}catch(w){u(w.message,"error")}});const I=document.getElementById("btn-forgot-pw");I&&(I.onclick=()=>{u("Password reset link sent to registered email","info")})}function Re(){return i.state.currentUser,`
+  `}function ut(t){const e=document.getElementById("tab-signin"),n=document.getElementById("tab-register"),s=document.getElementById("tab-otp"),a=document.getElementById("flow-signin"),l=document.getElementById("flow-register"),o=document.getElementById("flow-otp");function i(S){[e,n,s].forEach(y=>{y.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 text-on-surface-variant hover:text-on-surface"}),[a,l,o].forEach(y=>y.classList.add("hidden")),S==="signin"?(e.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",a.classList.remove("hidden")):S==="register"?(n.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold",l.classList.remove("hidden")):S==="otp"&&(s.className="flex-1 py-2 text-center rounded-lg transition-all duration-150 bg-white text-on-surface shadow-xs font-semibold flex items-center justify-center gap-1",o.classList.remove("hidden"))}e&&(e.onclick=()=>i("signin")),n&&(n.onclick=()=>i("register")),s&&(s.onclick=()=>i("otp"));const r=document.getElementById("toggle-pw-signin"),c=document.getElementById("signin-password");r&&c&&(r.onclick=()=>{const S=c.type==="password";c.type=S?"text":"password",r.innerHTML=`<span class="material-symbols-outlined text-[18px]">${S?"visibility_off":"visibility"}</span>`});const p=document.getElementById("btn-google-login");p&&(p.onclick=async()=>{f("Connecting with Google...");const S=await ke({email:"arun.kumar@scriptora.studio",provider:"google"});d.setState({currentUser:S}),t("/welcome")});const m=document.getElementById("form-signin");m&&(m.onsubmit=async S=>{S.preventDefault();const y=document.getElementById("signin-email").value,I=c.value;try{const b=await ke({email:y,password:I});d.setState({currentUser:b}),f(`Welcome back, ${b.displayName||b.name}`),t("/welcome")}catch(b){f(b.message,"error")}});const x=document.getElementById("form-register");x&&(x.onsubmit=async S=>{S.preventDefault();const y=document.getElementById("reg-name").value,I=document.getElementById("reg-email").value,b=document.getElementById("reg-password").value;try{const B=await Fe({name:y,email:I,password:b});d.setState({currentUser:B}),f("Account created successfully"),t("/welcome")}catch(B){f(B.message,"error")}});const v=document.getElementById("form-otp");v&&(v.onsubmit=async S=>{S.preventDefault();const y=document.getElementById("otp-phone").value;try{const I=await Ue(y);d.setState({currentUser:I}),f("Phone verified successfully"),t("/welcome")}catch(I){f(I.message,"error")}});const E=document.getElementById("btn-forgot-pw");E&&(E.onclick=()=>{f("Password reset link sent to registered email","info")})}function xt(){return d.state.currentUser,`
     <main class="flex-1 flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen">
       <div class="flex flex-col w-full min-h-screen px-4 justify-between items-center text-center select-none py-6 max-w-sm mx-auto flex-1 fade-in">
         
@@ -174,7 +174,7 @@
         <!-- Center Cohesive Cluster -->
         <div class="flex flex-col items-center justify-center my-auto w-full py-4">
           <!-- Logo Emblem -->
-          <img src="${O}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-20 h-20 object-contain mb-5 drop-shadow-sm" />
+          <img src="${ee}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora Logo" class="w-20 h-20 object-contain mb-5 drop-shadow-sm" />
 
           <!-- Main Editorial Display Statement -->
           <h1 class="font-display-mobile text-2xl sm:text-3xl text-slate-900 font-bold tracking-tight leading-tight">
@@ -221,11 +221,11 @@
 
       </div>
     </main>
-  `}function Fe(t){const e=document.getElementById("welcome-sign-out");e&&(e.onclick=async()=>{await U(),i.setState({currentUser:null}),u("Signed out successfully"),t("/auth")})}function P(t="Workspace",e="Your writing space."){const s=i.state.unreadNotifications,a=i.state.currentUser?.initials||"JD";return`
+  `}function ft(t){const e=document.getElementById("welcome-sign-out");e&&(e.onclick=async()=>{await de(),d.setState({currentUser:null}),f("Signed out successfully"),t("/auth")})}function F(t="Workspace",e="Your writing space."){const n=d.state.unreadNotifications,s=d.state.currentUser?.initials||"JD";return`
     <header class="fixed top-0 w-full z-40 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60">
       <div class="h-14 px-4 flex items-center justify-between max-w-2xl mx-auto">
         <a href="/workspace" class="flex items-center gap-2.5 min-w-0 no-underline text-inherit cursor-pointer active:opacity-80 transition-opacity">
-          <img src="${O}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-8 h-8 object-contain shrink-0" />
+          <img src="${ee}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-8 h-8 object-contain shrink-0" />
           <div class="flex flex-col min-w-0 leading-tight">
             <span class="font-heading font-bold text-base tracking-tight text-on-surface">Scriptora</span>
             <span class="text-[11px] text-slate-500 font-medium truncate">${t}</span>
@@ -236,17 +236,17 @@
           <!-- Notification Bell connecting to /notifications -->
           <a href="/notifications" class="relative w-9 h-9 rounded-full flex items-center justify-center text-slate-600 hover:text-on-surface hover:bg-slate-100 transition-colors" aria-label="Notifications" id="header-notif-btn">
             <span class="material-symbols-outlined text-[20px]">notifications</span>
-            ${s>0?'<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white animate-pulse"></span>':""}
+            ${n>0?'<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white animate-pulse"></span>':""}
           </a>
 
           <!-- Profile Avatar connecting to /profile -->
           <a href="/profile" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-xs hover:bg-blue-700 active:scale-95 transition-all no-underline" aria-label="User account" id="header-profile-btn">
-            <span>${a}</span>
+            <span>${s}</span>
           </a>
         </div>
       </div>
     </header>
-  `}function $(t="workspace"){const e=t==="workspace",s=t==="intelligence",a=t==="profile";return`
+  `}function U(t="workspace"){const e=t==="workspace",n=t==="intelligence",s=t==="profile";return`
     <nav class="fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60">
       <div class="h-14 px-6 flex items-center justify-around max-w-2xl mx-auto">
         <!-- 1. Workspace Tab -->
@@ -257,22 +257,22 @@
         </a>
 
         <!-- 2. Intelligence Tab -->
-        <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${s?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-intelligence">
-          <span class="material-symbols-outlined text-[22px]" ${s?`style="font-variation-settings: 'FILL' 1;"`:""}>insights</span>
+        <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${n?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-intelligence">
+          <span class="material-symbols-outlined text-[22px]" ${n?`style="font-variation-settings: 'FILL' 1;"`:""}>insights</span>
           <span class="text-[11px] font-medium mt-0.5">Intelligence</span>
-          ${s?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
+          ${n?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
         </a>
 
         <!-- 3. Profile Tab -->
-        <a href="/profile" class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${a?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-profile">
-          <span class="material-symbols-outlined text-[22px]" ${a?`style="font-variation-settings: 'FILL' 1;"`:""}>account_circle</span>
+        <a href="/profile" class="flex flex-col items-center justify-center min-w-[64px] min-h-[44px] transition-colors ${s?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-profile">
+          <span class="material-symbols-outlined text-[22px]" ${s?`style="font-variation-settings: 'FILL' 1;"`:""}>account_circle</span>
           <span class="text-[11px] font-medium mt-0.5">Profile</span>
-          ${a?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
+          ${s?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
         </a>
       </div>
     </nav>
-  `}function He(){const t=i.state.scripts||[],e=t.find(a=>a.isCurrentDraft)||t[0],s=t.slice(0,3);return`
-    ${P("Workspace","Your writing space.")}
+  `}function mt(){const t=d.state.scripts||[],e=t.find(s=>s.isCurrentDraft)||t[0],n=t.slice(0,3);return`
+    ${F("Workspace","Your writing space.")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-5 fade-in">
@@ -330,18 +330,18 @@
           </div>
 
           <div class="bg-white rounded-xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden" id="recent-scripts-list">
-            ${s.map(a=>`
-              <div data-script-id="${a.id}" class="script-item-row px-3.5 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+            ${n.map(s=>`
+              <div data-script-id="${s.id}" class="script-item-row px-3.5 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
                 <div class="flex items-center gap-3 min-w-0 pr-2">
                   <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-[18px]">description</span>
                   </div>
                   <div class="flex flex-col min-w-0">
                     <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-slate-900 truncate">${a.title}</span>
-                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">${a.genre}</span>
+                      <span class="text-xs font-semibold text-slate-900 truncate">${s.title}</span>
+                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">${s.genre}</span>
                     </div>
-                    <span class="text-[11px] text-slate-500 truncate mt-0.5">${a.draft} · ${a.pages} pages · Edited ${a.updated}</span>
+                    <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.draft} · ${s.pages} pages · Edited ${s.updated}</span>
                   </div>
                 </div>
                 <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0">chevron_right</span>
@@ -371,20 +371,20 @@
 
           <!-- Scripts Library Container -->
           <div class="bg-white rounded-xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden" id="screenplays-library-list">
-            ${t.map(a=>`
-              <div data-script-id="${a.id}" class="script-item-row px-3.5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
+            ${t.map(s=>`
+              <div data-script-id="${s.id}" class="script-item-row px-3.5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
                 <div class="flex items-center gap-3 min-w-0 pr-2 flex-1">
                   <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center shrink-0 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                     <span class="material-symbols-outlined text-[16px]">movie</span>
                   </div>
                   <div class="flex flex-col min-w-0">
-                    <span class="text-xs font-semibold text-slate-900 truncate">${a.title}</span>
-                    <span class="text-[11px] text-slate-500 truncate mt-0.5">${a.draft} · ${a.pages} pages · Edited ${a.updated}</span>
+                    <span class="text-xs font-semibold text-slate-900 truncate">${s.title}</span>
+                    <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.draft} · ${s.pages} pages · Edited ${s.updated}</span>
                   </div>
                 </div>
 
                 <div class="relative">
-                  <button type="button" class="script-more-btn w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-script-id="${a.id}" aria-label="More actions">
+                  <button type="button" class="script-more-btn w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors" data-script-id="${s.id}" aria-label="More actions">
                     <span class="material-symbols-outlined text-[18px]">more_vert</span>
                   </button>
                 </div>
@@ -478,242 +478,477 @@
       </button>
     </div>
 
-    ${$("workspace")}
-  `}function Je(t){let e=null;const s=document.getElementById("btn-continue-writing");s&&(s.onclick=()=>{const m=s.getAttribute("data-script-id");i.selectScript(m),t(`/editor/${m}?scene=18`)}),document.querySelectorAll(".script-item-row").forEach(m=>{m.onclick=h=>{if(h.target.closest(".script-more-btn"))return;const I=m.getAttribute("data-script-id");i.selectScript(I),t(`/editor/${I}`)}});const a=document.getElementById("screenplay-search");a&&(a.oninput=m=>{const h=m.target.value.toLowerCase().trim();document.querySelectorAll("#screenplays-library-list .script-item-row").forEach(b=>{const v=b.querySelector(".font-semibold")?.textContent.toLowerCase()||"";b.style.display=v.includes(h)?"flex":"none"})});const n=document.getElementById("btn-new-script"),l=document.getElementById("new-script-modal"),d=document.getElementById("close-new-script-modal"),o=document.getElementById("cancel-new-script-btn"),r=document.getElementById("form-new-script");function c(m){l&&(m?(l.classList.remove("hidden"),l.classList.add("flex"),document.getElementById("new-script-title")?.focus()):(l.classList.add("hidden"),l.classList.remove("flex")))}n&&(n.onclick=()=>c(!0)),d&&(d.onclick=()=>c(!1)),o&&(o.onclick=()=>c(!1)),r&&(r.onsubmit=async m=>{m.preventDefault();const h=document.getElementById("new-script-title").value.trim(),I=document.getElementById("new-script-format").value,b=document.getElementById("new-script-genre").value;if(h)try{const v=await be({title:h,format:I,genre:b});await i.refreshScripts(),i.selectScript(v.id),c(!1),u(`Created "${v.title}"`),t(`/editor/${v.id}`)}catch(v){u(v.message,"error")}});const p=document.getElementById("script-menu-popover");document.querySelectorAll(".script-more-btn").forEach(m=>{m.onclick=h=>{h.stopPropagation(),e=m.getAttribute("data-script-id");const I=m.getBoundingClientRect();p.style.top=`${I.bottom+window.scrollY+4}px`,p.style.left=`${Math.min(I.left-130,window.innerWidth-180)}px`,p.classList.remove("hidden")}}),window.onclick=m=>{!m.target.closest("#script-menu-popover")&&!m.target.closest(".script-more-btn")&&p?.classList.add("hidden")},document.getElementById("menu-opt-open")?.addEventListener("click",()=>{p.classList.add("hidden"),e&&(i.selectScript(e),t(`/editor/${e}`))}),document.getElementById("menu-opt-rename")?.addEventListener("click",async()=>{p.classList.add("hidden");const m=prompt("Enter new title for this screenplay:");m&&m.trim()&&(await ge(e,{title:m.trim()}),await i.refreshScripts(),u("Screenplay renamed"),t("/workspace"))}),document.getElementById("menu-opt-duplicate")?.addEventListener("click",async()=>{p.classList.add("hidden"),await ve(e),await i.refreshScripts(),u("Screenplay duplicated"),t("/workspace")}),document.getElementById("menu-opt-archive")?.addEventListener("click",async()=>{p.classList.add("hidden"),await ye(e),await i.refreshScripts(),u("Screenplay archived"),t("/workspace")}),document.getElementById("menu-opt-delete")?.addEventListener("click",async()=>{p.classList.add("hidden"),confirm("Are you sure you want to delete this screenplay? This action cannot be undone.")&&(await he(e),await i.refreshScripts(),u("Screenplay deleted"),t("/workspace"))});const y=document.getElementById("btn-export-library");y&&(y.onclick=()=>{const m="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(i.state.scripts,null,2)),h=document.createElement("a");h.setAttribute("href",m),h.setAttribute("download",`scriptora_library_${Date.now()}.json`),document.body.appendChild(h),h.click(),h.remove(),u("Exported library manifest (.json)")})}function Ve(t,e=null){const s=i.state.scripts.find(n=>n.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2"},a=i.state.currentUser?.initials||"JD";return`
-    <div id="editor-wrapper" class="flex flex-col min-h-screen bg-surface w-full relative transition-all duration-200">
+    ${U("workspace")}
+  `}function bt(t){let e=null;const n=document.getElementById("btn-continue-writing");n&&(n.onclick=()=>{const x=n.getAttribute("data-script-id");d.selectScript(x),t(`/editor/${x}?scene=18`)}),document.querySelectorAll(".script-item-row").forEach(x=>{x.onclick=v=>{if(v.target.closest(".script-more-btn"))return;const E=x.getAttribute("data-script-id");d.selectScript(E),t(`/editor/${E}`)}});const s=document.getElementById("screenplay-search");s&&(s.oninput=x=>{const v=x.target.value.toLowerCase().trim();document.querySelectorAll("#screenplays-library-list .script-item-row").forEach(S=>{const y=S.querySelector(".font-semibold")?.textContent.toLowerCase()||"";S.style.display=y.includes(v)?"flex":"none"})});const a=document.getElementById("btn-new-script"),l=document.getElementById("new-script-modal"),o=document.getElementById("close-new-script-modal"),i=document.getElementById("cancel-new-script-btn"),r=document.getElementById("form-new-script");function c(x){l&&(x?(l.classList.remove("hidden"),l.classList.add("flex"),document.getElementById("new-script-title")?.focus()):(l.classList.add("hidden"),l.classList.remove("flex")))}a&&(a.onclick=()=>c(!0)),o&&(o.onclick=()=>c(!1)),i&&(i.onclick=()=>c(!1)),r&&(r.onsubmit=async x=>{x.preventDefault();const v=document.getElementById("new-script-title").value.trim(),E=document.getElementById("new-script-format").value,S=document.getElementById("new-script-genre").value;if(v)try{const y=await He({title:v,format:E,genre:S});await d.refreshScripts(),d.selectScript(y.id),c(!1),f(`Created "${y.title}"`),t(`/editor/${y.id}`)}catch(y){f(y.message,"error")}});const p=document.getElementById("script-menu-popover");document.querySelectorAll(".script-more-btn").forEach(x=>{x.onclick=v=>{v.stopPropagation(),e=x.getAttribute("data-script-id");const E=x.getBoundingClientRect();p.style.top=`${E.bottom+window.scrollY+4}px`,p.style.left=`${Math.min(E.left-130,window.innerWidth-180)}px`,p.classList.remove("hidden")}}),window.onclick=x=>{!x.target.closest("#script-menu-popover")&&!x.target.closest(".script-more-btn")&&p?.classList.add("hidden")},document.getElementById("menu-opt-open")?.addEventListener("click",()=>{p.classList.add("hidden"),e&&(d.selectScript(e),t(`/editor/${e}`))}),document.getElementById("menu-opt-rename")?.addEventListener("click",async()=>{p.classList.add("hidden");const x=prompt("Enter new title for this screenplay:");x&&x.trim()&&(await Ve(e,{title:x.trim()}),await d.refreshScripts(),f("Screenplay renamed"),t("/workspace"))}),document.getElementById("menu-opt-duplicate")?.addEventListener("click",async()=>{p.classList.add("hidden"),await Ge(e),await d.refreshScripts(),f("Screenplay duplicated"),t("/workspace")}),document.getElementById("menu-opt-archive")?.addEventListener("click",async()=>{p.classList.add("hidden"),await Je(e),await d.refreshScripts(),f("Screenplay archived"),t("/workspace")}),document.getElementById("menu-opt-delete")?.addEventListener("click",async()=>{p.classList.add("hidden"),confirm("Are you sure you want to delete this screenplay? This action cannot be undone.")&&(await qe(e),await d.refreshScripts(),f("Screenplay deleted"),t("/workspace"))});const m=document.getElementById("btn-export-library");m&&(m.onclick=()=>{const x="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(d.state.scripts,null,2)),v=document.createElement("a");v.setAttribute("href",x),v.setAttribute("download",`scriptora_library_${Date.now()}.json`),document.body.appendChild(v),v.click(),v.remove(),f("Exported library manifest (.json)")})}let u=null,pe=null,Te=null,ne=!1,_=!1,O=!0,D=!1,re="EN",P=[],R=-1;function gt(t,e=null){const n=d.state.scripts?.find(a=>a.id===t)||d.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2"},s=d.state.currentUser?.initials||"AK";return`
+    <div id="editor-root" class="flex flex-col min-h-screen bg-slate-100 text-slate-900 w-full relative select-text antialiased">
       
-      <!-- Top Fixed Editor Header -->
-      <header id="editor-header" class="fixed top-0 w-full z-40 pt-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-slate-100 transition-transform duration-200">
-        <div class="h-12 px-3 flex items-center justify-between max-w-4xl mx-auto">
-          <div class="flex items-center gap-1.5 min-w-0">
+      <!-- ========================================================= -->
+      <!-- STATIC TOP HEADER (FIXED: Never scrolls with screenplay)  -->
+      <!-- ========================================================= -->
+      <header id="editor-fixed-header" class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
+        
+        <!-- ROW 1: TOP APP HEADER (Order: Back, Logo, Title, Save, Collab, Avatar) -->
+        <div class="h-12 px-3 flex items-center justify-between max-w-5xl mx-auto">
+          <div class="flex items-center gap-2 min-w-0">
             <!-- Back to Workspace button -->
-            <button aria-label="Back to Workspace" id="editor-back-btn" class="w-9 h-9 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors">
+            <button aria-label="Back to Workspace" id="editor-back-btn" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 active:scale-95 transition-all">
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
+            
+            <!-- Logo & Script Title -->
             <div class="flex items-center gap-2 select-none min-w-0">
-              <img src="${O}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
+              <img src="${ee}" onerror="this.onerror=null; this.src='./assets/logo-BG9jZ7UG.png';" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
               <div class="flex flex-col min-w-0 leading-tight">
-                <span class="font-heading font-bold text-xs sm:text-sm text-slate-900 truncate">${s.title}</span>
-                <span class="text-[10px] text-slate-500 truncate" id="editor-save-status">Autosaved Just now</span>
+                <span class="font-heading font-bold text-xs sm:text-sm text-slate-900 truncate" id="editor-script-title">${n.title}</span>
+                <span class="text-[10px] text-slate-500 truncate" id="editor-save-status">Saved</span>
               </div>
             </div>
           </div>
 
+          <!-- Right Controls: SAVE MUST APPEAR BEFORE COLLABORATE -->
           <div class="flex items-center gap-1.5 shrink-0">
-            <!-- Collaborators Link -->
-            <a href="/profile/collaborators" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors no-underline">
+            <!-- Save Button with State Machine -->
+            <button id="editor-save-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all" title="Save changes (Ctrl+S / Cmd+S)">
+              <span class="material-symbols-outlined text-[15px]" id="editor-save-icon">cloud_done</span>
+              <span id="editor-save-text">Save</span>
+            </button>
+
+            <!-- Collaborate Link -->
+            <a href="/profile/collaborators" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
               <span class="material-symbols-outlined text-[19px]">group</span>
             </a>
+
             <!-- User Avatar -->
             <a href="/profile" aria-label="User profile" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs no-underline">
-              ${a}
+              ${s}
             </a>
           </div>
         </div>
+
+        <!-- ROW 2: HORIZONTAL EDITOR TOOLBAR ([ ⋮ ] MUST appear BEFORE Production) -->
+        <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all">
+          
+          <!-- [ ⋮ ] Three-Dot Menu (FIRST item as required by Section F) -->
+          <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="More Tools (Title Page, Preferences, Find/Replace)">
+            <span class="material-symbols-outlined text-[18px]">more_vert</span>
+          </button>
+
+          <!-- Production -->
+          <button id="btn-open-production" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px] text-blue-600">movie</span>
+            <span>Production</span>
+          </button>
+
+          <!-- Export -->
+          <button id="exportModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px] text-blue-600">ios_share</span>
+            <span>Export</span>
+          </button>
+
+          <!-- Scene #s Toggle -->
+          <button id="sceneNumberToggle" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-caption text-xs font-semibold border border-blue-200/80 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px]">pin</span>
+            <span id="sceneNumberToggleText">Scene #s: On</span>
+          </button>
+
+          <!-- Title Page -->
+          <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px] text-slate-600">description</span>
+            <span>Title Page</span>
+          </button>
+
+          <!-- Find / Replace -->
+          <button id="btn-quick-find" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px] text-slate-600">find_replace</span>
+            <span>Find</span>
+          </button>
+
+          <!-- Focus Mode -->
+          <button id="focusModeToggle" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px]">center_focus_strong</span>
+            <span id="focusModeText">Focus</span>
+          </button>
+
+          <!-- Language -->
+          <button id="langToggleBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[15px] text-blue-600">translate</span>
+            <span id="langToggleText">EN / தமிழ்</span>
+          </button>
+
+          <!-- Versions -->
+          <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
+            <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
+            <span id="currentVersionTag">${n.draft||"Draft 4.2"}</span>
+          </button>
+        </div>
+
+        <!-- ROW 3: ACCESSORY & ELEMENT BAR (Navigation & Line Type Conversions) -->
+        <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1.5 flex flex-col gap-1.5 shadow-xs max-w-5xl mx-auto transition-all">
+          
+          <!-- Navigation Selector Row (Act / Scene / Character - Data-driven) -->
+          <div class="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none py-0.5">
+            <div class="flex items-center gap-1.5 shrink-0">
+              <!-- Act Jump -->
+              <div class="relative">
+                <select id="navActSelect" class="h-7 pl-2 pr-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none">
+                  <option value="">ACT...</option>
+                </select>
+                <span class="material-symbols-outlined text-[13px] text-slate-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+              </div>
+
+              <!-- Scene Jump -->
+              <div class="relative">
+                <select id="navSceneSelect" class="h-7 pl-2 pr-6 rounded-lg bg-blue-600 text-white text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none shadow-xs">
+                  <option value="">SCENE...</option>
+                </select>
+                <span class="material-symbols-outlined text-[13px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+              </div>
+
+              <!-- Character Jump -->
+              <div class="relative">
+                <select id="navCharSelect" class="h-7 pl-2 pr-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none">
+                  <option value="">CHARACTER...</option>
+                </select>
+                <span class="material-symbols-outlined text-[13px] text-slate-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+              </div>
+            </div>
+
+            <!-- Undo / Redo & Insert INT/EXT -->
+            <div class="flex items-center gap-1 shrink-0">
+              <button id="btn-undo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Undo (Ctrl+Z)">
+                <span class="material-symbols-outlined text-[16px]">undo</span>
+              </button>
+              <button id="btn-redo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Redo (Ctrl+Y)">
+                <span class="material-symbols-outlined text-[16px]">redo</span>
+              </button>
+              <button id="btn-insert-intext" class="px-2 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-[11px] font-bold active:scale-95 transition-all" title="Insert INT/EXT">
+                INT/EXT
+              </button>
+            </div>
+          </div>
+
+          <!-- Line Element Bar: ACT, SCENE, CHARACTER, DIALOGUE, PARENTHETICAL, TRANSITION -->
+          <div class="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none py-0.5" id="element-bar">
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="scene" title="Convert to Scene Heading">
+              <span class="material-symbols-outlined text-[14px]">movie</span>
+              <span>Scene</span>
+            </button>
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-blue-600 text-white shadow-xs" data-type="action" title="Convert to Action block">
+              <span class="material-symbols-outlined text-[14px]">edit_note</span>
+              <span>Action</span>
+            </button>
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="character" title="Convert to Character cue">
+              <span class="material-symbols-outlined text-[14px]">person</span>
+              <span>Char</span>
+            </button>
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="dialogue" title="Convert to Dialogue">
+              <span class="material-symbols-outlined text-[14px]">chat_bubble</span>
+              <span>Dialogue</span>
+            </button>
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Convert to Parenthetical">
+              <span class="material-symbols-outlined text-[14px]">format_quote</span>
+              <span>Paren</span>
+            </button>
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="transition" title="Convert to Transition">
+              <span class="material-symbols-outlined text-[14px]">double_arrow</span>
+              <span>Trans</span>
+            </button>
+          </div>
+        </div>
+
       </header>
 
-      <!-- Main Editor Container -->
-      <main class="flex flex-col relative w-full pt-12 pb-safe bg-surface min-h-screen">
-        <div class="flex flex-col w-full max-w-4xl mx-auto pb-8">
-          
-          <!-- Sub-header Toolbar Strip -->
-          <div id="editor-toolbar-strip" class="w-full bg-slate-100/70 border-b border-slate-200/60 px-3 py-1.5 flex flex-col gap-1.5 transition-all">
-            <div class="flex items-center gap-2 overflow-x-auto scrollbar-none py-0.5 text-nowrap">
-              <!-- Production Button -->
-              <button id="btn-open-production" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[15px] text-blue-600">movie</span>
-                <span>Production</span>
-              </button>
-
-              <!-- Export Button -->
-              <button id="exportModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[15px] text-blue-600">ios_share</span>
-                <span>Export (PDF/FDX)</span>
-              </button>
-
-              <!-- Scene #s Toggle -->
-              <button id="sceneNumberToggle" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 font-caption text-xs font-semibold border border-blue-200/80 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[15px]">pin</span>
-                <span id="sceneNumberToggleText">Scene #s: On</span>
-              </button>
-
-              <!-- Focus Mode Toggle -->
-              <button id="focusModeToggle" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[15px]">center_focus_strong</span>
-                <span id="focusModeText">Focus Mode</span>
-              </button>
-
-              <!-- Language Toggle -->
-              <button id="langToggleBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[15px] text-blue-600">translate</span>
-                <span id="langToggleText">EN / தமிழ்</span>
-              </button>
-
-              <!-- Versions Button -->
-              <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs font-medium border border-slate-200/80 hover:bg-slate-50 active:scale-95 transition-all">
-                <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
-                <span id="currentVersionTag">${s.draft||"Draft 4.2"}</span>
-              </button>
-            </div>
+      <!-- ========================================================= -->
+      <!-- FIND & REPLACE DOCKED BAR (Toggled via menu or Ctrl+F)    -->
+      <!-- ========================================================= -->
+      <div id="findReplaceBar" class="fixed top-[152px] left-0 right-0 z-35 bg-white border-b border-blue-200 shadow-md px-4 py-2 hidden max-w-3xl mx-auto rounded-b-xl transition-all">
+        <div class="flex items-center gap-2 flex-wrap text-xs">
+          <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 flex-1 min-w-[140px]">
+            <span class="material-symbols-outlined text-[15px] text-slate-400 mr-1">search</span>
+            <input type="text" id="findInput" placeholder="Find text..." class="bg-transparent outline-none w-full text-slate-900" />
+            <span id="findMatchesCount" class="text-[10px] text-slate-500 whitespace-nowrap ml-1 font-mono">0 of 0</span>
           </div>
 
-          <!-- Scene Jump & Formatting Accessory Tray -->
-          <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-2 flex flex-col gap-2 shadow-xs z-30 transition-all">
-            <div class="flex items-center justify-between pb-0.5">
-              <div class="flex items-center gap-1">
-                <button aria-label="Undo" id="btn-undo" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all">
-                  <span class="material-symbols-outlined text-[18px]">undo</span>
-                </button>
-                <button aria-label="Redo" id="btn-redo" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all">
-                  <span class="material-symbols-outlined text-[18px]">redo</span>
-                </button>
-                <button id="btn-insert-intext" class="px-2.5 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-xs font-semibold active:scale-95 transition-all">
-                  INT/EXT
-                </button>
-              </div>
-
-              <div class="flex items-center gap-1.5">
-                <!-- Scene Jump Selector -->
-                <div class="relative">
-                  <select id="sceneJumpSelect" class="h-8 pl-3 pr-7 rounded-full bg-blue-600 text-white font-caption text-xs uppercase font-semibold appearance-none cursor-pointer focus:outline-none shadow-xs">
-                    <option value="scene-18">SCENE 18</option>
-                    <option value="scene-19">SCENE 19</option>
-                    <option value="scene-1">SCENE 1</option>
-                  </select>
-                  <span class="material-symbols-outlined text-[14px] text-white absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
-                </div>
-
-                <button id="screenplayDualBtn" class="px-2.5 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center gap-1 text-slate-700 text-xs font-medium active:scale-95 transition-all" title="Dual Dialogue">
-                  <span class="material-symbols-outlined text-[16px]">splitscreen</span>
-                  <span>Dual</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Grammar Semantic Element Buttons -->
-            <div class="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none py-0.5">
-              <button class="format-btn flex-1 min-w-[56px] py-1.5 px-2 rounded-lg bg-blue-600 text-white text-xs flex items-center justify-center gap-1 shrink-0 shadow-xs active:opacity-90 font-medium" data-type="action">
-                <span class="material-symbols-outlined text-[15px]">edit_note</span>
-                <span>Act</span>
-              </button>
-              <button class="format-btn flex-1 min-w-[56px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center justify-center gap-1 shrink-0 font-medium active:bg-blue-600 active:text-white transition-colors" data-type="scene">
-                <span class="material-symbols-outlined text-[15px]">label</span>
-                <span>Scen</span>
-              </button>
-              <button class="format-btn flex-1 min-w-[56px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center justify-center gap-1 shrink-0 font-medium active:bg-blue-600 active:text-white transition-colors" data-type="character">
-                <span class="material-symbols-outlined text-[15px]">person</span>
-                <span>Char</span>
-              </button>
-              <button class="format-btn flex-1 min-w-[56px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center justify-center gap-1 shrink-0 font-medium active:bg-blue-600 active:text-white transition-colors" data-type="dialogue">
-                <span class="material-symbols-outlined text-[15px]">chat_bubble</span>
-                <span>Dia</span>
-              </button>
-              <button class="format-btn flex-1 min-w-[56px] py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center justify-center gap-1 shrink-0 font-medium active:bg-blue-600 active:text-white transition-colors" data-type="parenthetical">
-                <span class="material-symbols-outlined text-[15px]">format_quote</span>
-                <span>Para</span>
-              </button>
-            </div>
+          <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 flex-1 min-w-[140px]">
+            <span class="material-symbols-outlined text-[15px] text-slate-400 mr-1">find_replace</span>
+            <input type="text" id="replaceInput" placeholder="Replace with..." class="bg-transparent outline-none w-full text-slate-900" />
           </div>
 
-          <!-- THE PHYSICAL SCREENPLAY PAGE -->
-          <div class="px-2 sm:px-4 py-4 flex justify-center">
-            <div id="screenplay-page" class="w-full max-w-2xl bg-white rounded-xl shadow-md p-6 sm:p-10 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 border border-slate-100">
-              
-              <!-- SCENE 18 -->
-              <div id="anchor-scene-18" class="flex items-baseline justify-between py-2 font-bold text-slate-900 mb-3 border-b border-transparent">
-                <span class="scene-num-indicator mr-3 shrink-0 text-slate-500 font-bold">18</span>
-                <span class="flex-1 tracking-wide uppercase outline-none" contenteditable="true" id="slugline-18">INT. CUSTOMS OFFICE - NIGHT</span>
-                <span class="scene-num-indicator ml-3 shrink-0 text-slate-500 font-bold">18</span>
-              </div>
-
-              <!-- Action Paragraph -->
-              <p class="mb-4 text-slate-900 text-justify outline-none p-1 rounded focus:bg-blue-50/50" contenteditable="true" id="action-1">
-                Kevin kneels over the cracked hydro-sensor junction box. Static hiss whispers through the damp comm-link. A lone flicker illuminates the tarnished brass seal.
-              </p>
-
-              <!-- Action Paragraph 2 -->
-              <p class="mb-5 text-slate-900 text-justify outline-none p-1 rounded focus:bg-blue-50/50" contenteditable="true" id="action-2">
-                Water droplets bead along the corroded circuit wires. He slides a copper probe between the connectors.
-              </p>
-
-              <!-- Character Cue 1 -->
-              <div class="w-full flex justify-center mt-2 mb-0">
-                <p class="w-7/12 uppercase tracking-wider font-bold text-center outline-none" contenteditable="true">
-                  KEVIN
-                </p>
-              </div>
-
-              <!-- Parenthetical -->
-              <div class="w-full flex justify-center mb-0">
-                <p class="w-6/12 italic text-center text-slate-500 outline-none" contenteditable="true">
-                  (whispering into comm)
-                </p>
-              </div>
-
-              <!-- Dialogue -->
-              <div class="w-full flex justify-center mb-5">
-                <p class="w-9/12 sm:w-8/12 text-left outline-none p-1 rounded focus:bg-blue-50/50" contenteditable="true" id="dialogue-1">
-                  If the seals break before dawn, the sector won't hold the surge.
-                </p>
-              </div>
-
-              <!-- Character Cue 2 -->
-              <div class="w-full flex justify-center mt-1 mb-0">
-                <p class="w-7/12 uppercase tracking-wider font-bold text-center outline-none" contenteditable="true">
-                  MEERA (O.S.)
-                </p>
-              </div>
-
-              <!-- Dialogue 2 -->
-              <div class="w-full flex justify-center mb-6">
-                <p class="w-9/12 sm:w-8/12 text-left outline-none p-1 rounded focus:bg-blue-50/50" contenteditable="true" id="dialogue-2">
-                  Then don't let them break. Reroute the secondary relay through the floodgate breaker.
-                </p>
-              </div>
-
-              <!-- Transition -->
-              <div class="w-full flex justify-end mb-6">
-                <p class="uppercase font-bold tracking-wider outline-none" contenteditable="true">
-                  CUT TO:
-                </p>
-              </div>
-
-              <!-- SCENE 19 -->
-              <div id="anchor-scene-19" class="flex items-baseline justify-between py-2 font-bold text-slate-900 mb-3 border-t border-slate-100 pt-4">
-                <span class="scene-num-indicator mr-3 shrink-0 text-slate-500 font-bold">19</span>
-                <span class="flex-1 tracking-wide uppercase outline-none" contenteditable="true" id="slugline-19">EXT. FLOODGATE GANTRY - CONTINUOUS</span>
-                <span class="scene-num-indicator ml-3 shrink-0 text-slate-500 font-bold">19</span>
-              </div>
-
-              <!-- Editable Target Action -->
-              <div class="outline-none mb-4 text-slate-900 focus:bg-blue-50/50 rounded p-1 transition-colors" contenteditable="true" id="editableLine">
-                Sirens pulse through the red fog. Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below.
-              </div>
-
-            </div>
+          <div class="flex items-center gap-1">
+            <button id="findPrevBtn" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700" title="Previous match">
+              <span class="material-symbols-outlined text-[14px]">expand_less</span>
+            </button>
+            <button id="findNextBtn" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700" title="Next match">
+              <span class="material-symbols-outlined text-[14px]">expand_more</span>
+            </button>
+            <button id="replaceBtn" class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 font-semibold text-[11px] text-slate-800">Replace</button>
+            <button id="replaceAllBtn" class="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 font-semibold text-[11px] text-white">All</button>
+            <button id="closeFindBtn" class="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-500 ml-1">
+              <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
           </div>
-
-          <!-- Telemetry Bar -->
-          <div class="px-4 py-2 flex items-center justify-between gap-2 text-slate-500 font-caption text-xs select-none border-t border-slate-200 bg-white">
-            <div class="flex items-center gap-2">
-              <span class="flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px]">format_shapes</span>
-                <span>Courier Prime 12pt</span>
-              </span>
-              <span>•</span>
-              <span class="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-medium" id="tamilLangBadge">Tamil IME: Ready</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span>Page 34 of 96</span>
-              <span>•</span>
-              <span id="word-count-display">14,280 words</span>
-            </div>
-          </div>
-
         </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- CONTINUOUS MULTI-PAGE SCREENPLAY WORKSPACE AREA          -->
+      <!-- Single vertical scroll container, Header stays fixed      -->
+      <!-- ========================================================= -->
+      <main id="editor-main-scroll" class="flex-1 w-full pt-[156px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
+        
+        <!-- Multi-page Sheet Container -->
+        <div id="screenplay-pages-container" class="w-full max-w-3xl flex flex-col items-center gap-8 py-6 px-3 sm:px-6">
+          <!-- Pages rendered dynamically with Page boundaries -->
+          <div class="w-full flex items-center justify-center py-20 text-slate-400">
+            <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
+            <span>Loading screenplay studio...</span>
+          </div>
+        </div>
+
+        <!-- Telemetry Footer Bar -->
+        <div class="w-full max-w-3xl px-4 py-2 mt-4 flex items-center justify-between gap-2 text-slate-500 font-caption text-xs select-none border-t border-slate-200 bg-white/70 backdrop-blur-xs rounded-xl shadow-2xs">
+          <div class="flex items-center gap-2">
+            <span class="flex items-center gap-1 font-mono">
+              <span class="material-symbols-outlined text-[14px]">format_shapes</span>
+              <span id="telemetry-font">Courier Prime 12pt</span>
+            </span>
+            <span>•</span>
+            <span class="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-medium" id="tamilLangBadge">Tamil IME: Ready</span>
+          </div>
+          <div class="flex items-center gap-2 font-mono">
+            <span id="telemetry-page-count">Page 1 of 5</span>
+            <span>•</span>
+            <span id="telemetry-word-count">14,280 words</span>
+          </div>
+        </div>
+
       </main>
 
-      <!-- EXPORT MODAL -->
+      <!-- ========================================================= -->
+      <!-- AUTOCOMPLETE POPUP (Anchor to active line)                -->
+      <!-- ========================================================= -->
+      <div id="editor-autocomplete-dropdown" class="fixed z-50 bg-white border border-slate-200/90 rounded-xl shadow-xl py-1 min-w-[220px] max-w-[calc(100vw-32px)] max-h-56 overflow-y-auto hidden text-xs font-mono select-none transition-all">
+        <!-- Autocomplete items rendered here -->
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- THREE-DOT MENU MODAL / DRAWER (Section G)                 -->
+      <!-- ========================================================= -->
+      <div id="editorMoreMenuModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden items-start justify-end sm:justify-center p-3 sm:pt-20">
+        <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-blue-600">construction</span>
+              <h3 class="font-bold text-sm text-slate-900 font-heading">Screenplay Tools</h3>
+            </div>
+            <button id="closeMoreMenuBtn" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-200/60">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+
+          <div class="p-3 divide-y divide-slate-100 text-xs overflow-y-auto max-h-[75vh]">
+            
+            <!-- DOCUMENT -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Document</span>
+              <button id="menu-btn-title-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">description</span>
+                <span class="flex-1 font-medium">Title Page Editor</span>
+                <span class="text-[10px] text-slate-400">Cover & Credits</span>
+              </button>
+              <button id="menu-btn-find-replace" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">find_replace</span>
+                <span class="flex-1 font-medium">Find / Replace</span>
+                <span class="text-[10px] text-slate-400">Ctrl+F</span>
+              </button>
+            </div>
+
+            <!-- VIEW -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">View & Navigation</span>
+              <button id="menu-btn-focus-mode" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">center_focus_strong</span>
+                <span class="flex-1 font-medium">Toggle Focus Mode</span>
+                <span id="menuFocusState" class="text-[10px] text-blue-600 font-semibold">Off</span>
+              </button>
+              <button id="menu-btn-go-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">auto_stories</span>
+                <span class="flex-1 font-medium">Go to Page...</span>
+              </button>
+              <button id="menu-btn-go-scene" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">movie</span>
+                <span class="flex-1 font-medium">Go to Scene...</span>
+              </button>
+            </div>
+
+            <!-- FORMAT / PAGE -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format / Page</span>
+              <button id="menu-btn-scene-numbers" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">pin</span>
+                <span class="flex-1 font-medium">Scene Numbering (Left side)</span>
+                <span id="menuSceneNumState" class="text-[10px] text-blue-600 font-semibold">Enabled</span>
+              </button>
+              <button id="menu-btn-preferences" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">tune</span>
+                <span class="flex-1 font-medium">Editor Preferences</span>
+                <span class="text-[10px] text-slate-400">Margins, Spacing</span>
+              </button>
+            </div>
+
+            <!-- PROJECT -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Project</span>
+              <button id="menu-btn-production" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">movie</span>
+                <span class="flex-1 font-medium">Production Telemetry</span>
+              </button>
+              <button id="menu-btn-export" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">ios_share</span>
+                <span class="flex-1 font-medium">Export Screenplay (PDF / FDX)</span>
+              </button>
+            </div>
+
+            <!-- VERSION -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Versions</span>
+              <button id="menu-btn-versions" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">history</span>
+                <span class="flex-1 font-medium">Version History</span>
+              </button>
+              <button id="menu-btn-compare" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">compare_arrows</span>
+                <span class="flex-1 font-medium">Compare Versions</span>
+              </button>
+            </div>
+
+            <!-- LANGUAGE -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Language</span>
+              <div class="grid grid-cols-3 gap-1 pt-1">
+                <button class="lang-choice-btn py-1 rounded bg-blue-600 text-white font-semibold text-center" data-lang="EN">English</button>
+                <button class="lang-choice-btn py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-center" data-lang="TA">தமிழ்</button>
+                <button class="lang-choice-btn py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 text-center" data-lang="TL">Tanglish</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- TITLE PAGE EDITOR MODAL (Section H)                       -->
+      <!-- ========================================================= -->
+      <div id="titlePageModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+        <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/70">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">description</span>
+              </div>
+              <div>
+                <h3 class="font-heading font-bold text-base text-slate-900 leading-tight">Title Page Editor</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Industry Standard Screenplay Cover Page</p>
+              </div>
+            </div>
+            <button id="closeTitlePageModal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+
+          <div class="p-5 flex flex-col gap-3.5 overflow-y-auto font-sans text-xs">
+            <div class="flex flex-col gap-1">
+              <label class="font-semibold text-slate-700">Screenplay Title</label>
+              <input type="text" id="tpTitleInput" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 font-bold uppercase focus:outline-none focus:border-blue-600" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="font-semibold text-slate-700">Written by / Author</label>
+              <input type="text" id="tpAuthorInput" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="font-semibold text-slate-700">Based on / Additional Credits (Optional)</label>
+              <input type="text" id="tpNotesInput" placeholder="e.g. Based on an original story by..." class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="font-semibold text-slate-700">Contact Information</label>
+              <textarea id="tpContactInput" rows="3" placeholder="Agency, management, email, phone number..." class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 resize-none"></textarea>
+            </div>
+          </div>
+
+          <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button id="cancelTitlePageBtn" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-medium">Cancel</button>
+            <button id="saveTitlePageBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs hover:bg-blue-700">
+              <span class="material-symbols-outlined text-[16px]">save</span>
+              <span>Save Title Page</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- EDITOR PREFERENCES MODAL (Section AE)                     -->
+      <!-- ========================================================= -->
+      <div id="preferencesModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-200">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/70">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                <span class="material-symbols-outlined text-[20px]">tune</span>
+              </div>
+              <h3 class="font-heading font-bold text-base text-slate-900">Editor Preferences</h3>
+            </div>
+            <button id="closePrefModal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+
+          <div class="p-5 flex flex-col gap-4 overflow-y-auto text-xs">
+            <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+              <div class="flex flex-col">
+                <span class="font-semibold text-slate-800">Smart Formatting Automation</span>
+                <span class="text-[11px] text-slate-500">Auto Enter/Tab flow between Scene, Action, Character & Dialogue</span>
+              </div>
+              <input type="checkbox" id="prefSmartFormat" checked class="w-4 h-4 accent-blue-600 rounded">
+            </label>
+
+            <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+              <div class="flex flex-col">
+                <span class="font-semibold text-slate-800">Show Scene Numbers</span>
+                <span class="text-[11px] text-slate-500">Display automatic scene numbers on the LEFT side</span>
+              </div>
+              <input type="checkbox" id="prefSceneNumbers" checked class="w-4 h-4 accent-blue-600 rounded">
+            </label>
+
+            <div class="flex flex-col gap-1.5">
+              <label class="font-semibold text-slate-700">Line Spacing</label>
+              <select id="prefLineSpacing" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 outline-none">
+                <option value="1.0">Single (1.0)</option>
+                <option value="1.5" selected>Standard (1.5)</option>
+                <option value="2.0">Double (2.0)</option>
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+              <label class="font-semibold text-slate-700">Editor Typography Font Size</label>
+              <select id="prefFontSize" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 outline-none">
+                <option value="12pt" selected>Courier Prime 12pt (Industry Standard)</option>
+                <option value="14pt">Courier Prime 14pt (Large Readability)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button id="savePrefBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold shadow-xs hover:bg-blue-700">Apply Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================= -->
+      <!-- EXPORT MODAL                                              -->
+      <!-- ========================================================= -->
       <div id="exportModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
           <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
@@ -723,7 +958,7 @@
               </div>
               <div>
                 <h3 class="font-heading font-bold text-base text-slate-900 leading-tight">Export Screenplay</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">${s.title} · ${s.draft||"Draft 4.2"}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${n.title} · ${n.draft||"Draft 4.2"}</p>
               </div>
             </div>
             <button id="closeExportModal" aria-label="Close export dialog" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
@@ -782,7 +1017,9 @@
         </div>
       </div>
 
-      <!-- VERSIONS MODAL -->
+      <!-- ========================================================= -->
+      <!-- VERSIONS MODAL                                            -->
+      <!-- ========================================================= -->
       <div id="versionsModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
           <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100">
@@ -792,7 +1029,7 @@
               </div>
               <div>
                 <h3 class="font-heading font-bold text-base text-slate-900 leading-tight">Versions & History</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">${s.title}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${n.title}</p>
               </div>
             </div>
             <button id="closeVersionsModal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
@@ -817,7 +1054,9 @@
         </div>
       </div>
 
-      <!-- NEW VERSION SNAPSHOT MODAL -->
+      <!-- ========================================================= -->
+      <!-- NEW VERSION SNAPSHOT MODAL                                -->
+      <!-- ========================================================= -->
       <div id="newVersionModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
           <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -843,7 +1082,9 @@
         </div>
       </div>
 
-      <!-- COMPARE / DIFF MODAL -->
+      <!-- ========================================================= -->
+      <!-- COMPARE / DIFF MODAL                                      -->
+      <!-- ========================================================= -->
       <div id="compareModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
         <div class="w-full sm:max-w-2xl bg-white rounded-t-2xl sm:rounded-2xl shadow-xl flex flex-col max-h-[92vh] overflow-hidden">
           <div class="flex items-center justify-between px-5 py-3 border-b border-slate-100">
@@ -894,44 +1135,96 @@
       </div>
 
     </div>
-  `}function Ue(t,e){const s=document.getElementById("editor-back-btn");s&&(s.onclick=()=>{e("/workspace")});const a=document.getElementById("btn-open-production");a&&(a.onclick=()=>{e("/intelligence/analysis/production")});const n=document.getElementById("sceneNumberToggle"),l=document.getElementById("sceneNumberToggleText");let d=!0;n&&(n.onclick=()=>{d=!d,l.textContent=`Scene #s: ${d?"On":"Off"}`,document.querySelectorAll(".scene-num-indicator").forEach(k=>{k.style.opacity=d?"1":"0"}),u(`Scene numbers ${d?"enabled":"hidden"}`)});const o=document.getElementById("focusModeToggle"),r=document.getElementById("focusModeText");let c=!1;o&&(o.onclick=()=>{c=!c,r.textContent=c?"Exit Focus":"Focus Mode",document.getElementById("editor-toolbar-strip").style.display=c?"none":"flex",document.getElementById("editor-accessory-tray").style.display=c?"none":"flex",u(c?"Focus Mode active (distraction-free)":"Exited Focus Mode")});const p=document.getElementById("langToggleBtn"),y=document.getElementById("langToggleText"),m=document.getElementById("tamilLangBadge");let h="EN";p&&(p.onclick=()=>{h=h==="EN"?"TA":"EN",y.textContent=h==="EN"?"EN / தமிழ்":"தமிழ் / EN",m&&(m.textContent=h==="TA"?"தமிழ் விசைப்பலகை: இயங்குகிறது":"Tamil IME: Ready"),u(`Screenplay language set to ${h==="TA"?"Tamil":"English"}`)});const I=document.getElementById("btn-insert-intext"),b=document.getElementById("editableLine");I&&b&&(I.onclick=()=>{b.focus(),document.execCommand("insertText",!1,"INT/EXT. ")});const v=document.getElementById("sceneJumpSelect");v&&(v.onchange=k=>{const E=k.target.value,T=document.getElementById(E==="scene-19"?"anchor-scene-19":"anchor-scene-18");T&&(T.scrollIntoView({behavior:"smooth",block:"center"}),T.classList.add("bg-blue-50/50"),setTimeout(()=>T.classList.remove("bg-blue-50/50"),1200))}),document.querySelectorAll(".format-btn").forEach(k=>{k.onclick=()=>{const E=k.getAttribute("data-type");b&&(b.focus(),E==="scene"?b.className="outline-none mb-4 text-slate-900 font-bold uppercase tracking-wider p-1 rounded focus:bg-blue-50/50":E==="character"?b.className="outline-none mb-2 text-slate-900 font-bold uppercase text-center w-7/12 mx-auto tracking-wide p-1 rounded focus:bg-blue-50/50":E==="parenthetical"?b.className="outline-none mb-2 text-slate-500 italic text-center w-6/12 mx-auto p-1 rounded focus:bg-blue-50/50":E==="dialogue"?b.className="outline-none mb-4 text-slate-900 w-9/12 sm:w-8/12 mx-auto text-left p-1 rounded focus:bg-blue-50/50":b.className="outline-none mb-4 text-slate-900 p-1 rounded focus:bg-blue-50/50")}});const w=document.getElementById("btn-undo"),x=document.getElementById("btn-redo");w&&(w.onclick=()=>document.execCommand("undo")),x&&(x.onclick=()=>document.execCommand("redo"));let A=null;const f=document.getElementById("editor-save-status");document.getElementById("screenplay-page")?.addEventListener("input",()=>{f&&(f.textContent="Saving changes..."),clearTimeout(A),A=setTimeout(async()=>{const k=document.getElementById("editableLine")?.innerText;await we(t,{lastEdit:k}),f&&(f.textContent="Autosaved Just now")},1e3)});const g=document.getElementById("exportModal"),S=document.getElementById("exportModalBtn"),j=document.getElementById("closeExportModal"),_=document.getElementById("cancelExportBtn"),q=document.getElementById("startExportBtn"),G=document.getElementById("exportProgressArea"),H=document.getElementById("exportProgressBar"),J=document.getElementById("exportStatusText");function R(k){g&&(k?(g.classList.remove("hidden"),g.classList.add("flex")):(g.classList.add("hidden"),g.classList.remove("flex"),G?.classList.add("hidden")))}S&&(S.onclick=()=>R(!0)),j&&(j.onclick=()=>R(!1)),_&&(_.onclick=()=>R(!1)),q&&(q.onclick=()=>{const k=document.getElementById("exportFormatSelect")?.value||"pdf";G.classList.remove("hidden"),H.style.width="20%",J.textContent="Typesetting Courier Prime screenplay pages...",setTimeout(()=>{H.style.width="70%",J.textContent=`Formatting ${k.toUpperCase()} structure & scene locks...`},500),setTimeout(()=>{H.style.width="100%",J.textContent=`Completed! Packaging ${k.toUpperCase()} download...`;const E=`CHRONICLES OF DUST
-Draft 4.2
+  `}async function ht(t,e){const n=document.getElementById("editor-back-btn");n&&(n.onclick=()=>{_&&Z(!1),e("/workspace")}),u=await Ke(t),G(),me();const s=document.getElementById("editor-save-btn");s&&(s.onclick=()=>Z(!0)),window.addEventListener("keydown",vt),At(t,e),Ct(),kt(),Tt(),Bt(t),Et()}function vt(t){(t.ctrlKey||t.metaKey)&&t.key.toLowerCase()==="s"&&(t.preventDefault(),Z(!0)),(t.ctrlKey||t.metaKey)&&t.key.toLowerCase()==="f"&&(t.preventDefault(),ie(!0))}function G(){const t=document.getElementById("screenplay-pages-container");if(!t||!u)return;const e=u.scenes||[];let n=[];e.forEach((s,a)=>{n.push({pageNumber:n.length+1,sceneNumber:s.number,sceneId:s.id,slugline:s.slugline,blocks:s.blocks||[]})}),n.length===0&&n.push({pageNumber:1,sceneNumber:1,sceneId:"scene-1",slugline:"INT. NEW SCENE - DAY",blocks:[{id:"b-1-1",type:"scene",content:"INT. NEW SCENE - DAY"},{id:"b-1-2",type:"action",content:"Type your screenplay action here..."}]}),t.innerHTML=n.map((s,a)=>`
+    <div class="screenplay-page-sheet w-full max-w-2xl bg-white rounded-xl shadow-md border border-slate-200/80 p-6 sm:p-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all" data-page-num="${s.pageNumber}">
+      
+      <!-- Top Page Header: Page number in top right -->
+      <div class="w-full flex items-center justify-between pb-4 select-none text-[12px] text-slate-400 font-mono border-b border-transparent">
+        <span class="text-[10px] text-slate-300 uppercase tracking-widest font-sans font-semibold">${u.title} · ${u.draft||"Draft 4.2"}</span>
+        <span class="font-bold text-slate-500">${s.pageNumber}.</span>
+      </div>
 
-SCENE 18
-INT. CUSTOMS OFFICE - NIGHT
+      <!-- Screenplay Blocks for this page -->
+      <div class="page-blocks-wrapper flex flex-col flex-1" data-scene-id="${s.sceneId}">
+        ${s.blocks.map((l,o)=>yt(l,s.sceneNumber,s.sceneId)).join("")}
+      </div>
 
-Kevin kneels over cracked hydro-sensor junction box.
+      <!-- Bottom Page Boundary subtle indicator -->
+      <div class="w-full pt-6 select-none flex items-center justify-center text-[10px] text-slate-300 font-sans tracking-widest uppercase">
+        <span>— PAGE ${s.pageNumber} —</span>
+      </div>
 
-KEVIN
-If the seals break before dawn, the sector won't hold the surge.
+    </div>
+  `).join(""),wt(),Re()}function yt(t,e,n,s){const a=t.type==="scene",l=t.type==="character",o=t.type==="parenthetical",i=t.type==="dialogue",r=t.type==="transition",c=t.type==="action"||!a&&!l&&!o&&!i&&!r;return a?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="scene" class="screenplay-block flex items-baseline py-2.5 font-bold text-slate-900 mt-2 mb-2 group">
+        <!-- Scene Number shown on LEFT side ONLY (Section I) -->
+        <span class="scene-num-indicator mr-3 sm:mr-4 shrink-0 font-mono text-slate-400 font-bold select-none text-[13px] w-6 text-right ${O?"":"hidden"}">${e}</span>
+        <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+      </div>
+    `:c?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+    `:l?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="character" class="screenplay-block w-7/12 mx-auto uppercase font-bold tracking-wider text-slate-900 text-center mt-3 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+    `:o?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="parenthetical" class="screenplay-block w-6/12 mx-auto italic text-slate-600 text-center mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+    `:i?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="dialogue" class="screenplay-block w-9/12 sm:w-8/12 mx-auto text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+    `:r?`
+      <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="transition" class="screenplay-block w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${V(t.content)}</div>
+    `:`
+    <div id="${t.id}" data-block-id="${t.id}" data-scene-id="${n}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true">${V(t.content)}</div>
+  `}function V(t){return t?t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):""}function wt(){document.querySelectorAll(".screenplay-block").forEach(e=>{const n=e.hasAttribute("contenteditable")?e:e.querySelector('[contenteditable="true"]');n&&(n.onfocus=()=>{pe=e.getAttribute("data-block-id");const s=e.getAttribute("data-block-type")||"action";Oe(s)},n.oninput=s=>{_=!0,fe(e,n.innerText),Y("Unsaved"),oe(),De(e,n),Re()},n.onkeydown=s=>{St(s,e,n)})})}function fe(t,e){if(!u)return;const n=t.getAttribute("data-block-id"),s=t.getAttribute("data-scene-id"),a=u.scenes.find(o=>o.id===s);if(!a)return;const l=a.blocks.find(o=>o.id===n);if(l){if(l.content=e,l.type==="character"){const o=e.replace(/\(.*\)/g,"").trim().toUpperCase();o&&!u.characters.includes(o)&&(u.characters.push(o),me())}if(l.type==="scene"){a.slugline=e;const o=e.match(/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([^-\n]+)/i);if(o&&o[2]){const i=o[2].trim().toUpperCase();i&&!u.locations.includes(i)&&u.locations.push(i)}}}}function St(t,e,n){const s=e.getAttribute("data-block-type"),a=e.getAttribute("data-scene-id"),l=e.getAttribute("data-block-id"),o=document.getElementById("editor-autocomplete-dropdown");if(o&&!o.classList.contains("hidden")){if(t.key==="ArrowDown"){t.preventDefault(),Be(1);return}if(t.key==="ArrowUp"){t.preventDefault(),Be(-1);return}if(t.key==="Enter"||t.key==="Tab"){const i=o.querySelector(".autocomplete-item.active");if(i){t.preventDefault(),i.click();return}}if(t.key==="Escape"){Q();return}}if(t.key==="("&&(s==="character"||s==="dialogue")){const i=window.getSelection();if(i&&i.anchorOffset===0&&n.innerText.trim()===""){t.preventDefault(),le(e,"parenthetical"),n.innerText="(",te(n);return}}if(t.key==="Tab"){if(t.preventDefault(),s==="action"){le(e,"character");return}if(s==="character"){le(e,"dialogue");return}}if(t.key==="Enter"&&!t.shiftKey){if(Q(),s==="scene"){t.preventDefault(),X(a,l,"action");return}if(s==="character"){t.preventDefault(),X(a,l,"dialogue");return}if(s==="dialogue"){t.preventDefault(),X(a,l,"action");return}if(s==="parenthetical"){t.preventDefault();let i=n.innerText.trim();i.endsWith(")")||(i+=")",n.innerText=i,fe(e,i)),X(a,l,"dialogue");return}if(s==="transition"){t.preventDefault(),It(a);return}if(s==="action"){t.preventDefault(),X(a,l,"action");return}}}function X(t,e,n,s){const a=u.scenes.find(r=>r.id===t);if(!a)return;const l=a.blocks.findIndex(r=>r.id===e),o=`b-${Date.now().toString().slice(-6)}`,i={id:o,type:n,content:""};l!==-1?a.blocks.splice(l+1,0,i):a.blocks.push(i),G(),setTimeout(()=>{const r=document.getElementById(o);if(r){const c=r.hasAttribute("contenteditable")?r:r.querySelector('[contenteditable="true"]');c&&(c.focus(),te(c))}},30)}function It(t){const e=u.scenes.findIndex(o=>o.id===t),n=u.scenes.length+1,s=`scene-${Date.now().toString().slice(-5)}`,a=`b-${Date.now().toString().slice(-6)}`,l={id:s,number:n,actId:u.acts?.[0]?.id||"act-1",slugline:"INT. ",blocks:[{id:a,type:"scene",content:"INT. "}]};e!==-1?u.scenes.splice(e+1,0,l):u.scenes.push(l),u.scenes.forEach((o,i)=>{o.number=i+1}),G(),me(),f(`Created Scene ${n}`),setTimeout(()=>{const o=document.getElementById(a);if(o){const i=o.querySelector('[contenteditable="true"]');i&&(i.focus(),te(i),De(o,i))}},40)}function le(t,e){const n=t.getAttribute("data-block-id"),s=t.getAttribute("data-scene-id"),a=u.scenes.find(o=>o.id===s);if(!a)return;const l=a.blocks.find(o=>o.id===n);l&&(l.type=e,e==="character"&&(l.content=l.content.toUpperCase()),e==="parenthetical"&&!l.content.startsWith("(")&&(l.content=`(${l.content})`),G(),setTimeout(()=>{const o=document.getElementById(n);if(o){const i=o.hasAttribute("contenteditable")?o:o.querySelector('[contenteditable="true"]');i&&(i.focus(),te(i))}},20))}function te(t){const e=document.createRange(),n=window.getSelection();e.selectNodeContents(t),e.collapse(!1),n.removeAllRanges(),n.addRange(e)}function Et(){document.addEventListener("click",t=>{t.target.closest("#editor-autocomplete-dropdown")||Q()})}function Q(){const t=document.getElementById("editor-autocomplete-dropdown");t&&t.classList.add("hidden")}function De(t,e){const n=t.getAttribute("data-block-type"),s=e.innerText,a=document.getElementById("editor-autocomplete-dropdown");if(!a)return;let l=[];if(n==="scene"){const i=s.toUpperCase();if(i==="I"||i==="IN")l=["INT.","INT./EXT.","I/E."];else if(i==="E"||i==="EX")l=["EXT.","INT./EXT.","I/E."];else if(i.startsWith("INT. ")||i.startsWith("EXT. ")||i.startsWith("INT./EXT. ")){const r=i.includes("INT./EXT. ")?"INT./EXT. ":i.startsWith("INT. ")?"INT. ":"EXT. ",c=i.slice(r.length).trim();i.endsWith("- ")||i.endsWith(" -")?l=(u.times||["DAY","NIGHT","MORNING","EVENING","DAWN","DUSK","CONTINUOUS","LATER"]).map(m=>`${r}${c.replace(/-\s*$/,"").trim()} - ${m}`):c.length>0&&(l=(u.locations||[]).filter(x=>x.startsWith(c)).map(x=>`${r}${x} - DAY`))}}else if(n==="character"){const i=s.trim().toUpperCase();i.length>0&&(l=(u.characters||[]).filter(c=>c.startsWith(i)))}else if(n==="transition"){const i=s.trim().toUpperCase(),r=u.transitions||["CUT TO:","FADE IN:","FADE OUT.","DISSOLVE TO:","SMASH CUT TO:","MATCH CUT TO:","JUMP CUT TO:"];i.length>0&&(l=r.filter(c=>c.startsWith(i)))}if(l.length===0){Q();return}a.innerHTML=l.map((i,r)=>`
+    <div class="autocomplete-item px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono ${r===0?"active bg-blue-50/60 text-blue-700":""}" data-val="${i}">
+      <span>${i}</span>
+      <span class="text-[10px] text-slate-400 font-sans">Enter ↵</span>
+    </div>
+  `).join("");const o=e.getBoundingClientRect();a.style.top=`${Math.min(window.innerHeight-200,o.bottom+4)}px`,a.style.left=`${Math.min(window.innerWidth-240,Math.max(16,o.left))}px`,a.classList.remove("hidden"),a.querySelectorAll(".autocomplete-item").forEach(i=>{i.onclick=()=>{const r=i.getAttribute("data-val");e.innerText=r,fe(t,r),Q(),te(e),_=!0,oe()}})}function Be(t){const e=document.getElementById("editor-autocomplete-dropdown");if(!e)return;const n=e.querySelectorAll(".autocomplete-item");if(n.length===0)return;let s=Array.from(n).findIndex(a=>a.classList.contains("active"));s!==-1&&n[s].classList.remove("active","bg-blue-50/60","text-blue-700"),s=(s+t+n.length)%n.length,n[s].classList.add("active","bg-blue-50/60","text-blue-700"),n[s].scrollIntoView({block:"nearest"})}async function Z(t=!1){if(!(ne||!u)){ne=!0,Y("Saving...");try{await ze(u.id,u),_=!1,ne=!1,Y("Saved"),t&&f("Saved")}catch{ne=!1,Y("Save failed"),f("Couldn't save changes · Tap retry")}}}function oe(){clearTimeout(Te),Te=setTimeout(async()=>{_&&(await Z(!1),Y("Autosaved just now"))},1500)}function Y(t){const e=document.getElementById("editor-save-status");document.getElementById("editor-save-btn");const n=document.getElementById("editor-save-icon"),s=document.getElementById("editor-save-text");e&&(e.textContent=t),t==="Saving..."?(n&&(n.textContent="progress_activity"),n?.classList.add("animate-spin"),s&&(s.textContent="Saving...")):t==="Saved"||t==="Autosaved just now"?(n&&(n.textContent="cloud_done",n.classList.remove("animate-spin")),s&&(s.textContent="Save")):t==="Unsaved"?(n&&(n.textContent="cloud_upload",n.classList.remove("animate-spin")),s&&(s.textContent="Save")):t==="Save failed"&&(n&&(n.textContent="warning",n.classList.remove("animate-spin")),s&&(s.textContent="Retry"))}function me(){if(!u)return;const t=document.getElementById("navActSelect");if(t){const s=u.acts||[{id:"act-1",name:"ACT I"}];t.innerHTML='<option value="">ACT...</option>'+s.map(a=>`
+      <option value="${a.id}">${a.name}</option>
+    `).join("")}const e=document.getElementById("navSceneSelect");if(e){const s=u.scenes||[];e.innerHTML='<option value="">SCENE...</option>'+s.map(a=>`
+      <option value="${a.id}">SCENE ${a.number} · ${a.slugline.slice(0,20)}</option>
+    `).join("")}const n=document.getElementById("navCharSelect");if(n){const s=u.characters||[];n.innerHTML='<option value="">CHARACTER...</option>'+s.map(a=>`
+      <option value="${a}">${a}</option>
+    `).join("")}}function Ct(){const t=document.getElementById("navActSelect"),e=document.getElementById("navSceneSelect"),n=document.getElementById("navCharSelect");t&&(t.onchange=s=>{const a=s.target.value;if(!a)return;const l=u.scenes.find(o=>o.actId===a);l&&Ne(l.id)}),e&&(e.onchange=s=>{const a=s.target.value;a&&Ne(a)}),n&&(n.onchange=s=>{const a=s.target.value;if(a){for(const l of u.scenes)for(const o of l.blocks)if(o.type==="character"&&o.content.toUpperCase().includes(a)){const i=document.getElementById(o.id);if(i){i.scrollIntoView({behavior:"smooth",block:"center"}),i.classList.add("bg-blue-100/60"),setTimeout(()=>i.classList.remove("bg-blue-100/60"),1500);return}}}})}function Ne(t){const e=document.querySelector(`[data-scene-id="${t}"]`);e&&(e.scrollIntoView({behavior:"smooth",block:"start"}),e.classList.add("bg-blue-50/40"),setTimeout(()=>e.classList.remove("bg-blue-50/40"),1500))}function kt(){const t=document.getElementById("element-bar");t&&t.querySelectorAll(".element-btn").forEach(e=>{e.onclick=()=>{const n=e.getAttribute("data-type");if(!pe)return;const s=document.getElementById(pe);s&&(le(s,n),Oe(n))}})}function Oe(t){const e=document.getElementById("element-bar");e&&e.querySelectorAll(".element-btn").forEach(n=>{n.getAttribute("data-type")===t?n.className="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 bg-blue-600 text-white shadow-xs":n.className="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200"})}function At(t,e){const n=document.getElementById("editor-more-menu-btn"),s=document.getElementById("editorMoreMenuModal"),a=document.getElementById("closeMoreMenuBtn");function l(A){s&&(A?(s.classList.remove("hidden"),s.classList.add("flex")):(s.classList.add("hidden"),s.classList.remove("flex")))}n&&(n.onclick=()=>l(!0)),a&&(a.onclick=()=>l(!1)),s&&(s.onclick=A=>{A.target===s&&l(!1)});const o=document.getElementById("sceneNumberToggle"),i=document.getElementById("sceneNumberToggleText"),r=document.getElementById("menuSceneNumState"),c=document.getElementById("menu-btn-scene-numbers");function p(){O=!O,i&&(i.textContent=`Scene #s: ${O?"On":"Off"}`),r&&(r.textContent=O?"Enabled":"Disabled"),document.querySelectorAll(".scene-num-indicator").forEach(A=>{A.classList.toggle("hidden",!O)}),f(`Scene numbers ${O?"enabled (left side)":"hidden"}`)}o&&(o.onclick=p),c&&(c.onclick=()=>{p(),l(!1)});const m=document.getElementById("focusModeToggle"),x=document.getElementById("focusModeText"),v=document.getElementById("menu-btn-focus-mode"),E=document.getElementById("menuFocusState");function S(){D=!D,x&&(x.textContent=D?"Exit Focus":"Focus"),E&&(E.textContent=D?"Active":"Off"),document.getElementById("editor-toolbar-strip").style.display=D?"none":"flex",document.getElementById("editor-accessory-tray").style.display=D?"none":"flex",document.getElementById("editor-main-scroll").style.paddingTop=D?"56px":"156px",f(D?"Focus Mode active (distraction-free)":"Exited Focus Mode")}m&&(m.onclick=S),v&&(v.onclick=()=>{S(),l(!1)});const y=document.getElementById("langToggleBtn"),I=document.getElementById("langToggleText"),b=document.getElementById("tamilLangBadge");function B(A){re=A,I&&(I.textContent=A==="TA"?"தமிழ் / EN":A==="TL"?"Tanglish":"EN / தமிழ்"),b&&(b.textContent=A==="TA"?"தமிழ் விசைப்பலகை: இயங்குகிறது":A==="TL"?"Tanglish: Active":"Tamil IME: Ready"),f(`Screenplay language set to ${A==="TA"?"Tamil":A==="TL"?"Tanglish":"English"}`)}y&&(y.onclick=()=>{B(re==="EN"?"TA":re==="TA"?"TL":"EN")}),document.querySelectorAll(".lang-choice-btn").forEach(A=>{A.onclick=()=>{B(A.getAttribute("data-lang")),l(!1)}});const g=document.getElementById("btn-open-production"),h=document.getElementById("menu-btn-production");g&&(g.onclick=()=>e("/intelligence/analysis/production")),h&&(h.onclick=()=>e("/intelligence/analysis/production"));const w=document.getElementById("menu-btn-go-page");w&&(w.onclick=()=>{l(!1);const A=prompt("Enter page number to jump to (1-5):","1");if(A){const L=document.querySelector(`[data-page-num="${A}"]`);L&&L.scrollIntoView({behavior:"smooth",block:"start"})}});const N=document.getElementById("menu-btn-go-scene");N&&(N.onclick=()=>{l(!1);const A=document.getElementById("navSceneSelect");A&&A.focus()});const H=document.getElementById("btn-undo"),J=document.getElementById("btn-redo");H&&(H.onclick=()=>document.execCommand("undo")),J&&(J.onclick=()=>document.execCommand("redo"));const W=document.getElementById("btn-insert-intext");W&&(W.onclick=()=>{document.execCommand("insertText",!1,"INT/EXT. ")})}function Tt(){const t=document.getElementById("btn-quick-find"),e=document.getElementById("menu-btn-find-replace"),n=document.getElementById("closeFindBtn"),s=document.getElementById("findInput"),a=document.getElementById("replaceInput"),l=document.getElementById("findNextBtn"),o=document.getElementById("findPrevBtn"),i=document.getElementById("replaceBtn"),r=document.getElementById("replaceAllBtn");t&&(t.onclick=()=>ie(!0)),e&&(e.onclick=()=>{const c=document.getElementById("editorMoreMenuModal");c&&c.classList.add("hidden"),ie(!0)}),n&&(n.onclick=()=>ie(!1)),s&&(s.oninput=()=>ce(s.value)),l&&(l.onclick=()=>ue(1)),o&&(o.onclick=()=>ue(-1)),i&&(i.onclick=()=>{const c=s.value,p=a.value;if(!c||R===-1||!P[R])return;const m=P[R];m.block.content=m.block.content.replace(c,p),G(),ce(c),_=!0,oe(),f("Replaced 1 occurrence")}),r&&(r.onclick=()=>{const c=s.value,p=a.value;if(!c)return;let m=0;u.scenes.forEach(x=>{x.blocks.forEach(v=>{v.content.includes(c)&&(v.content=v.content.split(c).join(p),m++)})}),G(),ce(c),_=!0,oe(),f(`Replaced ${m} occurrences`)})}function ie(t){const e=document.getElementById("findReplaceBar");e&&(t?(e.classList.remove("hidden"),document.getElementById("findInput")?.focus()):(e.classList.add("hidden"),be()))}function ce(t){P=[],R=-1;const e=document.getElementById("findMatchesCount");if(!t||!u){e&&(e.textContent="0 of 0"),be();return}u.scenes.forEach(n=>{n.blocks.forEach(s=>{s.content.toLowerCase().includes(t.toLowerCase())&&P.push({block:s,sceneId:n.id})})}),e&&(e.textContent=P.length>0?`1 of ${P.length}`:"0 of 0"),P.length>0&&ue(0)}function ue(t){if(P.length===0)return;R=(R+t+P.length)%P.length;const e=P[R],n=document.getElementById("findMatchesCount");n&&(n.textContent=`${R+1} of ${P.length}`);const s=document.getElementById(e.block.id);s&&(s.scrollIntoView({behavior:"smooth",block:"center"}),be(),s.classList.add("bg-yellow-100"))}function be(){document.querySelectorAll(".screenplay-block").forEach(t=>{t.classList.remove("bg-yellow-100")})}function Bt(t){const e=document.getElementById("titlePageModal"),n=document.getElementById("btn-quick-title-page"),s=document.getElementById("menu-btn-title-page"),a=document.getElementById("closeTitlePageModal"),l=document.getElementById("cancelTitlePageBtn"),o=document.getElementById("saveTitlePageBtn");function i(){if(!e||!u)return;const T=u.titlePage||{};document.getElementById("tpTitleInput").value=T.title||u.title,document.getElementById("tpAuthorInput").value=T.author||"Arun Kumar",document.getElementById("tpNotesInput").value=T.notes||"",document.getElementById("tpContactInput").value=T.contact||"",e.classList.remove("hidden"),e.classList.add("flex")}n&&(n.onclick=i),s&&(s.onclick=()=>{document.getElementById("editorMoreMenuModal")?.classList.add("hidden"),i()}),a&&(a.onclick=()=>e.classList.add("hidden")),l&&(l.onclick=()=>e.classList.add("hidden")),o&&(o.onclick=async()=>{const T={title:document.getElementById("tpTitleInput")?.value||u.title,author:document.getElementById("tpAuthorInput")?.value||"",notes:document.getElementById("tpNotesInput")?.value||"",contact:document.getElementById("tpContactInput")?.value||""};u.titlePage=T,u.title=T.title,document.getElementById("editor-script-title").textContent=T.title,e.classList.add("hidden"),f("Title Page saved"),_=!0,await Z(!0)});const r=document.getElementById("preferencesModal"),c=document.getElementById("menu-btn-preferences"),p=document.getElementById("closePrefModal"),m=document.getElementById("savePrefBtn");c&&(c.onclick=()=>{document.getElementById("editorMoreMenuModal")?.classList.add("hidden"),r?.classList.remove("hidden"),r?.classList.add("flex")}),p&&(p.onclick=()=>r?.classList.add("hidden")),m&&(m.onclick=()=>{document.getElementById("prefSmartFormat")?.checked;const T=document.getElementById("prefSceneNumbers")?.checked,C=document.getElementById("prefLineSpacing")?.value,q=document.getElementById("prefFontSize")?.value;O=T,document.querySelectorAll(".scene-num-indicator").forEach(M=>M.classList.toggle("hidden",!T));const z=document.querySelector(".screenplay-page-sheet");z&&(z.style.lineHeight=C==="2.0"?"30px":C==="1.0"?"20px":"24px",z.style.fontSize=q==="14pt"?"16px":"15px"),r?.classList.add("hidden"),f("Preferences applied")});const x=document.getElementById("exportModal"),v=document.getElementById("exportModalBtn"),E=document.getElementById("menu-btn-export"),S=document.getElementById("closeExportModal"),y=document.getElementById("cancelExportBtn"),I=document.getElementById("startExportBtn"),b=document.getElementById("exportProgressArea"),B=document.getElementById("exportProgressBar"),g=document.getElementById("exportStatusText");function h(T){x&&(T?(x.classList.remove("hidden"),x.classList.add("flex")):(x.classList.add("hidden"),x.classList.remove("flex"),b?.classList.add("hidden")))}v&&(v.onclick=()=>h(!0)),E&&(E.onclick=()=>{document.getElementById("editorMoreMenuModal")?.classList.add("hidden"),h(!0)}),S&&(S.onclick=()=>h(!1)),y&&(y.onclick=()=>h(!1)),I&&(I.onclick=()=>{const T=document.getElementById("exportFormatSelect")?.value||"pdf";b.classList.remove("hidden"),B.style.width="35%",g.textContent="Formatting Courier Prime typography and margins...",setTimeout(()=>{B.style.width="80%",g.textContent=`Compiling standard ${T.toUpperCase()} screenplay blocks...`},500),setTimeout(()=>{B.style.width="100%",g.textContent="Completed! Starting download...";let C="";document.getElementById("optTitlePage")?.checked&&u.titlePage&&(C+=`${u.titlePage.title||u.title}
+`,C+=`Written by ${u.titlePage.author||"Arun Kumar"}
 
-MEERA (O.S.)
-Then don't let them break. Reroute the secondary relay through the floodgate breaker.
+`,u.titlePage.contact&&(C+=`${u.titlePage.contact}
 
-CUT TO:
+`),C+=`=================================================
 
-SCENE 19
-EXT. FLOODGATE GANTRY - CONTINUOUS
-Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/pdf":"text/plain"}),ue=URL.createObjectURL(T),L=document.createElement("a");L.href=ue,L.download=`Chronicles_of_Dust_Draft4.2.${k}`,document.body.appendChild(L),L.click(),L.remove(),u(`Exported "${L.download}" successfully`),setTimeout(()=>R(!1),900)},1100)});const N=document.getElementById("versionsModal"),W=document.getElementById("versionsModalBtn"),pe=document.getElementById("closeVersionsModal"),z=document.getElementById("versionsListContainer");async function K(){const k=await Se(t);z&&(z.innerHTML=k.map(E=>`
-      <div class="p-3 rounded-xl border ${E.isCurrent?"border-2 border-blue-600 bg-blue-50/30":"border-slate-200 bg-white hover:bg-slate-50"} transition-colors flex flex-col gap-1.5">
+`),u.scenes.forEach(Ce=>{Ce.blocks.forEach(j=>{j.type==="scene"?C+=`
+
+SCENE ${Ce.number}
+${j.content}
+
+`:j.type==="character"?C+=`
+			${j.content}
+`:j.type==="parenthetical"?C+=`		${j.content}
+`:j.type==="dialogue"?C+=`	${j.content}
+`:j.type==="transition"?C+=`
+						${j.content}
+
+`:C+=`${j.content}
+
+`})});const q=new Blob([C],{type:T==="pdf"?"application/pdf":"text/plain"}),z=URL.createObjectURL(q),M=document.createElement("a");M.href=z,M.download=`${u.title.replace(/[^a-zA-Z0-9]/g,"_")}_${u.draft||"Draft"}.${T}`,document.body.appendChild(M),M.click(),M.remove(),f(`Exported "${M.download}" successfully`),setTimeout(()=>h(!1),800)},1e3)});const w=document.getElementById("versionsModal"),N=document.getElementById("versionsModalBtn"),H=document.getElementById("menu-btn-versions"),J=document.getElementById("closeVersionsModal"),W=document.getElementById("versionsListContainer");async function A(){const T=await Xe(t);W&&(W.innerHTML=T.map(C=>`
+      <div class="p-3 rounded-xl border ${C.isCurrent?"border-2 border-blue-600 bg-blue-50/30":"border-slate-200 bg-white hover:bg-slate-50"} transition-colors flex flex-col gap-1.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="font-heading font-bold text-sm text-slate-900">${E.name}</span>
-            <span class="px-2 py-0.5 rounded-full ${E.isCurrent?"bg-blue-600 text-white font-semibold":"bg-slate-100 text-slate-600 font-medium"} text-[10px]">${E.tag}</span>
+            <span class="font-heading font-bold text-sm text-slate-900">${C.name}</span>
+            <span class="px-2 py-0.5 rounded-full ${C.isCurrent?"bg-blue-600 text-white font-semibold":"bg-slate-100 text-slate-600 font-medium"} text-[10px]">${C.tag}</span>
           </div>
-          <span class="text-[11px] text-slate-400 font-caption">${E.timestamp}</span>
+          <span class="text-[11px] text-slate-400 font-caption">${C.timestamp}</span>
         </div>
-        <p class="text-xs text-slate-600">${E.notes||"Point-in-time snapshot."}</p>
+        <p class="text-xs text-slate-600">${C.notes||"Point-in-time snapshot."}</p>
         <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-          <span>Edited by ${E.author}</span>
+          <span>Edited by ${C.author}</span>
           <div class="flex items-center gap-2">
-            <span class="font-medium text-slate-700">${E.stats}</span>
-            ${E.isCurrent?"":`<button class="restore-version-btn text-blue-600 font-semibold hover:underline" data-vname="${E.name}">Restore</button>`}
+            <span class="font-medium text-slate-700">${C.stats}</span>
+            ${C.isCurrent?"":`<button class="restore-version-btn text-blue-600 font-semibold hover:underline" data-vname="${C.name}">Restore</button>`}
           </div>
         </div>
       </div>
-    `).join(""),document.querySelectorAll(".restore-version-btn").forEach(E=>{E.onclick=()=>{const T=E.getAttribute("data-vname");u(`Restored version "${T}"`),document.getElementById("currentVersionTag").textContent=T,N.classList.add("hidden")}}))}W&&(W.onclick=()=>{N.classList.remove("hidden"),N.classList.add("flex"),K()}),pe&&(N.onclick=k=>{(k.target===N||k.target.closest("#closeVersionsModal"))&&(N.classList.add("hidden"),N.classList.remove("flex"))});const M=document.getElementById("newVersionModal"),Y=document.getElementById("openNewVersionPrompt"),X=document.getElementById("closeNewVersionModal"),Q=document.getElementById("cancelNewVersionBtn"),Z=document.getElementById("saveNewVersionBtn");Y&&(Y.onclick=()=>{M.classList.remove("hidden"),M.classList.add("flex")}),X&&(X.onclick=()=>M.classList.add("hidden")),Q&&(Q.onclick=()=>M.classList.add("hidden")),Z&&(Z.onclick=async()=>{const k=document.getElementById("newVersionNameInput")?.value.trim(),E=document.getElementById("newVersionNotesInput")?.value.trim();k&&(await Ie(t,{name:k,notes:E}),u(`Created version snapshot "${k}"`),document.getElementById("currentVersionTag").textContent=k,M.classList.add("hidden"),K())});const D=document.getElementById("compareModal"),ee=document.getElementById("openCompareBtn"),te=document.getElementById("closeCompareModal"),se=document.getElementById("closeCompareBtn2");function V(k){D&&(k?(D.classList.remove("hidden"),D.classList.add("flex")):(D.classList.add("hidden"),D.classList.remove("flex")))}ee&&(ee.onclick=()=>V(!0)),te&&(te.onclick=()=>V(!1)),se&&(se.onclick=()=>V(!1))}function qe(){const t=i.state.scripts||[],e=i.state.selectedScriptId||"chronicles-of-dust",s=t.find(a=>a.id===e)||t[0]||{title:"Chronicles of Dust"};return`
-    ${P("Intelligence","Script Selector")}
+    `).join(""),document.querySelectorAll(".restore-version-btn").forEach(C=>{C.onclick=()=>{const q=C.getAttribute("data-vname");f(`Restored version "${q}"`),document.getElementById("currentVersionTag").textContent=q,w.classList.add("hidden")}}))}N&&(N.onclick=()=>{w.classList.remove("hidden"),w.classList.add("flex"),A()}),H&&(H.onclick=()=>{document.getElementById("editorMoreMenuModal")?.classList.add("hidden"),w.classList.remove("hidden"),w.classList.add("flex"),A()}),J&&(J.onclick=()=>w.classList.add("hidden"));const L=document.getElementById("newVersionModal"),ge=document.getElementById("openNewVersionPrompt"),he=document.getElementById("closeNewVersionModal"),ve=document.getElementById("cancelNewVersionBtn"),ye=document.getElementById("saveNewVersionBtn");ge&&(ge.onclick=()=>{L.classList.remove("hidden"),L.classList.add("flex")}),he&&(he.onclick=()=>L.classList.add("hidden")),ve&&(ve.onclick=()=>L.classList.add("hidden")),ye&&(ye.onclick=async()=>{const T=document.getElementById("newVersionNameInput")?.value.trim(),C=document.getElementById("newVersionNotesInput")?.value.trim();T&&(await Ye(t,{name:T,notes:C}),f(`Created version snapshot "${T}"`),document.getElementById("currentVersionTag").textContent=T,L.classList.add("hidden"),A())});const K=document.getElementById("compareModal"),we=document.getElementById("openCompareBtn"),Se=document.getElementById("menu-btn-compare"),Ie=document.getElementById("closeCompareModal"),Ee=document.getElementById("closeCompareBtn2");function se(T){K&&(T?(K.classList.remove("hidden"),K.classList.add("flex")):(K.classList.add("hidden"),K.classList.remove("flex")))}we&&(we.onclick=()=>se(!0)),Se&&(Se.onclick=()=>{document.getElementById("editorMoreMenuModal")?.classList.add("hidden"),se(!0)}),Ie&&(Ie.onclick=()=>se(!1)),Ee&&(Ee.onclick=()=>se(!1))}function Re(){if(!u)return;let t=0;u.scenes.forEach(a=>{a.blocks.forEach(l=>{l.content&&(t+=l.content.trim().split(/\s+/).filter(Boolean).length)})});const e=u.scenes.length||1,n=document.getElementById("telemetry-page-count"),s=document.getElementById("telemetry-word-count");n&&(n.textContent=`Page 1 of ${e}`),s&&(s.textContent=`${t.toLocaleString()} words`)}function Nt(){const t=d.state.scripts||[],e=d.state.selectedScriptId||"chronicles-of-dust",n=t.find(s=>s.id===e)||t[0]||{title:"Chronicles of Dust"};return`
+    ${F("Intelligence","Script Selector")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -975,22 +1268,22 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
           <!-- Screenplays Selection Radio Cards -->
           <div class="flex flex-col gap-2" role="radiogroup" id="selector-script-cards">
-            ${t.map(a=>{const n=a.id===e;return`
-                <div data-script-id="${a.id}" data-script-title="${a.title}" class="script-select-card relative p-3.5 rounded-xl border ${n?"border-blue-600 bg-blue-50/70":"border-slate-200/80 bg-white hover:bg-slate-50"} transition-all cursor-pointer flex items-center justify-between group shadow-xs">
+            ${t.map(s=>{const a=s.id===e;return`
+                <div data-script-id="${s.id}" data-script-title="${s.title}" class="script-select-card relative p-3.5 rounded-xl border ${a?"border-blue-600 bg-blue-50/70":"border-slate-200/80 bg-white hover:bg-slate-50"} transition-all cursor-pointer flex items-center justify-between group shadow-xs">
                   <div class="flex items-center gap-3 min-w-0 relative z-10">
-                    <div class="shrink-0 w-9 h-9 rounded-lg ${n?"bg-white border-blue-200 text-blue-600":"bg-slate-50 border-slate-200 text-slate-600"} border flex items-center justify-center shadow-xs">
+                    <div class="shrink-0 w-9 h-9 rounded-lg ${a?"bg-white border-blue-200 text-blue-600":"bg-slate-50 border-slate-200 text-slate-600"} border flex items-center justify-center shadow-xs">
                       <span class="material-symbols-outlined text-[20px]">movie</span>
                     </div>
                     <div class="flex flex-col min-w-0">
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-semibold text-slate-900 truncate uppercase">${a.title}</span>
-                        <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${n?"bg-blue-100 text-blue-700":"bg-slate-100 text-slate-600"} shrink-0">${a.draft||"Draft 1.0"}</span>
+                        <span class="text-xs font-semibold text-slate-900 truncate uppercase">${s.title}</span>
+                        <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${a?"bg-blue-100 text-blue-700":"bg-slate-100 text-slate-600"} shrink-0">${s.draft||"Draft 1.0"}</span>
                       </div>
-                      <span class="text-[11px] text-slate-500 truncate mt-0.5">${a.format||"Screenplay"} · ${a.pages} pages · Updated ${a.updated||"recently"}</span>
+                      <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.format||"Screenplay"} · ${s.pages} pages · Updated ${s.updated||"recently"}</span>
                     </div>
                   </div>
-                  <div class="script-select-indicator w-6 h-6 rounded-full ${n?"bg-blue-600 text-white shadow-xs":"bg-slate-100 text-slate-400"} flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-[16px] font-bold">${n?"check":"arrow_forward"}</span>
+                  <div class="script-select-indicator w-6 h-6 rounded-full ${a?"bg-blue-600 text-white shadow-xs":"bg-slate-100 text-slate-400"} flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[16px] font-bold">${a?"check":"arrow_forward"}</span>
                   </div>
                 </div>
               `}).join("")}
@@ -1007,7 +1300,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
       <!-- Sticky Bottom Action Tray -->
       <div class="fixed bottom-14 left-0 right-0 z-40 bg-surface/90 backdrop-blur-md px-4 py-2.5 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto">
         <button type="button" id="submit-continue-analysis-btn" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-          <span class="truncate font-semibold" id="selector-btn-label">Continue to Context (${s.title})</span>
+          <span class="truncate font-semibold" id="selector-btn-label">Continue to Context (${n.title})</span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </button>
         <span class="text-[10px] text-slate-400 tracking-tight">Establishes selectedScriptId for Script Analysis</span>
@@ -1015,9 +1308,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
     </main>
 
-    ${$("intelligence")}
-  `}function Ge(t){let e=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".script-select-card").forEach(n=>{n.onclick=()=>{const l=n.getAttribute("data-script-id"),d=n.getAttribute("data-script-title");e=l,i.selectScript(l),document.querySelectorAll(".script-select-card").forEach(c=>{c.className="script-select-card relative p-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const p=c.querySelector(".script-select-indicator");p&&(p.className="script-select-indicator w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0",p.innerHTML='<span class="material-symbols-outlined text-[16px]">arrow_forward</span>')}),n.className="script-select-card relative p-3.5 rounded-xl border border-blue-600 bg-blue-50/70 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const o=n.querySelector(".script-select-indicator");o&&(o.className="script-select-indicator w-6 h-6 rounded-full bg-blue-600 text-white shadow-xs flex items-center justify-center shrink-0",o.innerHTML='<span class="material-symbols-outlined text-[16px] font-bold">check</span>');const r=document.getElementById("selector-btn-label");r&&(r.textContent=`Continue to Context (${d})`)}});const s=document.getElementById("submit-continue-analysis-btn");s&&(s.onclick=()=>{i.selectScript(e),t("/intelligence/context")});const a=document.getElementById("btn-import-script-modal");a&&(a.onclick=()=>{u("Select screenplay file (.fountain, .fdx, .pdf) to parse","info")})}function We(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(a=>a.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",format:"Feature",industry:"International / Hollywood"},s=e.context||{format:e.format||"Feature",industry:e.industry||"International / Hollywood",hours:1,minutes:36,seconds:0};return`
-    ${P("Intelligence","Context Calibration")}
+    ${U("intelligence")}
+  `}function Pt(t){let e=d.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".script-select-card").forEach(a=>{a.onclick=()=>{const l=a.getAttribute("data-script-id"),o=a.getAttribute("data-script-title");e=l,d.selectScript(l),document.querySelectorAll(".script-select-card").forEach(c=>{c.className="script-select-card relative p-3.5 rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const p=c.querySelector(".script-select-indicator");p&&(p.className="script-select-indicator w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center shrink-0",p.innerHTML='<span class="material-symbols-outlined text-[16px]">arrow_forward</span>')}),a.className="script-select-card relative p-3.5 rounded-xl border border-blue-600 bg-blue-50/70 transition-all cursor-pointer flex items-center justify-between group shadow-xs";const i=a.querySelector(".script-select-indicator");i&&(i.className="script-select-indicator w-6 h-6 rounded-full bg-blue-600 text-white shadow-xs flex items-center justify-center shrink-0",i.innerHTML='<span class="material-symbols-outlined text-[16px] font-bold">check</span>');const r=document.getElementById("selector-btn-label");r&&(r.textContent=`Continue to Context (${o})`)}});const n=document.getElementById("submit-continue-analysis-btn");n&&(n.onclick=()=>{d.selectScript(e),t("/intelligence/context")});const s=document.getElementById("btn-import-script-modal");s&&(s.onclick=()=>{f("Select screenplay file (.fountain, .fdx, .pdf) to parse","info")})}function jt(){const t=d.state.selectedScriptId||"chronicles-of-dust",e=d.state.scripts.find(s=>s.id===t)||d.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",format:"Feature",industry:"International / Hollywood"},n=e.context||{format:e.format||"Feature",industry:e.industry||"International / Hollywood",hours:1,minutes:36,seconds:0};return`
+    ${F("Intelligence","Context Calibration")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
@@ -1048,7 +1341,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             <span class="text-[11px] text-slate-400">Required</span>
           </div>
           <div class="grid grid-cols-3 gap-2" id="format-picker">
-            <button type="button" data-format="Short" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${s.format==="Short"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
+            <button type="button" data-format="Short" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${n.format==="Short"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
               <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mb-1 text-slate-600">
                 <span class="material-symbols-outlined text-[18px]">movie</span>
               </div>
@@ -1056,7 +1349,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="text-[10px] text-slate-500">~15–30m</span>
             </button>
 
-            <button type="button" data-format="Pilot" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${s.format==="Pilot"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
+            <button type="button" data-format="Pilot" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${n.format==="Pilot"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
               <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mb-1 text-slate-600">
                 <span class="material-symbols-outlined text-[18px]">live_tv</span>
               </div>
@@ -1064,7 +1357,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="text-[10px] text-slate-500">~45–60m</span>
             </button>
 
-            <button type="button" data-format="Feature" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${s.format==="Feature"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
+            <button type="button" data-format="Feature" class="format-card relative flex flex-col items-center justify-center p-3 rounded-xl ${n.format==="Feature"?"bg-blue-50 border-2 border-blue-600":"bg-white border border-slate-200"} transition-all cursor-pointer hover:bg-slate-50">
               <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mb-1 text-slate-600">
                 <span class="material-symbols-outlined text-[18px]">theaters</span>
               </div>
@@ -1079,12 +1372,12 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">Cinematic Tradition & Grammar</label>
           <div class="relative">
             <select id="industry-select" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 outline-none focus:border-blue-600 cursor-pointer appearance-none shadow-xs">
-              <option value="International / Hollywood" ${s.industry==="International / Hollywood"?"selected":""}>International / Hollywood Standard (3-Act Spec)</option>
-              <option value="Tamil Cinema" ${s.industry==="Tamil Cinema"?"selected":""}>Tamil Cinema (Interval Block & Dual Peak Structure)</option>
-              <option value="Malayalam Cinema" ${s.industry==="Malayalam Cinema"?"selected":""}>Malayalam Cinema (Character-driven Realism)</option>
-              <option value="Telugu Cinema" ${s.industry==="Telugu Cinema"?"selected":""}>Telugu Cinema (Heroic Mythos & Commercial Cadence)</option>
-              <option value="Hindi Cinema" ${s.industry==="Hindi Cinema"?"selected":""}>Hindi Cinema (Narrative Melodrama & Ensemble)</option>
-              <option value="Indie / Festival" ${s.industry==="Indie / Festival"?"selected":""}>Indie / Festival (Poetic / Open-ended Form)</option>
+              <option value="International / Hollywood" ${n.industry==="International / Hollywood"?"selected":""}>International / Hollywood Standard (3-Act Spec)</option>
+              <option value="Tamil Cinema" ${n.industry==="Tamil Cinema"?"selected":""}>Tamil Cinema (Interval Block & Dual Peak Structure)</option>
+              <option value="Malayalam Cinema" ${n.industry==="Malayalam Cinema"?"selected":""}>Malayalam Cinema (Character-driven Realism)</option>
+              <option value="Telugu Cinema" ${n.industry==="Telugu Cinema"?"selected":""}>Telugu Cinema (Heroic Mythos & Commercial Cadence)</option>
+              <option value="Hindi Cinema" ${n.industry==="Hindi Cinema"?"selected":""}>Hindi Cinema (Narrative Melodrama & Ensemble)</option>
+              <option value="Indie / Festival" ${n.industry==="Indie / Festival"?"selected":""}>Indie / Festival (Poetic / Open-ended Form)</option>
             </select>
             <span class="material-symbols-outlined text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[18px]">expand_more</span>
           </div>
@@ -1103,7 +1396,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="text-[10px] uppercase font-bold text-slate-400">Hours</span>
               <div class="flex items-center gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="hr" data-delta="-1">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-hr">${String(s.hours||1).padStart(2,"0")}</span>
+                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-hr">${String(n.hours||1).padStart(2,"0")}</span>
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="hr" data-delta="1">+</button>
               </div>
             </div>
@@ -1113,7 +1406,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="text-[10px] uppercase font-bold text-slate-400">Minutes</span>
               <div class="flex items-center gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="-5">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-min">${String(s.minutes||36).padStart(2,"0")}</span>
+                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-min">${String(n.minutes||36).padStart(2,"0")}</span>
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="5">+</button>
               </div>
             </div>
@@ -1123,7 +1416,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="text-[10px] uppercase font-bold text-slate-400">Seconds</span>
               <div class="flex items-center gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="-15">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-sec">${String(s.seconds||0).padStart(2,"0")}</span>
+                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-sec">${String(n.seconds||0).padStart(2,"0")}</span>
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="15">+</button>
               </div>
             </div>
@@ -1142,9 +1435,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
     </main>
 
-    ${$("intelligence")}
-  `}function ze(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let s="Feature",a=1,n=36,l=0;document.querySelectorAll(".format-card").forEach(r=>{r.onclick=()=>{s=r.getAttribute("data-format"),document.querySelectorAll(".format-card").forEach(c=>{c.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 transition-all cursor-pointer hover:bg-slate-50"}),r.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer",s==="Short"?(a=0,n=25):s==="Pilot"?(a=0,n=50):(a=1,n=45),d()}});function d(){const r=p=>String(p).padStart(2,"0");document.getElementById("val-hr").textContent=r(a),document.getElementById("val-min").textContent=r(n),document.getElementById("val-sec").textContent=r(l);const c=a*60+n+Math.round(l/60);document.getElementById("pacing-projection").textContent=`~${c} standard script pages`}document.querySelectorAll(".stepper-btn").forEach(r=>{r.onclick=()=>{const c=r.getAttribute("data-unit"),p=parseInt(r.getAttribute("data-delta"));c==="hr"&&(a=Math.max(0,Math.min(8,a+p))),c==="min"&&(n=Math.max(0,Math.min(59,(n+p+60)%60))),c==="sec"&&(l=Math.max(0,Math.min(59,(l+p+60)%60))),d()}});const o=document.getElementById("btn-submit-context");o&&(o.onclick=async()=>{const r=document.getElementById("industry-select")?.value||"International / Hollywood";o.innerHTML='<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Calibrating SCRIPTORA...</span>',o.disabled=!0;const c=y=>String(y).padStart(2,"0"),p={format:s,industry:r,hours:a,minutes:n,seconds:l,plannedDuration:`${c(a)}:${c(n)}:${c(l)}`};await Le(e,p),u("Narrative parameters calibrated"),t("/intelligence/dashboard")})}function Ke(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(a=>a.id===t)||i.state.activeScript||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",pages:96,format:"Feature"},s=e.analysisScores||{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80};return`
-    ${P("Intelligence","Script Analysis")}
+    ${U("intelligence")}
+  `}function $t(t){const e=d.state.selectedScriptId||"chronicles-of-dust";let n="Feature",s=1,a=36,l=0;document.querySelectorAll(".format-card").forEach(r=>{r.onclick=()=>{n=r.getAttribute("data-format"),document.querySelectorAll(".format-card").forEach(c=>{c.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 transition-all cursor-pointer hover:bg-slate-50"}),r.className="format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer",n==="Short"?(s=0,a=25):n==="Pilot"?(s=0,a=50):(s=1,a=45),o()}});function o(){const r=p=>String(p).padStart(2,"0");document.getElementById("val-hr").textContent=r(s),document.getElementById("val-min").textContent=r(a),document.getElementById("val-sec").textContent=r(l);const c=s*60+a+Math.round(l/60);document.getElementById("pacing-projection").textContent=`~${c} standard script pages`}document.querySelectorAll(".stepper-btn").forEach(r=>{r.onclick=()=>{const c=r.getAttribute("data-unit"),p=parseInt(r.getAttribute("data-delta"));c==="hr"&&(s=Math.max(0,Math.min(8,s+p))),c==="min"&&(a=Math.max(0,Math.min(59,(a+p+60)%60))),c==="sec"&&(l=Math.max(0,Math.min(59,(l+p+60)%60))),o()}});const i=document.getElementById("btn-submit-context");i&&(i.onclick=async()=>{const r=document.getElementById("industry-select")?.value||"International / Hollywood";i.innerHTML='<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Calibrating SCRIPTORA...</span>',i.disabled=!0;const c=m=>String(m).padStart(2,"0"),p={format:n,industry:r,hours:s,minutes:a,seconds:l,plannedDuration:`${c(s)}:${c(a)}:${c(l)}`};await rt(e,p),f("Narrative parameters calibrated"),t("/intelligence/dashboard")})}function Lt(){const t=d.state.selectedScriptId||"chronicles-of-dust",e=d.state.scripts.find(s=>s.id===t)||d.state.activeScript||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",pages:96,format:"Feature"},n=e.analysisScores||{overall:86,pacing:82,dialogue:89,emotion:91,characterArc:84,continuity:78,storyStructure:87,theme:90,cinema:85,formatting:94,production:80};return`
+    ${F("Intelligence","Script Analysis")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -1249,7 +1542,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
                 <circle class="text-blue-600" cx="36" cy="36" fill="none" r="30" stroke="currentColor" stroke-dasharray="188.5" stroke-dashoffset="26.4" stroke-linecap="round" stroke-width="6"></circle>
               </svg>
               <div class="absolute flex flex-col items-center justify-center">
-                <span class="text-2xl font-bold text-slate-900 leading-none tracking-tight font-heading">${s.overall}</span>
+                <span class="text-2xl font-bold text-slate-900 leading-none tracking-tight font-heading">${n.overall}</span>
                 <span class="text-[10px] uppercase font-semibold text-slate-400 leading-none mt-1">/100</span>
               </div>
             </div>
@@ -1266,16 +1559,16 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
           <!-- 10 Metric Category Scores -->
           <div class="flex flex-col divide-y divide-slate-100">
-            ${[{name:"Pacing",score:s.pacing,icon:"speed"},{name:"Dialogue",score:s.dialogue,icon:"chat"},{name:"Emotion",score:s.emotion,icon:"favorite"},{name:"Character Arc",score:s.characterArc,icon:"alt_route"},{name:"Continuity",score:s.continuity,icon:"linear_scale"},{name:"Story Structure",score:s.storyStructure,icon:"account_tree"},{name:"Theme",score:s.theme,icon:"lightbulb"},{name:"Cinema",score:s.cinema,icon:"videocam"},{name:"Formatting",score:s.formatting,icon:"rule"},{name:"Production",score:s.production,icon:"movie_creation"}].map(a=>`
+            ${[{name:"Pacing",score:n.pacing,icon:"speed"},{name:"Dialogue",score:n.dialogue,icon:"chat"},{name:"Emotion",score:n.emotion,icon:"favorite"},{name:"Character Arc",score:n.characterArc,icon:"alt_route"},{name:"Continuity",score:n.continuity,icon:"linear_scale"},{name:"Story Structure",score:n.storyStructure,icon:"account_tree"},{name:"Theme",score:n.theme,icon:"lightbulb"},{name:"Cinema",score:n.cinema,icon:"videocam"},{name:"Formatting",score:n.formatting,icon:"rule"},{name:"Production",score:n.production,icon:"movie_creation"}].map(s=>`
               <div class="py-2.5 flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 w-36 shrink-0">
-                  <span class="material-symbols-outlined text-[17px] text-slate-400">${a.icon}</span>
-                  <span class="text-xs sm:text-sm font-medium text-slate-700 truncate">${a.name}</span>
+                  <span class="material-symbols-outlined text-[17px] text-slate-400">${s.icon}</span>
+                  <span class="text-xs sm:text-sm font-medium text-slate-700 truncate">${s.name}</span>
                 </div>
                 <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
-                  <div class="h-full bg-blue-600 rounded-full" style="width: ${a.score}%;"></div>
+                  <div class="h-full bg-blue-600 rounded-full" style="width: ${s.score}%;"></div>
                 </div>
-                <span class="text-xs sm:text-sm font-bold text-slate-900 w-8 text-right font-mono">${a.score}</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-900 w-8 text-right font-mono">${s.score}</span>
               </div>
             `).join("")}
           </div>
@@ -1315,13 +1608,13 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             </button>
           </div>
           <div class="flex flex-col gap-2 max-h-60 overflow-y-auto">
-            ${i.state.scripts.map(a=>`
-              <div class="script-switch-opt p-3 rounded-xl ${a.id===e.id?"bg-blue-50 border border-blue-200":"bg-white border border-slate-200 hover:bg-slate-50"} flex items-center justify-between cursor-pointer" data-id="${a.id}">
+            ${d.state.scripts.map(s=>`
+              <div class="script-switch-opt p-3 rounded-xl ${s.id===e.id?"bg-blue-50 border border-blue-200":"bg-white border border-slate-200 hover:bg-slate-50"} flex items-center justify-between cursor-pointer" data-id="${s.id}">
                 <div class="flex flex-col">
-                  <span class="text-xs font-bold text-slate-900 uppercase font-heading">${a.title}</span>
-                  <span class="text-[11px] text-slate-500 mt-0.5">${a.format||"Feature"} · ${a.pages} pages · ${a.draft||"Draft 1.0"}</span>
+                  <span class="text-xs font-bold text-slate-900 uppercase font-heading">${s.title}</span>
+                  <span class="text-[11px] text-slate-500 mt-0.5">${s.format||"Feature"} · ${s.pages} pages · ${s.draft||"Draft 1.0"}</span>
                 </div>
-                ${a.id===e.id?'<span class="material-symbols-outlined text-blue-600 text-[18px]">check_circle</span>':""}
+                ${s.id===e.id?'<span class="material-symbols-outlined text-blue-600 text-[18px]">check_circle</span>':""}
               </div>
             `).join("")}
           </div>
@@ -1330,9 +1623,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
     </main>
 
-    ${$("intelligence")}
-  `}function Ye(t){const e=i.state.selectedScriptId||"chronicles-of-dust",s=i.state.scripts.find(w=>w.id===e)||i.state.scripts[0],a=document.getElementById("btn-gen-logline"),n=document.getElementById("btn-gen-synopsis"),l=document.getElementById("ai-generated-container"),d=document.getElementById("ai-generated-title"),o=document.getElementById("ai-generated-body"),r=document.getElementById("ai-close-btn"),c=document.getElementById("ai-copy-btn"),p=document.getElementById("ai-copy-text"),y=document.getElementById("ai-query-input"),m=document.getElementById("ai-query-submit");function h(w){l&&(l.classList.remove("hidden"),d.textContent=w==="logline"?"Generated Logline":"Generated Synopsis",o.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Generating with narrative telemetry...</span>',setTimeout(()=>{o.textContent=w==="logline"?s?.logline||"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.":s?.synopsis||"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves."},400))}if(a&&(a.onclick=()=>h("logline")),n&&(n.onclick=()=>h("synopsis")),r&&(r.onclick=()=>l.classList.add("hidden")),c&&(c.onclick=()=>{navigator.clipboard?.writeText(o.textContent||""),p.textContent="Copied!",setTimeout(()=>{p.textContent="Copy"},1800),u("Copied to clipboard")}),m&&y){const w=async()=>{const x=y.value.trim();if(!x)return;l.classList.remove("hidden"),d.textContent="Intelligence AI Answer",o.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing draft semantics...</span>';const A=await de(x,e);o.textContent=A,y.value=""};m.onclick=w,y.onkeydown=x=>{x.key==="Enter"&&w()}}const I=document.getElementById("script-switcher-modal"),b=document.getElementById("script-selector-trigger"),v=document.getElementById("close-script-switcher-modal");b&&(b.onclick=()=>I?.classList.remove("hidden")),v&&(v.onclick=()=>I?.classList.add("hidden")),document.querySelectorAll(".script-switch-opt").forEach(w=>{w.onclick=()=>{const x=w.getAttribute("data-id");i.selectScript(x),I?.classList.add("hidden"),t("/intelligence")}})}function Xe(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(a=>a.id===t)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96},s=[{type:"pacing",title:"Pacing",desc:"See where the story moves too fast or too slowly.",icon:"speed",score:82,telemetry:`${e.pages||96} Pages Telemetry`},{type:"dialogue",title:"Dialogue",desc:"Cadence, subtext density and character voice rhythm.",icon:"chat",score:89,telemetry:"42 Dialogue Exchanges"},{type:"emotion",title:"Emotion",desc:"Emotional heatmaps, catharsis curves and sentiment.",icon:"favorite",score:91,telemetry:"Peak Catharsis: Act II"},{type:"character-arc",title:"Character Arc",desc:"Want vs. need trajectories and transformation tracking.",icon:"alt_route",score:84,telemetry:"4 Major Protagonists"},{type:"continuity",title:"Continuity",desc:"Props, character locations, and temporal logic rules.",icon:"linear_scale",score:78,telemetry:"2 Minor Prop Conflicts"},{type:"story-structure",title:"Story Structure",desc:"Beat breakdowns, midpoint shifts and turning points.",icon:"account_tree",score:87,telemetry:"3-Act Paradigm Standard"},{type:"theme",title:"Theme",desc:"Core philosophical spines, motifs and moral arguments.",icon:"lightbulb",score:90,telemetry:"3 Tracked Motifs"},{type:"cinema",title:"Cinema",desc:"Visual storytelling, shot economy and set-piece power.",icon:"videocam",score:85,telemetry:"Cinematic Visual Index"},{type:"scene",title:"Scene Analysis",desc:"Deep dive breakdown of goals, conflict and polarity.",icon:"movie",score:86,telemetry:"Scene 18 Active Scope"},{type:"formatting",title:"Formatting",desc:"Standard industry margins, sluglines and font rules.",icon:"rule",score:94,telemetry:"Standard Guild Rules"},{type:"production",title:"Production",desc:"Locations, shooting cast, props and cost estimators.",icon:"movie_creation",score:80,telemetry:"24 Practical Locations"}];return`
-    ${P("Intelligence","Analyse Individually")}
+    ${U("intelligence")}
+  `}function Mt(t){const e=d.state.selectedScriptId||"chronicles-of-dust",n=d.state.scripts.find(I=>I.id===e)||d.state.scripts[0],s=document.getElementById("btn-gen-logline"),a=document.getElementById("btn-gen-synopsis"),l=document.getElementById("ai-generated-container"),o=document.getElementById("ai-generated-title"),i=document.getElementById("ai-generated-body"),r=document.getElementById("ai-close-btn"),c=document.getElementById("ai-copy-btn"),p=document.getElementById("ai-copy-text"),m=document.getElementById("ai-query-input"),x=document.getElementById("ai-query-submit");function v(I){l&&(l.classList.remove("hidden"),o.textContent=I==="logline"?"Generated Logline":"Generated Synopsis",i.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Generating with narrative telemetry...</span>',setTimeout(()=>{i.textContent=I==="logline"?n?.logline||"When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.":n?.synopsis||"In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves."},400))}if(s&&(s.onclick=()=>v("logline")),a&&(a.onclick=()=>v("synopsis")),r&&(r.onclick=()=>l.classList.add("hidden")),c&&(c.onclick=()=>{navigator.clipboard?.writeText(i.textContent||""),p.textContent="Copied!",setTimeout(()=>{p.textContent="Copy"},1800),f("Copied to clipboard")}),x&&m){const I=async()=>{const b=m.value.trim();if(!b)return;l.classList.remove("hidden"),o.textContent="Intelligence AI Answer",i.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5 py-1"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing draft semantics...</span>';const B=await Me(b,e);i.textContent=B,m.value=""};x.onclick=I,m.onkeydown=b=>{b.key==="Enter"&&I()}}const E=document.getElementById("script-switcher-modal"),S=document.getElementById("script-selector-trigger"),y=document.getElementById("close-script-switcher-modal");S&&(S.onclick=()=>E?.classList.remove("hidden")),y&&(y.onclick=()=>E?.classList.add("hidden")),document.querySelectorAll(".script-switch-opt").forEach(I=>{I.onclick=()=>{const b=I.getAttribute("data-id");d.selectScript(b),E?.classList.add("hidden"),t("/intelligence")}})}function Dt(){const t=d.state.selectedScriptId||"chronicles-of-dust",e=d.state.scripts.find(s=>s.id===t)||d.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96},n=[{type:"pacing",title:"Pacing",desc:"See where the story moves too fast or too slowly.",icon:"speed",score:82,telemetry:`${e.pages||96} Pages Telemetry`},{type:"dialogue",title:"Dialogue",desc:"Cadence, subtext density and character voice rhythm.",icon:"chat",score:89,telemetry:"42 Dialogue Exchanges"},{type:"emotion",title:"Emotion",desc:"Emotional heatmaps, catharsis curves and sentiment.",icon:"favorite",score:91,telemetry:"Peak Catharsis: Act II"},{type:"character-arc",title:"Character Arc",desc:"Want vs. need trajectories and transformation tracking.",icon:"alt_route",score:84,telemetry:"4 Major Protagonists"},{type:"continuity",title:"Continuity",desc:"Props, character locations, and temporal logic rules.",icon:"linear_scale",score:78,telemetry:"2 Minor Prop Conflicts"},{type:"story-structure",title:"Story Structure",desc:"Beat breakdowns, midpoint shifts and turning points.",icon:"account_tree",score:87,telemetry:"3-Act Paradigm Standard"},{type:"theme",title:"Theme",desc:"Core philosophical spines, motifs and moral arguments.",icon:"lightbulb",score:90,telemetry:"3 Tracked Motifs"},{type:"cinema",title:"Cinema",desc:"Visual storytelling, shot economy and set-piece power.",icon:"videocam",score:85,telemetry:"Cinematic Visual Index"},{type:"scene",title:"Scene Analysis",desc:"Deep dive breakdown of goals, conflict and polarity.",icon:"movie",score:86,telemetry:"Scene 18 Active Scope"},{type:"formatting",title:"Formatting",desc:"Standard industry margins, sluglines and font rules.",icon:"rule",score:94,telemetry:"Standard Guild Rules"},{type:"production",title:"Production",desc:"Locations, shooting cast, props and cost estimators.",icon:"movie_creation",score:80,telemetry:"24 Practical Locations"}];return`
+    ${F("Intelligence","Analyse Individually")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -1365,22 +1658,22 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
         <!-- 11 Canonical Tiles Grid -->
         <div class="grid grid-cols-2 gap-3" id="analysis-tiles-grid">
-          ${s.map(a=>`
-            <a href="/intelligence/analysis/${a.type}" class="analysis-tile group flex flex-col justify-between p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-blue-300 transition-all active:scale-[0.98] min-h-[148px] no-underline text-inherit cursor-pointer" data-keyword="${a.title.toLowerCase()} ${a.desc.toLowerCase()}">
+          ${n.map(s=>`
+            <a href="/intelligence/analysis/${s.type}" class="analysis-tile group flex flex-col justify-between p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-blue-300 transition-all active:scale-[0.98] min-h-[148px] no-underline text-inherit cursor-pointer" data-keyword="${s.title.toLowerCase()} ${s.desc.toLowerCase()}">
               <div>
                 <div class="flex items-center justify-between">
                   <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[19px]">${a.icon}</span>
+                    <span class="material-symbols-outlined text-[19px]">${s.icon}</span>
                   </div>
                   <span class="material-symbols-outlined text-[18px] text-slate-300 group-hover:text-blue-600 transition-transform group-hover:translate-x-0.5">arrow_forward</span>
                 </div>
-                <h2 class="font-heading font-bold text-slate-900 mt-2.5 text-sm leading-tight">${a.title}</h2>
-                <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">${a.desc}</p>
+                <h2 class="font-heading font-bold text-slate-900 mt-2.5 text-sm leading-tight">${s.title}</h2>
+                <p class="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-relaxed">${s.desc}</p>
               </div>
 
               <div class="pt-2 flex items-center justify-between border-t border-slate-100">
-                <span class="text-[10px] text-slate-400 truncate max-w-[90px]">${a.telemetry}</span>
-                <span class="text-xs font-mono font-bold text-blue-600">${a.score}</span>
+                <span class="text-[10px] text-slate-400 truncate max-w-[90px]">${s.telemetry}</span>
+                <span class="text-xs font-mono font-bold text-blue-600">${s.score}</span>
               </div>
             </a>
           `).join("")}
@@ -1389,8 +1682,8 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
       </div>
     </main>
 
-    ${$("intelligence")}
-  `}function Qe(t){const e=document.getElementById("analysis-filter-input");e&&(e.oninput=s=>{const a=s.target.value.toLowerCase().trim();document.querySelectorAll("#analysis-tiles-grid .analysis-tile").forEach(n=>{const l=n.getAttribute("data-keyword")||"";n.style.display=l.includes(a)?"flex":"none"})})}const le={pacing:{title:"Pacing Analysis",score:82,icon:"speed",desc:"Scene duration variance, narrative tempo and page-turn velocity.",questions:["Where does the pace drag in Act II?","Find scenes over 4 pages","Show action-to-dialogue ratios"],findings:[{scene:"SCENE 14 · Dockside Perimeter · Pg 36",act:"Act II",title:"Action beats slow down before major confrontation",desc:"Extended exposition between dock guards lowers tension prior to container breach.",targetScene:14},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II Midpoint",title:"Peak narrative rhythm",desc:"Fast intercut dialogue creates maximum urgency before floodgate breach.",targetScene:18},{scene:"SCENE 26 · Coastal Highway · Pg 68",act:"Act III",title:"High velocity turning point",desc:"Pursuit cadence maintains optimal beats per page.",targetScene:26}]},dialogue:{title:"Dialogue Analysis",score:89,icon:"chat",desc:"Cadence, subtext density, distinctive character voice profiles.",questions:["Are character voices distinctive?","Find on-the-nose exposition lines","Analyze dialogue subtext in Scene 18"],findings:[{scene:"SCENE 08 · Waterfront Diner · Pg 19",act:"Act I",title:"Subtext is understated and powerful",desc:"Kevin avoids speaking about his brother directly, communicating through silence and tea rituals.",targetScene:8},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Meera O.S. dialogue establishes authority",desc:"Radio chatter avoids fluff and communicates technical stakes concisely.",targetScene:18}]},emotion:{title:"Emotion Analysis",score:91,icon:"favorite",desc:"Catharsis trajectory, emotional resonance curves, character empathy indices.",questions:["Where does emotional vulnerability peak?","Track empathy trajectory for Kevin","Catharsis resolution in Act III"],findings:[{scene:"SCENE 12 · Father’s Workshop · Pg 28",act:"Act I",title:"Emotional anchor established",desc:"Familial debt and generational sacrifice ground Kevin’s reluctance to blow the whistle.",targetScene:12},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Desperation under rising water",desc:"Kevin’s fear of failing Meera is palpable as water rises past junction box.",targetScene:18}]},"character-arc":{title:"Character Arc Analysis",score:84,icon:"alt_route",desc:"Want vs. Need conflict, psychological transformation, fatal flaw resolution.",questions:["Does Kevin overcome his passivity?","Meera character transformation","Antagonist motivation clarity"],findings:[{scene:"SCENE 04 · Port Audit Room · Pg 09",act:"Act I",title:"Fatal Flaw: Silent Compliance",desc:"Kevin stamps irregular cargo manifests to keep peace with union superiors.",targetScene:4},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"The Point of No Return",desc:"Kevin cuts the emergency seal, consciously choosing rebellion over survival.",targetScene:18}]},continuity:{title:"Continuity Analysis",score:78,icon:"linear_scale",desc:"Prop tracking, character spatial locations, timeline consistency checks.",questions:["Check prop handover in Scene 18","Is time of day consistent across Act II?","Track the brass seal location"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Hydro-sensor probe referenced before retrieval",desc:"Verify Kevin picked up copper probe in Scene 16 or carries it on belt.",targetScene:18},{scene:"SCENE 22 · Pumping Station · Pg 58",act:"Act II",title:"Flashlight state discrepancy",desc:"Ensure flashlight was retrieved after water surge in Scene 19.",targetScene:22}]},"story-structure":{title:"Story Structure Analysis",score:87,icon:"account_tree",desc:"Inciting incident, plot points, midpoint shift, climax architecture.",questions:["Is midpoint clearly defined?","Evaluate climax timing on page 88","Are 3-act beats aligned?"],findings:[{scene:"SCENE 06 · Customs Registry · Pg 14",act:"Inciting Incident",title:"Off-manifest container discovered",desc:"The inciting anomaly sets Kevin on irreversible investigative path.",targetScene:6},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Midpoint (Pg 48/96)",title:"Stakes escalate from civil to criminal",desc:"Kevin realizes his own brother commands the smuggling cartel.",targetScene:18}]},theme:{title:"Theme Analysis",score:90,icon:"lightbulb",desc:"Primary narrative spine: Complicity vs. Duty and moral accountability.",questions:["What is the central theme?","Where is loyalty tested?","Show recurring thematic motifs"],findings:[{scene:"SCENE 09 · Family Kitchen · Pg 22",act:"Act I",title:"Familial pressure as thematic catalyst",desc:"Kevin hides eviction notice, showing economic desperation fueling institutional silence.",targetScene:9},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Moral test faced directly",desc:"Kevin must decide whether to save his brother or save the port city from flooding.",targetScene:18},{scene:"SCENE 36 · Rooftop Overlook · Pg 94",act:"Act III",title:"Theme delivers its final statement",desc:"Accountability over self-preservation.",targetScene:36}]},cinema:{title:"Cinema & Visual Storytelling",score:85,icon:"videocam",desc:"Visual set-piece density, image systems, lighting and camera intentionality.",questions:["Check visual contrast between acts","Highlight cinematic set-pieces","Analyze color palette cues in action lines"],findings:[{scene:"SCENE 01 · Harbor Drone View · Pg 01",act:"Act I",title:"Strong establishing visual metaphor",desc:"Rusted shipping containers stacked like monoliths beneath smog.",targetScene:1},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"High visual tension",desc:"Red emergency beacons reflected in rising brackish water.",targetScene:18}]},scene:{title:"Scene Analysis",score:86,icon:"movie",desc:"Micro-structure of Scene 18: Objective, obstacle, polarity change.",questions:["What is the scene objective?","Where does tension peak?","How does polarity shift?"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Objective: Reroute electrical relay before surge",desc:"Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).",targetScene:18}]},formatting:{title:"Formatting & Guild Compliance",score:94,icon:"rule",desc:"Industry standard margin measurements, capitalization, slugline syntax.",questions:["Check standard industry margins","Find non-standard scene sluglines","Verify dialogue capitalization rules"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Perfect Courier Prime 12pt slugline",desc:"Margins, dual dialogue spacing, and transition tags meet Writers Guild standards.",targetScene:18}]},production:{title:"Production Breakdown",score:80,icon:"movie_creation",desc:"Locations, shooting days, practical elements, cast size breakdown.",questions:["How many practical locations?","Show scenes with special props","List one-off speaking roles"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Location: Wet Stage / Customs Interior",desc:"Requires controlled water flooding tank, hydro-sensor prop box, wet comm-link gear.",targetScene:18}]}};function Ze(t,e){const s=e.pages||96;switch(t){case"pacing":return`
+    ${U("intelligence")}
+  `}function Ot(t){const e=document.getElementById("analysis-filter-input");e&&(e.oninput=n=>{const s=n.target.value.toLowerCase().trim();document.querySelectorAll("#analysis-tiles-grid .analysis-tile").forEach(a=>{const l=a.getAttribute("data-keyword")||"";a.style.display=l.includes(s)?"flex":"none"})})}const Pe={pacing:{title:"Pacing Analysis",score:82,icon:"speed",desc:"Scene duration variance, narrative tempo and page-turn velocity.",questions:["Where does the pace drag in Act II?","Find scenes over 4 pages","Show action-to-dialogue ratios"],findings:[{scene:"SCENE 14 · Dockside Perimeter · Pg 36",act:"Act II",title:"Action beats slow down before major confrontation",desc:"Extended exposition between dock guards lowers tension prior to container breach.",targetScene:14},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II Midpoint",title:"Peak narrative rhythm",desc:"Fast intercut dialogue creates maximum urgency before floodgate breach.",targetScene:18},{scene:"SCENE 26 · Coastal Highway · Pg 68",act:"Act III",title:"High velocity turning point",desc:"Pursuit cadence maintains optimal beats per page.",targetScene:26}]},dialogue:{title:"Dialogue Analysis",score:89,icon:"chat",desc:"Cadence, subtext density, distinctive character voice profiles.",questions:["Are character voices distinctive?","Find on-the-nose exposition lines","Analyze dialogue subtext in Scene 18"],findings:[{scene:"SCENE 08 · Waterfront Diner · Pg 19",act:"Act I",title:"Subtext is understated and powerful",desc:"Kevin avoids speaking about his brother directly, communicating through silence and tea rituals.",targetScene:8},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Meera O.S. dialogue establishes authority",desc:"Radio chatter avoids fluff and communicates technical stakes concisely.",targetScene:18}]},emotion:{title:"Emotion Analysis",score:91,icon:"favorite",desc:"Catharsis trajectory, emotional resonance curves, character empathy indices.",questions:["Where does emotional vulnerability peak?","Track empathy trajectory for Kevin","Catharsis resolution in Act III"],findings:[{scene:"SCENE 12 · Father’s Workshop · Pg 28",act:"Act I",title:"Emotional anchor established",desc:"Familial debt and generational sacrifice ground Kevin’s reluctance to blow the whistle.",targetScene:12},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Desperation under rising water",desc:"Kevin’s fear of failing Meera is palpable as water rises past junction box.",targetScene:18}]},"character-arc":{title:"Character Arc Analysis",score:84,icon:"alt_route",desc:"Want vs. Need conflict, psychological transformation, fatal flaw resolution.",questions:["Does Kevin overcome his passivity?","Meera character transformation","Antagonist motivation clarity"],findings:[{scene:"SCENE 04 · Port Audit Room · Pg 09",act:"Act I",title:"Fatal Flaw: Silent Compliance",desc:"Kevin stamps irregular cargo manifests to keep peace with union superiors.",targetScene:4},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"The Point of No Return",desc:"Kevin cuts the emergency seal, consciously choosing rebellion over survival.",targetScene:18}]},continuity:{title:"Continuity Analysis",score:78,icon:"linear_scale",desc:"Prop tracking, character spatial locations, timeline consistency checks.",questions:["Check prop handover in Scene 18","Is time of day consistent across Act II?","Track the brass seal location"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Hydro-sensor probe referenced before retrieval",desc:"Verify Kevin picked up copper probe in Scene 16 or carries it on belt.",targetScene:18},{scene:"SCENE 22 · Pumping Station · Pg 58",act:"Act II",title:"Flashlight state discrepancy",desc:"Ensure flashlight was retrieved after water surge in Scene 19.",targetScene:22}]},"story-structure":{title:"Story Structure Analysis",score:87,icon:"account_tree",desc:"Inciting incident, plot points, midpoint shift, climax architecture.",questions:["Is midpoint clearly defined?","Evaluate climax timing on page 88","Are 3-act beats aligned?"],findings:[{scene:"SCENE 06 · Customs Registry · Pg 14",act:"Inciting Incident",title:"Off-manifest container discovered",desc:"The inciting anomaly sets Kevin on irreversible investigative path.",targetScene:6},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Midpoint (Pg 48/96)",title:"Stakes escalate from civil to criminal",desc:"Kevin realizes his own brother commands the smuggling cartel.",targetScene:18}]},theme:{title:"Theme Analysis",score:90,icon:"lightbulb",desc:"Primary narrative spine: Complicity vs. Duty and moral accountability.",questions:["What is the central theme?","Where is loyalty tested?","Show recurring thematic motifs"],findings:[{scene:"SCENE 09 · Family Kitchen · Pg 22",act:"Act I",title:"Familial pressure as thematic catalyst",desc:"Kevin hides eviction notice, showing economic desperation fueling institutional silence.",targetScene:9},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Moral test faced directly",desc:"Kevin must decide whether to save his brother or save the port city from flooding.",targetScene:18},{scene:"SCENE 36 · Rooftop Overlook · Pg 94",act:"Act III",title:"Theme delivers its final statement",desc:"Accountability over self-preservation.",targetScene:36}]},cinema:{title:"Cinema & Visual Storytelling",score:85,icon:"videocam",desc:"Visual set-piece density, image systems, lighting and camera intentionality.",questions:["Check visual contrast between acts","Highlight cinematic set-pieces","Analyze color palette cues in action lines"],findings:[{scene:"SCENE 01 · Harbor Drone View · Pg 01",act:"Act I",title:"Strong establishing visual metaphor",desc:"Rusted shipping containers stacked like monoliths beneath smog.",targetScene:1},{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"High visual tension",desc:"Red emergency beacons reflected in rising brackish water.",targetScene:18}]},scene:{title:"Scene Analysis",score:86,icon:"movie",desc:"Micro-structure of Scene 18: Objective, obstacle, polarity change.",questions:["What is the scene objective?","Where does tension peak?","How does polarity shift?"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Objective: Reroute electrical relay before surge",desc:"Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).",targetScene:18}]},formatting:{title:"Formatting & Guild Compliance",score:94,icon:"rule",desc:"Industry standard margin measurements, capitalization, slugline syntax.",questions:["Check standard industry margins","Find non-standard scene sluglines","Verify dialogue capitalization rules"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Perfect Courier Prime 12pt slugline",desc:"Margins, dual dialogue spacing, and transition tags meet Writers Guild standards.",targetScene:18}]},production:{title:"Production Breakdown",score:80,icon:"movie_creation",desc:"Locations, shooting days, practical elements, cast size breakdown.",questions:["How many practical locations?","Show scenes with special props","List one-off speaking roles"],findings:[{scene:"SCENE 18 · Customs Office · Pg 48",act:"Act II",title:"Location: Wet Stage / Customs Interior",desc:"Requires controlled water flooding tank, hydro-sensor prop box, wet comm-link gear.",targetScene:18}]}};function Rt(t,e){const n=e.pages||96;switch(t){case"pacing":return`
         <!-- 1. PACING: Main Pacing Curve Graph -->
         <section class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200/80 flex flex-col gap-3">
           <div class="flex items-center justify-between">
@@ -1400,7 +1693,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             </div>
             <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
               <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-              <span>${s} Pages Analyzed</span>
+              <span>${n} Pages Analyzed</span>
             </div>
           </div>
 
@@ -1985,7 +2278,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           <!-- Compliance Checklist & Meters -->
           <div class="bg-slate-50/60 rounded-xl p-4 border border-slate-100 space-y-3">
             <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Compliance across ${s} pages</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Compliance across ${n} pages</span>
               <span class="text-xs font-bold text-emerald-600 flex items-center gap-1">
                 <span class="material-symbols-outlined text-[15px]">check_circle</span>
                 Guild Approved
@@ -2087,7 +2380,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
             <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">warehouse</span>
             <p class="text-xs text-slate-700 leading-relaxed">
-              Extracted practical elements across ${s} pages. Primary production weight resides in Act II harbor logistics and wet stage setups (Scenes 14–22).
+              Extracted practical elements across ${n} pages. Primary production weight resides in Act II harbor logistics and wet stage setups (Scenes 14–22).
             </p>
           </div>
         </section>
@@ -2155,8 +2448,8 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             </p>
           </div>
         </section>
-      `;default:return""}}function et(t="pacing"){const e=le[t]||le.pacing,s=i.state.selectedScriptId||"chronicles-of-dust",a=i.state.scripts.find(n=>n.id===s)||i.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96};return`
-    ${P("Intelligence",e.title)}
+      `;default:return""}}function _t(t="pacing"){const e=Pe[t]||Pe.pacing,n=d.state.selectedScriptId||"chronicles-of-dust",s=d.state.scripts.find(a=>a.id===n)||d.state.activeScript||{title:"Chronicles of Dust",draft:"Draft 4.2",pages:96};return`
+    ${F("Intelligence",e.title)}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
@@ -2169,7 +2462,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           </a>
           <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            <span class="text-xs font-medium">${a.title} · ${a.draft||"Draft 4.2"}</span>
+            <span class="text-xs font-medium">${s.title} · ${s.draft||"Draft 4.2"}</span>
           </div>
         </div>
 
@@ -2199,9 +2492,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           </div>
 
           <div class="flex items-center gap-2 overflow-x-auto scrollbar-none py-1">
-            ${e.questions.map(n=>`
-              <button type="button" class="query-pill shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700 hover:bg-slate-50 transition-colors shadow-xs active:scale-95" data-query="${n}">
-                ${n}
+            ${e.questions.map(a=>`
+              <button type="button" class="query-pill shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs text-slate-700 hover:bg-slate-50 transition-colors shadow-xs active:scale-95" data-query="${a}">
+                ${a}
               </button>
             `).join("")}
           </div>
@@ -2219,7 +2512,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
         </div>
 
         <!-- 4. MAIN ANALYSIS VISUAL / CONTENT (MANDATORY & RESTORED) -->
-        ${Ze(t,a)}
+        ${Rt(t,s)}
 
         <!-- 5. IMPORTANT FINDINGS (KEY SCENE FINDINGS) -->
         <div class="flex flex-col gap-3">
@@ -2228,21 +2521,21 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             <span class="text-[11px] text-slate-400 font-medium">${e.findings.length} findings tracked</span>
           </div>
 
-          ${e.findings.map(n=>`
+          ${e.findings.map(a=>`
             <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs flex flex-col gap-2.5">
               <div class="flex items-center justify-between">
-                <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${n.scene}</span>
-                <span class="text-[11px] font-medium text-slate-400">${n.act}</span>
+                <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${a.scene}</span>
+                <span class="text-[11px] font-medium text-slate-400">${a.act}</span>
               </div>
               <div class="flex flex-col">
-                <h3 class="text-xs sm:text-sm font-bold text-slate-900">${n.title}</h3>
-                <p class="text-xs text-slate-600 mt-1 leading-relaxed">${n.desc}</p>
+                <h3 class="text-xs sm:text-sm font-bold text-slate-900">${a.title}</h3>
+                <p class="text-xs text-slate-600 mt-1 leading-relaxed">${a.desc}</p>
               </div>
               <div class="pt-2 flex justify-end border-t border-slate-100">
                 <!-- 6. OPEN IN EDITOR BUTTON -->
-                <button type="button" class="btn-open-editor-scene px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs transition-all" data-scene="${n.targetScene}">
+                <button type="button" class="btn-open-editor-scene px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-medium text-xs flex items-center gap-1.5 shadow-xs transition-all" data-scene="${a.targetScene}">
                   <span class="material-symbols-outlined text-[15px]">edit_note</span>
-                  <span>Open in Editor (Scene ${n.targetScene})</span>
+                  <span>Open in Editor (Scene ${a.targetScene})</span>
                 </button>
               </div>
             </div>
@@ -2252,9 +2545,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
       </div>
     </main>
 
-    ${$("intelligence")}
-  `}function tt(t,e){const s=i.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".btn-open-editor-scene").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-scene");i.setState({currentSceneId:r}),u(`Jumping to Scene ${r} in Editor`),e(`/editor/${s}?scene=${r}`)}}),document.querySelectorAll("[data-jump-scene]").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-jump-scene");i.setState({currentSceneId:r}),u(`Jumping to Scene ${r} in Editor`),e(`/editor/${s}?scene=${r}`)}}),document.querySelectorAll("#char-arc-selector .char-pill").forEach(o=>{o.onclick=()=>{document.querySelectorAll("#char-arc-selector .char-pill").forEach(c=>{c.className="char-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"}),o.className="char-pill active px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs";const r=o.getAttribute("data-char");u(`Switched active character focus to ${r==="meera"?"Meera":"Kevin"}`)}});const a=document.getElementById("vector-ai-input"),n=document.getElementById("vector-ai-submit"),l=document.getElementById("vector-ai-answer");async function d(o){if(!o||!l)return;l.classList.remove("hidden"),l.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing narrative beats...</span>';const r=await de(o,s);l.textContent=r}n&&a&&(n.onclick=()=>d(a.value.trim()),a.onkeydown=o=>{o.key==="Enter"&&d(a.value.trim())}),document.querySelectorAll(".query-pill").forEach(o=>{o.onclick=()=>{const r=o.getAttribute("data-query");a&&(a.value=r),d(r)}})}function st(){const t=i.state.currentUser||{name:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return i.state.settings,`
-    ${P("Profile","Account & preferences.")}
+    ${U("intelligence")}
+  `}function Ft(t,e){const n=d.state.selectedScriptId||"chronicles-of-dust";document.querySelectorAll(".btn-open-editor-scene").forEach(i=>{i.onclick=()=>{const r=i.getAttribute("data-scene");d.setState({currentSceneId:r}),f(`Jumping to Scene ${r} in Editor`),e(`/editor/${n}?scene=${r}`)}}),document.querySelectorAll("[data-jump-scene]").forEach(i=>{i.onclick=()=>{const r=i.getAttribute("data-jump-scene");d.setState({currentSceneId:r}),f(`Jumping to Scene ${r} in Editor`),e(`/editor/${n}?scene=${r}`)}}),document.querySelectorAll("#char-arc-selector .char-pill").forEach(i=>{i.onclick=()=>{document.querySelectorAll("#char-arc-selector .char-pill").forEach(c=>{c.className="char-pill px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors"}),i.className="char-pill active px-3 py-1.5 rounded-xl bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs";const r=i.getAttribute("data-char");f(`Switched active character focus to ${r==="meera"?"Meera":"Kevin"}`)}});const s=document.getElementById("vector-ai-input"),a=document.getElementById("vector-ai-submit"),l=document.getElementById("vector-ai-answer");async function o(i){if(!i||!l)return;l.classList.remove("hidden"),l.innerHTML='<span class="text-slate-400 italic flex items-center gap-1.5"><span class="material-symbols-outlined text-[15px] animate-spin text-blue-600">progress_activity</span>Analyzing narrative beats...</span>';const r=await Me(i,n);l.textContent=r}a&&s&&(a.onclick=()=>o(s.value.trim()),s.onkeydown=i=>{i.key==="Enter"&&o(s.value.trim())}),document.querySelectorAll(".query-pill").forEach(i=>{i.onclick=()=>{const r=i.getAttribute("data-query");s&&(s.value=r),o(r)}})}function Ut(){const t=d.state.currentUser||{name:"Arun Kumar",headline:"Screenwriter & Narrative Director",email:"arun.kumar@scriptora.studio",badge:"Member Pro",initials:"AK",stats:{drafts:14,coAuthors:3,healthIndex:"98%"}};return d.state.settings,`
+    ${F("Profile","Account & preferences.")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
@@ -2483,9 +2776,9 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
     </main>
 
-    ${$("profile")}
-  `}function at(t){const e=document.getElementById("settings-search-input");e&&(e.oninput=f=>{const g=f.target.value.toLowerCase().trim();document.querySelectorAll("#settings-list .setting-item").forEach(S=>{const j=S.textContent.toLowerCase();S.style.display=j.includes(g)?"flex":"none"})}),document.querySelectorAll(".setting-item").forEach(f=>{f.onclick=()=>{const g=f.querySelector(".font-semibold")?.textContent;u(`${g} settings are up to date`)}});const s=document.getElementById("modal-edit-profile"),a=document.getElementById("trigger-modal-email"),n=document.getElementById("edit-avatar-btn"),l=document.getElementById("form-update-profile");function d(f){f?s?.classList.remove("hidden"):s?.classList.add("hidden")}a&&(a.onclick=()=>d(!0)),n&&(n.onclick=()=>d(!0)),document.querySelectorAll(".close-profile-modal").forEach(f=>f.onclick=()=>d(!1)),l&&(l.onsubmit=async f=>{f.preventDefault();const g=document.getElementById("prof-input-name").value,S=document.getElementById("prof-input-headline").value,j=document.getElementById("prof-input-email").value;await $e({name:g,headline:S,email:j}),d(!1),u("Profile updated successfully"),t("/profile")});const o=document.getElementById("modal-security"),r=document.getElementById("trigger-modal-password"),c=document.getElementById("form-update-pw");function p(f){f?o?.classList.remove("hidden"):o?.classList.add("hidden")}r&&(r.onclick=()=>p(!0)),document.querySelectorAll(".close-security-modal").forEach(f=>f.onclick=()=>p(!1)),c&&(c.onsubmit=f=>{f.preventDefault(),p(!1),u("Password updated securely")});const y=document.getElementById("action-modal"),m=document.getElementById("action-modal-title"),h=document.getElementById("action-modal-desc"),I=document.getElementById("action-modal-icon"),b=document.getElementById("action-modal-icon-box"),v=document.getElementById("action-modal-confirm"),w=document.getElementById("action-modal-cancel");let x="signout";function A(f){x=f,f==="signout"?(m.textContent="Sign Out",h.textContent="Are you sure you want to end your active session on this device?",I.textContent="logout",b.className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900",v.textContent="Sign Out"):(m.textContent="Delete Account",h.textContent="This action will permanently delete your portfolio, scripts, and collaborator access. This cannot be undone.",I.textContent="warning",b.className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center",v.className="flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700",v.textContent="Delete Forever"),y?.classList.remove("hidden")}document.getElementById("btn-trigger-signout")?.addEventListener("click",()=>A("signout")),document.getElementById("btn-trigger-delete-acc")?.addEventListener("click",()=>A("delete")),w&&(w.onclick=()=>y?.classList.add("hidden")),v&&(v.onclick=async()=>{y?.classList.add("hidden"),x==="signout"?(await U(),i.setState({currentUser:null}),u("Signed out of Scriptora"),t("/auth")):(await U(),i.setState({currentUser:null,scripts:[]}),u("Account deleted"),t("/auth"))})}function nt(){const t=i.state.selectedScriptId||"chronicles-of-dust",e=i.state.scripts.find(s=>s.id===t)||i.state.scripts[0]||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",joinCode:"A7K9-XP42"};return`
-    ${P("Profile","Collaborators")}
+    ${U("profile")}
+  `}function Ht(t){const e=document.getElementById("settings-search-input");e&&(e.oninput=g=>{const h=g.target.value.toLowerCase().trim();document.querySelectorAll("#settings-list .setting-item").forEach(w=>{const N=w.textContent.toLowerCase();w.style.display=N.includes(h)?"flex":"none"})}),document.querySelectorAll(".setting-item").forEach(g=>{g.onclick=()=>{const h=g.querySelector(".font-semibold")?.textContent;f(`${h} settings are up to date`)}});const n=document.getElementById("modal-edit-profile"),s=document.getElementById("trigger-modal-email"),a=document.getElementById("edit-avatar-btn"),l=document.getElementById("form-update-profile");function o(g){g?n?.classList.remove("hidden"):n?.classList.add("hidden")}s&&(s.onclick=()=>o(!0)),a&&(a.onclick=()=>o(!0)),document.querySelectorAll(".close-profile-modal").forEach(g=>g.onclick=()=>o(!1)),l&&(l.onsubmit=async g=>{g.preventDefault();const h=document.getElementById("prof-input-name").value,w=document.getElementById("prof-input-headline").value,N=document.getElementById("prof-input-email").value;await it({name:h,headline:w,email:N}),o(!1),f("Profile updated successfully"),t("/profile")});const i=document.getElementById("modal-security"),r=document.getElementById("trigger-modal-password"),c=document.getElementById("form-update-pw");function p(g){g?i?.classList.remove("hidden"):i?.classList.add("hidden")}r&&(r.onclick=()=>p(!0)),document.querySelectorAll(".close-security-modal").forEach(g=>g.onclick=()=>p(!1)),c&&(c.onsubmit=g=>{g.preventDefault(),p(!1),f("Password updated securely")});const m=document.getElementById("action-modal"),x=document.getElementById("action-modal-title"),v=document.getElementById("action-modal-desc"),E=document.getElementById("action-modal-icon"),S=document.getElementById("action-modal-icon-box"),y=document.getElementById("action-modal-confirm"),I=document.getElementById("action-modal-cancel");let b="signout";function B(g){b=g,g==="signout"?(x.textContent="Sign Out",v.textContent="Are you sure you want to end your active session on this device?",E.textContent="logout",S.className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center",y.className="flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900",y.textContent="Sign Out"):(x.textContent="Delete Account",v.textContent="This action will permanently delete your portfolio, scripts, and collaborator access. This cannot be undone.",E.textContent="warning",S.className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center",y.className="flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700",y.textContent="Delete Forever"),m?.classList.remove("hidden")}document.getElementById("btn-trigger-signout")?.addEventListener("click",()=>B("signout")),document.getElementById("btn-trigger-delete-acc")?.addEventListener("click",()=>B("delete")),I&&(I.onclick=()=>m?.classList.add("hidden")),y&&(y.onclick=async()=>{m?.classList.add("hidden"),b==="signout"?(await de(),d.setState({currentUser:null}),f("Signed out of Scriptora"),t("/auth")):(await de(),d.setState({currentUser:null,scripts:[]}),f("Account deleted"),t("/auth"))})}function Vt(){const t=d.state.selectedScriptId||"chronicles-of-dust",e=d.state.scripts.find(n=>n.id===t)||d.state.scripts[0]||{id:"chronicles-of-dust",title:"Chronicles of Dust",draft:"Draft 4.2",joinCode:"A7K9-XP42"};return`
+    ${F("Profile","Collaborators")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
@@ -2518,13 +2811,13 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
 
           <!-- Project Dropdown Popover -->
           <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-30 overflow-hidden py-1" id="projectDropdown">
-            ${i.state.scripts.map(s=>`
-              <button class="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 transition-colors switch-script-opt" data-id="${s.id}">
+            ${d.state.scripts.map(n=>`
+              <button class="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 transition-colors switch-script-opt" data-id="${n.id}">
                 <div class="flex flex-col">
-                  <span class="text-xs font-semibold text-slate-900">${s.title}</span>
-                  <span class="text-[10px] text-slate-500">${s.format||"Feature"} · ${s.draft||"Draft 1.0"}</span>
+                  <span class="text-xs font-semibold text-slate-900">${n.title}</span>
+                  <span class="text-[10px] text-slate-500">${n.format||"Feature"} · ${n.draft||"Draft 1.0"}</span>
                 </div>
-                ${s.id===e.id?'<span class="material-symbols-outlined text-blue-600 text-[16px]">check</span>':""}
+                ${n.id===e.id?'<span class="material-symbols-outlined text-blue-600 text-[16px]">check</span>':""}
               </button>
             `).join("")}
           </div>
@@ -2657,26 +2950,26 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
       </div>
     </main>
 
-    ${$("profile")}
-  `}function lt(t){const e=i.state.selectedScriptId||"chronicles-of-dust";let s="A7K9-XP42";async function a(){const g=await Ce(e),S=document.getElementById("collaborators-list");if(S){if(g.length===0){S.innerHTML='<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code to invite teammates.</div>';return}S.innerHTML=g.map(j=>`
+    ${U("profile")}
+  `}function qt(t){const e=d.state.selectedScriptId||"chronicles-of-dust";let n="A7K9-XP42";async function s(){const h=await Qe(e),w=document.getElementById("collaborators-list");if(w){if(h.length===0){w.innerHTML='<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code to invite teammates.</div>';return}w.innerHTML=h.map(N=>`
       <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors">
         <div class="flex items-center gap-3 min-w-0 pr-2">
-          <div class="w-9 h-9 rounded-full ${j.avatarBg||"bg-blue-100 text-blue-700"} flex items-center justify-center font-bold text-xs shrink-0">
-            ${j.initials}
+          <div class="w-9 h-9 rounded-full ${N.avatarBg||"bg-blue-100 text-blue-700"} flex items-center justify-center font-bold text-xs shrink-0">
+            ${N.initials}
           </div>
           <div class="flex flex-col min-w-0">
-            <span class="text-xs font-bold text-slate-900 truncate">${j.name}</span>
-            <span class="text-[11px] text-slate-500 truncate">${j.email}</span>
+            <span class="text-xs font-bold text-slate-900 truncate">${N.name}</span>
+            <span class="text-[11px] text-slate-500 truncate">${N.email}</span>
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">${j.role}</span>
-          <button class="remove-collab-btn text-slate-400 hover:text-red-600 p-1" data-id="${j.id}" title="Remove access">
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">${N.role}</span>
+          <button class="remove-collab-btn text-slate-400 hover:text-red-600 p-1" data-id="${N.id}" title="Remove access">
             <span class="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>
       </div>
-    `).join(""),document.querySelectorAll(".remove-collab-btn").forEach(j=>{j.onclick=async()=>{const _=j.getAttribute("data-id");confirm("Remove collaborator access for this user?")&&(await Ee(e,_),u("Collaborator access removed"),a())}})}}a();const n=document.getElementById("projectSelectBtn"),l=document.getElementById("projectDropdown");n&&(n.onclick=()=>l?.classList.toggle("hidden")),document.querySelectorAll(".switch-script-opt").forEach(g=>{g.onclick=()=>{const S=g.getAttribute("data-id");i.selectScript(S),l?.classList.add("hidden"),t("/profile/collaborators")}});const d=document.getElementById("openInviteBtn"),o=document.getElementById("closeInviteBtn"),r=document.getElementById("inviteCard"),c=document.getElementById("sendInviteBtn");d&&(d.onclick=()=>r?.classList.remove("hidden")),o&&(o.onclick=()=>r?.classList.add("hidden")),c&&(c.onclick=async()=>{const g=document.getElementById("inviteEmailInput")?.value.trim(),S=document.querySelector('input[name="inviteRole"]:checked')?.value||"editor";g&&(await ke(e,{email:g,role:S}),u(`Invited ${g} as ${S}`),r?.classList.add("hidden"),a())});const p=document.getElementById("tabGenCodeBtn"),y=document.getElementById("tabEnterCodeBtn"),m=document.getElementById("paneGenerateCode"),h=document.getElementById("paneEnterCode");p&&(p.onclick=()=>{p.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",y.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",m?.classList.remove("hidden"),h?.classList.add("hidden")}),y&&(y.onclick=()=>{y.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",p.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",h?.classList.remove("hidden"),m?.classList.add("hidden")});const I=document.getElementById("copyJoinCodeBtn"),b=document.getElementById("copyJoinCodeLabel");I&&(I.onclick=()=>{const g=document.getElementById("displayJoinCode")?.textContent||s;navigator.clipboard?.writeText(g),b.textContent="Copied!",setTimeout(()=>{b.textContent="Copy"},1800),u(`Copied code: ${g}`)});const v=document.getElementById("regenJoinCodeBtn");v&&(v.onclick=async()=>{const g=await Ae(e);s=g;const S=document.getElementById("displayJoinCode");S&&(S.textContent=g),u(`Generated new join code: ${g}`)});const w=document.getElementById("verifyCodeBtn"),x=document.getElementById("joinCodeInput"),A=document.getElementById("joinCodeResultCard"),f=document.getElementById("confirmJoinScriptBtn");x&&(x.oninput=g=>{let S=g.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");S.length>4&&(S=S.slice(0,4)+"-"+S.slice(4,8)),g.target.value=S}),w&&x&&(w.onclick=async()=>{const g=x.value.trim();if(!g)return;w.innerHTML='<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';const S=await je(g);w.innerHTML="<span>Verify</span>",S.valid?(A?.classList.remove("hidden"),document.getElementById("verifiedScriptTitle").textContent=S.script.title,document.getElementById("verifiedScriptFormat").textContent=`${S.script.format} · ${S.script.pages} pages`,u("Valid join code")):(A?.classList.add("hidden"),u("Invalid or expired join code","error"))}),f&&x&&(f.onclick=async()=>{const g=x.value.trim();await Be(g),u("Successfully joined screenplay workspace!"),t("/workspace")})}function it(){const t=i.state.currentUser?.initials||"JD";return`
+    `).join(""),document.querySelectorAll(".remove-collab-btn").forEach(N=>{N.onclick=async()=>{const H=N.getAttribute("data-id");confirm("Remove collaborator access for this user?")&&(await et(e,H),f("Collaborator access removed"),s())}})}}s();const a=document.getElementById("projectSelectBtn"),l=document.getElementById("projectDropdown");a&&(a.onclick=()=>l?.classList.toggle("hidden")),document.querySelectorAll(".switch-script-opt").forEach(h=>{h.onclick=()=>{const w=h.getAttribute("data-id");d.selectScript(w),l?.classList.add("hidden"),t("/profile/collaborators")}});const o=document.getElementById("openInviteBtn"),i=document.getElementById("closeInviteBtn"),r=document.getElementById("inviteCard"),c=document.getElementById("sendInviteBtn");o&&(o.onclick=()=>r?.classList.remove("hidden")),i&&(i.onclick=()=>r?.classList.add("hidden")),c&&(c.onclick=async()=>{const h=document.getElementById("inviteEmailInput")?.value.trim(),w=document.querySelector('input[name="inviteRole"]:checked')?.value||"editor";h&&(await Ze(e,{email:h,role:w}),f(`Invited ${h} as ${w}`),r?.classList.add("hidden"),s())});const p=document.getElementById("tabGenCodeBtn"),m=document.getElementById("tabEnterCodeBtn"),x=document.getElementById("paneGenerateCode"),v=document.getElementById("paneEnterCode");p&&(p.onclick=()=>{p.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",m.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",x?.classList.remove("hidden"),v?.classList.add("hidden")}),m&&(m.onclick=()=>{m.className="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs",p.className="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900",v?.classList.remove("hidden"),x?.classList.add("hidden")});const E=document.getElementById("copyJoinCodeBtn"),S=document.getElementById("copyJoinCodeLabel");E&&(E.onclick=()=>{const h=document.getElementById("displayJoinCode")?.textContent||n;navigator.clipboard?.writeText(h),S.textContent="Copied!",setTimeout(()=>{S.textContent="Copy"},1800),f(`Copied code: ${h}`)});const y=document.getElementById("regenJoinCodeBtn");y&&(y.onclick=async()=>{const h=await tt(e);n=h;const w=document.getElementById("displayJoinCode");w&&(w.textContent=h),f(`Generated new join code: ${h}`)});const I=document.getElementById("verifyCodeBtn"),b=document.getElementById("joinCodeInput"),B=document.getElementById("joinCodeResultCard"),g=document.getElementById("confirmJoinScriptBtn");b&&(b.oninput=h=>{let w=h.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"");w.length>4&&(w=w.slice(0,4)+"-"+w.slice(4,8)),h.target.value=w}),I&&b&&(I.onclick=async()=>{const h=b.value.trim();if(!h)return;I.innerHTML='<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>';const w=await st(h);I.innerHTML="<span>Verify</span>",w.valid?(B?.classList.remove("hidden"),document.getElementById("verifiedScriptTitle").textContent=w.script.title,document.getElementById("verifiedScriptFormat").textContent=`${w.script.format} · ${w.script.pages} pages`,f("Valid join code")):(B?.classList.add("hidden"),f("Invalid or expired join code","error"))}),g&&b&&(g.onclick=async()=>{const h=b.value.trim();await nt(h),f("Successfully joined screenplay workspace!"),t("/workspace")})}function Gt(){const t=d.state.currentUser?.initials||"JD";return`
     <div class="flex flex-col min-h-screen bg-surface w-full relative">
       <!-- Fixed Header with Back Button and Mark Read Action -->
       <header class="fixed top-0 w-full z-50 pt-safe bg-surface/90 backdrop-blur-xl border-b border-slate-100 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
@@ -2686,7 +2979,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
               <span class="material-symbols-outlined text-[20px]">arrow_back</span>
             </button>
             <div class="flex items-center gap-2">
-              <img src="${O}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-6 h-6 object-contain shrink-0" />
+              <img src="${ee}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-6 h-6 object-contain shrink-0" />
               <div class="flex flex-col">
                 <span class="font-heading text-sm font-bold text-slate-900 leading-tight">Scriptora</span>
                 <span class="text-[11px] text-slate-500 font-medium leading-none">Notifications</span>
@@ -2764,13 +3057,13 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
         </div>
       </main>
     </div>
-  `}function ot(t){const e=document.getElementById("btn-back-notif");e&&(e.onclick=()=>{const y=i.getPreviousRoute("/workspace");t(y)});let s="all",a="normal",n=[];async function l(){const y=document.getElementById("notif-feed-container");if(!y)return;if(a==="loading"){y.innerHTML=`
+  `}function Jt(t){const e=document.getElementById("btn-back-notif");e&&(e.onclick=()=>{const m=d.getPreviousRoute("/workspace");t(m)});let n="all",s="normal",a=[];async function l(){const m=document.getElementById("notif-feed-container");if(!m)return;if(s==="loading"){m.innerHTML=`
         <div class="space-y-3 animate-pulse">
           <div class="h-20 bg-slate-100 rounded-xl"></div>
           <div class="h-20 bg-slate-100 rounded-xl"></div>
           <div class="h-20 bg-slate-100 rounded-xl"></div>
         </div>
-      `;return}if(a==="error"){y.innerHTML=`
+      `;return}if(s==="error"){m.innerHTML=`
         <div class="p-6 bg-white border border-red-200 rounded-2xl flex flex-col items-center text-center gap-2">
           <span class="material-symbols-outlined text-3xl text-red-500">wifi_off</span>
           <h3 class="font-bold text-sm text-slate-900">Sync Connection Lost</h3>
@@ -2779,7 +3072,7 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
             Retry Connection
           </button>
         </div>
-      `,document.getElementById("btn-retry-sync")?.addEventListener("click",()=>{a="normal",l()});return}if(n=(await ce()).notifications||[],a==="empty"||s==="unread"&&n.filter(x=>x.unread).length===0){y.innerHTML=`
+      `,document.getElementById("btn-retry-sync")?.addEventListener("click",()=>{s="normal",l()});return}if(a=(await Le()).notifications||[],s==="empty"||n==="unread"&&a.filter(b=>b.unread).length===0){m.innerHTML=`
         <div class="p-8 bg-white border border-slate-200/80 rounded-2xl flex flex-col items-center text-center gap-2">
           <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
             <span class="material-symbols-outlined text-2xl">check_circle</span>
@@ -2787,34 +3080,34 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           <h3 class="font-bold text-sm text-slate-900">You’re all caught up!</h3>
           <p class="text-xs text-slate-500 max-w-xs">No pending notifications or requests requiring your review.</p>
         </div>
-      `;return}const h=n.filter(x=>x.unread).length;document.getElementById("badge-all-count").textContent=n.length,document.getElementById("badge-unread-count").textContent=h,i.setState({unreadNotifications:h});let I=n;s==="unread"&&(I=I.filter(x=>x.unread));const b=I.filter(x=>x.group==="today"),v=I.filter(x=>x.group!=="today");function w(x,A){return A.length===0?"":`
+      `;return}const v=a.filter(b=>b.unread).length;document.getElementById("badge-all-count").textContent=a.length,document.getElementById("badge-unread-count").textContent=v,d.setState({unreadNotifications:v});let E=a;n==="unread"&&(E=E.filter(b=>b.unread));const S=E.filter(b=>b.group==="today"),y=E.filter(b=>b.group!=="today");function I(b,B){return B.length===0?"":`
         <div class="flex flex-col gap-2">
           <div class="flex items-center justify-between px-1">
-            <h2 class="text-xs font-bold text-slate-400 tracking-wider uppercase font-heading">${x}</h2>
+            <h2 class="text-xs font-bold text-slate-400 tracking-wider uppercase font-heading">${b}</h2>
           </div>
           <div class="flex flex-col gap-2">
-            ${A.map(f=>`
-              <div class="notif-row relative flex items-start gap-3 p-3.5 rounded-xl bg-white border ${f.unread?"border-l-4 border-l-blue-600 border-slate-200/80 shadow-xs":"border-slate-200/60 opacity-80"} hover:shadow-sm transition-all cursor-pointer" data-id="${f.id}" data-route="${f.actionRoute}">
+            ${B.map(g=>`
+              <div class="notif-row relative flex items-start gap-3 p-3.5 rounded-xl bg-white border ${g.unread?"border-l-4 border-l-blue-600 border-slate-200/80 shadow-xs":"border-slate-200/60 opacity-80"} hover:shadow-sm transition-all cursor-pointer" data-id="${g.id}" data-route="${g.actionRoute}">
                 <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
-                  ${f.sender.startsWith("icon:")?`<span class="material-symbols-outlined text-[18px] text-blue-600">${f.sender.replace("icon:","")}</span>`:f.sender}
+                  ${g.sender.startsWith("icon:")?`<span class="material-symbols-outlined text-[18px] text-blue-600">${g.sender.replace("icon:","")}</span>`:g.sender}
                 </div>
                 <div class="flex flex-col flex-1 min-w-0">
                   <div class="flex items-baseline justify-between gap-2">
-                    <h3 class="text-xs font-bold text-slate-900 truncate">${f.title}</h3>
-                    <span class="text-[10px] text-slate-400 shrink-0">${f.time}</span>
+                    <h3 class="text-xs font-bold text-slate-900 truncate">${g.title}</h3>
+                    <span class="text-[10px] text-slate-400 shrink-0">${g.time}</span>
                   </div>
-                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">${f.body}</p>
+                  <p class="text-xs text-slate-600 mt-0.5 line-clamp-2 leading-relaxed">${g.body}</p>
                   <div class="mt-2 flex items-center gap-1.5 flex-wrap">
-                    ${(f.tags||[]).map(g=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${g}</span>`).join("")}
-                    <span class="text-blue-600 text-[11px] font-semibold ml-auto">${f.actionLabel||"View →"}</span>
+                    ${(g.tags||[]).map(h=>`<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">${h}</span>`).join("")}
+                    <span class="text-blue-600 text-[11px] font-semibold ml-auto">${g.actionLabel||"View →"}</span>
                   </div>
                 </div>
-                ${f.unread?'<div class="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1"></div>':""}
+                ${g.unread?'<div class="w-2 h-2 rounded-full bg-blue-600 shrink-0 mt-1"></div>':""}
               </div>
             `).join("")}
           </div>
         </div>
-      `}y.innerHTML=w("Today",b)+w("Earlier",v),document.querySelectorAll(".notif-row").forEach(x=>{x.onclick=async()=>{const A=parseInt(x.getAttribute("data-id")),f=x.getAttribute("data-route");await Te(A),await i.refreshNotifications(),f?t(f):l()}})}l();const d=document.getElementById("filter-all-btn"),o=document.getElementById("filter-unread-btn");d&&(d.onclick=()=>{s="all",d.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",o.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()}),o&&(o.onclick=()=>{s="unread",o.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",d.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()});const r=document.getElementById("btn-mark-all-read");r&&(r.onclick=async()=>{await Pe(),await i.refreshNotifications(),u("All notifications marked as read"),l()});const c=document.getElementById("btn-toggle-sim"),p=document.getElementById("sim-menu-dropdown");c&&(c.onclick=()=>p?.classList.toggle("hidden")),document.querySelectorAll(".sim-opt").forEach(y=>{y.onclick=()=>{a=y.getAttribute("data-state"),p?.classList.add("hidden"),l(),u(`Simulating ${a} state`)}})}class rt{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(e="#app"){if(this.appEl=document.querySelector(e),!this.appEl){console.error(`Mount element ${e} not found.`);return}document.body.addEventListener("click",s=>{const a=s.target.closest("a");if(a&&a.href&&a.origin===window.location.origin&&!a.hasAttribute("download")&&a.getAttribute("target")!=="_blank"&&!a.getAttribute("rel")?.includes("external")){const n=new URL(a.href),l=n.pathname+n.search+n.hash;l.startsWith("/api")||(s.preventDefault(),this.navigate(l))}}),window.addEventListener("popstate",()=>{this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(e,s=!1){this.currentPath&&i.pushHistory(this.currentPath);const a=this.getBasePath(),n=a&&e.toLowerCase().startsWith(a.toLowerCase())?e.slice(a.length)||"/":e,l=a&&!e.startsWith(a)?`${a}${n.startsWith("/")?"":"/"}${n}`:e;s?window.history.replaceState(null,"",l):window.history.pushState(null,"",l),this.resolve(n)}resolve(e){const[s,a]=e.split("?");let n=s.replace(/\/+$/,"")||"/";const l=this.getBasePath();l&&n.toLowerCase().startsWith(l.toLowerCase())&&(n=n.slice(l.length)||"/"),n.startsWith("/")||(n="/"+n);const d=new URLSearchParams(a||"");this.currentPath=e;const o=!!i.state.currentUser;if(!o&&!["/welcome","/auth"].includes(n)){this.navigate("/auth",!0);return}if(o&&n==="/auth"){this.navigate("/workspace",!0);return}if(n==="/"){o?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(n==="/welcome"){this.render(Re(),()=>Fe(this.navigate.bind(this)));return}if(n==="/auth"){this.render(Oe(),()=>_e(this.navigate.bind(this)));return}if(n==="/workspace"){this.render(He(),()=>Je(this.navigate.bind(this)));return}if(n==="/editor"){const c=i.state.selectedScriptId||"chronicles-of-dust",p=d.get("scene");this.navigate(`/editor/${c}${p?`?scene=${p}`:""}`,!0);return}if(n.startsWith("/editor/")){const c=n.split("/")[2],p=d.get("scene");i.setState({selectedScriptId:c}),this.render(Ve(c,p),()=>Ue(c,this.navigate.bind(this)));return}if(n==="/intelligence"||n==="/intelligence/select"){this.render(qe(),()=>Ge(this.navigate.bind(this)));return}if(n==="/intelligence/context"){this.render(We(),()=>ze(this.navigate.bind(this)));return}if(n==="/intelligence/dashboard"||n==="/intelligence/overview"){this.render(Ke(),()=>Ye(this.navigate.bind(this)));return}if(n==="/intelligence/analysis"||n==="/intelligence/analysis/select"){this.render(Xe(),()=>Qe(this.navigate.bind(this)));return}if(n.startsWith("/intelligence/analysis/")){const c=n.split("/")[3]||"pacing";this.render(et(c),()=>tt(c,this.navigate.bind(this)));return}if(n==="/profile"){this.render(st(),()=>at(this.navigate.bind(this)));return}if(n==="/profile/collaborators"){this.render(nt(),()=>lt(this.navigate.bind(this)));return}if(n==="/notifications"){this.render(it(),()=>ot(this.navigate.bind(this)));return}this.renderNotFound(n)}render(e,s){if(this.appEl&&(this.appEl.innerHTML=e,window.scrollTo({top:0,behavior:"instant"}),typeof s=="function"))try{s()}catch(a){console.error("Error attaching screen events:",a)}}renderNotFound(e){this.appEl.innerHTML=`
+      `}m.innerHTML=I("Today",S)+I("Earlier",y),document.querySelectorAll(".notif-row").forEach(b=>{b.onclick=async()=>{const B=parseInt(b.getAttribute("data-id")),g=b.getAttribute("data-route");await at(B),await d.refreshNotifications(),g?t(g):l()}})}l();const o=document.getElementById("filter-all-btn"),i=document.getElementById("filter-unread-btn");o&&(o.onclick=()=>{n="all",o.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",i.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()}),i&&(i.onclick=()=>{n="unread",i.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",o.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",l()});const r=document.getElementById("btn-mark-all-read");r&&(r.onclick=async()=>{await lt(),await d.refreshNotifications(),f("All notifications marked as read"),l()});const c=document.getElementById("btn-toggle-sim"),p=document.getElementById("sim-menu-dropdown");c&&(c.onclick=()=>p?.classList.toggle("hidden")),document.querySelectorAll(".sim-opt").forEach(m=>{m.onclick=()=>{s=m.getAttribute("data-state"),p?.classList.add("hidden"),l(),f(`Simulating ${s} state`)}})}class Wt{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(e="#app"){if(this.appEl=document.querySelector(e),!this.appEl){console.error(`Mount element ${e} not found.`);return}document.body.addEventListener("click",n=>{const s=n.target.closest("a");if(s&&s.href&&s.origin===window.location.origin&&!s.hasAttribute("download")&&s.getAttribute("target")!=="_blank"&&!s.getAttribute("rel")?.includes("external")){const a=new URL(s.href),l=a.pathname+a.search+a.hash;l.startsWith("/api")||(n.preventDefault(),this.navigate(l))}}),window.addEventListener("popstate",()=>{this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(e,n=!1){this.currentPath&&d.pushHistory(this.currentPath);const s=this.getBasePath(),a=s&&e.toLowerCase().startsWith(s.toLowerCase())?e.slice(s.length)||"/":e,l=s&&!e.startsWith(s)?`${s}${a.startsWith("/")?"":"/"}${a}`:e;n?window.history.replaceState(null,"",l):window.history.pushState(null,"",l),this.resolve(a)}resolve(e){const[n,s]=e.split("?");let a=n.replace(/\/+$/,"")||"/";const l=this.getBasePath();l&&a.toLowerCase().startsWith(l.toLowerCase())&&(a=a.slice(l.length)||"/"),a.startsWith("/")||(a="/"+a);const o=new URLSearchParams(s||"");this.currentPath=e;const i=!!d.state.currentUser;if(!i&&!["/welcome","/auth"].includes(a)){this.navigate("/auth",!0);return}if(i&&a==="/auth"){this.navigate("/workspace",!0);return}if(a==="/"){i?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(a==="/welcome"){this.render(xt(),()=>ft(this.navigate.bind(this)));return}if(a==="/auth"){this.render(pt(),()=>ut(this.navigate.bind(this)));return}if(a==="/workspace"){this.render(mt(),()=>bt(this.navigate.bind(this)));return}if(a==="/editor"){const c=d.state.selectedScriptId||"chronicles-of-dust",p=o.get("scene");this.navigate(`/editor/${c}${p?`?scene=${p}`:""}`,!0);return}if(a.startsWith("/editor/")){const c=a.split("/")[2],p=o.get("scene");d.setState({selectedScriptId:c}),this.render(gt(c,p),()=>ht(c,this.navigate.bind(this)));return}if(a==="/intelligence"||a==="/intelligence/select"){this.render(Nt(),()=>Pt(this.navigate.bind(this)));return}if(a==="/intelligence/context"){this.render(jt(),()=>$t(this.navigate.bind(this)));return}if(a==="/intelligence/dashboard"||a==="/intelligence/overview"){this.render(Lt(),()=>Mt(this.navigate.bind(this)));return}if(a==="/intelligence/analysis"||a==="/intelligence/analysis/select"){this.render(Dt(),()=>Ot(this.navigate.bind(this)));return}if(a.startsWith("/intelligence/analysis/")){const c=a.split("/")[3]||"pacing";this.render(_t(c),()=>Ft(c,this.navigate.bind(this)));return}if(a==="/profile"){this.render(Ut(),()=>Ht(this.navigate.bind(this)));return}if(a==="/profile/collaborators"){this.render(Vt(),()=>qt(this.navigate.bind(this)));return}if(a==="/notifications"){this.render(Gt(),()=>Jt(this.navigate.bind(this)));return}this.renderNotFound(a)}render(e,n){if(this.appEl&&(this.appEl.innerHTML=e,window.scrollTo({top:0,behavior:"instant"}),typeof n=="function"))try{n()}catch(s){console.error("Error attaching screen events:",s)}}renderNotFound(e){this.appEl.innerHTML=`
       <div class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-surface">
         <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
           <span class="material-symbols-outlined text-[32px]">sentiment_dissatisfied</span>
@@ -2825,4 +3118,4 @@ Sirens pulse through the red fog.`,T=new Blob([E],{type:k==="pdf"?"application/p
           Return to Workspace
         </button>
       </div>
-    `;const s=document.getElementById("notfound-home");s&&(s.onclick=()=>this.navigate("/workspace"))}}const ct=new rt;async function ie(){try{await i.init(),ct.init("#app"),window.addEventListener("online",()=>{u("Back online. Synchronizing changes..."),i.refreshScripts(),i.refreshNotifications()}),window.addEventListener("offline",()=>{u("Offline mode active. Edits saved locally.","info")}),console.log("Scriptora initialized successfully in production-ready mode.")}catch(t){console.error("Scriptora bootstrap failed:",t)}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",ie):ie();
+    `;const n=document.getElementById("notfound-home");n&&(n.onclick=()=>this.navigate("/workspace"))}}const Kt=new Wt;async function je(){try{await d.init(),Kt.init("#app"),window.addEventListener("online",()=>{f("Back online. Synchronizing changes..."),d.refreshScripts(),d.refreshNotifications()}),window.addEventListener("offline",()=>{f("Offline mode active. Edits saved locally.","info")}),console.log("Scriptora initialized successfully in production-ready mode.")}catch(t){console.error("Scriptora bootstrap failed:",t)}}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",je):je();
