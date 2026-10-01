@@ -189,9 +189,11 @@ class Router {
 
     if (path.startsWith('/intelligence/analysis/')) {
       const type = path.split('/')[3] || 'pacing';
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
       this.render(
-        renderIndividualAnalysisScreen(type),
-        () => attachIndividualAnalysisEvents(type, this.navigate.bind(this))
+        renderIndividualAnalysisScreen(type, fromParam, scriptParam),
+        () => attachIndividualAnalysisEvents(type, this.navigate.bind(this), fromParam, scriptParam)
       );
       return;
     }

@@ -937,28 +937,49 @@ function renderMainVisualContent(type, script) {
   }
 }
 
-export function renderIndividualAnalysisScreen(type = 'pacing') {
+export function renderIndividualAnalysisScreen(type = 'pacing', from = null, returnScriptId = null) {
   const detail = vectorDetails[type] || vectorDetails.pacing;
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+  
+  // Detect if navigated from Editor
+  const storedReturn = sessionStorage.getItem('scriptora_prod_return');
+  let urlParams;
+  try {
+    const loc = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search;
+    urlParams = new URLSearchParams(loc || '');
+  } catch (e) {
+    urlParams = new URLSearchParams();
+  }
+  const isFromEditor = from === 'editor' || urlParams.get('from') === 'editor' || Boolean(storedReturn);
+  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || 'chronicles-of-dust';
+  const editorReturnUrl = `/editor/${targetScriptId}`;
+
+  const scriptId = targetScriptId;
   const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
-    id: 'chronicles-of-dust',
+    id: scriptId,
     title: 'Chronicles of Dust',
     draft: 'Draft 4.2',
     pages: 96
   };
 
   return `
-    ${renderHeader('Intelligence', detail.title)}
+    ${renderHeader(isFromEditor ? 'Editor' : 'Intelligence', detail.title)}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
         <!-- 1. SUB-HEADER NAVIGATION ROW -->
         <div class="flex items-center justify-between">
-          <a href="/intelligence/analysis" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
+          ${isFromEditor ? `
+          <a href="${editorReturnUrl}" id="analysis-back-btn" class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>Back to Editor</span>
+          </a>
+          ` : `
+          <a href="/intelligence/analysis" id="analysis-back-btn" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Back to Vectors</span>
           </a>
+          `}
           <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
             <span class="text-xs font-medium">${script.title} · ${script.draft || 'Draft 4.2'}</span>
@@ -1048,8 +1069,34 @@ export function renderIndividualAnalysisScreen(type = 'pacing') {
   `;
 }
 
-export function attachIndividualAnalysisEvents(type, navigate) {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+export function attachIndividualAnalysisEvents(type, navigate, from = null, returnScriptId = null) {
+  const storedReturn = sessionStorage.getItem('scriptora_prod_return');
+  let urlParams;
+  try {
+    const loc = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search;
+    urlParams = new URLSearchParams(loc || '');
+  } catch (e) {
+    urlParams = new URLSearchParams();
+  }
+  const isFromEditor = from === 'editor' || urlParams.get('from') === 'editor' || Boolean(storedReturn);
+  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || 'chronicles-of-dust';
+  const editorReturnUrl = `/editor/${targetScriptId}`;
+
+  // Dedicated back button handling
+  const backBtn = document.getElementById('analysis-back-btn');
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      if (isFromEditor) {
+        sessionStorage.removeItem('scriptora_prod_return');
+        navigate(editorReturnUrl);
+      } else {
+        navigate('/intelligence/analysis');
+      }
+    };
+  }
+
+  const scriptId = targetScriptId;
 
   // Open in editor button for each finding
   document.querySelectorAll('.btn-open-editor-scene').forEach(btn => {

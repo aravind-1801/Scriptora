@@ -1735,8 +1735,18 @@ function setupToolbarAndMenu(scriptId, navigate) {
   // Production button
   const prodBtn = document.getElementById('btn-open-production');
   const menuProdBtn = document.getElementById('menu-btn-production');
-  if (prodBtn) prodBtn.onclick = () => navigate('/intelligence/analysis/production');
-  if (menuProdBtn) menuProdBtn.onclick = () => navigate('/intelligence/analysis/production');
+  const openProductionFromEditor = () => {
+    const targetScriptId = scriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+    sessionStorage.setItem('scriptora_prod_return', `/editor/${targetScriptId}`);
+    navigate(`/intelligence/analysis/production?from=editor&scriptId=${encodeURIComponent(targetScriptId)}`);
+  };
+  if (prodBtn) prodBtn.onclick = openProductionFromEditor;
+  if (menuProdBtn) {
+    menuProdBtn.onclick = () => {
+      toggleMoreMenu(false);
+      openProductionFromEditor();
+    };
+  }
 
   // Go to Page menu
   const menuGoPage = document.getElementById('menu-btn-go-page');
