@@ -14,6 +14,10 @@ let focusModeActive = false;
 let activeLanguage = 'EN';
 let findMatches = [];
 let currentFindIndex = -1;
+let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
+
+// Standard A4 screenplay page capacity (~46 lines of Courier 12pt)
+const A4_PAGE_CAPACITY_LINES = 46;
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript || {
@@ -33,7 +37,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <header id="editor-fixed-header" class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
         
-        <!-- ROW 1: TOP APP HEADER (Order: Back, Logo, Title, Save, Collab, Avatar) -->
+        <!-- ROW 1: TOP APP HEADER (Order: Back, Logo, Title, Auto-Save, Save Icon, Collab, Avatar) -->
         <div class="h-12 px-3 flex items-center justify-between max-w-5xl mx-auto">
           <div class="flex items-center gap-2 min-w-0">
             <!-- Back to Workspace button -->
@@ -46,17 +50,23 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/logo-BG9jZ7UG.png';" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
               <div class="flex flex-col min-w-0 leading-tight">
                 <span class="font-heading font-bold text-xs sm:text-sm text-slate-900 truncate" id="editor-script-title">${script.title}</span>
-                <span class="text-[10px] text-slate-500 truncate" id="editor-save-status">Saved</span>
+                <span class="text-[10px] text-slate-500 truncate font-mono" id="editor-save-status">Saved</span>
               </div>
             </div>
           </div>
 
-          <!-- Right Controls: SAVE MUST APPEAR BEFORE COLLABORATE -->
-          <div class="flex items-center gap-1.5 shrink-0">
-            <!-- Save Button with State Machine -->
-            <button id="editor-save-btn" class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all" title="Save changes (Ctrl+S / Cmd+S)">
-              <span class="material-symbols-outlined text-[15px]" id="editor-save-icon">cloud_done</span>
-              <span id="editor-save-text">Save</span>
+          <!-- Right Controls: Auto-save toggle, Save Icon (NO text), Collaborate, Avatar -->
+          <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            
+            <!-- Auto-save ON/OFF compact toggle button (Section 2) -->
+            <button id="btn-toggle-autosave" class="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 ${autoSaveEnabled ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}" title="Toggle Auto-save (Current: ${autoSaveEnabled ? 'ON' : 'OFF'})">
+              <span class="w-1.5 h-1.5 rounded-full ${autoSaveEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}" id="autosave-dot"></span>
+              <span id="autosave-toggle-label">${autoSaveEnabled ? 'Auto-save ON' : 'Auto-save OFF'}</span>
+            </button>
+
+            <!-- Compact SAVE ICON BUTTON (Section 1: Save icon only, no word "Save") -->
+            <button id="editor-save-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs active:scale-95 transition-all" title="Save screenplay now (Ctrl+S / Cmd+S)" aria-label="Save Screenplay">
+              <span class="material-symbols-outlined text-[18px]" id="editor-save-icon">save</span>
             </button>
 
             <!-- Collaborate Link -->
@@ -74,8 +84,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         <!-- ROW 2: HORIZONTAL EDITOR TOOLBAR ([ ⋮ ] MUST appear BEFORE Production) -->
         <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all">
           
-          <!-- [ ⋮ ] Three-Dot Menu (FIRST item as required by Section F) -->
-          <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="More Tools (Title Page, Preferences, Find/Replace)">
+          <!-- [ ⋮ ] Three-Dot Menu (FIRST item as required by Section F & G) -->
+          <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="More Tools (Title Page, Scene Navigator, Character Navigator, Preferences)">
             <span class="material-symbols-outlined text-[18px]">more_vert</span>
           </button>
 
@@ -128,38 +138,22 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </button>
         </div>
 
-        <!-- ROW 3: ACCESSORY & ELEMENT BAR (Navigation & Line Type Conversions) -->
+        <!-- ROW 3: ACCESSORY & ELEMENT BAR (Cleaned: Removed Character, INT/EXT & Act buttons; compact Scene selector) -->
         <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1.5 flex flex-col gap-1.5 shadow-xs max-w-5xl mx-auto transition-all">
           
-          <!-- Navigation Selector Row (Act / Scene / Character - Data-driven) -->
-          <div class="flex items-center justify-between gap-2 overflow-x-auto scrollbar-none py-0.5">
-            <div class="flex items-center gap-1.5 shrink-0">
-              <!-- Act Jump -->
-              <div class="relative">
-                <select id="navActSelect" class="h-7 pl-2 pr-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none">
-                  <option value="">ACT...</option>
+          <!-- Compact Scene Jump & Undo/Redo (Sections 4 & 5: Clean alignment) -->
+          <div class="flex items-center justify-between gap-2 py-0.5">
+            <div class="flex items-center gap-2 shrink-0">
+              <!-- Compact Scene Selector: small length for proper alignment (Section 5) -->
+              <div class="relative w-28 sm:w-32 shrink-0">
+                <select id="navSceneSelect" class="w-full h-7 pl-2.5 pr-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold truncate appearance-none cursor-pointer focus:outline-none shadow-xs transition-colors">
+                  <option value="">Scene 18 ▾</option>
                 </select>
-                <span class="material-symbols-outlined text-[13px] text-slate-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
-              </div>
-
-              <!-- Scene Jump -->
-              <div class="relative">
-                <select id="navSceneSelect" class="h-7 pl-2 pr-6 rounded-lg bg-blue-600 text-white text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none shadow-xs">
-                  <option value="">SCENE...</option>
-                </select>
-                <span class="material-symbols-outlined text-[13px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
-              </div>
-
-              <!-- Character Jump -->
-              <div class="relative">
-                <select id="navCharSelect" class="h-7 pl-2 pr-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-semibold appearance-none cursor-pointer focus:outline-none">
-                  <option value="">CHARACTER...</option>
-                </select>
-                <span class="material-symbols-outlined text-[13px] text-slate-500 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+                <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
               </div>
             </div>
 
-            <!-- Undo / Redo & Insert INT/EXT -->
+            <!-- Undo / Redo controls -->
             <div class="flex items-center gap-1 shrink-0">
               <button id="btn-undo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Undo (Ctrl+Z)">
                 <span class="material-symbols-outlined text-[16px]">undo</span>
@@ -167,13 +161,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <button id="btn-redo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Redo (Ctrl+Y)">
                 <span class="material-symbols-outlined text-[16px]">redo</span>
               </button>
-              <button id="btn-insert-intext" class="px-2 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 text-[11px] font-bold active:scale-95 transition-all" title="Insert INT/EXT">
-                INT/EXT
-              </button>
             </div>
           </div>
 
-          <!-- Line Element Bar: ACT, SCENE, CHARACTER, DIALOGUE, PARENTHETICAL, TRANSITION -->
+          <!-- Line Element Bar: Scene, Action, Character, Dialogue, Parenthetical, Transition -->
           <div class="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none py-0.5" id="element-bar">
             <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="scene" title="Convert to Scene Heading">
               <span class="material-symbols-outlined text-[14px]">movie</span>
@@ -191,7 +182,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <span class="material-symbols-outlined text-[14px]">chat_bubble</span>
               <span>Dialogue</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Convert to Parenthetical">
+            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Insert Parenthetical ()">
               <span class="material-symbols-outlined text-[14px]">format_quote</span>
               <span>Paren</span>
             </button>
@@ -205,7 +196,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       </header>
 
       <!-- ========================================================= -->
-      <!-- FIND & REPLACE DOCKED BAR (Toggled via menu or Ctrl+F)    -->
+      <!-- FIND & REPLACE DOCKED BAR                                -->
       <!-- ========================================================= -->
       <div id="findReplaceBar" class="fixed top-[152px] left-0 right-0 z-35 bg-white border-b border-blue-200 shadow-md px-4 py-2 hidden max-w-3xl mx-auto rounded-b-xl transition-all">
         <div class="flex items-center gap-2 flex-wrap text-xs">
@@ -237,14 +228,15 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       </div>
 
       <!-- ========================================================= -->
-      <!-- CONTINUOUS MULTI-PAGE SCREENPLAY WORKSPACE AREA          -->
+      <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
+      <!-- Content flows naturally across A4 sheets without forced   -->
+      <!-- page breaks per scene or transition.                      -->
       <!-- ========================================================= -->
       <main id="editor-main-scroll" class="flex-1 w-full pt-[156px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
         
-        <!-- Multi-page Sheet Container -->
+        <!-- Continuous A4 Sheets Container -->
         <div id="screenplay-pages-container" class="w-full max-w-3xl flex flex-col items-center gap-8 py-6 px-3 sm:px-6">
-          <!-- Pages rendered dynamically with Page boundaries -->
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -278,7 +270,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       </div>
 
       <!-- ========================================================= -->
-      <!-- THREE-DOT MENU MODAL / DRAWER (Section G)                 -->
+      <!-- THREE-DOT MENU MODAL / DRAWER (Section 21)                -->
       <!-- ========================================================= -->
       <div id="editorMoreMenuModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden items-start justify-end sm:justify-center p-3 sm:pt-20">
         <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
@@ -309,21 +301,27 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </button>
             </div>
 
-            <!-- VIEW -->
+            <!-- VIEW & NAVIGATORS (Section 6: Act & Character navigation accessible here) -->
             <div class="py-2 flex flex-col gap-1">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">View & Navigation</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">View & Navigators</span>
               <button id="menu-btn-focus-mode" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
                 <span class="material-symbols-outlined text-[16px] text-slate-600">center_focus_strong</span>
                 <span class="flex-1 font-medium">Toggle Focus Mode</span>
                 <span id="menuFocusState" class="text-[10px] text-blue-600 font-semibold">Off</span>
               </button>
+              <button id="menu-btn-scene-navigator" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">movie</span>
+                <span class="flex-1 font-medium">Scene & Act Navigator</span>
+                <span class="text-[10px] text-slate-400">All Scenes</span>
+              </button>
+              <button id="menu-btn-char-navigator" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
+                <span class="material-symbols-outlined text-[16px] text-purple-600">person</span>
+                <span class="flex-1 font-medium">Character Navigator</span>
+                <span class="text-[10px] text-slate-400">Jump to Dialogue</span>
+              </button>
               <button id="menu-btn-go-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
                 <span class="material-symbols-outlined text-[16px] text-slate-600">auto_stories</span>
                 <span class="flex-1 font-medium">Go to Page...</span>
-              </button>
-              <button id="menu-btn-go-scene" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
-                <span class="material-symbols-outlined text-[16px] text-slate-600">movie</span>
-                <span class="flex-1 font-medium">Go to Scene...</span>
               </button>
             </div>
 
@@ -435,7 +433,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       </div>
 
       <!-- ========================================================= -->
-      <!-- EDITOR PREFERENCES MODAL (Section AE)                     -->
+      <!-- EDITOR PREFERENCES MODAL                                  -->
       <!-- ========================================================= -->
       <div id="preferencesModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
         <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-200">
@@ -692,7 +690,6 @@ export async function attachEditorEvents(scriptId, navigate) {
   const backBtn = document.getElementById('editor-back-btn');
   if (backBtn) {
     backBtn.onclick = () => {
-      // Trigger a clean save before returning if dirty
       if (hasUnsavedChanges) {
         performSave(false);
       }
@@ -711,29 +708,31 @@ export async function attachEditorEvents(scriptId, navigate) {
     saveBtn.onclick = () => performSave(true);
   }
 
-  // 4. Keyboard Shortcuts (Ctrl+S / Cmd+S, Ctrl+F / Cmd+F, Ctrl+Z, Ctrl+Y)
+  // 4. Auto-save toggle setup (Section 2)
+  setupAutoSaveToggle();
+
+  // 5. Global Keyboard Shortcuts (Ctrl+S / Cmd+S, Ctrl+F / Cmd+F)
   window.addEventListener('keydown', handleGlobalKeydown);
 
-  // 5. Horizontal Toolbar & Three-dot Menu
+  // 6. Horizontal Toolbar & Three-dot Menu
   setupToolbarAndMenu(scriptId, navigate);
 
-  // 6. Navigation Selectors
+  // 7. Navigation Selectors
   setupNavigationSelectors();
 
-  // 7. Element Bar (Act, Scene, Char, Dia, Paren, Trans)
+  // 8. Element Bar (Scene, Action, Char, Dia, Paren, Trans)
   setupElementBar();
 
-  // 8. Find & Replace
+  // 9. Find & Replace
   setupFindReplace();
 
-  // 9. Modals (Title Page, Preferences, Export, Versions, Diff)
+  // 10. Modals (Title Page, Preferences, Export, Versions, Diff)
   setupModals(scriptId);
 
-  // 10. Autocomplete dropdown setup
+  // 11. Autocomplete dropdown setup
   setupAutocomplete();
 }
 
-// Global keyboard handler
 function handleGlobalKeydown(e) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault();
@@ -746,8 +745,43 @@ function handleGlobalKeydown(e) {
 }
 
 // =========================================================================
-// MULTI-PAGE SCREENPLAY RENDERING
-// Real continuous multi-page document with professional screenplay margins
+// AUTO-SAVE ON/OFF TOGGLE (Section 2 & 3)
+// =========================================================================
+function setupAutoSaveToggle() {
+  const toggleBtn = document.getElementById('btn-toggle-autosave');
+  const dot = document.getElementById('autosave-dot');
+  const label = document.getElementById('autosave-toggle-label');
+
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      autoSaveEnabled = !autoSaveEnabled;
+      localStorage.setItem('scriptora_autosave', String(autoSaveEnabled));
+
+      if (autoSaveEnabled) {
+        toggleBtn.className = 'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+        label.textContent = 'Auto-save ON';
+        toggleBtn.title = 'Toggle Auto-save (Current: ON)';
+        showToast('Auto-save enabled');
+        if (hasUnsavedChanges) {
+          scheduleAutosave();
+        }
+      } else {
+        toggleBtn.className = 'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200';
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
+        label.textContent = 'Auto-save OFF';
+        toggleBtn.title = 'Toggle Auto-save (Current: OFF)';
+        clearTimeout(saveDebounceTimer);
+        showToast('Auto-save disabled · Use Save icon');
+      }
+    };
+  }
+}
+
+// =========================================================================
+// NATURAL A4 MULTI-PAGE SCREENPLAY RENDERING (Sections 11, 12, 13, 23)
+// Continuous document flowing across A4-sized sheets based on line capacity.
+// Scenes and transitions DO NOT force artificial page breaks!
 // =========================================================================
 function renderScreenplayPages() {
   const container = document.getElementById('screenplay-pages-container');
@@ -755,38 +789,63 @@ function renderScreenplayPages() {
 
   const scenes = currentScreenplay.scenes || [];
   
-  // Distribute scenes into multi-page layout (1 scene or ~7-9 blocks per standard page)
-  let pages = [];
-  let currentPageBlocks = [];
-  let currentPageSceneNum = null;
-
-  scenes.forEach((scene, sIdx) => {
-    // If scene is large or new, place each scene on a physical page sheet for multi-page vertical scroll
-    pages.push({
-      pageNumber: pages.length + 1,
-      sceneNumber: scene.number,
-      sceneId: scene.id,
-      slugline: scene.slugline,
-      blocks: scene.blocks || []
+  // Flatten all blocks with scene metadata
+  const allItems = [];
+  scenes.forEach(scene => {
+    (scene.blocks || []).forEach(block => {
+      allItems.push({
+        block,
+        sceneNumber: scene.number,
+        sceneId: scene.id,
+        slugline: scene.slugline
+      });
     });
   });
+
+  // Flow items naturally across standard A4 pages based on line capacity
+  const pages = [];
+  let currentPage = { pageNumber: 1, items: [] };
+  let currentLines = 0;
+
+  allItems.forEach(item => {
+    const lines = estimateBlockLines(item.block);
+    // If adding this block exceeds page line capacity and current page is not empty: start next A4 page
+    if (currentLines + lines > A4_PAGE_CAPACITY_LINES && currentPage.items.length > 0) {
+      pages.push(currentPage);
+      currentPage = { pageNumber: pages.length + 1, items: [] };
+      currentLines = 0;
+    }
+    currentPage.items.push(item);
+    currentLines += lines;
+  });
+
+  if (currentPage.items.length > 0) {
+    pages.push(currentPage);
+  }
 
   if (pages.length === 0) {
     pages.push({
       pageNumber: 1,
-      sceneNumber: 1,
-      sceneId: 'scene-1',
-      slugline: 'INT. NEW SCENE - DAY',
-      blocks: [
-        { id: 'b-1-1', type: 'scene', content: 'INT. NEW SCENE - DAY' },
-        { id: 'b-1-2', type: 'action', content: 'Type your screenplay action here...' }
+      items: [
+        {
+          block: { id: 'b-1-1', type: 'scene', content: 'INT. NEW SCENE - DAY' },
+          sceneNumber: 1,
+          sceneId: 'scene-1',
+          slugline: 'INT. NEW SCENE - DAY'
+        },
+        {
+          block: { id: 'b-1-2', type: 'action', content: 'Type your screenplay action here...' },
+          sceneNumber: 1,
+          sceneId: 'scene-1',
+          slugline: 'INT. NEW SCENE - DAY'
+        }
       ]
     });
   }
 
-  // Render each page as a continuous standard 8.5" x 11" screenplay sheet
-  container.innerHTML = pages.map((page, pIdx) => `
-    <div class="screenplay-page-sheet w-full max-w-2xl bg-white rounded-xl shadow-md border border-slate-200/80 p-6 sm:p-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
+  // Render each continuous A4 sheet
+  container.innerHTML = pages.map(page => `
+    <div class="screenplay-page-sheet w-full max-w-2xl bg-white rounded-xl shadow-md border border-slate-200/80 p-6 sm:p-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all min-h-[820px]" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
       <div class="w-full flex items-center justify-between pb-4 select-none text-[12px] text-slate-400 font-mono border-b border-transparent">
@@ -794,12 +853,12 @@ function renderScreenplayPages() {
         <span class="font-bold text-slate-500">${page.pageNumber}.</span>
       </div>
 
-      <!-- Screenplay Blocks for this page -->
-      <div class="page-blocks-wrapper flex flex-col flex-1" data-scene-id="${page.sceneId}">
-        ${page.blocks.map((block, bIdx) => renderBlockHtml(block, page.sceneNumber, page.sceneId, bIdx)).join('')}
+      <!-- Screenplay Blocks naturally flowing across this A4 page -->
+      <div class="page-blocks-wrapper flex flex-col flex-1">
+        ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- Bottom Page Boundary subtle indicator -->
+      <!-- Bottom Page Boundary indicator -->
       <div class="w-full pt-6 select-none flex items-center justify-center text-[10px] text-slate-300 font-sans tracking-widest uppercase">
         <span>— PAGE ${page.pageNumber} —</span>
       </div>
@@ -807,12 +866,22 @@ function renderScreenplayPages() {
     </div>
   `).join('');
 
-  // Attach contenteditable listeners to all blocks
   attachBlockListeners();
   updateTelemetry();
 }
 
-function renderBlockHtml(block, sceneNumber, sceneId, blockIndex) {
+function estimateBlockLines(block) {
+  const content = block.content || '';
+  if (block.type === 'scene') return 3;
+  if (block.type === 'action') return Math.max(1, Math.ceil(content.length / 60)) + 1;
+  if (block.type === 'character') return 2;
+  if (block.type === 'parenthetical') return 1;
+  if (block.type === 'dialogue') return Math.max(1, Math.ceil(content.length / 38)) + 1;
+  if (block.type === 'transition') return 2;
+  return 2;
+}
+
+function renderBlockHtml(block, sceneNumber, sceneId) {
   const isScene = block.type === 'scene';
   const isChar = block.type === 'character';
   const isParen = block.type === 'parenthetical';
@@ -872,7 +941,6 @@ function escapeHtml(text) {
 
 // =========================================================================
 // BLOCK INPUT & CURSOR INTEGRITY
-// Handles typing, Enter/Tab automation, autocomplete trigger without remount
 // =========================================================================
 function attachBlockListeners() {
   const blocks = document.querySelectorAll('.screenplay-block');
@@ -881,28 +949,41 @@ function attachBlockListeners() {
     const editable = block.hasAttribute('contenteditable') ? block : block.querySelector('[contenteditable="true"]');
     if (!editable) return;
 
-    // Focus handler: sync element bar & active block
     editable.onfocus = () => {
       activeBlockId = block.getAttribute('data-block-id');
       const type = block.getAttribute('data-block-type') || 'action';
       highlightElementButton(type);
     };
 
-    // Input handler: update in-memory model, debounced autosave, autocomplete trigger
     editable.oninput = (e) => {
       hasUnsavedChanges = true;
       updateBlockModel(block, editable.innerText);
       updateSaveStatus('Unsaved');
-      scheduleAutosave();
+      
+      // Auto-save only if enabled (Section 2 & 3)
+      if (autoSaveEnabled) {
+        scheduleAutosave();
+      }
       triggerAutocomplete(block, editable);
       updateTelemetry();
     };
 
-    // Keydown handler: deterministic Enter / Tab context automation (Section L)
     editable.onkeydown = (e) => {
       handleBlockKeydown(e, block, editable);
     };
   });
+}
+
+// Scene Heading Structured Parser (Section 8)
+export function parseSceneHeading(text) {
+  const prefixMatch = text.match(/^(INT\.\/EXT\.|INT\.|EXT\.|I\/E\.)\s*/i);
+  const intExt = prefixMatch ? prefixMatch[1].toUpperCase() : 'INT.';
+  const remainder = prefixMatch ? text.slice(prefixMatch[0].length) : text;
+  const parts = remainder.split(/\s+-\s*|\s+-/);
+  const location = (parts[0] || '').trim().toUpperCase();
+  const time = (parts[1] || '').trim().toUpperCase();
+
+  return { intExt, location, time };
 }
 
 function updateBlockModel(blockEl, text) {
@@ -914,37 +995,42 @@ function updateBlockModel(blockEl, text) {
   const b = scene.blocks.find(x => x.id === blockId);
   if (b) {
     b.content = text;
-    // If block is character, register to character memory if new
+
+    // Character memory tracking (Section 19: Character memory while writing)
     if (b.type === 'character') {
       const cleanName = text.replace(/\(.*\)/g, '').trim().toUpperCase();
-      if (cleanName && !currentScreenplay.characters.includes(cleanName)) {
+      if (cleanName && cleanName.length >= 2 && !currentScreenplay.characters.includes(cleanName)) {
         currentScreenplay.characters.push(cleanName);
-        populateNavigators();
       }
     }
-    // If block is scene, update scene slugline and check location memory
+
+    // Scene heading structured parsing (Section 8)
     if (b.type === 'scene') {
+      const parsed = parseSceneHeading(text);
+      b.intExt = parsed.intExt;
+      b.location = parsed.location;
+      b.time = parsed.time;
       scene.slugline = text;
-      const match = text.match(/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([^-\n]+)/i);
-      if (match && match[2]) {
-        const loc = match[2].trim().toUpperCase();
-        if (loc && !currentScreenplay.locations.includes(loc)) {
-          currentScreenplay.locations.push(loc);
-        }
+      scene.location = parsed.location;
+      scene.time = parsed.time;
+
+      // Location memory tracking
+      if (parsed.location && parsed.location.length >= 2 && !currentScreenplay.locations.includes(parsed.location)) {
+        currentScreenplay.locations.push(parsed.location);
       }
     }
   }
 }
 
 // =========================================================================
-// ENTER / TAB CONTEXTUAL AUTOMATION (Section L)
+// ENTER / TAB CONTEXTUAL AUTOMATION (Sections 9, 10, 11, 16, 17, 18)
 // =========================================================================
 function handleBlockKeydown(e, blockEl, editableEl) {
   const type = blockEl.getAttribute('data-block-type');
   const sceneId = blockEl.getAttribute('data-scene-id');
   const blockId = blockEl.getAttribute('data-block-id');
 
-  // Check if autocomplete dropdown is open and handled by arrow keys or Enter
+  // Check if autocomplete dropdown is open
   const acDropdown = document.getElementById('editor-autocomplete-dropdown');
   if (acDropdown && !acDropdown.classList.contains('hidden')) {
     if (e.key === 'ArrowDown') {
@@ -971,15 +1057,12 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // Auto-parenthetical shortcut: Typing "(" in Character or Dialogue
+  // Auto-parenthetical shortcut: Typing "(" in Character or Dialogue (Section 9)
   if (e.key === '(' && (type === 'character' || type === 'dialogue')) {
-    // If cursor is at empty line or start of line, convert or insert parenthetical
     const sel = window.getSelection();
     if (sel && sel.anchorOffset === 0 && editableEl.innerText.trim() === '') {
       e.preventDefault();
       convertBlockType(blockEl, 'parenthetical');
-      editableEl.innerText = '(';
-      setCursorAtEnd(editableEl);
       return;
     }
   }
@@ -988,7 +1071,6 @@ function handleBlockKeydown(e, blockEl, editableEl) {
   if (e.key === 'Tab') {
     e.preventDefault();
     if (type === 'action') {
-      // Tab from action converts to Character
       convertBlockType(blockEl, 'character');
       return;
     }
@@ -1012,21 +1094,25 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     // 2. CHARACTER -> DIALOGUE
     if (type === 'character') {
       e.preventDefault();
+      // Ensure character is stored in memory
+      const cName = editableEl.innerText.replace(/\(.*\)/g, '').trim().toUpperCase();
+      if (cName && !currentScreenplay.characters.includes(cName)) {
+        currentScreenplay.characters.push(cName);
+      }
       insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       return;
     }
 
-    // 3. DIALOGUE -> ACTION (or CHARACTER if double Enter)
+    // 3. DIALOGUE -> ACTION
     if (type === 'dialogue') {
       e.preventDefault();
       insertNewBlockAfter(sceneId, blockId, 'action', '');
       return;
     }
 
-    // 4. PARENTHETICAL -> DIALOGUE
+    // 4. PARENTHETICAL -> DIALOGUE (Section 10: Parenthetical Enter returns to dialogue)
     if (type === 'parenthetical') {
       e.preventDefault();
-      // Ensure closing parenthesis
       let text = editableEl.innerText.trim();
       if (!text.endsWith(')')) {
         text += ')';
@@ -1037,7 +1123,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       return;
     }
 
-    // 5. TRANSITION -> NEW SCENE (Section AQ: Transition -> New Scene)
+    // 5. TRANSITION -> NEXT SCENE (Section 11: Does NOT force a new page!)
     if (type === 'transition') {
       e.preventDefault();
       createNewSceneAfter(sceneId);
@@ -1053,7 +1139,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
   }
 }
 
-// Insert a new block after target block within scene
+// Insert new block
 function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
   const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
   if (!scene) return;
@@ -1073,7 +1159,6 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
 
   renderScreenplayPages();
 
-  // Position cursor into newly created block
   setTimeout(() => {
     const el = document.getElementById(newBlockId);
     if (el) {
@@ -1086,7 +1171,7 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
   }, 30);
 }
 
-// Automatically create a NEW SCENE object (Section AQ)
+// Create new scene after transition WITHOUT FORCING A NEW PAGE (Section 11 & 23)
 function createNewSceneAfter(sceneId) {
   const sceneIdx = currentScreenplay.scenes.findIndex(s => s.id === sceneId);
   const nextSceneNum = currentScreenplay.scenes.length + 1;
@@ -1109,7 +1194,7 @@ function createNewSceneAfter(sceneId) {
     currentScreenplay.scenes.push(newScene);
   }
 
-  // Renumber scenes sequentially (Section I)
+  // Renumber scenes sequentially
   currentScreenplay.scenes.forEach((sc, idx) => {
     sc.number = idx + 1;
   });
@@ -1118,7 +1203,6 @@ function createNewSceneAfter(sceneId) {
   populateNavigators();
   showToast(`Created Scene ${nextSceneNum}`);
 
-  // Focus cursor directly into new scene heading
   setTimeout(() => {
     const headingEl = document.getElementById(newHeadingBlockId);
     if (headingEl) {
@@ -1132,7 +1216,7 @@ function createNewSceneAfter(sceneId) {
   }, 40);
 }
 
-// Convert existing block to a new type without deleting text
+// Convert existing block to a new type (Section 9: Parenthetical starts as () with cursor at (|))
 function convertBlockType(blockEl, newType) {
   const blockId = blockEl.getAttribute('data-block-id');
   const sceneId = blockEl.getAttribute('data-scene-id');
@@ -1142,13 +1226,18 @@ function convertBlockType(blockEl, newType) {
   if (!b) return;
 
   b.type = newType;
-  // If converting to character, ensure uppercase
   if (newType === 'character') {
     b.content = b.content.toUpperCase();
   }
-  // If converting to parenthetical, wrap in ()
-  if (newType === 'parenthetical' && !b.content.startsWith('(')) {
-    b.content = `(${b.content})`;
+  
+  // Section 9: Parenthetical creates () without spaces, cursor placed exactly between ()
+  if (newType === 'parenthetical') {
+    let clean = b.content.replace(/^\(+|\)+$/g, '').trim();
+    if (clean) {
+      b.content = `(${clean})`;
+    } else {
+      b.content = '()';
+    }
   }
 
   renderScreenplayPages();
@@ -1159,10 +1248,23 @@ function convertBlockType(blockEl, newType) {
       const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
       if (ed) {
         ed.focus();
-        setCursorAtEnd(ed);
+        if (newType === 'parenthetical' && ed.innerText === '()') {
+          // Place cursor EXACTLY between () at index 1: (|)
+          const textNode = ed.firstChild;
+          if (textNode) {
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(textNode, 1);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        } else {
+          setCursorAtEnd(ed);
+        }
       }
     }
-  }, 20);
+  }, 25);
 }
 
 function setCursorAtEnd(el) {
@@ -1175,7 +1277,7 @@ function setCursorAtEnd(el) {
 }
 
 // =========================================================================
-// INTELLIGENT AUTOCOMPLETE (Sections M, N, O, P, Q, R, S, T, U)
+// INTELLIGENT AUTOCOMPLETE (Section 7: Scene Time only after " - ", Section 13, 17, 18, 19)
 // =========================================================================
 function setupAutocomplete() {
   document.addEventListener('click', (e) => {
@@ -1198,35 +1300,41 @@ function triggerAutocomplete(blockEl, editableEl) {
 
   let suggestions = [];
 
-  // 1. SCENE HEADING AUTOCOMPLETE (Section M, N, O)
+  // 1. SCENE HEADING AUTOCOMPLETE (Section 7 & 16)
   if (type === 'scene') {
     const upper = text.toUpperCase();
-    
-    // Start of line: I -> INT., INT./EXT., I/E.
-    if (upper === 'I' || upper === 'IN') {
+
+    // Section 7: TIME DROPDOWN MUST APPEAR ONLY AFTER USER HAS TYPED A SPACE FOLLOWED BY A "-" AFTER LOCATION!
+    // Example: "INT. HOME - " or "INT. COLLEGE CANTEEN -"
+    const hyphenMatch = text.match(/\s+-\s*([A-Za-z]*)$/);
+    if (hyphenMatch) {
+      const timeQuery = (hyphenMatch[1] || '').toUpperCase();
+      const standardTimes = ['DAY', 'NIGHT', 'MORNING', 'EVENING', 'DAWN', 'DUSK', 'CONTINUOUS', 'LATER'];
+      const matchingTimes = standardTimes.filter(t => t.startsWith(timeQuery));
+      
+      const baseHeading = text.replace(/\s+-\s*[A-Za-z]*$/, ' - ');
+      suggestions = matchingTimes.map(t => baseHeading + t);
+    } 
+    // Start of scene line: I -> INT., INT./EXT., I/E.
+    else if (upper === 'I' || upper === 'IN') {
       suggestions = ['INT.', 'INT./EXT.', 'I/E.'];
     } else if (upper === 'E' || upper === 'EX') {
       suggestions = ['EXT.', 'INT./EXT.', 'I/E.'];
-    } 
-    // Location portion: INT. K -> known locations starting with K
-    else if (upper.startsWith('INT. ') || upper.startsWith('EXT. ') || upper.startsWith('INT./EXT. ')) {
-      const prefix = upper.includes('INT./EXT. ') ? 'INT./EXT. ' : (upper.startsWith('INT. ') ? 'INT. ' : 'EXT. ');
-      const query = upper.slice(prefix.length).trim();
-      
-      // If user typed hyphen: INT. CANTEEN - -> suggest scene times
-      if (upper.endsWith('- ') || upper.endsWith(' -')) {
-        const times = currentScreenplay.times || ['DAY', 'NIGHT', 'MORNING', 'EVENING', 'DAWN', 'DUSK', 'CONTINUOUS', 'LATER'];
-        suggestions = times.map(t => `${prefix}${query.replace(/-\s*$/, '').trim()} - ${t}`);
-      } else if (query.length > 0) {
-        // Match project locations (Section N: Scene Location Memory)
+    }
+    // Location memory: INT. K -> suggest location without appending - DAY (user must type " -" themselves)
+    else if (/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i.test(text)) {
+      const m = text.match(/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i);
+      const prefix = m[1].toUpperCase() + ' ';
+      const locQuery = (m[2] || '').trim().toUpperCase();
+      if (locQuery.length > 0) {
         const locations = currentScreenplay.locations || [];
-        const matches = locations.filter(l => l.startsWith(query));
-        suggestions = matches.map(l => `${prefix}${l} - DAY`);
+        const matches = locations.filter(l => l.startsWith(locQuery));
+        suggestions = matches.map(l => `${prefix}${l}`);
       }
     }
   }
 
-  // 2. CHARACTER AUTOCOMPLETE (Section P, Q)
+  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Section 13, 17, 19)
   else if (type === 'character') {
     const upper = text.trim().toUpperCase();
     if (upper.length > 0) {
@@ -1235,7 +1343,7 @@ function triggerAutocomplete(blockEl, editableEl) {
     }
   }
 
-  // 3. TRANSITION AUTOCOMPLETE (Section R)
+  // 3. TRANSITION AUTOCOMPLETE (Section 18)
   else if (type === 'transition') {
     const upper = text.trim().toUpperCase();
     const transitions = currentScreenplay.transitions || ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'JUMP CUT TO:'];
@@ -1263,7 +1371,6 @@ function triggerAutocomplete(blockEl, editableEl) {
   dropdown.style.left = `${Math.min(window.innerWidth - 240, Math.max(16, rect.left))}px`;
   dropdown.classList.remove('hidden');
 
-  // Click on suggestion
   dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
     el.onclick = () => {
       const val = el.getAttribute('data-val');
@@ -1272,7 +1379,7 @@ function triggerAutocomplete(blockEl, editableEl) {
       hideAutocomplete();
       setCursorAtEnd(editableEl);
       hasUnsavedChanges = true;
-      scheduleAutosave();
+      if (autoSaveEnabled) scheduleAutosave();
     };
   });
 }
@@ -1290,7 +1397,7 @@ function navigateAutocomplete(dir) {
 }
 
 // =========================================================================
-// REAL SAVE & DEBOUNCED AUTOSAVE (Sections D & E)
+// REAL SAVE & DEBOUNCED AUTOSAVE (Section 1, 2, 3)
 // =========================================================================
 async function performSave(isManual = false) {
   if (isSaving || !currentScreenplay) return;
@@ -1313,98 +1420,63 @@ async function performSave(isManual = false) {
 }
 
 function scheduleAutosave() {
+  if (!autoSaveEnabled) return; // Respect Auto-save OFF (Section 2)
   clearTimeout(saveDebounceTimer);
   saveDebounceTimer = setTimeout(async () => {
-    if (hasUnsavedChanges) {
+    if (hasUnsavedChanges && autoSaveEnabled) {
       await performSave(false);
       updateSaveStatus('Autosaved just now');
+      showToast('Autosaved just now');
     }
   }, 1500);
 }
 
 function updateSaveStatus(status) {
   const statusEl = document.getElementById('editor-save-status');
-  const saveBtn = document.getElementById('editor-save-btn');
   const saveIcon = document.getElementById('editor-save-icon');
-  const saveText = document.getElementById('editor-save-text');
 
   if (statusEl) statusEl.textContent = status;
 
   if (status === 'Saving...') {
-    if (saveIcon) saveIcon.textContent = 'progress_activity';
-    saveIcon?.classList.add('animate-spin');
-    if (saveText) saveText.textContent = 'Saving...';
+    if (saveIcon) {
+      saveIcon.textContent = 'progress_activity';
+      saveIcon.classList.add('animate-spin');
+    }
   } else if (status === 'Saved' || status === 'Autosaved just now') {
     if (saveIcon) {
-      saveIcon.textContent = 'cloud_done';
+      saveIcon.textContent = 'save';
       saveIcon.classList.remove('animate-spin');
     }
-    if (saveText) saveText.textContent = 'Save';
   } else if (status === 'Unsaved') {
     if (saveIcon) {
-      saveIcon.textContent = 'cloud_upload';
+      saveIcon.textContent = 'save';
       saveIcon.classList.remove('animate-spin');
     }
-    if (saveText) saveText.textContent = 'Save';
   } else if (status === 'Save failed') {
     if (saveIcon) {
       saveIcon.textContent = 'warning';
       saveIcon.classList.remove('animate-spin');
     }
-    if (saveText) saveText.textContent = 'Retry';
   }
 }
 
 // =========================================================================
-// DATA-DRIVEN ACT / SCENE / CHARACTER NAVIGATION (Sections V & W)
+// COMPACT SCENE SELECTOR & NAVIGATORS (Section 5 & 6)
 // =========================================================================
 function populateNavigators() {
   if (!currentScreenplay) return;
 
-  // 1. Acts
-  const actSelect = document.getElementById('navActSelect');
-  if (actSelect) {
-    const acts = currentScreenplay.acts || [{ id: 'act-1', name: 'ACT I' }];
-    actSelect.innerHTML = `<option value="">ACT...</option>` + acts.map(a => `
-      <option value="${a.id}">${a.name}</option>
-    `).join('');
-  }
-
-  // 2. Scenes
   const sceneSelect = document.getElementById('navSceneSelect');
   if (sceneSelect) {
     const scenes = currentScreenplay.scenes || [];
-    sceneSelect.innerHTML = `<option value="">SCENE...</option>` + scenes.map(s => `
-      <option value="${s.id}">SCENE ${s.number} · ${s.slugline.slice(0, 20)}</option>
-    `).join('');
-  }
-
-  // 3. Characters
-  const charSelect = document.getElementById('navCharSelect');
-  if (charSelect) {
-    const chars = currentScreenplay.characters || [];
-    charSelect.innerHTML = `<option value="">CHARACTER...</option>` + chars.map(c => `
-      <option value="${c}">${c}</option>
+    sceneSelect.innerHTML = scenes.map(s => `
+      <option value="${s.id}" ${s.number === 18 ? 'selected' : ''}>Scene ${s.number} ▾</option>
     `).join('');
   }
 }
 
 function setupNavigationSelectors() {
-  const actSelect = document.getElementById('navActSelect');
   const sceneSelect = document.getElementById('navSceneSelect');
-  const charSelect = document.getElementById('navCharSelect');
-
-  // Act jump: scroll to first scene of act
-  if (actSelect) {
-    actSelect.onchange = (e) => {
-      const actId = e.target.value;
-      if (!actId) return;
-      const targetScene = currentScreenplay.scenes.find(s => s.actId === actId);
-      if (targetScene) {
-        scrollToScene(targetScene.id);
-      }
-    };
-  }
 
   // Scene jump: scroll to scene heading
   if (sceneSelect) {
@@ -1414,40 +1486,19 @@ function setupNavigationSelectors() {
       scrollToScene(sceneId);
     };
   }
-
-  // Character jump: scroll to first appearance of character
-  if (charSelect) {
-    charSelect.onchange = (e) => {
-      const charName = e.target.value;
-      if (!charName) return;
-      for (const scene of currentScreenplay.scenes) {
-        for (const block of scene.blocks) {
-          if (block.type === 'character' && block.content.toUpperCase().includes(charName)) {
-            const el = document.getElementById(block.id);
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              el.classList.add('bg-blue-100/60');
-              setTimeout(() => el.classList.remove('bg-blue-100/60'), 1500);
-              return;
-            }
-          }
-        }
-      }
-    };
-  }
 }
 
 function scrollToScene(sceneId) {
-  const sceneWrapper = document.querySelector(`[data-scene-id="${sceneId}"]`);
-  if (sceneWrapper) {
-    sceneWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    sceneWrapper.classList.add('bg-blue-50/40');
-    setTimeout(() => sceneWrapper.classList.remove('bg-blue-50/40'), 1500);
+  const sceneBlock = document.querySelector(`[data-scene-id="${sceneId}"][data-block-type="scene"]`) || document.querySelector(`[data-scene-id="${sceneId}"]`);
+  if (sceneBlock) {
+    sceneBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    sceneBlock.classList.add('bg-blue-50/50');
+    setTimeout(() => sceneBlock.classList.remove('bg-blue-50/50'), 1500);
   }
 }
 
 // =========================================================================
-// ELEMENT BAR CONVERSIONS (Section J)
+// ELEMENT BAR CONVERSIONS (Section 9: Paren starts at (|))
 // =========================================================================
 function setupElementBar() {
   const bar = document.getElementById('element-bar');
@@ -1480,10 +1531,9 @@ function highlightElementButton(type) {
 }
 
 // =========================================================================
-// HORIZONTAL TOOLBAR & THREE-DOT MENU (Sections F & G)
+// HORIZONTAL TOOLBAR & THREE-DOT MENU (Section 21)
 // =========================================================================
 function setupToolbarAndMenu(scriptId, navigate) {
-  // [ ⋮ ] Menu Toggle
   const moreMenuBtn = document.getElementById('editor-more-menu-btn');
   const moreMenuModal = document.getElementById('editorMoreMenuModal');
   const closeMoreMenuBtn = document.getElementById('closeMoreMenuBtn');
@@ -1504,6 +1554,41 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (moreMenuModal) {
     moreMenuModal.onclick = (e) => {
       if (e.target === moreMenuModal) toggleMoreMenu(false);
+    };
+  }
+
+  // Scene Navigator from Three-dot menu (Section 6)
+  const menuSceneNav = document.getElementById('menu-btn-scene-navigator');
+  if (menuSceneNav) {
+    menuSceneNav.onclick = () => {
+      toggleMoreMenu(false);
+      const sceneSelect = document.getElementById('navSceneSelect');
+      if (sceneSelect) sceneSelect.focus();
+    };
+  }
+
+  // Character Navigator from Three-dot menu (Section 6)
+  const menuCharNav = document.getElementById('menu-btn-char-navigator');
+  if (menuCharNav) {
+    menuCharNav.onclick = () => {
+      toggleMoreMenu(false);
+      const chars = currentScreenplay.characters || [];
+      const charName = prompt(`Select character to navigate to:\n${chars.join(', ')}`, chars[0] || 'KEVIN');
+      if (charName) {
+        for (const scene of currentScreenplay.scenes) {
+          for (const block of scene.blocks) {
+            if (block.type === 'character' && block.content.toUpperCase().includes(charName.trim().toUpperCase())) {
+              const el = document.getElementById(block.id);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('bg-blue-100/60');
+                setTimeout(() => el.classList.remove('bg-blue-100/60'), 1500);
+                return;
+              }
+            }
+          }
+        }
+      }
     };
   }
 
@@ -1602,33 +1687,15 @@ function setupToolbarAndMenu(scriptId, navigate) {
     };
   }
 
-  // Go to Scene menu
-  const menuGoScene = document.getElementById('menu-btn-go-scene');
-  if (menuGoScene) {
-    menuGoScene.onclick = () => {
-      toggleMoreMenu(false);
-      const sceneSelect = document.getElementById('navSceneSelect');
-      if (sceneSelect) sceneSelect.focus();
-    };
-  }
-
   // Undo / Redo
   const undoBtn = document.getElementById('btn-undo');
   const redoBtn = document.getElementById('btn-redo');
   if (undoBtn) undoBtn.onclick = () => document.execCommand('undo');
   if (redoBtn) redoBtn.onclick = () => document.execCommand('redo');
-
-  // Insert INT/EXT
-  const intExtBtn = document.getElementById('btn-insert-intext');
-  if (intExtBtn) {
-    intExtBtn.onclick = () => {
-      document.execCommand('insertText', false, 'INT/EXT. ');
-    };
-  }
 }
 
 // =========================================================================
-// FIND & REPLACE (Section AD)
+// FIND & REPLACE
 // =========================================================================
 function setupFindReplace() {
   const quickFindBtn = document.getElementById('btn-quick-find');
@@ -1668,7 +1735,7 @@ function setupFindReplace() {
       renderScreenplayPages();
       executeFind(q);
       hasUnsavedChanges = true;
-      scheduleAutosave();
+      if (autoSaveEnabled) scheduleAutosave();
       showToast('Replaced 1 occurrence');
     };
   }
@@ -1690,7 +1757,7 @@ function setupFindReplace() {
       renderScreenplayPages();
       executeFind(q);
       hasUnsavedChanges = true;
-      scheduleAutosave();
+      if (autoSaveEnabled) scheduleAutosave();
       showToast(`Replaced ${count} occurrences`);
     };
   }
@@ -1760,7 +1827,7 @@ function clearFindHighlights() {
 // MODALS (Title Page, Preferences, Export, Versions, Diff)
 // =========================================================================
 function setupModals(scriptId) {
-  // 1. Title Page Modal (Section H)
+  // 1. Title Page Modal
   const tpModal = document.getElementById('titlePageModal');
   const btnQuickTP = document.getElementById('btn-quick-title-page');
   const btnMenuTP = document.getElementById('menu-btn-title-page');
@@ -1807,7 +1874,7 @@ function setupModals(scriptId) {
     };
   }
 
-  // 2. Preferences Modal (Section AE)
+  // 2. Preferences Modal
   const prefModal = document.getElementById('preferencesModal');
   const btnMenuPref = document.getElementById('menu-btn-preferences');
   const closePref = document.getElementById('closePrefModal');
@@ -1892,7 +1959,6 @@ function setupModals(scriptId) {
         exportProgressBar.style.width = '100%';
         exportStatusText.textContent = `Completed! Starting download...`;
 
-        // Generate full export text with Title page if selected
         let exportBody = '';
         if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage) {
           exportBody += `${currentScreenplay.titlePage.title || currentScreenplay.title}\n`;
@@ -2044,7 +2110,6 @@ function setupModals(scriptId) {
   if (closeCompareBtn2) closeCompareBtn2.onclick = () => toggleCompare(false);
 }
 
-// Telemetry word count and page numbers
 function updateTelemetry() {
   if (!currentScreenplay) return;
   let words = 0;
@@ -2056,7 +2121,8 @@ function updateTelemetry() {
     });
   });
 
-  const pageCount = currentScreenplay.scenes.length || 1;
+  const pageSheets = document.querySelectorAll('.screenplay-page-sheet');
+  const pageCount = pageSheets.length || 1;
   const pageEl = document.getElementById('telemetry-page-count');
   const wordEl = document.getElementById('telemetry-word-count');
 
