@@ -21,10 +21,10 @@ const A4_PAGE_CAPACITY_LINES = 46;
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript || {
-    id: scriptId || 'chronicles-of-dust',
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    pages: 5
+    id: scriptId || 'script_01',
+    title: 'Untitled Screenplay',
+    draft: 'Draft 1.0',
+    pages: 1
   };
 
   const userInitials = store.state.currentUser?.initials || 'AK';
@@ -136,7 +136,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <!-- Compact Scene Selector: small length for proper alignment -->
               <div class="relative w-28 sm:w-32 shrink-0">
                 <select id="navSceneSelect" class="w-full h-7 pl-2.5 pr-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold truncate appearance-none cursor-pointer focus:outline-none shadow-xs transition-colors">
-                  <option value="">Scene 18 ▾</option>
+                  <option value="">Scene 1 ▾</option>
                 </select>
                 <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
               </div>
@@ -150,7 +150,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <!-- Draft Version button (brought to the line after scene selector) -->
               <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
                 <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
-                <span id="currentVersionTag">${script.draft || 'Draft 4.2'}</span>
+                <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
               </button>
             </div>
 
@@ -849,7 +849,7 @@ function renderScreenplayPages() {
       
       <!-- Top Page Header: Page number in top right -->
       <div class="w-full flex items-center justify-between pb-4 select-none text-[12px] text-slate-400 font-mono border-b border-transparent">
-        <span class="text-[10px] text-slate-300 uppercase tracking-widest font-sans font-semibold">${currentScreenplay.title} · ${currentScreenplay.draft || 'Draft 4.2'}</span>
+        <span class="text-[10px] text-slate-300 uppercase tracking-widest font-sans font-semibold">${currentScreenplay.title || 'Untitled Screenplay'} · ${currentScreenplay.draft || 'Draft 1.0'}</span>
         <span class="font-bold text-slate-500">${page.pageNumber}.</span>
       </div>
 
@@ -1223,9 +1223,9 @@ function createNewSceneAfter(sceneId) {
     id: newSceneId,
     number: nextSceneNum,
     actId: currentScreenplay.acts?.[0]?.id || 'act-1',
-    slugline: 'INT. ',
+    slugline: '',
     blocks: [
-      { id: newHeadingBlockId, type: 'scene', content: 'INT. ' }
+      { id: newHeadingBlockId, type: 'scene', content: '' }
     ]
   };
 
@@ -1332,6 +1332,24 @@ function hideAutocomplete() {
   if (dropdown) dropdown.classList.add('hidden');
 }
 
+// Helper to get only user-created or active screenplay characters (Zero fake suggestions!)
+function getKnownCharacters() {
+  if (!currentScreenplay) return [];
+  const set = new Set();
+  (currentScreenplay.scenes || []).forEach(scene => {
+    (scene.blocks || []).forEach(b => {
+      if (b.type === 'character') {
+        const name = b.content.replace(/\(.*\)/g, '').trim().toUpperCase();
+        if (name && name.length >= 2) set.add(name);
+      }
+    });
+  });
+  (currentScreenplay.characters || []).forEach(c => {
+    if (c && c.length >= 2) set.add(c.toUpperCase());
+  });
+  return Array.from(set);
+}
+
 function triggerAutocomplete(blockEl, editableEl) {
   const type = blockEl.getAttribute('data-block-type');
   const text = editableEl.innerText;
@@ -1340,12 +1358,11 @@ function triggerAutocomplete(blockEl, editableEl) {
 
   let suggestions = [];
 
-  // 1. SCENE HEADING AUTOCOMPLETE (Section 7 & 16)
+  // 1. SCENE HEADING AUTOCOMPLETE
   if (type === 'scene') {
     const upper = text.toUpperCase();
 
-    // Section 7: TIME DROPDOWN MUST APPEAR ONLY AFTER USER HAS TYPED A SPACE FOLLOWED BY A "-" AFTER LOCATION!
-    // Example: "INT. HOME - " or "INT. COLLEGE CANTEEN -"
+    // Scene Time dropdown: ONLY after user types a space followed by a "-"
     const hyphenMatch = text.match(/\s+-\s*([A-Za-z]*)$/);
     if (hyphenMatch) {
       const timeQuery = (hyphenMatch[1] || '').toUpperCase();
@@ -1353,15 +1370,16 @@ function triggerAutocomplete(blockEl, editableEl) {
       const matchingTimes = standardTimes.filter(t => t.startsWith(timeQuery));
       
       const baseHeading = text.replace(/\s+-\s*[A-Za-z]*$/, ' - ');
-      suggestions = matchingTimes.map(t => baseHeading + t);
+      // Dropdown displays ONLY the time word box (DAY, NIGHT, etc.), not the whole heading!
+      suggestions = matchingTimes.map(t => ({ label: t, val: baseHeading + t }));
     } 
     // Start of scene line: I -> INT., INT./EXT., I/E.
     else if (upper === 'I' || upper === 'IN') {
-      suggestions = ['INT.', 'INT./EXT.', 'I/E.'];
+      suggestions = ['INT.', 'INT./EXT.', 'I/E.'].map(p => ({ label: p, val: p + ' ' }));
     } else if (upper === 'E' || upper === 'EX') {
-      suggestions = ['EXT.', 'INT./EXT.', 'I/E.'];
+      suggestions = ['EXT.', 'INT./EXT.', 'I/E.'].map(p => ({ label: p, val: p + ' ' }));
     }
-    // Location memory: INT. K -> suggest location without appending - DAY (user must type " -" themselves)
+    // Location memory: only suggest locations actually in currentScreenplay.locations
     else if (/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i.test(text)) {
       const m = text.match(/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i);
       const prefix = m[1].toUpperCase() + ' ';
@@ -1369,26 +1387,28 @@ function triggerAutocomplete(blockEl, editableEl) {
       if (locQuery.length > 0) {
         const locations = currentScreenplay.locations || [];
         const matches = locations.filter(l => l.startsWith(locQuery));
-        suggestions = matches.map(l => `${prefix}${l}`);
+        suggestions = matches.map(l => ({ label: l, val: `${prefix}${l}` }));
       }
     }
   }
 
-  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Section 13, 17, 19)
+  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Zero fake characters!)
   else if (type === 'character') {
     const upper = text.trim().toUpperCase();
     if (upper.length > 0) {
-      const chars = currentScreenplay.characters || [];
-      suggestions = chars.filter(c => c.startsWith(upper));
+      const chars = getKnownCharacters();
+      const matches = chars.filter(c => c.startsWith(upper));
+      suggestions = matches.map(c => ({ label: c, val: c }));
     }
   }
 
-  // 3. TRANSITION AUTOCOMPLETE (Section 18)
+  // 3. TRANSITION AUTOCOMPLETE
   else if (type === 'transition') {
     const upper = text.trim().toUpperCase();
     const transitions = currentScreenplay.transitions || ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'JUMP CUT TO:'];
     if (upper.length > 0) {
-      suggestions = transitions.filter(t => t.startsWith(upper));
+      const matches = transitions.filter(t => t.startsWith(upper));
+      suggestions = matches.map(t => ({ label: t, val: t }));
     }
   }
 
@@ -1397,13 +1417,17 @@ function triggerAutocomplete(blockEl, editableEl) {
     return;
   }
 
-  // Render suggestion items
-  dropdown.innerHTML = suggestions.map((item, idx) => `
-    <div class="autocomplete-item px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono ${idx === 0 ? 'active bg-blue-50/60 text-blue-700' : ''}" data-val="${item}">
-      <span>${item}</span>
-      <span class="text-[10px] text-slate-400 font-sans">Enter ↵</span>
-    </div>
-  `).join('');
+  // Render suggestion items: label is displayed in dropdown, val is stored in data-val
+  dropdown.innerHTML = suggestions.map((item, idx) => {
+    const label = typeof item === 'object' ? item.label : item;
+    const val = typeof item === 'object' ? item.val : item;
+    return `
+      <div class="autocomplete-item px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono ${idx === 0 ? 'active bg-blue-50/60 text-blue-700' : ''}" data-val="${val}">
+        <span>${label}</span>
+        <span class="text-[10px] text-slate-400 font-sans">Enter ↵</span>
+      </div>
+    `;
+  }).join('');
 
   // Position dropdown right below cursor / block
   const rect = editableEl.getBoundingClientRect();
@@ -1509,9 +1533,9 @@ function populateNavigators() {
   const sceneSelect = document.getElementById('navSceneSelect');
   if (sceneSelect) {
     const scenes = currentScreenplay.scenes || [];
-    sceneSelect.innerHTML = scenes.map(s => `
-      <option value="${s.id}" ${s.number === 18 ? 'selected' : ''}>Scene ${s.number} ▾</option>
-    `).join('');
+    sceneSelect.innerHTML = scenes.map((s, idx) => `
+      <option value="${s.id}" ${idx === 0 ? 'selected' : ''}>Scene ${s.number} ▾</option>
+    `).join('') || '<option value="">Scene 1 ▾</option>';
   }
 }
 

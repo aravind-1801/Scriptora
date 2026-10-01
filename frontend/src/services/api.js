@@ -507,24 +507,8 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
     { id: "act-2", name: "ACT II - The Pressure Surge" },
     { id: "act-3", name: "ACT III - The Floodgate Standoff" }
   ],
-  characters: [
-    "KEVIN",
-    "MEERA",
-    "VANCE",
-    "ELENA",
-    "ARAVIND",
-    "CHIEF CHEN"
-  ],
-  locations: [
-    "DESERT BADLANDS",
-    "BORDER OUTPOST RESERVOIR",
-    "PUMP STATION SUB-LEVEL",
-    "CUSTOMS OFFICE",
-    "FLOODGATE GANTRY",
-    "CONTROL TOWER",
-    "SPILLWAY DRAINAGE BASIN",
-    "KPR INSTITUTE"
-  ],
+  characters: [],
+  locations: [],
   times: [
     "DAY",
     "NIGHT",
@@ -549,80 +533,9 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
       id: "scene-1",
       number: 1,
       actId: "act-1",
-      slugline: "EXT. DESERT BADLANDS - DAY",
+      slugline: "",
       blocks: [
-        { id: "b-1-1", type: "scene", content: "EXT. DESERT BADLANDS - DAY" },
-        { id: "b-1-2", type: "action", content: "Sun-baked salt flats stretch to the horizon. Heat waves ripple across an elevated steel aqueduct, shimmering in the fierce midday glare." },
-        { id: "b-1-3", type: "action", content: "Kevin adjusts his respirator mask as a handheld pressure gauge rattles violently against his knuckles. The needle drops below redline." },
-        { id: "b-1-4", type: "character", content: "KEVIN" },
-        { id: "b-1-5", type: "parenthetical", content: "(checking telemetry)" },
-        { id: "b-1-6", type: "dialogue", content: "Line twelve lost forty bars in twenty minutes. That's not evaporation. Someone drilled the municipal siphon." },
-        { id: "b-1-7", type: "transition", content: "CUT TO:" }
-      ]
-    },
-    {
-      id: "scene-2",
-      number: 2,
-      actId: "act-1",
-      slugline: "EXT. BORDER OUTPOST RESERVOIR - CONTINUOUS",
-      blocks: [
-        { id: "b-2-1", type: "scene", content: "EXT. BORDER OUTPOST RESERVOIR - CONTINUOUS" },
-        { id: "b-2-2", type: "action", content: "Massive concrete retaining walls loom over a dry river canyon. Armed private contractors patrol the chain-link perimeter." },
-        { id: "b-2-3", type: "character", content: "VANCE" },
-        { id: "b-2-4", type: "dialogue", content: "If the hydro-engineer approaches the terminal perimeter, lock down the intake gates immediately." },
-        { id: "b-2-5", type: "character", content: "ELENA" },
-        { id: "b-2-6", type: "parenthetical", content: "(stepping forward)" },
-        { id: "b-2-7", type: "dialogue", content: "He designed the regional routing matrix, Vance. You can't just seal the gates without triggering the emergency backflow." },
-        { id: "b-2-8", type: "transition", content: "DISSOLVE TO:" }
-      ]
-    },
-    {
-      id: "scene-17",
-      number: 17,
-      actId: "act-2",
-      slugline: "INT. PUMP STATION SUB-LEVEL - DUSK",
-      blocks: [
-        { id: "b-17-1", type: "scene", content: "INT. PUMP STATION SUB-LEVEL - DUSK" },
-        { id: "b-17-2", type: "action", content: "Emergency warning beacons pulse rhythmic amber pulses against wet concrete. Water surges through rusty catwalk grates." },
-        { id: "b-17-3", type: "character", content: "MEERA" },
-        { id: "b-17-4", type: "parenthetical", content: "(over crackling radio)" },
-        { id: "b-17-5", type: "dialogue", content: "Kevin, the bypass manifold is wide open. They're siphoning thirty thousand liters a minute straight into the corporate silos." },
-        { id: "b-17-6", type: "character", content: "KEVIN" },
-        { id: "b-17-7", type: "dialogue", content: "Head up to the customs outpost. I'll tap the telemetry relay from the junction box before they cut the grid." },
-        { id: "b-17-8", type: "transition", content: "CUT TO:" }
-      ]
-    },
-    {
-      id: "scene-18",
-      number: 18,
-      actId: "act-2",
-      slugline: "INT. CUSTOMS OFFICE - NIGHT",
-      blocks: [
-        { id: "b-18-1", type: "scene", content: "INT. CUSTOMS OFFICE - NIGHT" },
-        { id: "b-18-2", type: "action", content: "Kevin kneels over the cracked hydro-sensor junction box. Static hiss whispers through the damp comm-link. A lone flicker illuminates the tarnished brass seal." },
-        { id: "b-18-3", type: "action", content: "Water droplets bead along the corroded circuit wires. He slides a copper probe between the connectors." },
-        { id: "b-18-4", type: "character", content: "KEVIN" },
-        { id: "b-18-5", type: "parenthetical", content: "(whispering into comm)" },
-        { id: "b-18-6", type: "dialogue", content: "If the seals break before dawn, the sector won't hold the surge." },
-        { id: "b-18-7", type: "character", content: "MEERA (O.S.)" },
-        { id: "b-18-8", type: "dialogue", content: "Then don't let them break. Reroute the secondary relay through the floodgate breaker." },
-        { id: "b-18-9", type: "transition", content: "CUT TO:" }
-      ]
-    },
-    {
-      id: "scene-19",
-      number: 19,
-      actId: "act-3",
-      slugline: "EXT. FLOODGATE GANTRY - CONTINUOUS",
-      blocks: [
-        { id: "b-19-1", type: "scene", content: "EXT. FLOODGATE GANTRY - CONTINUOUS" },
-        { id: "b-19-2", type: "action", content: "Sirens pulse through the red fog. Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below." },
-        { id: "b-19-3", type: "character", content: "MEERA" },
-        { id: "b-19-4", type: "dialogue", content: "Pressure holding at four-eighty. Give me three minutes." },
-        { id: "b-19-5", type: "action", content: "A massive metallic groan reverberates across the gorge as the emergency intake opens." },
-        { id: "b-19-6", type: "character", content: "KEVIN" },
-        { id: "b-19-7", type: "dialogue", content: "The intake is clear! Open the main channel before the valves freeze!" },
-        { id: "b-19-8", type: "transition", content: "FADE OUT." }
+        { id: "b-1-1", type: "scene", content: "" }
       ]
     }
   ]
@@ -633,7 +546,10 @@ export async function getScreenplay(scriptId) {
   try {
     const data = await request(`/screenplay/${scriptId}`);
     if (data.screenplay && data.screenplay.scenes && data.screenplay.scenes.length > 0) {
-      return data.screenplay;
+      const isOldDemo = data.screenplay.scenes.some(s => s.blocks?.some(b => b.content?.includes('Kevin') || b.id === 'b-18-1'));
+      if (!isOldDemo) {
+        return data.screenplay;
+      }
     }
   } catch {}
 
@@ -641,23 +557,16 @@ export async function getScreenplay(scriptId) {
   if (saved) {
     try {
       const sp = JSON.parse(saved);
-      if (sp && sp.scenes && sp.scenes.length > 0) {
+      const isOldDemo = sp && sp.scenes && sp.scenes.some(s => s.id === 'scene-18' || s.blocks?.some(b => b.content?.includes('Kevin') || b.id === 'b-18-1'));
+      if (sp && sp.scenes && sp.scenes.length > 0 && !isOldDemo) {
         return sp;
       }
     } catch {}
   }
 
-  // Fallback to canonical multi-page screenplay
+  // Fallback to fresh starting screenplay from scratch
   const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
-  if (scriptId && scriptId !== 'chronicles-of-dust') {
-    template.id = scriptId;
-    const script = await getScript(scriptId);
-    if (script) {
-      template.title = script.title;
-      template.draft = script.draft;
-      template.titlePage.title = script.title.toUpperCase();
-    }
-  }
+  template.id = scriptId || 'script_01';
   localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
   return template;
 }
