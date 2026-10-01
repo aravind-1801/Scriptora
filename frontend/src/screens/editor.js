@@ -55,19 +55,19 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </div>
           </div>
 
-          <!-- Right Controls: Auto-save toggle, Save Icon (NO text), Collaborate, Avatar -->
+          <!-- Right Controls: Unified Save + Auto-Save Pill, Collaborate, Avatar -->
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            <!-- Auto-save ON/OFF compact toggle button (Section 2) -->
-            <button id="btn-toggle-autosave" class="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 ${autoSaveEnabled ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}" title="Toggle Auto-save (Current: ${autoSaveEnabled ? 'ON' : 'OFF'})">
-              <span class="w-1.5 h-1.5 rounded-full ${autoSaveEnabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}" id="autosave-dot"></span>
-              <span id="autosave-toggle-label">${autoSaveEnabled ? 'Auto-save ON' : 'Auto-save OFF'}</span>
-            </button>
-
-            <!-- Compact SAVE ICON BUTTON (Section 1: Save icon only, no word "Save") -->
-            <button id="editor-save-btn" class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs active:scale-95 transition-all" title="Save screenplay now (Ctrl+S / Cmd+S)" aria-label="Save Screenplay">
-              <span class="material-symbols-outlined text-[18px]" id="editor-save-icon">save</span>
-            </button>
+            <!-- Combined Save & Auto-Save Control (Single compact pill) -->
+            <div class="inline-flex items-center rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-all overflow-hidden border border-blue-700/50">
+              <button id="editor-save-btn" class="flex items-center justify-center p-1.5 hover:bg-blue-700/80 active:scale-95 transition-all text-white" title="Save screenplay now (Ctrl+S)" aria-label="Save Screenplay">
+                <span class="material-symbols-outlined text-[17px]" id="editor-save-icon">save</span>
+              </button>
+              <button id="btn-toggle-autosave" class="flex items-center gap-1 px-2 py-1.5 hover:bg-blue-700/80 active:scale-95 transition-all text-[11px] font-semibold text-white/95 border-l border-blue-500/70" title="Toggle Auto-save (Current: ${autoSaveEnabled ? 'ON' : 'OFF'})">
+                <span class="w-1.5 h-1.5 rounded-full ${autoSaveEnabled ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300'}" id="autosave-dot"></span>
+                <span id="autosave-toggle-label">${autoSaveEnabled ? 'Auto' : 'Off'}</span>
+              </button>
+            </div>
 
             <!-- Collaborate Link -->
             <a href="/profile/collaborators" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
@@ -107,12 +107,6 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span id="sceneNumberToggleText">Scene #s: On</span>
           </button>
 
-          <!-- Title Page -->
-          <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
-            <span class="material-symbols-outlined text-[15px] text-slate-600">description</span>
-            <span>Title Page</span>
-          </button>
-
           <!-- Find / Replace -->
           <button id="btn-quick-find" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
             <span class="material-symbols-outlined text-[15px] text-slate-600">find_replace</span>
@@ -130,27 +124,33 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span class="material-symbols-outlined text-[15px] text-blue-600">translate</span>
             <span id="langToggleText">EN / தமிழ்</span>
           </button>
-
-          <!-- Versions -->
-          <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
-            <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
-            <span id="currentVersionTag">${script.draft || 'Draft 4.2'}</span>
-          </button>
         </div>
 
-        <!-- ROW 3: ACCESSORY & ELEMENT BAR (Cleaned: Removed Character, INT/EXT & Act buttons; compact Scene selector) -->
+        <!-- ROW 3: ACCESSORY & ELEMENT BAR -->
         <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1.5 flex flex-col gap-1.5 shadow-xs max-w-5xl mx-auto transition-all">
           
-          <!-- Compact Scene Jump & Undo/Redo (Sections 4 & 5: Clean alignment) -->
+          <!-- Compact Scene Jump, Title Page & Draft (Next line after scene selector), Undo/Redo -->
           <div class="flex items-center justify-between gap-2 py-0.5">
-            <div class="flex items-center gap-2 shrink-0">
-              <!-- Compact Scene Selector: small length for proper alignment (Section 5) -->
+            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none min-w-0">
+              <!-- Compact Scene Selector: small length for proper alignment -->
               <div class="relative w-28 sm:w-32 shrink-0">
                 <select id="navSceneSelect" class="w-full h-7 pl-2.5 pr-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold truncate appearance-none cursor-pointer focus:outline-none shadow-xs transition-colors">
                   <option value="">Scene 18 ▾</option>
                 </select>
                 <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
               </div>
+
+              <!-- Title Page button (brought to the line after scene selector) -->
+              <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
+                <span class="material-symbols-outlined text-[14px] text-slate-600">description</span>
+                <span>Title Page</span>
+              </button>
+
+              <!-- Draft Version button (brought to the line after scene selector) -->
+              <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
+                <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
+                <span id="currentVersionTag">${script.draft || 'Draft 4.2'}</span>
+              </button>
             </div>
 
             <!-- Undo / Redo controls -->
@@ -164,31 +164,31 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </div>
           </div>
 
-          <!-- Line Element Bar: Scene, Action, Character, Dialogue, Parenthetical, Transition -->
+          <!-- Line Element Bar: Scene, Act, Char, Dia, Paren, Trans (Ensuring NO text overlap!) -->
           <div class="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none py-0.5" id="element-bar">
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="scene" title="Convert to Scene Heading">
-              <span class="material-symbols-outlined text-[14px]">movie</span>
-              <span>Scene</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="scene" title="Convert to Scene Heading">
+              <span class="material-symbols-outlined text-[14px] shrink-0">movie</span>
+              <span class="truncate">Scene</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-blue-600 text-white shadow-xs" data-type="action" title="Convert to Action block">
-              <span class="material-symbols-outlined text-[14px]">edit_note</span>
-              <span>Action</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 transition-colors bg-blue-600 text-white shadow-xs" data-type="action" title="Convert to Action (Act) block">
+              <span class="material-symbols-outlined text-[14px] shrink-0">edit_note</span>
+              <span class="truncate">Act</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="character" title="Convert to Character cue">
-              <span class="material-symbols-outlined text-[14px]">person</span>
-              <span>Char</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="character" title="Convert to Character cue">
+              <span class="material-symbols-outlined text-[14px] shrink-0">person</span>
+              <span class="truncate">Char</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="dialogue" title="Convert to Dialogue">
-              <span class="material-symbols-outlined text-[14px]">chat_bubble</span>
-              <span>Dialogue</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="dialogue" title="Convert to Dialogue (Dia)">
+              <span class="material-symbols-outlined text-[14px] shrink-0">chat_bubble</span>
+              <span class="truncate">Dia</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Insert Parenthetical ()">
-              <span class="material-symbols-outlined text-[14px]">format_quote</span>
-              <span>Paren</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Insert Parenthetical ()">
+              <span class="material-symbols-outlined text-[14px] shrink-0">format_quote</span>
+              <span class="truncate">Paren</span>
             </button>
-            <button class="element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="transition" title="Convert to Transition">
-              <span class="material-symbols-outlined text-[14px]">double_arrow</span>
-              <span>Trans</span>
+            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="transition" title="Convert to Transition">
+              <span class="material-symbols-outlined text-[14px] shrink-0">double_arrow</span>
+              <span class="truncate">Trans</span>
             </button>
           </div>
         </div>
@@ -753,26 +753,25 @@ function setupAutoSaveToggle() {
   const label = document.getElementById('autosave-toggle-label');
 
   if (toggleBtn) {
-    toggleBtn.onclick = () => {
+    toggleBtn.onclick = (e) => {
+      e.stopPropagation();
       autoSaveEnabled = !autoSaveEnabled;
       localStorage.setItem('scriptora_autosave', String(autoSaveEnabled));
 
       if (autoSaveEnabled) {
-        toggleBtn.className = 'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
-        label.textContent = 'Auto-save ON';
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse';
+        if (label) label.textContent = 'Auto';
         toggleBtn.title = 'Toggle Auto-save (Current: ON)';
         showToast('Auto-save enabled');
         if (hasUnsavedChanges) {
           scheduleAutosave();
         }
       } else {
-        toggleBtn.className = 'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] sm:text-[11px] font-semibold border transition-all active:scale-95 bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200';
-        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-400';
-        label.textContent = 'Auto-save OFF';
+        if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-300';
+        if (label) label.textContent = 'Off';
         toggleBtn.title = 'Toggle Auto-save (Current: OFF)';
         clearTimeout(saveDebounceTimer);
-        showToast('Auto-save disabled · Use Save icon');
+        showToast('Auto-save disabled · Tap floppy to save');
       }
     };
   }
@@ -942,36 +941,37 @@ function escapeHtml(text) {
 // =========================================================================
 // BLOCK INPUT & CURSOR INTEGRITY
 // =========================================================================
+function attachSingleBlockListeners(block) {
+  const editable = block.hasAttribute('contenteditable') ? block : block.querySelector('[contenteditable="true"]');
+  if (!editable) return;
+
+  editable.onfocus = () => {
+    activeBlockId = block.getAttribute('data-block-id');
+    const type = block.getAttribute('data-block-type') || 'action';
+    highlightElementButton(type);
+  };
+
+  editable.oninput = () => {
+    hasUnsavedChanges = true;
+    updateBlockModel(block, editable.innerText);
+    updateSaveStatus('Unsaved');
+    
+    // Auto-save only if enabled (Section 2 & 3)
+    if (autoSaveEnabled) {
+      scheduleAutosave();
+    }
+    triggerAutocomplete(block, editable);
+    updateTelemetry();
+  };
+
+  editable.onkeydown = (e) => {
+    handleBlockKeydown(e, block, editable);
+  };
+}
+
 function attachBlockListeners() {
   const blocks = document.querySelectorAll('.screenplay-block');
-  
-  blocks.forEach(block => {
-    const editable = block.hasAttribute('contenteditable') ? block : block.querySelector('[contenteditable="true"]');
-    if (!editable) return;
-
-    editable.onfocus = () => {
-      activeBlockId = block.getAttribute('data-block-id');
-      const type = block.getAttribute('data-block-type') || 'action';
-      highlightElementButton(type);
-    };
-
-    editable.oninput = (e) => {
-      hasUnsavedChanges = true;
-      updateBlockModel(block, editable.innerText);
-      updateSaveStatus('Unsaved');
-      
-      // Auto-save only if enabled (Section 2 & 3)
-      if (autoSaveEnabled) {
-        scheduleAutosave();
-      }
-      triggerAutocomplete(block, editable);
-      updateTelemetry();
-    };
-
-    editable.onkeydown = (e) => {
-      handleBlockKeydown(e, block, editable);
-    };
-  });
+  blocks.forEach(attachSingleBlockListeners);
 }
 
 // Scene Heading Structured Parser (Section 8)
@@ -1139,7 +1139,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
   }
 }
 
-// Insert new block
+// Insert new block directly as next line with contextual navigation flow
 function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
   const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
   if (!scene) return;
@@ -1157,18 +1157,58 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     scene.blocks.push(newBlock);
   }
 
-  renderScreenplayPages();
+  // Insert seamlessly right as next line into the DOM without full page refresh
+  const targetEl = document.getElementById(targetBlockId);
+  const pageBlocksWrapper = targetEl ? targetEl.closest('.page-blocks-wrapper') : null;
 
-  setTimeout(() => {
-    const el = document.getElementById(newBlockId);
-    if (el) {
-      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
-      if (ed) {
-        ed.focus();
-        setCursorAtEnd(ed);
-      }
+  if (targetEl && pageBlocksWrapper) {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = renderBlockHtml(newBlock, scene.number, scene.id);
+    const newEl = tempDiv.firstElementChild;
+    targetEl.insertAdjacentElement('afterend', newEl);
+    attachSingleBlockListeners(newEl);
+    updateTelemetry();
+
+    // Focus the new line immediately
+    const ed = newEl.hasAttribute('contenteditable') ? newEl : newEl.querySelector('[contenteditable="true"]');
+    if (ed) {
+      ed.focus();
+      setCursorAtEnd(ed);
     }
-  }, 30);
+
+    // Check line capacity: re-paginate only if page sheet exceeds line capacity
+    const currentBlocks = pageBlocksWrapper.querySelectorAll('.screenplay-block');
+    let totalLines = 0;
+    currentBlocks.forEach(b => {
+      const bType = b.getAttribute('data-block-type');
+      const text = b.innerText || '';
+      totalLines += estimateBlockLines({ type: bType, content: text });
+    });
+
+    if (totalLines > A4_PAGE_CAPACITY_LINES) {
+      renderScreenplayPages();
+      setTimeout(() => {
+        const el = document.getElementById(newBlockId);
+        if (el) {
+          const ed2 = el.querySelector('[contenteditable="true"]') || el;
+          ed2.focus();
+          setCursorAtEnd(ed2);
+        }
+      }, 20);
+    }
+  } else {
+    renderScreenplayPages();
+    setTimeout(() => {
+      const el = document.getElementById(newBlockId);
+      if (el) {
+        const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+        if (ed) {
+          ed.focus();
+          setCursorAtEnd(ed);
+        }
+      }
+    }, 20);
+  }
 }
 
 // Create new scene after transition WITHOUT FORCING A NEW PAGE (Section 11 & 23)
@@ -1201,7 +1241,6 @@ function createNewSceneAfter(sceneId) {
 
   renderScreenplayPages();
   populateNavigators();
-  showToast(`Created Scene ${nextSceneNum}`);
 
   setTimeout(() => {
     const headingEl = document.getElementById(newHeadingBlockId);
@@ -1213,7 +1252,7 @@ function createNewSceneAfter(sceneId) {
         triggerAutocomplete(headingEl, ed);
       }
     }
-  }, 40);
+  }, 30);
 }
 
 // Convert existing block to a new type (Section 9: Parenthetical starts as () with cursor at (|))
@@ -1523,9 +1562,9 @@ function highlightElementButton(type) {
   bar.querySelectorAll('.element-btn').forEach(btn => {
     const bType = btn.getAttribute('data-type');
     if (bType === type) {
-      btn.className = 'element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 bg-blue-600 text-white shadow-xs';
+      btn.className = 'element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 bg-blue-600 text-white shadow-xs';
     } else {
-      btn.className = 'element-btn flex-1 min-w-[50px] py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200';
+      btn.className = 'element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200';
     }
   });
 }
