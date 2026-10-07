@@ -149,161 +149,149 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </button>
         </div>
 
-        <!-- ROW 3: ACCESSORY & ELEMENT BAR -->
-        <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1 flex flex-col gap-1 shadow-xs max-w-5xl mx-auto transition-all">
-          
-          <!-- Compact Scene Jump, Draft Version, Undo/Redo -->
-          <div class="flex items-center justify-between gap-2 py-0.5">
-            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none min-w-0">
-              <!-- Compact Scene Selector: small length for proper alignment -->
-              <div class="relative w-28 sm:w-32 shrink-0">
-                <select id="navSceneSelect" class="w-full h-7 pl-2.5 pr-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold truncate appearance-none cursor-pointer focus:outline-none shadow-xs transition-colors">
-                  <option value="">Scene 1 ▾</option>
-                </select>
-                <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
-              </div>
-
-              <!-- Scene & Act Navigator (always visible) -->
-              <button id="tray-btn-scene-navigator" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap" title="Scene &amp; Act Navigator">
-                <span class="material-symbols-outlined text-[14px] text-blue-600">movie</span>
-                <span>Scene</span>
-              </button>
-
-              <!-- Character Navigator (always visible) -->
-              <button id="tray-btn-char-navigator" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap" title="Character Navigator">
-                <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
-                <span>Char</span>
-              </button>
-
-              <!-- Draft Version button -->
-              <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
-                <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
-                <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
-              </button>
-
-              <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact using standard app Material Symbols) -->
-              <div class="flex items-center gap-0.5 shrink-0 ml-1" id="text-formatting-group">
-                <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
-                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold">format_bold</span>
-                </button>
-                <button type="button" id="btn-format-italic" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Italic Selected Text (Ctrl+I)">
-                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_italic</span>
-                </button>
-                <button type="button" id="btn-format-underline" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Underline Selected Text (Ctrl+U)">
-                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_underlined</span>
-                </button>
-                <button type="button" id="btn-format-strike" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Strikethrough Selected Text">
-                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">strikethrough_s</span>
-                </button>
-              </div>
+        <!-- ROW B: SECONDARY ACCESSORY CONTROLS (Scene Jump, Draft Version, B/I/U/S, Undo/Redo) -->
+        <div id="editor-secondary-accessory-bar" class="w-full bg-slate-50/60 border-t border-slate-200/70 px-3 py-1 flex items-center justify-between gap-2 max-w-5xl mx-auto transition-all">
+          <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none min-w-0">
+            <!-- Compact Scene Selector: small length for proper alignment -->
+            <div class="relative w-28 sm:w-32 shrink-0">
+              <select id="navSceneSelect" class="w-full h-7 pl-2.5 pr-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold truncate appearance-none cursor-pointer focus:outline-none shadow-xs transition-colors">
+                <option value="">Scene 1 ▾</option>
+              </select>
+              <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
             </div>
 
-            <!-- Undo / Redo controls in sub-row -->
-            <div class="flex items-center gap-1 shrink-0">
-              <button id="btn-undo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Undo (Ctrl+Z)">
-                <span class="material-symbols-outlined text-[16px]">undo</span>
+            <!-- Draft Version button -->
+            <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
+              <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
+              <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
+            </button>
+
+            <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact using standard app Material Symbols) -->
+            <div class="flex items-center gap-0.5 shrink-0 ml-1" id="text-formatting-group">
+              <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold">format_bold</span>
               </button>
-              <button id="btn-redo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Redo (Ctrl+Y)">
-                <span class="material-symbols-outlined text-[16px]">redo</span>
+              <button type="button" id="btn-format-italic" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Italic Selected Text (Ctrl+I)">
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_italic</span>
+              </button>
+              <button type="button" id="btn-format-underline" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Underline Selected Text (Ctrl+U)">
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_underlined</span>
+              </button>
+              <button type="button" id="btn-format-strike" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Strikethrough Selected Text">
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">strikethrough_s</span>
               </button>
             </div>
           </div>
 
-          <!-- Professional Horizontal Element & Tool Bar (Icon above name, compact width, controlled scroll, NO text overlap!) -->
-          <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 px-0.5 toolbar-scroll touch-pan-x" id="element-bar">
-            <!-- 1. Scene -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="scene" title="Convert to Scene Heading">
-              <span class="material-symbols-outlined text-[18px] shrink-0">movie</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Scene</span>
+          <!-- Undo / Redo controls in sub-row -->
+          <div class="flex items-center gap-1 shrink-0">
+            <button id="btn-undo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Undo (Ctrl+Z)">
+              <span class="material-symbols-outlined text-[16px]">undo</span>
             </button>
-            <!-- 2. Action / Act -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-white bg-blue-600 shadow-2xs font-semibold shrink-0" data-type="action" title="Convert to Action (Act)">
-              <span class="material-symbols-outlined text-[18px] shrink-0">edit_note</span>
-              <span class="text-[9px] leading-none mt-1 truncate">Act</span>
-            </button>
-            <!-- 3. Character -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="character" title="Convert to Character cue">
-              <span class="material-symbols-outlined text-[18px] shrink-0">person</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Char</span>
-            </button>
-            <!-- 4. Dialogue -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dialogue" title="Convert to Dialogue (Dia)">
-              <span class="material-symbols-outlined text-[18px] shrink-0">chat_bubble</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Dia</span>
-            </button>
-            <!-- 5. Parenthetical -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="parenthetical" title="Insert Parenthetical ()">
-              <span class="material-symbols-outlined text-[18px] shrink-0">format_quote</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Para</span>
-            </button>
-            <!-- 6. Transition -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="transition" title="Convert to Transition">
-              <span class="material-symbols-outlined text-[18px] shrink-0">double_arrow</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Trans</span>
-            </button>
-            <!-- 7. Shot -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="shot" title="Insert Shot (CLOSE ON:, WIDE SHOT:)">
-              <span class="material-symbols-outlined text-[18px] shrink-0">videocam</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Shot</span>
-            </button>
-            <!-- 8. Text -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="text" title="General Text">
-              <span class="material-symbols-outlined text-[18px] shrink-0">title</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Text</span>
-            </button>
-            <!-- 9. Note -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="note" title="Production / Script Note">
-              <span class="material-symbols-outlined text-[18px] shrink-0">sticky_note_2</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Note</span>
-            </button>
-            <!-- 10. Outline -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="outline" title="Outline Beat">
-              <span class="material-symbols-outlined text-[18px] shrink-0">format_list_bulleted</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Outline</span>
-            </button>
-            <!-- 11. Act -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="act" title="Act Heading (ACT I, ACT II)">
-              <span class="material-symbols-outlined text-[18px] shrink-0">bookmark</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Act</span>
-            </button>
-            <!-- 12. End Act -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="endact" title="End of Act Marker">
-              <span class="material-symbols-outlined text-[18px] shrink-0">bookmark_remove</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">End Act</span>
-            </button>
-            <!-- 13. Sequence -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="sequence" title="Screenplay Sequence">
-              <span class="material-symbols-outlined text-[18px] shrink-0">view_timeline</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Seq</span>
-            </button>
-            <!-- 14. Dual Dialogue -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dual" title="Dual Dialogue (Simultaneous)">
-              <span class="material-symbols-outlined text-[18px] shrink-0">forum</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Dual</span>
-            </button>
-            <!-- 15. Lyrics -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="lyrics" title="Song / Musical Lyrics">
-              <span class="material-symbols-outlined text-[18px] shrink-0">music_note</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Lyrics</span>
-            </button>
-            <!-- 16. Image -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="image" title="Insert Storyboard Image">
-              <span class="material-symbols-outlined text-[18px] shrink-0">image</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Image</span>
-            </button>
-            <!-- 17. Undo -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="undo" title="Undo">
-              <span class="material-symbols-outlined text-[18px] shrink-0">undo</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Undo</span>
-            </button>
-            <!-- 18. Redo -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="redo" title="Redo">
-              <span class="material-symbols-outlined text-[18px] shrink-0">redo</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Redo</span>
+            <button id="btn-redo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Redo (Ctrl+Y)">
+              <span class="material-symbols-outlined text-[16px]">redo</span>
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- ALWAYS-VISIBLE SCREENPLAY ELEMENT NAVIGATOR (PRIMARY WRITING CONTROL) -->
+      <!-- Permanently visible below secondary toolbar area; completely independent of three-dot toggle -->
+      <div id="editor-accessory-tray" class="w-full bg-white border-t border-slate-200 px-3 py-1 flex flex-col gap-1 shadow-xs max-w-5xl mx-auto transition-all">
+        <!-- Professional Horizontal Element & Tool Bar (Icon above name, compact width, controlled scroll, NO text overlap!) -->
+        <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 px-0.5 toolbar-scroll touch-pan-x" id="element-bar">
+          <!-- 1. Scene -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="scene" title="Convert to Scene Heading">
+            <span class="material-symbols-outlined text-[18px] shrink-0">movie</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Scene</span>
+          </button>
+          <!-- 2. Action / Act -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-white bg-blue-600 shadow-2xs font-semibold shrink-0" data-type="action" title="Convert to Action (Act)">
+            <span class="material-symbols-outlined text-[18px] shrink-0">edit_note</span>
+            <span class="text-[9px] leading-none mt-1 truncate">Act</span>
+          </button>
+          <!-- 3. Character -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="character" title="Convert to Character cue">
+            <span class="material-symbols-outlined text-[18px] shrink-0">person</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Char</span>
+          </button>
+          <!-- 4. Dialogue -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dialogue" title="Convert to Dialogue (Dia)">
+            <span class="material-symbols-outlined text-[18px] shrink-0">chat_bubble</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Dia</span>
+          </button>
+          <!-- 5. Parenthetical -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="parenthetical" title="Insert Parenthetical ()">
+            <span class="material-symbols-outlined text-[18px] shrink-0">format_quote</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Para</span>
+          </button>
+          <!-- 6. Transition -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="transition" title="Convert to Transition">
+            <span class="material-symbols-outlined text-[18px] shrink-0">double_arrow</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Trans</span>
+          </button>
+          <!-- 7. Shot -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="shot" title="Insert Shot (CLOSE ON:, WIDE SHOT:)">
+            <span class="material-symbols-outlined text-[18px] shrink-0">videocam</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Shot</span>
+          </button>
+          <!-- 8. Text -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="text" title="General Text">
+            <span class="material-symbols-outlined text-[18px] shrink-0">title</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Text</span>
+          </button>
+          <!-- 9. Note -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="note" title="Production / Script Note">
+            <span class="material-symbols-outlined text-[18px] shrink-0">sticky_note_2</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Note</span>
+          </button>
+          <!-- 10. Outline -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="outline" title="Outline Beat">
+            <span class="material-symbols-outlined text-[18px] shrink-0">format_list_bulleted</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Outline</span>
+          </button>
+          <!-- 11. Act -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="act" title="Act Heading (ACT I, ACT II)">
+            <span class="material-symbols-outlined text-[18px] shrink-0">bookmark</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Act</span>
+          </button>
+          <!-- 12. End Act -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="endact" title="End of Act Marker">
+            <span class="material-symbols-outlined text-[18px] shrink-0">bookmark_remove</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">End Act</span>
+          </button>
+          <!-- 13. Sequence -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="sequence" title="Screenplay Sequence">
+            <span class="material-symbols-outlined text-[18px] shrink-0">view_timeline</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Seq</span>
+          </button>
+          <!-- 14. Dual Dialogue -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dual" title="Dual Dialogue (Simultaneous)">
+            <span class="material-symbols-outlined text-[18px] shrink-0">forum</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Dual</span>
+          </button>
+          <!-- 15. Lyrics -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="lyrics" title="Song / Musical Lyrics">
+            <span class="material-symbols-outlined text-[18px] shrink-0">music_note</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Lyrics</span>
+          </button>
+          <!-- 16. Image -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="image" title="Insert Storyboard Image">
+            <span class="material-symbols-outlined text-[18px] shrink-0">image</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Image</span>
+          </button>
+          <!-- 17. Undo -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="undo" title="Undo">
+            <span class="material-symbols-outlined text-[18px] shrink-0">undo</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Undo</span>
+          </button>
+          <!-- 18. Redo -->
+          <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="redo" title="Redo">
+            <span class="material-symbols-outlined text-[18px] shrink-0">redo</span>
+            <span class="text-[9px] font-medium leading-none mt-1 truncate">Redo</span>
+          </button>
         </div>
+      </div>
 
         <!-- DOCUMENT TABS (Screenplay & Title Page parallel views as in reference) -->
         <div id="editor-document-tabs" class="w-full bg-slate-100/90 border-t border-slate-200 px-3 flex items-center gap-1.5 max-w-5xl mx-auto overflow-x-auto scrollbar-none text-xs">
@@ -370,7 +358,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
       <!-- ========================================================= -->
-      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-screen flex flex-col items-center transition-[padding] duration-200 ease-out" style="padding-top: ${editorToolbarExpanded ? '190px' : '82px'}; transition: padding-top 0.2s ease-out;">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-screen flex flex-col items-center transition-[padding] duration-200 ease-out" style="padding-top: ${editorToolbarExpanded ? '208px' : '136px'}; transition: padding-top 0.2s ease-out;">
         
         <!-- Document 1: Continuous A4 Sheets Container -->
         <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4">
@@ -469,15 +457,14 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </button>
             </div>
 
-            <!-- VIEW & NAVIGATORS (Section 6: Act & Character navigation accessible here) -->
+            <!-- VIEW & DISPLAY -->
             <div class="py-2 flex flex-col gap-1">
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">View & Navigators</span>
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">View & Display</span>
               <button id="menu-btn-focus-mode" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
                 <span class="material-symbols-outlined text-[16px] text-slate-600">center_focus_strong</span>
                 <span class="flex-1 font-medium">Toggle Focus Mode</span>
                 <span id="menuFocusState" class="text-[10px] text-blue-600 font-semibold">Off</span>
               </button>
-
               <button id="menu-btn-go-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
                 <span class="material-symbols-outlined text-[16px] text-slate-600">auto_stories</span>
                 <span class="flex-1 font-medium">Go to Page...</span>
@@ -3095,40 +3082,6 @@ function setupToolbarAndMenu(scriptId, navigate) {
             }
           }
         }
-      }
-    };
-  }
-
-  // Scene Navigator tray button (always visible in accessory tray)
-  const traySceneNav = document.getElementById('tray-btn-scene-navigator');
-  if (traySceneNav) {
-    traySceneNav.onclick = () => {
-      const sceneSelect = document.getElementById('navSceneSelect');
-      if (sceneSelect) { sceneSelect.focus(); sceneSelect.click(); }
-    };
-  }
-
-  // Character Navigator tray button (always visible in accessory tray)
-  const trayCharNav = document.getElementById('tray-btn-char-navigator');
-  if (trayCharNav) {
-    trayCharNav.onclick = () => {
-      const chars = getKnownCharacters();
-      const charName = prompt(`Select character to navigate to:\n${chars.join(', ')}`, chars[0] || '');
-      if (charName) {
-        for (const scene of currentScreenplay.scenes) {
-          for (const block of scene.blocks) {
-            if (block.type === 'character' && block.content.toUpperCase().includes(charName.trim().toUpperCase())) {
-              const el = document.getElementById(block.id);
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                el.classList.add('bg-blue-100/60');
-                setTimeout(() => el.classList.remove('bg-blue-100/60'), 1500);
-                return;
-              }
-            }
-          }
-        }
-        showToast(`Character "${charName}" not found`);
       }
     };
   }
