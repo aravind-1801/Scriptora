@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
     : 'http://localhost:8000';
 
   return {
-    base: './',
+    base: '/',
     build: {
       outDir: 'dist',
       target: 'esnext'
