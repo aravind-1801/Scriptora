@@ -603,19 +603,19 @@
                 <span id="currentVersionTag">${s.draft||"Draft 1.0"}</span>
               </button>
 
-              <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact) -->
+              <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact using standard app Material Symbols) -->
               <div class="flex items-center gap-0.5 shrink-0 ml-1" id="text-formatting-group">
                 <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
-                  <span class="font-serif font-black text-xs leading-none">B</span>
+                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold">format_bold</span>
                 </button>
                 <button type="button" id="btn-format-italic" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Italic Selected Text (Ctrl+I)">
-                  <span class="font-serif font-bold italic text-xs leading-none">I</span>
+                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_italic</span>
                 </button>
                 <button type="button" id="btn-format-underline" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Underline Selected Text (Ctrl+U)">
-                  <span class="font-serif font-bold underline text-xs leading-none">U</span>
+                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_underlined</span>
                 </button>
                 <button type="button" id="btn-format-strike" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Strikethrough Selected Text">
-                  <span class="font-serif font-bold line-through text-xs leading-none">S</span>
+                  <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">strikethrough_s</span>
                 </button>
               </div>
             </div>
