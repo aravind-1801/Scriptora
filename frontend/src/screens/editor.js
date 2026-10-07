@@ -16,6 +16,7 @@ let findMatches = [];
 let currentFindIndex = -1;
 let savedScrollBeforeFind = null;
 let savedActiveBlockBeforeFind = null;
+let savedActiveBlockBeforeImage = null;
 let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
 let activeDocumentTab = 'screenplay'; // 'screenplay' or 'titlepage'
 
@@ -158,6 +159,22 @@ export function renderEditorScreen(scriptId, targetScene = null) {
                 <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
                 <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
               </button>
+
+              <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact) -->
+              <div class="flex items-center gap-0.5 shrink-0 ml-1" id="text-formatting-group">
+                <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
+                  <span class="font-serif font-black text-xs leading-none">B</span>
+                </button>
+                <button type="button" id="btn-format-italic" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Italic Selected Text (Ctrl+I)">
+                  <span class="font-serif font-bold italic text-xs leading-none">I</span>
+                </button>
+                <button type="button" id="btn-format-underline" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Underline Selected Text (Ctrl+U)">
+                  <span class="font-serif font-bold underline text-xs leading-none">U</span>
+                </button>
+                <button type="button" id="btn-format-strike" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Strikethrough Selected Text">
+                  <span class="font-serif font-bold line-through text-xs leading-none">S</span>
+                </button>
+              </div>
             </div>
 
             <!-- Undo / Redo controls in sub-row -->
@@ -253,32 +270,12 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <span class="material-symbols-outlined text-[18px] shrink-0">image</span>
               <span class="text-[9px] font-medium leading-none mt-1 truncate">Image</span>
             </button>
-            <!-- 17. Bold -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="bold" title="Bold Selected Text">
-              <span class="material-symbols-outlined text-[18px] shrink-0 font-bold">format_bold</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Bold</span>
-            </button>
-            <!-- 18. Italic -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="italic" title="Italic Selected Text">
-              <span class="material-symbols-outlined text-[18px] shrink-0 italic">format_italic</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Italic</span>
-            </button>
-            <!-- 19. Underline -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="underline" title="Underline Selected Text">
-              <span class="material-symbols-outlined text-[18px] shrink-0 underline">format_underlined</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Under</span>
-            </button>
-            <!-- 20. Strikethrough -->
-            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="strike" title="Strikethrough Selected Text">
-              <span class="material-symbols-outlined text-[18px] shrink-0 line-through">format_strikethrough</span>
-              <span class="text-[9px] font-medium leading-none mt-1 truncate">Strike</span>
-            </button>
-            <!-- 21. Undo -->
+            <!-- 17. Undo -->
             <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="undo" title="Undo">
               <span class="material-symbols-outlined text-[18px] shrink-0">undo</span>
               <span class="text-[9px] font-medium leading-none mt-1 truncate">Undo</span>
             </button>
-            <!-- 22. Redo -->
+            <!-- 18. Redo -->
             <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="redo" title="Redo">
               <span class="material-symbols-outlined text-[18px] shrink-0">redo</span>
               <span class="text-[9px] font-medium leading-none mt-1 truncate">Redo</span>
@@ -292,9 +289,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span class="material-symbols-outlined text-[14px]">description</span>
             <span class="truncate max-w-[150px]" id="doc-tab-title-label">${script.title || 'Screenplay'}</span>
           </button>
-          <button id="doc-tab-titlepage" class="doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all">
+          <button id="doc-tab-titlepage" class="doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all group">
             <span class="material-symbols-outlined text-[14px]">article</span>
             <span>Title Page</span>
+            <span id="doc-tab-titlepage-close" class="material-symbols-outlined text-[13px] p-0.5 rounded-full hover:bg-slate-300 text-slate-400 hover:text-slate-800 ml-1 transition-colors cursor-pointer" title="Close Title Page">close</span>
           </button>
         </div>
 
@@ -353,7 +351,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <main id="editor-main-scroll" class="flex-1 w-full pt-[190px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
         
         <!-- Document 1: Continuous A4 Sheets Container -->
-        <div id="screenplay-pages-container" class="w-full max-w-3xl flex flex-col items-center gap-8 py-6 px-3 sm:px-6">
+        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -361,8 +359,12 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         </div>
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
-        <div id="title-page-container" class="w-full max-w-3xl hidden flex flex-col items-center py-6 px-3 sm:px-6">
-          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/60 w-full max-w-[850px] min-h-[1050px] p-12 sm:p-20 flex flex-col justify-between font-courier text-slate-900 rounded-sm">
+        <div id="title-page-container" class="w-full max-w-4xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
+          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[800px] min-h-[1130px] p-10 sm:p-16 flex flex-col justify-between font-courier text-slate-900 rounded-md relative">
+            <!-- Close Title Page button at top right -->
+            <button id="btn-close-titlepage-sheet" class="self-end -mt-4 -mr-4 sm:-mt-8 sm:-mr-8 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs" title="Close Title Page (Return to Screenplay)">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
             <!-- Top Third Spacer -->
             <div class="h-24 sm:h-32"></div>
 
@@ -971,8 +973,9 @@ export async function attachEditorEvents(scriptId, navigate) {
   // 7. Navigation Selectors
   setupNavigationSelectors();
 
-  // 8. Element Bar (22 compact tools with icon-above-label)
+  // 8. Element Bar (Screenplay tools 1-18) & Text Formatting Controls (B, I, U, S)
   setupElementBar();
+  setupTextFormattingControls();
 
   // 9. Document Tabs & Title Page parallel view (Prompt 24)
   setupDocumentTabs();
@@ -1044,12 +1047,33 @@ function setupDocumentTabs() {
   const tabTitlePage = document.getElementById('doc-tab-titlepage');
   const btnQuickTP = document.getElementById('btn-quick-title-page');
   const btnMenuTP = document.getElementById('menu-btn-title-page');
+  const closeTabBtn = document.getElementById('doc-tab-titlepage-close');
+  const closeSheetBtn = document.getElementById('btn-close-titlepage-sheet');
 
   if (tabScreenplay) {
     tabScreenplay.onclick = () => switchDocumentTab('screenplay');
   }
   if (tabTitlePage) {
-    tabTitlePage.onclick = () => switchDocumentTab('titlepage');
+    tabTitlePage.onclick = (e) => {
+      if (e.target && (e.target.id === 'doc-tab-titlepage-close' || e.target.closest('#doc-tab-titlepage-close'))) {
+        return;
+      }
+      switchDocumentTab('titlepage');
+    };
+  }
+  if (closeTabBtn) {
+    closeTabBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      switchDocumentTab('screenplay');
+    };
+  }
+  if (closeSheetBtn) {
+    closeSheetBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      switchDocumentTab('screenplay');
+    };
   }
   if (btnQuickTP) {
     btnQuickTP.onclick = () => switchDocumentTab('titlepage');
@@ -1077,7 +1101,7 @@ export function switchDocumentTab(tab) {
       titlePageContainer.classList.add('flex');
     }
     if (tabTitlePageBtn) {
-      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs';
+      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs group';
     }
     if (tabScreenplayBtn) {
       tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all';
@@ -1098,7 +1122,7 @@ export function switchDocumentTab(tab) {
       tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs';
     }
     if (tabTitlePageBtn) {
-      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all';
+      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all group';
     }
     const idx = editorNavStack.findIndex(x => x.id === 'titlePageTab');
     if (idx !== -1) editorNavStack.splice(idx, 1);
@@ -1232,7 +1256,7 @@ function renderScreenplayPages() {
 
   // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet w-full max-w-2xl bg-white rounded-xl shadow-md border border-slate-200/80 p-6 sm:p-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all min-h-[820px]" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet w-full max-w-[800px] min-h-[1130px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 px-8 sm:px-16 py-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
       <div class="w-full flex items-center justify-between pb-4 select-none text-[12px] text-slate-400 font-mono border-b border-transparent">
@@ -1671,11 +1695,13 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   }
 
   if (isImage) {
+    const safeUrl = block.url || '';
+    const safeCaption = escapeHtml(block.caption || '');
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2">
-        <img src="${escapeHtml(block.url || '')}" alt="${escapeHtml(block.caption || 'Storyboard')}" class="max-h-80 w-auto rounded-lg object-contain shadow-xs" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-red-500 font-sans\\'>Image failed to load</div>'" />
-        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white" contenteditable="true">${escapeHtml(block.caption || '')}</div>
-        <button class="btn-delete-img-block absolute top-3 right-3 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2 shadow-2xs">
+        <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-96 w-auto max-w-full rounded-lg object-contain shadow-xs bg-white" />
+        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption}</div>
+        <button class="btn-delete-img-block absolute top-3 right-3 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
       </div>
     `;
   }
@@ -2802,31 +2828,38 @@ function handleToolbarToolClick(type) {
   // 1. Text formatting commands (Operate on selection or future typing)
   if (type === 'bold') {
     document.execCommand('bold', false, null);
+    updateTextFormatButtonStates();
     return;
   }
   if (type === 'italic') {
     document.execCommand('italic', false, null);
+    updateTextFormatButtonStates();
     return;
   }
   if (type === 'underline') {
     document.execCommand('underline', false, null);
+    updateTextFormatButtonStates();
     return;
   }
   if (type === 'strike') {
     document.execCommand('strikeThrough', false, null);
+    updateTextFormatButtonStates();
     return;
   }
   if (type === 'undo') {
     document.execCommand('undo', false, null);
+    updateTextFormatButtonStates();
     return;
   }
   if (type === 'redo') {
     document.execCommand('redo', false, null);
+    updateTextFormatButtonStates();
     return;
   }
 
   // 2. Storyboard Image insertion modal
   if (type === 'image') {
+    savedActiveBlockBeforeImage = activeBlockId;
     toggleImageModal(true);
     return;
   }
@@ -2859,6 +2892,71 @@ function highlightElementButton(type) {
       btn.className = 'element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0';
     }
   });
+}
+
+// =========================================================================
+// TEXT FORMATTING CONTROLS (Bold, Italic, Underline, Strike)
+// =========================================================================
+export function setupTextFormattingControls() {
+  const bBtn = document.getElementById('btn-format-bold');
+  const iBtn = document.getElementById('btn-format-italic');
+  const uBtn = document.getElementById('btn-format-underline');
+  const sBtn = document.getElementById('btn-format-strike');
+
+  const configs = [
+    { btn: bBtn, cmd: 'bold' },
+    { btn: iBtn, cmd: 'italic' },
+    { btn: uBtn, cmd: 'underline' },
+    { btn: sBtn, cmd: 'strikeThrough' }
+  ];
+
+  configs.forEach(({ btn, cmd }) => {
+    if (!btn) return;
+    // CRITICAL: mousedown preventDefault keeps contenteditable selection active
+    btn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.execCommand(cmd, false, null);
+      updateTextFormatButtonStates();
+      hasUnsavedChanges = true;
+      if (autoSaveEnabled) scheduleAutosave();
+    });
+  });
+
+  // Automatically update button active states when selection or caret changes
+  document.addEventListener('selectionchange', updateTextFormatButtonStates);
+
+  const mainScroll = document.getElementById('editor-main-scroll');
+  if (mainScroll) {
+    mainScroll.addEventListener('keyup', updateTextFormatButtonStates);
+    mainScroll.addEventListener('mouseup', updateTextFormatButtonStates);
+  }
+}
+
+export function updateTextFormatButtonStates() {
+  const bBtn = document.getElementById('btn-format-bold');
+  const iBtn = document.getElementById('btn-format-italic');
+  const uBtn = document.getElementById('btn-format-underline');
+  const sBtn = document.getElementById('btn-format-strike');
+  if (!bBtn || !iBtn || !uBtn || !sBtn) return;
+
+  const activeClass = 'format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center border border-blue-600 shadow-2xs font-semibold active:scale-95 transition-all cursor-pointer';
+  const inactiveClass = 'format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer';
+
+  try {
+    const isB = document.queryCommandState('bold');
+    const isI = document.queryCommandState('italic');
+    const isU = document.queryCommandState('underline');
+    const isS = document.queryCommandState('strikeThrough');
+
+    bBtn.className = isB ? activeClass : inactiveClass;
+    iBtn.className = isI ? activeClass : inactiveClass;
+    uBtn.className = isU ? activeClass : inactiveClass;
+    sBtn.className = isS ? activeClass : inactiveClass;
+  } catch (_) {}
 }
 
 // =========================================================================
@@ -3263,6 +3361,7 @@ export function toggleImageModal(open) {
   const modal = document.getElementById('imageModal');
   if (!modal) return;
   if (open) {
+    if (activeBlockId) savedActiveBlockBeforeImage = activeBlockId;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     pushEditorSubView({
@@ -3330,23 +3429,53 @@ function setupModals(scriptId) {
         caption: caption || ''
       };
 
-      if (!currentScreenplay.scenes || currentScreenplay.scenes.length === 0) {
+      const targetBlockId = savedActiveBlockBeforeImage || activeBlockId;
+      let inserted = false;
+
+      if (currentScreenplay.scenes && currentScreenplay.scenes.length > 0) {
+        if (targetBlockId) {
+          for (const sc of currentScreenplay.scenes) {
+            const bIdx = (sc.blocks || []).findIndex(b => b.id === targetBlockId);
+            if (bIdx !== -1) {
+              sc.blocks.splice(bIdx + 1, 0, imgBlock);
+              inserted = true;
+              break;
+            }
+          }
+        }
+        if (!inserted) {
+          const firstScene = currentScreenplay.scenes[0];
+          if (!firstScene.blocks) firstScene.blocks = [];
+          firstScene.blocks.push(imgBlock);
+        }
+      } else {
         currentScreenplay.scenes = [{
           id: 'scene-1',
           number: 1,
           slugline: 'INT. SCENE - DAY',
           blocks: [imgBlock]
         }];
-      } else {
-        const lastScene = currentScreenplay.scenes[currentScreenplay.scenes.length - 1];
-        lastScene.blocks.push(imgBlock);
       }
+
+      // Reset modal inputs for next use
+      selectedImageDataUrl = '';
+      if (imgFileInput) imgFileInput.value = '';
+      const urlEl = document.getElementById('imgUrlInput');
+      if (urlEl) urlEl.value = '';
+      const capEl = document.getElementById('imgCaptionInput');
+      if (capEl) capEl.value = '';
+      if (imgUploadLabel) imgUploadLabel.textContent = 'Choose Image File';
 
       renderScreenplayPages();
       hasUnsavedChanges = true;
       if (autoSaveEnabled) scheduleAutosave();
       showToast('Storyboard image inserted');
       closeEditorSubViewByName('imageModal');
+
+      setTimeout(() => {
+        const newEl = document.getElementById(imgBlock.id);
+        if (newEl) newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 60);
     };
   }
 
@@ -3407,6 +3536,231 @@ function setupModals(scriptId) {
       showToast('Preferences applied');
     };
   }
+
+// =========================================================================
+// AUTHENTIC SCREENPLAY PDF 1.4 GENERATOR (A4 Vector Standard)
+// =========================================================================
+function escapePdfText(str) {
+  if (!str) return '';
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/[^\x20-\x7E]/g, (ch) => {
+      const map = {
+        '—': '--', '–': '-', '“': '"', '”': '"', '‘': "'", '’': "'",
+        '…': '...', '·': '-', '•': '*'
+      };
+      return map[ch] || ' ';
+    });
+}
+
+function wrapPdfText(text, maxChars) {
+  if (!text) return [];
+  const words = text.split(/\s+/);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    if (!cur) cur = w;
+    else if ((cur + ' ' + w).length <= maxChars) cur += ' ' + w;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) {
+  const {
+    includeTitlePage = true,
+    includePageNumbers = true,
+    sceneNumbers = true,
+    preservePageBreaks = true,
+    pageSheets = []
+  } = options;
+
+  const pdfPages = [];
+
+  // 1. Title Page (A4 centered layout)
+  if (includeTitlePage && screenplay.titlePage && (targetPageNumbers.has(1) || options.rangeType === 'all')) {
+    const tp = screenplay.titlePage;
+    const titleLines = wrapPdfText((tp.title || screenplay.title || 'UNTITLED SCREENPLAY').toUpperCase(), 35);
+    const tpLines = [];
+
+    let curY = 520;
+    titleLines.forEach(tl => {
+      tpLines.push({ text: tl, x: 180, y: curY, font: 'F2', size: 16 });
+      curY -= 22;
+    });
+
+    curY -= 20;
+    tpLines.push({ text: 'Written by', x: 260, y: curY, font: 'F1', size: 10 });
+    curY -= 16;
+    tpLines.push({ text: tp.author || 'Author', x: 250, y: curY, font: 'F2', size: 12 });
+
+    let bottomY = 130;
+    if (tp.contact) {
+      wrapPdfText(tp.contact, 40).forEach(cl => {
+        tpLines.push({ text: cl, x: 54, y: bottomY, font: 'F1', size: 9 });
+        bottomY -= 13;
+      });
+    }
+    if (tp.email) {
+      tpLines.push({ text: tp.email, x: 54, y: bottomY, font: 'F1', size: 9 });
+      bottomY -= 13;
+    }
+
+    const draftStr = `Draft: ${screenplay.draft || 'Draft 1.0'}`;
+    tpLines.push({ text: draftStr, x: 390, y: 130, font: 'F1', size: 9 });
+    const dateStr = new Date().toLocaleDateString();
+    tpLines.push({ text: dateStr, x: 390, y: 117, font: 'F1', size: 9 });
+
+    pdfPages.push(tpLines);
+  }
+
+  // 2. Continuous A4 Screenplay Pages
+  pageSheets.forEach(sheet => {
+    const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+    if (!targetPageNumbers.has(pageNum)) return;
+
+    const pageLines = [];
+    if (includePageNumbers && pageNum > 1) {
+      pageLines.push({ text: `${pageNum}.`, x: 540, y: 800, font: 'F1', size: 10 });
+    }
+
+    let y = 780;
+    const blocks = sheet.querySelectorAll('.screenplay-block');
+
+    blocks.forEach(bEl => {
+      if (y < 60) return;
+      const bType = bEl.getAttribute('data-block-type');
+
+      if (bType === 'pagebreak') {
+        if (preservePageBreaks) {
+          y -= 14;
+          pageLines.push({ text: '----------------------------------------', x: 180, y, font: 'F1', size: 9 });
+          y -= 14;
+        }
+        return;
+      }
+
+      if (bType === 'scene') {
+        const editable = bEl.querySelector('[contenteditable="true"]');
+        const text = editable ? editable.innerText.trim() : bEl.innerText.trim();
+        const sNum = sceneNumbers ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
+        const fullScene = sNum ? `${sNum}.  ${text.toUpperCase()}` : text.toUpperCase();
+        y -= 16;
+        wrapPdfText(fullScene, 60).forEach(line => {
+          pageLines.push({ text: line, x: 54, y, font: 'F2', size: 10 });
+          y -= 13;
+        });
+        y -= 4;
+      } else if (bType === 'character') {
+        const text = bEl.innerText.trim().toUpperCase();
+        y -= 12;
+        pageLines.push({ text, x: 240, y, font: 'F2', size: 10 });
+        y -= 13;
+      } else if (bType === 'parenthetical') {
+        let text = bEl.innerText.trim();
+        if (!text.startsWith('(')) text = '(' + text;
+        if (!text.endsWith(')')) text = text + ')';
+        wrapPdfText(text, 34).forEach(line => {
+          pageLines.push({ text: line, x: 200, y, font: 'F1', size: 10 });
+          y -= 13;
+        });
+      } else if (bType === 'dialogue') {
+        const text = bEl.innerText.trim();
+        wrapPdfText(text, 36).forEach(line => {
+          pageLines.push({ text: line, x: 160, y, font: 'F1', size: 10 });
+          y -= 13;
+        });
+        y -= 4;
+      } else if (bType === 'transition') {
+        const text = bEl.innerText.trim().toUpperCase();
+        y -= 12;
+        pageLines.push({ text, x: 380, y, font: 'F2', size: 10 });
+        y -= 16;
+      } else if (bType === 'shot') {
+        const text = bEl.innerText.trim().toUpperCase();
+        y -= 12;
+        pageLines.push({ text, x: 54, y, font: 'F2', size: 10 });
+        y -= 14;
+      } else if (bType === 'image') {
+        const caption = bEl.querySelector('[contenteditable="true"]')?.innerText?.trim() || 'Storyboard Image';
+        y -= 12;
+        pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: 54, y, font: 'F1', size: 9 });
+        y -= 14;
+      } else {
+        const text = bEl.innerText.trim();
+        if (text) {
+          y -= 10;
+          wrapPdfText(text, 60).forEach(line => {
+            pageLines.push({ text: line, x: 54, y, font: 'F1', size: 10 });
+            y -= 13;
+          });
+          y -= 4;
+        }
+      }
+    });
+
+    pdfPages.push(pageLines);
+  });
+
+  if (pdfPages.length === 0) {
+    pdfPages.push([{ text: screenplay.title || 'Screenplay', x: 54, y: 750, font: 'F2', size: 12 }]);
+  }
+
+  // Construct PDF 1.4 Binary Document (A4 MediaBox: 595.28 x 841.89 pt)
+  const totalPages = pdfPages.length;
+  const pageObjIds = [];
+  const contentObjIds = [];
+  let currentId = 4;
+  for (let i = 0; i < totalPages; i++) {
+    currentId++;
+    pageObjIds.push(currentId);
+    currentId++;
+    contentObjIds.push(currentId);
+  }
+
+  const allObjects = [];
+  allObjects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  allObjects[2] = `<< /Type /Pages /Kids [${pageObjIds.map(id => id + ' 0 R').join(' ')}] /Count ${totalPages} /MediaBox [0 0 595.28 841.89] >>`;
+  allObjects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>';
+  allObjects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>';
+
+  for (let i = 0; i < totalPages; i++) {
+    const pId = pageObjIds[i];
+    const cId = contentObjIds[i];
+    allObjects[pId] = `<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${cId} 0 R >>`;
+
+    const streamOps = [];
+    for (const item of pdfPages[i]) {
+      const font = item.font || 'F1';
+      const size = item.size || 10;
+      const x = item.x || 54;
+      const y = item.y || 750;
+      const safe = escapePdfText(item.text);
+      streamOps.push(`BT /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${safe}) Tj ET`);
+    }
+    const stream = streamOps.join('\n');
+    allObjects[cId] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+  }
+
+  let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+  const offsets = [];
+  for (let i = 1; i <= currentId; i++) {
+    offsets[i] = pdf.length;
+    pdf += `${i} 0 obj\n${allObjects[i]}\nendobj\n`;
+  }
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${currentId + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= currentId; i++) {
+    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${currentId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return new Blob([pdf], { type: 'application/pdf' });
+}
 
   // 3. Export Modal
   const exportModal = document.getElementById('exportModal');
@@ -3577,7 +3931,19 @@ function setupModals(scriptId) {
           exportBody += `\n\f\n`;
         });
 
-        const blob = new Blob([exportBody], { type: format === 'pdf' ? 'application/pdf' : 'text/plain' });
+        let blob;
+        if (format === 'pdf') {
+          blob = generateScreenplayPdfBlob(currentScreenplay, targetPageNumbers, {
+            includeTitlePage: document.getElementById('optTitlePage')?.checked !== false,
+            includePageNumbers: optIncludePageNum,
+            sceneNumbers: optSceneNum,
+            preservePageBreaks: optPreserveBreaks,
+            pageSheets: pageSheets,
+            rangeType: rangeType
+          });
+        } else {
+          blob = new Blob([exportBody], { type: 'text/plain' });
+        }
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
