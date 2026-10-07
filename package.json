@@ -7,7 +7,7 @@
   "scripts": {
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "npm --prefix backend run dev",
-    "build:frontend": "npm --prefix frontend run build && node -e \"const fs=require('fs'); fs.copyFileSync('frontend/dist/index.html','index.html'); fs.copyFileSync('frontend/dist/404.html','404.html'); fs.copyFileSync('frontend/dist/favicon.png','favicon.png'); fs.cpSync('frontend/dist/assets','assets',{recursive:true});\"",
+    "build:frontend": "npm --prefix frontend run build && node -e \"const fs=require('fs'); fs.copyFileSync('frontend/dist/index.html','index.html'); fs.copyFileSync('frontend/dist/404.html','404.html'); ['favicon.png','apple-touch-icon.png','launcher-icon.png','manifest.webmanifest','manifest.json'].forEach(f=>{if(fs.existsSync('frontend/dist/'+f)) fs.copyFileSync('frontend/dist/'+f,f);}); if(fs.existsSync('frontend/dist/icons')) fs.cpSync('frontend/dist/icons','icons',{recursive:true}); fs.cpSync('frontend/dist/assets','assets',{recursive:true});\"",
     "test:backend": "npm --prefix backend test",
     "predeploy": "npm run build:frontend",
     "deploy": "gh-pages -d frontend/dist"

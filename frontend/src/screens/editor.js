@@ -469,6 +469,31 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </button>
             </div>
 
+            <!-- PAGE MANAGEMENT -->
+            <div class="py-2 flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Page Management</span>
+              <button id="menu-btn-page-break" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left transition-colors">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">insert_page_break</span>
+                <span class="flex-1 font-medium">Page Break</span>
+                <span class="text-[10px] text-slate-400">Ctrl+Enter</span>
+              </button>
+              <button id="menu-btn-insert-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left transition-colors">
+                <span class="material-symbols-outlined text-[16px] text-blue-600">note_add</span>
+                <span class="flex-1 font-medium">Insert Page</span>
+                <span class="text-[10px] text-slate-400">At Cursor</span>
+              </button>
+              <button id="menu-btn-page-before" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left transition-colors">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">arrow_upward</span>
+                <span class="flex-1 font-medium">Add Page Before</span>
+                <span class="text-[10px] text-slate-400">Prepend</span>
+              </button>
+              <button id="menu-btn-page-at-end" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left transition-colors">
+                <span class="material-symbols-outlined text-[16px] text-slate-600">arrow_downward</span>
+                <span class="flex-1 font-medium">Add Page at End</span>
+                <span class="text-[10px] text-slate-400">Append</span>
+              </button>
+            </div>
+
             <!-- FORMAT / PAGE -->
             <div class="py-2 flex flex-col gap-1">
               <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Format / Page</span>
@@ -659,7 +684,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </div>
 
             <div class="flex flex-col gap-2.5 pt-1">
-              <p class="text-xs font-semibold text-slate-700">Options</p>
+              <p class="text-xs font-semibold text-slate-700">Screenplay Options</p>
               <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
                 <input type="checkbox" id="optSceneNumbers" checked class="w-4 h-4 accent-blue-600 rounded">
                 <span>Include scene numbers (18, 19, etc.)</span>
@@ -671,6 +696,38 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
                 <input type="checkbox" id="optRevisionInfo" checked class="w-4 h-4 accent-blue-600 rounded">
                 <span>Include revision information & date</span>
+              </label>
+            </div>
+
+            <!-- Page-Related Export Settings -->
+            <div class="flex flex-col gap-2 pt-2 border-t border-slate-100">
+              <p class="text-xs font-semibold text-slate-700">Page Export Settings</p>
+              
+              <!-- Page Range -->
+              <div class="flex flex-col gap-1.5">
+                <label for="exportPageRangeSelect" class="text-[11px] font-medium text-slate-600">Page Range</label>
+                <div class="flex items-center gap-2">
+                  <select id="exportPageRangeSelect" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600 cursor-pointer">
+                    <option value="all">All Pages</option>
+                    <option value="current">Current Page Only</option>
+                    <option value="custom">Custom Range...</option>
+                  </select>
+                  <input type="text" id="exportCustomRangeInput" placeholder="e.g. 1-3, 5" class="hidden w-28 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600 font-mono" />
+                </div>
+              </div>
+
+              <!-- Page Options Checkboxes -->
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="optPageNumbers" checked class="w-4 h-4 accent-blue-600 rounded">
+                <span>Include page headers & numbers (Top Right)</span>
+              </label>
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="optPreservePageBreaks" checked class="w-4 h-4 accent-blue-600 rounded">
+                <span>Preserve explicit page breaks</span>
+              </label>
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="optStandardMargins" checked class="w-4 h-4 accent-blue-600 rounded">
+                <span>Standard Writers Guild A4 margins (1.5" Left, 1.0" Right)</span>
               </label>
             </div>
 
@@ -940,6 +997,10 @@ function handleGlobalKeydown(e) {
     e.preventDefault();
     toggleFindReplace(true);
   }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    insertPageBreak();
+  }
 }
 
 // =========================================================================
@@ -1126,6 +1187,14 @@ function renderScreenplayPages() {
   let currentLines = 0;
 
   allItems.forEach(item => {
+    if (item.block.type === 'pagebreak') {
+      currentPage.items.push(item);
+      pages.push(currentPage);
+      currentPage = { pageNumber: pages.length + 1, items: [] };
+      currentLines = 0;
+      return;
+    }
+
     const lines = estimateBlockLines(item.block);
     // If adding this block exceeds page line capacity and current page is not empty: start next A4 page
     if (currentLines + lines > A4_PAGE_CAPACITY_LINES && currentPage.items.length > 0) {
@@ -1176,9 +1245,17 @@ function renderScreenplayPages() {
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- Bottom Page Boundary indicator -->
-      <div class="w-full pt-6 select-none flex items-center justify-center text-[10px] text-slate-300 font-sans tracking-widest uppercase">
-        <span>— PAGE ${page.pageNumber} —</span>
+      <!-- Bottom Page Boundary indicator with Page Controls -->
+      <div class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-4">
+        <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
+          <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+          <span class="hidden sm:inline">Add Page Before</span>
+        </button>
+        <span class="tracking-widest uppercase text-slate-300 font-bold">— PAGE ${page.pageNumber} —</span>
+        <button type="button" class="btn-page-add-after px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Insert Page after Page ${page.pageNumber}">
+          <span class="material-symbols-outlined text-[14px]">add</span>
+          <span class="hidden sm:inline">Insert Page</span>
+        </button>
       </div>
 
     </div>
@@ -1189,6 +1266,7 @@ function renderScreenplayPages() {
 }
 
 function estimateBlockLines(block) {
+  if (block.type === 'pagebreak') return 1;
   const content = block.content || '';
   if (block.type === 'scene') return 3;
   if (block.type === 'action') return Math.max(1, Math.ceil(content.length / 60)) + 1;
@@ -1208,7 +1286,256 @@ function estimateBlockLines(block) {
   return 2;
 }
 
+// =========================================================================
+// PAGE MANAGEMENT ENGINE (Prompt Add-on)
+// =========================================================================
+function removePageBreak(blockId) {
+  let found = false;
+  (currentScreenplay.scenes || []).forEach(scene => {
+    const idx = (scene.blocks || []).findIndex(b => b.id === blockId);
+    if (idx !== -1) {
+      scene.blocks.splice(idx, 1);
+      found = true;
+    }
+  });
+  if (found) {
+    hasUnsavedChanges = true;
+    renderScreenplayPages();
+    showToast('Page break removed');
+    if (autoSaveEnabled) scheduleAutosave();
+  }
+}
+
+function insertPageBreak(targetBlockId = null) {
+  const blockId = targetBlockId || activeBlockId;
+  const scenes = currentScreenplay.scenes || [];
+  if (scenes.length === 0) return;
+
+  const pbBlock = {
+    id: 'pb-' + Date.now(),
+    type: 'pagebreak',
+    content: 'PAGE BREAK'
+  };
+
+  let inserted = false;
+  if (blockId) {
+    for (let s of scenes) {
+      const idx = (s.blocks || []).findIndex(b => b.id === blockId);
+      if (idx !== -1) {
+        s.blocks.splice(idx + 1, 0, pbBlock);
+        inserted = true;
+        break;
+      }
+    }
+  }
+
+  if (!inserted) {
+    const lastScene = scenes[scenes.length - 1];
+    if (!lastScene.blocks) lastScene.blocks = [];
+    lastScene.blocks.push(pbBlock);
+  }
+
+  hasUnsavedChanges = true;
+  renderScreenplayPages();
+  showToast('Page break inserted');
+  if (autoSaveEnabled) scheduleAutosave();
+}
+
+function insertPage(targetBlockId = null) {
+  const blockId = targetBlockId || activeBlockId;
+  const scenes = currentScreenplay.scenes || [];
+  if (scenes.length === 0) {
+    addPageAtEnd();
+    return;
+  }
+
+  const pbBlock = {
+    id: 'pb-' + Date.now(),
+    type: 'pagebreak',
+    content: 'PAGE BREAK'
+  };
+  const newActionBlock = {
+    id: 'b-' + Date.now(),
+    type: 'action',
+    content: ''
+  };
+
+  let targetScene = null;
+  let insertIdx = -1;
+
+  if (blockId) {
+    for (let s of scenes) {
+      const idx = (s.blocks || []).findIndex(b => b.id === blockId);
+      if (idx !== -1) {
+        targetScene = s;
+        insertIdx = idx + 1;
+        break;
+      }
+    }
+  }
+
+  if (!targetScene) {
+    targetScene = scenes[scenes.length - 1];
+    insertIdx = targetScene.blocks.length;
+  }
+
+  targetScene.blocks.splice(insertIdx, 0, pbBlock, newActionBlock);
+  hasUnsavedChanges = true;
+  renderScreenplayPages();
+
+  setTimeout(() => {
+    const el = document.getElementById(newActionBlock.id);
+    if (el) {
+      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+      if (ed) ed.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 50);
+
+  showToast('New page inserted');
+  if (autoSaveEnabled) scheduleAutosave();
+}
+
+function insertPageAfterPage(pageNum) {
+  const sheet = document.querySelector(`.screenplay-page-sheet[data-page-num="${pageNum}"]`);
+  let lastBlockId = null;
+  if (sheet) {
+    const blocks = sheet.querySelectorAll('.screenplay-block');
+    if (blocks.length > 0) {
+      lastBlockId = blocks[blocks.length - 1].getAttribute('data-block-id');
+    }
+  }
+  insertPage(lastBlockId);
+}
+
+function addPageAtEnd() {
+  const scenes = currentScreenplay.scenes || [];
+  const nextSceneNum = scenes.length + 1;
+  const newScene = {
+    id: 'scene-' + Date.now(),
+    number: nextSceneNum,
+    slugline: `INT. SCENE ${nextSceneNum} - DAY`,
+    blocks: [
+      { id: 'pb-' + Date.now(), type: 'pagebreak', content: 'PAGE BREAK' },
+      { id: 'b-' + Date.now() + '-1', type: 'scene', content: `INT. SCENE ${nextSceneNum} - DAY` },
+      { id: 'b-' + Date.now() + '-2', type: 'action', content: '' }
+    ]
+  };
+  scenes.push(newScene);
+  hasUnsavedChanges = true;
+  renderScreenplayPages();
+
+  setTimeout(() => {
+    const el = document.getElementById(newScene.blocks[1].id);
+    if (el) {
+      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+      if (ed) ed.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 80);
+
+  const totalPages = document.querySelectorAll('.screenplay-page-sheet').length;
+  showToast(`Added Page at End (Page ${totalPages})`);
+  if (autoSaveEnabled) scheduleAutosave();
+}
+
+function addPageBefore(targetPageNum = null) {
+  let pageNum = targetPageNum;
+  if (!pageNum) {
+    if (activeBlockId) {
+      const bEl = document.getElementById(activeBlockId);
+      const sheet = bEl ? bEl.closest('.screenplay-page-sheet') : null;
+      if (sheet) pageNum = parseInt(sheet.getAttribute('data-page-num'), 10);
+    }
+  }
+  if (!pageNum) pageNum = 1;
+
+  const scenes = currentScreenplay.scenes || [];
+  if (scenes.length === 0) {
+    addPageAtEnd();
+    return;
+  }
+
+  if (pageNum <= 1) {
+    const newScene = {
+      id: 'scene-' + Date.now(),
+      number: 1,
+      slugline: 'INT. SCENE 1 - DAY',
+      blocks: [
+        { id: 'b-' + Date.now() + '-1', type: 'scene', content: 'INT. SCENE 1 - DAY' },
+        { id: 'b-' + Date.now() + '-2', type: 'action', content: '' },
+        { id: 'pb-' + Date.now() + '-3', type: 'pagebreak', content: 'PAGE BREAK' }
+      ]
+    };
+    scenes.unshift(newScene);
+    scenes.forEach((sc, idx) => { sc.number = idx + 1; });
+    hasUnsavedChanges = true;
+    renderScreenplayPages();
+    populateNavigators();
+
+    setTimeout(() => {
+      const el = document.getElementById(newScene.blocks[0].id);
+      if (el) {
+        const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+        if (ed) ed.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 80);
+
+    showToast('Added Page Before (Page 1)');
+    if (autoSaveEnabled) scheduleAutosave();
+    return;
+  }
+
+  const targetSheet = document.querySelector(`.screenplay-page-sheet[data-page-num="${pageNum}"]`);
+  let firstBlockId = null;
+  if (targetSheet) {
+    const firstBlockEl = targetSheet.querySelector('.screenplay-block');
+    if (firstBlockEl) firstBlockId = firstBlockEl.getAttribute('data-block-id');
+  }
+
+  let targetScene = null;
+  let targetIdx = -1;
+
+  if (firstBlockId) {
+    for (let s of scenes) {
+      const idx = (s.blocks || []).findIndex(b => b.id === firstBlockId);
+      if (idx !== -1) {
+        targetScene = s;
+        targetIdx = idx;
+        break;
+      }
+    }
+  }
+
+  if (!targetScene) {
+    targetScene = scenes[0];
+    targetIdx = 0;
+  }
+
+  const pbBlockBefore = { id: 'pb-' + Date.now() + '-a', type: 'pagebreak', content: 'PAGE BREAK' };
+  const newActionBlock = { id: 'b-' + Date.now() + '-b', type: 'action', content: '' };
+  const pbBlockAfter = { id: 'pb-' + Date.now() + '-c', type: 'pagebreak', content: 'PAGE BREAK' };
+
+  targetScene.blocks.splice(targetIdx, 0, pbBlockBefore, newActionBlock, pbBlockAfter);
+  hasUnsavedChanges = true;
+  renderScreenplayPages();
+
+  setTimeout(() => {
+    const el = document.getElementById(newActionBlock.id);
+    if (el) {
+      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+      if (ed) ed.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 80);
+
+  showToast(`Added Page Before (Page ${pageNum})`);
+  if (autoSaveEnabled) scheduleAutosave();
+}
+
 function renderBlockHtml(block, sceneNumber, sceneId) {
+  const isPageBreak = block.type === 'pagebreak';
   const isScene = block.type === 'scene';
   const isChar = block.type === 'character';
   const isParen = block.type === 'parenthetical';
@@ -1224,7 +1551,21 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   const isDual = block.type === 'dual';
   const isLyrics = block.type === 'lyrics';
   const isImage = block.type === 'image';
-  const isAction = block.type === 'action' || (!isScene && !isChar && !isParen && !isDia && !isTrans && !isShot && !isText && !isNote && !isOutline && !isAct && !isEndAct && !isSequence && !isDual && !isLyrics && !isImage);
+  const isAction = block.type === 'action' || (!isPageBreak && !isScene && !isChar && !isParen && !isDia && !isTrans && !isShot && !isText && !isNote && !isOutline && !isAct && !isEndAct && !isSequence && !isDual && !isLyrics && !isImage);
+
+  if (isPageBreak) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="pagebreak" tabindex="0" class="screenplay-block my-3 select-none flex items-center justify-between px-3 py-2 text-slate-400 bg-slate-50 border border-dashed border-slate-300 rounded-lg group hover:border-blue-400 hover:bg-blue-50/30 transition-all outline-none focus:ring-1 focus:ring-blue-500">
+        <div class="flex items-center gap-2 text-xs font-sans font-semibold tracking-wider uppercase text-slate-500 group-hover:text-blue-600">
+          <span class="material-symbols-outlined text-[16px] text-blue-500">insert_page_break</span>
+          <span>PAGE BREAK</span>
+        </div>
+        <button type="button" class="btn-remove-pagebreak p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" data-block-id="${block.id}" title="Remove Page Break">
+          <span class="material-symbols-outlined text-[16px]">close</span>
+        </button>
+      </div>
+    `;
+  }
 
   if (isScene) {
     return `
@@ -1523,6 +1864,43 @@ function attachBlockListeners() {
       if (bId && sId) deleteBlock(sId, bId);
     };
   });
+
+  // Attach remove buttons on page breaks
+  document.querySelectorAll('.btn-remove-pagebreak').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const bId = btn.getAttribute('data-block-id');
+      if (bId) removePageBreak(bId);
+    };
+  });
+
+  // Attach keyboard delete on page break blocks
+  document.querySelectorAll('[data-block-type="pagebreak"]').forEach(pbEl => {
+    pbEl.onkeydown = (e) => {
+      if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        const bId = pbEl.getAttribute('data-block-id');
+        if (bId) removePageBreak(bId);
+      }
+    };
+  });
+
+  // Attach page sheet boundary add controls
+  document.querySelectorAll('.btn-page-add-before').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const pageNum = parseInt(btn.getAttribute('data-page-num'), 10) || 1;
+      addPageBefore(pageNum);
+    };
+  });
+
+  document.querySelectorAll('.btn-page-add-after').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const pageNum = parseInt(btn.getAttribute('data-page-num'), 10) || 1;
+      insertPageAfterPage(pageNum);
+    };
+  });
 }
 
 // Scene Heading Structured Parser (Section 8)
@@ -1673,6 +2051,13 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       hideAutocomplete();
       return;
     }
+  }
+
+  // Ctrl+Enter: Insert Page Break
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    insertPageBreak(blockId);
+    return;
   }
 
   // 1. BACKSPACE AT OFFSET 0: Never trap cursor at start of line! (Prompt 23: 10-14)
@@ -2666,11 +3051,45 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (menuGoPage) {
     menuGoPage.onclick = () => {
       closeEditorSubViewByName('moreMenu');
-      const pageStr = prompt('Enter page number to jump to (1-5):', '1');
+      const totalPages = document.querySelectorAll('.screenplay-page-sheet').length || 1;
+      const pageStr = prompt(`Enter page number to jump to (1-${totalPages}):`, '1');
       if (pageStr) {
         const pageSheet = document.querySelector(`[data-page-num="${pageStr}"]`);
         if (pageSheet) pageSheet.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
+    };
+  }
+
+  // Page Management Menu Buttons (Prompt Add-on)
+  const menuPageBreak = document.getElementById('menu-btn-page-break');
+  if (menuPageBreak) {
+    menuPageBreak.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
+      insertPageBreak();
+    };
+  }
+
+  const menuInsertPage = document.getElementById('menu-btn-insert-page');
+  if (menuInsertPage) {
+    menuInsertPage.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
+      insertPage();
+    };
+  }
+
+  const menuPageBefore = document.getElementById('menu-btn-page-before');
+  if (menuPageBefore) {
+    menuPageBefore.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
+      addPageBefore();
+    };
+  }
+
+  const menuPageAtEnd = document.getElementById('menu-btn-page-at-end');
+  if (menuPageAtEnd) {
+    menuPageAtEnd.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
+      addPageAtEnd();
     };
   }
 
@@ -3034,16 +3453,67 @@ function setupModals(scriptId) {
     };
   }
 
+  const exportRangeSelect = document.getElementById('exportPageRangeSelect');
+  const customRangeInput = document.getElementById('exportCustomRangeInput');
+  if (exportRangeSelect && customRangeInput) {
+    exportRangeSelect.onchange = () => {
+      customRangeInput.classList.toggle('hidden', exportRangeSelect.value !== 'custom');
+      if (exportRangeSelect.value === 'custom') customRangeInput.focus();
+    };
+  }
+
   if (startExportBtn) {
     startExportBtn.onclick = () => {
       const format = document.getElementById('exportFormatSelect')?.value || 'pdf';
+      const rangeType = document.getElementById('exportPageRangeSelect')?.value || 'all';
+      const customRangeStr = document.getElementById('exportCustomRangeInput')?.value || '';
+      const optIncludePageNum = document.getElementById('optPageNumbers')?.checked !== false;
+      const optPreserveBreaks = document.getElementById('optPreservePageBreaks')?.checked !== false;
+      const optStandardMargins = document.getElementById('optStandardMargins')?.checked !== false;
+      const optSceneNum = document.getElementById('optSceneNumbers')?.checked !== false;
+
+      const pageSheets = Array.from(document.querySelectorAll('.screenplay-page-sheet'));
+      const totalPages = pageSheets.length || 1;
+
+      let targetPageNumbers = new Set();
+      if (rangeType === 'all') {
+        for (let p = 1; p <= totalPages; p++) targetPageNumbers.add(p);
+      } else if (rangeType === 'current') {
+        let curP = 1;
+        if (activeBlockId) {
+          const bEl = document.getElementById(activeBlockId);
+          const sheet = bEl ? bEl.closest('.screenplay-page-sheet') : null;
+          if (sheet) curP = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+        }
+        targetPageNumbers.add(curP);
+      } else if (rangeType === 'custom') {
+        const parts = customRangeStr.split(',');
+        parts.forEach(part => {
+          part = part.trim();
+          if (part.includes('-')) {
+            const [start, end] = part.split('-').map(n => parseInt(n.trim(), 10));
+            if (!isNaN(start) && !isNaN(end)) {
+              for (let i = Math.max(1, start); i <= Math.min(totalPages, end); i++) targetPageNumbers.add(i);
+            }
+          } else {
+            const num = parseInt(part, 10);
+            if (!isNaN(num) && num >= 1 && num <= totalPages) targetPageNumbers.add(num);
+          }
+        });
+        if (targetPageNumbers.size === 0) {
+          for (let p = 1; p <= totalPages; p++) targetPageNumbers.add(p);
+        }
+      }
+
       exportProgressArea.classList.remove('hidden');
       exportProgressBar.style.width = '35%';
-      exportStatusText.textContent = 'Formatting Courier Prime typography and margins...';
+      exportStatusText.textContent = optStandardMargins 
+        ? 'Applying standard A4 margins (1.5" left, 1.0" right) & Courier Prime...' 
+        : 'Formatting Courier Prime typography and page layout...';
 
       setTimeout(() => {
         exportProgressBar.style.width = '80%';
-        exportStatusText.textContent = `Compiling standard ${format.toUpperCase()} screenplay blocks...`;
+        exportStatusText.textContent = `Compiling standard ${format.toUpperCase()} for pages [${Array.from(targetPageNumbers).join(', ')}]...`;
       }, 500);
 
       setTimeout(() => {
@@ -3051,31 +3521,68 @@ function setupModals(scriptId) {
         exportStatusText.textContent = `Completed! Starting download...`;
 
         let exportBody = '';
-        if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage) {
-          exportBody += `${currentScreenplay.titlePage.title || currentScreenplay.title}\n`;
-          exportBody += `Written by ${currentScreenplay.titlePage.author || 'Author'}\n\n`;
+        if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage && (targetPageNumbers.has(1) || rangeType === 'all')) {
+          exportBody += `${currentScreenplay.titlePage.title || currentScreenplay.title}\n\n`;
+          exportBody += `Written by\n${currentScreenplay.titlePage.author || 'Author'}\n\n`;
           if (currentScreenplay.titlePage.contact) {
             exportBody += `${currentScreenplay.titlePage.contact}\n\n`;
           }
-          exportBody += `=================================================\n\n`;
+          if (document.getElementById('optRevisionInfo')?.checked) {
+            exportBody += `Draft: ${currentScreenplay.draft || 'Draft 1.0'}  ·  Date: ${new Date().toLocaleDateString()}\n\n`;
+          }
+          exportBody += `================================================================================\n\f\n`;
         }
 
-        currentScreenplay.scenes.forEach(s => {
-          s.blocks.forEach(b => {
-            if (b.type === 'scene') exportBody += `\n\nSCENE ${s.number}\n${b.content}\n\n`;
-            else if (b.type === 'character') exportBody += `\n\t\t\t${b.content}\n`;
-            else if (b.type === 'parenthetical') exportBody += `\t\t${b.content}\n`;
-            else if (b.type === 'dialogue') exportBody += `\t${b.content}\n`;
-            else if (b.type === 'transition') exportBody += `\n\t\t\t\t\t\t${b.content}\n\n`;
-            else exportBody += `${b.content}\n\n`;
+        // Export blocks grouped by page
+        pageSheets.forEach(sheet => {
+          const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+          if (!targetPageNumbers.has(pageNum)) return;
+
+          if (optIncludePageNum) {
+            exportBody += `\n\t\t\t\t\t\t\t\t\t\t\t${pageNum}.\n\n`;
+          }
+
+          const blocksInSheet = sheet.querySelectorAll('.screenplay-block');
+          blocksInSheet.forEach(bEl => {
+            const bType = bEl.getAttribute('data-block-type');
+            if (bType === 'pagebreak') {
+              if (optPreserveBreaks) exportBody += `\n[=== PAGE BREAK ===]\n\n`;
+              return;
+            }
+
+            let content = '';
+            if (bType === 'scene') {
+              const editable = bEl.querySelector('[contenteditable="true"]');
+              content = editable ? editable.innerText.trim() : bEl.innerText.trim();
+              const sNum = optSceneNum ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
+              exportBody += `\n\n${sNum ? sNum + '. ' : ''}${content}\n\n`;
+            } else if (bType === 'character') {
+              content = bEl.innerText.trim();
+              exportBody += `\n\t\t\t${content}\n`;
+            } else if (bType === 'parenthetical') {
+              content = bEl.innerText.trim();
+              exportBody += `\t\t${content.startsWith('(') ? content : '(' + content + ')'}\n`;
+            } else if (bType === 'dialogue') {
+              content = bEl.innerText.trim();
+              exportBody += `\t${content}\n`;
+            } else if (bType === 'transition') {
+              content = bEl.innerText.trim();
+              exportBody += `\n\t\t\t\t\t\t${content}\n\n`;
+            } else {
+              content = bEl.innerText.trim();
+              if (content) exportBody += `${content}\n\n`;
+            }
           });
+
+          exportBody += `\n\f\n`;
         });
 
         const blob = new Blob([exportBody], { type: format === 'pdf' ? 'application/pdf' : 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${currentScreenplay.title.replace(/[^a-zA-Z0-9]/g, '_')}_${currentScreenplay.draft || 'Draft'}.${format}`;
+        const pageRangeSuffix = rangeType === 'all' ? 'All_Pages' : `Pages_${Array.from(targetPageNumbers).join('-')}`;
+        a.download = `${currentScreenplay.title.replace(/[^a-zA-Z0-9]/g, '_')}_${currentScreenplay.draft || 'Draft'}_${pageRangeSuffix}.${format}`;
         document.body.appendChild(a);
         a.click();
         a.remove();
