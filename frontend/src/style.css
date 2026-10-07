@@ -62,3 +62,36 @@
 button, a {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Empty contenteditable placeholder (Disappears immediately on tap/focus, returns on clear) */
+[contenteditable="true"]:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+  font-weight: normal;
+  text-transform: none;
+}
+[contenteditable="true"]:focus:empty:before {
+  content: "" !important;
+}
+
+/* Controlled horizontal toolbar scrolling */
+.toolbar-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+/* Screenplay element styling */
+.screenplay-dual-dialogue-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+  margin: 12px 0;
+}
+@media (max-width: 640px) {
+  .screenplay-dual-dialogue-grid {
+    gap: 8px;
+  }
+}

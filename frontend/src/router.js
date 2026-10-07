@@ -61,7 +61,11 @@ class Router {
     });
 
     // Listen to browser Back/Forward & hash changes
-    window.addEventListener('popstate', () => {
+    window.addEventListener('popstate', (e) => {
+      if (typeof window.__scriptoraEditorPopstate === 'function') {
+        const handled = window.__scriptoraEditorPopstate(e);
+        if (handled) return;
+      }
       this.resolve(this.getCurrentLocation());
     });
     window.addEventListener('hashchange', () => {

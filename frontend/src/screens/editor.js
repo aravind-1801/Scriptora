@@ -14,7 +14,13 @@ let focusModeActive = false;
 let activeLanguage = 'EN';
 let findMatches = [];
 let currentFindIndex = -1;
+let savedScrollBeforeFind = null;
+let savedActiveBlockBeforeFind = null;
 let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
+let activeDocumentTab = 'screenplay'; // 'screenplay' or 'titlepage'
+
+// Hierarchical Navigation Stack (Prompts 23, 23A, 23B)
+const editorNavStack = [];
 
 // Standard A4 screenplay page capacity (~46 lines of Courier 12pt)
 const A4_PAGE_CAPACITY_LINES = 46;
@@ -83,7 +89,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         </div>
 
         <!-- ROW 2: HORIZONTAL EDITOR TOOLBAR ([ ⋮ ] MUST appear BEFORE Production) -->
-        <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all">
+        <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all toolbar-scroll">
           
           <!-- [ ⋮ ] Three-Dot Menu (FIRST item as required by Section F & G) -->
           <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="More Tools (Title Page, Scene Navigator, Character Navigator, Preferences)">
@@ -100,6 +106,12 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           <button id="exportModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
             <span class="material-symbols-outlined text-[15px] text-blue-600">ios_share</span>
             <span>Export</span>
+          </button>
+
+          <!-- Title Page button (brought to Row 2 beside Production/Export as in screenshot) -->
+          <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0" title="Screenplay Title Page Document">
+            <span class="material-symbols-outlined text-[15px] text-blue-600">article</span>
+            <span>Title Page</span>
           </button>
 
           <!-- Scene #s Toggle -->
@@ -128,9 +140,9 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         </div>
 
         <!-- ROW 3: ACCESSORY & ELEMENT BAR -->
-        <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1.5 flex flex-col gap-1.5 shadow-xs max-w-5xl mx-auto transition-all">
+        <div id="editor-accessory-tray" class="w-full bg-white border-b border-slate-200 px-3 py-1 flex flex-col gap-1 shadow-xs max-w-5xl mx-auto transition-all">
           
-          <!-- Compact Scene Jump, Title Page & Draft (Next line after scene selector), Undo/Redo -->
+          <!-- Compact Scene Jump, Draft Version, Undo/Redo -->
           <div class="flex items-center justify-between gap-2 py-0.5">
             <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none min-w-0">
               <!-- Compact Scene Selector: small length for proper alignment -->
@@ -141,20 +153,14 @@ export function renderEditorScreen(scriptId, targetScene = null) {
                 <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
               </div>
 
-              <!-- Title Page button (brought to the line after scene selector) -->
-              <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
-                <span class="material-symbols-outlined text-[14px] text-slate-600">description</span>
-                <span>Title Page</span>
-              </button>
-
-              <!-- Draft Version button (brought to the line after scene selector) -->
+              <!-- Draft Version button -->
               <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
                 <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
                 <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
               </button>
             </div>
 
-            <!-- Undo / Redo controls -->
+            <!-- Undo / Redo controls in sub-row -->
             <div class="flex items-center gap-1 shrink-0">
               <button id="btn-undo" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 active:scale-95 transition-all" title="Undo (Ctrl+Z)">
                 <span class="material-symbols-outlined text-[16px]">undo</span>
@@ -165,65 +171,177 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </div>
           </div>
 
-          <!-- Line Element Bar: Scene, Act, Char, Dia, Paren, Trans (Ensuring NO text overlap!) -->
-          <div class="flex items-center justify-between gap-1 overflow-x-auto scrollbar-none py-0.5" id="element-bar">
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="scene" title="Convert to Scene Heading">
-              <span class="material-symbols-outlined text-[14px] shrink-0">movie</span>
-              <span class="truncate">Scene</span>
+          <!-- Professional Horizontal Element & Tool Bar (Icon above name, compact width, controlled scroll, NO text overlap!) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1 px-0.5 toolbar-scroll touch-pan-x" id="element-bar">
+            <!-- 1. Scene -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="scene" title="Convert to Scene Heading">
+              <span class="material-symbols-outlined text-[18px] shrink-0">movie</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Scene</span>
             </button>
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 transition-colors bg-blue-600 text-white shadow-xs" data-type="action" title="Convert to Action (Act) block">
-              <span class="material-symbols-outlined text-[14px] shrink-0">edit_note</span>
-              <span class="truncate">Act</span>
+            <!-- 2. Action / Act -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-white bg-blue-600 shadow-2xs font-semibold shrink-0" data-type="action" title="Convert to Action (Act)">
+              <span class="material-symbols-outlined text-[18px] shrink-0">edit_note</span>
+              <span class="text-[9px] leading-none mt-1 truncate">Act</span>
             </button>
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="character" title="Convert to Character cue">
-              <span class="material-symbols-outlined text-[14px] shrink-0">person</span>
-              <span class="truncate">Char</span>
+            <!-- 3. Character -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="character" title="Convert to Character cue">
+              <span class="material-symbols-outlined text-[18px] shrink-0">person</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Char</span>
             </button>
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="dialogue" title="Convert to Dialogue (Dia)">
-              <span class="material-symbols-outlined text-[14px] shrink-0">chat_bubble</span>
-              <span class="truncate">Dia</span>
+            <!-- 4. Dialogue -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dialogue" title="Convert to Dialogue (Dia)">
+              <span class="material-symbols-outlined text-[18px] shrink-0">chat_bubble</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Dia</span>
             </button>
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="parenthetical" title="Insert Parenthetical ()">
-              <span class="material-symbols-outlined text-[14px] shrink-0">format_quote</span>
-              <span class="truncate">Paren</span>
+            <!-- 5. Parenthetical -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="parenthetical" title="Insert Parenthetical ()">
+              <span class="material-symbols-outlined text-[18px] shrink-0">format_quote</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Para</span>
             </button>
-            <button class="element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 transition-colors bg-slate-100 text-slate-700 hover:bg-slate-200" data-type="transition" title="Convert to Transition">
-              <span class="material-symbols-outlined text-[14px] shrink-0">double_arrow</span>
-              <span class="truncate">Trans</span>
+            <!-- 6. Transition -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="transition" title="Convert to Transition">
+              <span class="material-symbols-outlined text-[18px] shrink-0">double_arrow</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Trans</span>
+            </button>
+            <!-- 7. Shot -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="shot" title="Insert Shot (CLOSE ON:, WIDE SHOT:)">
+              <span class="material-symbols-outlined text-[18px] shrink-0">videocam</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Shot</span>
+            </button>
+            <!-- 8. Text -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="text" title="General Text">
+              <span class="material-symbols-outlined text-[18px] shrink-0">title</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Text</span>
+            </button>
+            <!-- 9. Note -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="note" title="Production / Script Note">
+              <span class="material-symbols-outlined text-[18px] shrink-0">sticky_note_2</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Note</span>
+            </button>
+            <!-- 10. Outline -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="outline" title="Outline Beat">
+              <span class="material-symbols-outlined text-[18px] shrink-0">format_list_bulleted</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Outline</span>
+            </button>
+            <!-- 11. Act -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="act" title="Act Heading (ACT I, ACT II)">
+              <span class="material-symbols-outlined text-[18px] shrink-0">bookmark</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Act</span>
+            </button>
+            <!-- 12. End Act -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="endact" title="End of Act Marker">
+              <span class="material-symbols-outlined text-[18px] shrink-0">bookmark_remove</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">End Act</span>
+            </button>
+            <!-- 13. Sequence -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="sequence" title="Screenplay Sequence">
+              <span class="material-symbols-outlined text-[18px] shrink-0">view_timeline</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Seq</span>
+            </button>
+            <!-- 14. Dual Dialogue -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="dual" title="Dual Dialogue (Simultaneous)">
+              <span class="material-symbols-outlined text-[18px] shrink-0">forum</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Dual</span>
+            </button>
+            <!-- 15. Lyrics -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="lyrics" title="Song / Musical Lyrics">
+              <span class="material-symbols-outlined text-[18px] shrink-0">music_note</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Lyrics</span>
+            </button>
+            <!-- 16. Image -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="image" title="Insert Storyboard Image">
+              <span class="material-symbols-outlined text-[18px] shrink-0">image</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Image</span>
+            </button>
+            <!-- 17. Bold -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="bold" title="Bold Selected Text">
+              <span class="material-symbols-outlined text-[18px] shrink-0 font-bold">format_bold</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Bold</span>
+            </button>
+            <!-- 18. Italic -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="italic" title="Italic Selected Text">
+              <span class="material-symbols-outlined text-[18px] shrink-0 italic">format_italic</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Italic</span>
+            </button>
+            <!-- 19. Underline -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="underline" title="Underline Selected Text">
+              <span class="material-symbols-outlined text-[18px] shrink-0 underline">format_underlined</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Under</span>
+            </button>
+            <!-- 20. Strikethrough -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="strike" title="Strikethrough Selected Text">
+              <span class="material-symbols-outlined text-[18px] shrink-0 line-through">format_strikethrough</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Strike</span>
+            </button>
+            <!-- 21. Undo -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="undo" title="Undo">
+              <span class="material-symbols-outlined text-[18px] shrink-0">undo</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Undo</span>
+            </button>
+            <!-- 22. Redo -->
+            <button class="element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0" data-type="redo" title="Redo">
+              <span class="material-symbols-outlined text-[18px] shrink-0">redo</span>
+              <span class="text-[9px] font-medium leading-none mt-1 truncate">Redo</span>
             </button>
           </div>
+        </div>
+
+        <!-- DOCUMENT TABS (Screenplay & Title Page parallel views as in reference) -->
+        <div id="editor-document-tabs" class="w-full bg-slate-100/90 border-t border-slate-200 px-3 flex items-center gap-1.5 max-w-5xl mx-auto overflow-x-auto scrollbar-none text-xs">
+          <button id="doc-tab-screenplay" class="doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs">
+            <span class="material-symbols-outlined text-[14px]">description</span>
+            <span class="truncate max-w-[150px]" id="doc-tab-title-label">${script.title || 'Screenplay'}</span>
+          </button>
+          <button id="doc-tab-titlepage" class="doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all">
+            <span class="material-symbols-outlined text-[14px]">article</span>
+            <span>Title Page</span>
+          </button>
         </div>
 
       </header>
 
       <!-- ========================================================= -->
-      <!-- FIND & REPLACE DOCKED BAR                                -->
+      <!-- FIND & REPLACE COMPACT FLOATING POPUP OVERLAY             -->
       <!-- ========================================================= -->
-      <div id="findReplaceBar" class="fixed top-[152px] left-0 right-0 z-35 bg-white border-b border-blue-200 shadow-md px-4 py-2 hidden max-w-3xl mx-auto rounded-b-xl transition-all">
-        <div class="flex items-center gap-2 flex-wrap text-xs">
-          <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 flex-1 min-w-[140px]">
-            <span class="material-symbols-outlined text-[15px] text-slate-400 mr-1">search</span>
-            <input type="text" id="findInput" placeholder="Find text..." class="bg-transparent outline-none w-full text-slate-900" />
-            <span id="findMatchesCount" class="text-[10px] text-slate-500 whitespace-nowrap ml-1 font-mono">0 of 0</span>
+      <div id="findReplaceModal" class="fixed inset-0 z-50 bg-black/25 backdrop-blur-2xs hidden items-start justify-center pt-24 px-3">
+        <div id="findReplaceCard" class="bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-full max-w-sm flex flex-col gap-3 animate-in fade-in zoom-in-95">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+              <span class="material-symbols-outlined text-[17px] text-blue-600">find_replace</span>
+              <span>Find & Replace</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="findMatchesCount" class="text-[11px] font-mono text-slate-500">0 of 0</span>
+              <button id="closeFindBtn" class="w-6 h-6 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors" title="Close">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
           </div>
 
-          <div class="flex items-center bg-slate-100 rounded-lg px-2 py-1 flex-1 min-w-[140px]">
-            <span class="material-symbols-outlined text-[15px] text-slate-400 mr-1">find_replace</span>
-            <input type="text" id="replaceInput" placeholder="Replace with..." class="bg-transparent outline-none w-full text-slate-900" />
+          <!-- Find input -->
+          <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus-within:border-blue-500 focus-within:bg-white transition-colors">
+            <span class="material-symbols-outlined text-[16px] text-slate-400 mr-1.5">search</span>
+            <input type="text" id="findInput" placeholder="Find text..." class="bg-transparent outline-none w-full text-xs text-slate-900" />
+            <div class="flex items-center gap-0.5 ml-1">
+              <button id="findPrevBtn" class="w-6 h-6 rounded hover:bg-slate-200 flex items-center justify-center text-slate-600" title="Previous match">
+                <span class="material-symbols-outlined text-[16px]">keyboard_arrow_up</span>
+              </button>
+              <button id="findNextBtn" class="w-6 h-6 rounded hover:bg-slate-200 flex items-center justify-center text-slate-600" title="Next match">
+                <span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+              </button>
+            </div>
           </div>
 
-          <div class="flex items-center gap-1">
-            <button id="findPrevBtn" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700" title="Previous match">
-              <span class="material-symbols-outlined text-[14px]">expand_less</span>
-            </button>
-            <button id="findNextBtn" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700" title="Next match">
-              <span class="material-symbols-outlined text-[14px]">expand_more</span>
-            </button>
-            <button id="replaceBtn" class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 font-semibold text-[11px] text-slate-800">Replace</button>
-            <button id="replaceAllBtn" class="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 font-semibold text-[11px] text-white">All</button>
-            <button id="closeFindBtn" class="w-6 h-6 rounded hover:bg-slate-100 flex items-center justify-center text-slate-500 ml-1">
-              <span class="material-symbols-outlined text-[16px]">close</span>
-            </button>
+          <!-- Replace input -->
+          <div class="flex items-center bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus-within:border-blue-500 focus-within:bg-white transition-colors">
+            <span class="material-symbols-outlined text-[16px] text-slate-400 mr-1.5">edit</span>
+            <input type="text" id="replaceInput" placeholder="Replace with..." class="bg-transparent outline-none w-full text-xs text-slate-900" />
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-100">
+            <button id="replaceBtn" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold active:scale-95 transition-all">Replace</button>
+            <button id="replaceAllBtn" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs active:scale-95 transition-all">Replace All</button>
           </div>
         </div>
       </div>
@@ -231,16 +349,41 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
-      <!-- Content flows naturally across A4 sheets without forced   -->
-      <!-- page breaks per scene or transition.                      -->
       <!-- ========================================================= -->
-      <main id="editor-main-scroll" class="flex-1 w-full pt-[156px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
+      <main id="editor-main-scroll" class="flex-1 w-full pt-[190px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
         
-        <!-- Continuous A4 Sheets Container -->
+        <!-- Document 1: Continuous A4 Sheets Container -->
         <div id="screenplay-pages-container" class="w-full max-w-3xl flex flex-col items-center gap-8 py-6 px-3 sm:px-6">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
+          </div>
+        </div>
+
+        <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
+        <div id="title-page-container" class="w-full max-w-3xl hidden flex flex-col items-center py-6 px-3 sm:px-6">
+          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/60 w-full max-w-[850px] min-h-[1050px] p-12 sm:p-20 flex flex-col justify-between font-courier text-slate-900 rounded-sm">
+            <!-- Top Third Spacer -->
+            <div class="h-24 sm:h-32"></div>
+
+            <!-- Middle Third: Title and Written By / Author -->
+            <div class="flex flex-col items-center text-center my-auto">
+              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="w-full text-center uppercase tracking-widest text-2xl sm:text-3xl font-bold py-2 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Your Title"></div>
+              <div class="text-xs sm:text-sm font-medium text-slate-500 my-4 tracking-wider select-none">Written by</div>
+              <div id="tp-doc-author" contenteditable="true" spellcheck="false" class="w-full text-center text-base sm:text-lg font-medium py-1 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Your Name"></div>
+            </div>
+
+            <!-- Bottom Third: Contact & Email -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs pt-16">
+              <div class="flex flex-col">
+                <span class="text-[10px] text-slate-400 font-sans uppercase font-bold tracking-wider mb-1 select-none">Contact</span>
+                <div id="tp-doc-contact" contenteditable="true" spellcheck="false" class="min-w-[160px] py-1 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Phone Number"></div>
+              </div>
+              <div class="flex flex-col sm:items-end">
+                <span class="text-[10px] text-slate-400 font-sans uppercase font-bold tracking-wider mb-1 select-none">Email</span>
+                <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="min-w-[160px] py-1 outline-none focus:bg-blue-50/40 rounded transition-colors sm:text-right cursor-text" data-placeholder="Email Address"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -382,53 +525,43 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       </div>
 
       <!-- ========================================================= -->
-      <!-- TITLE PAGE EDITOR MODAL (Section H)                       -->
+      <!-- INSERT STORYBOARD IMAGE MODAL                             -->
       <!-- ========================================================= -->
-      <div id="titlePageModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
-        <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-200">
-          <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 bg-slate-50/70">
-            <div class="flex items-center gap-2">
-              <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
-                <span class="material-symbols-outlined text-[20px]">description</span>
-              </div>
-              <div>
-                <h3 class="font-heading font-bold text-base text-slate-900 leading-tight">Title Page Editor</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">Industry Standard Screenplay Cover Page</p>
-              </div>
+      <div id="imageModal" class="fixed inset-0 z-50 bg-black/40 backdrop-blur-2xs hidden items-center justify-center p-3 sm:p-4">
+        <div class="bg-white border border-slate-200 rounded-2xl shadow-2xl p-4 w-full max-w-sm flex flex-col gap-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+              <span class="material-symbols-outlined text-[18px] text-blue-600">image</span>
+              <span>Insert Storyboard Image</span>
             </div>
-            <button id="closeTitlePageModal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
-              <span class="material-symbols-outlined text-[20px]">close</span>
+            <button id="closeImageModal" class="w-6 h-6 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors">
+              <span class="material-symbols-outlined text-[16px]">close</span>
             </button>
           </div>
 
-          <div class="p-5 flex flex-col gap-3.5 overflow-y-auto font-sans text-xs">
-            <div class="flex flex-col gap-1">
-              <label class="font-semibold text-slate-700">Screenplay Title</label>
-              <input type="text" id="tpTitleInput" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-900 font-bold uppercase focus:outline-none focus:border-blue-600" />
+          <div class="flex flex-col gap-2">
+            <label class="text-[11px] font-semibold text-slate-600">Image URL</label>
+            <input type="url" id="imgUrlInput" placeholder="https://example.com/storyboard.jpg" class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" />
+            
+            <div class="flex items-center gap-2 my-1">
+              <div class="h-[1px] bg-slate-200 flex-1"></div>
+              <span class="text-[10px] text-slate-400 font-medium">OR UPLOAD</span>
+              <div class="h-[1px] bg-slate-200 flex-1"></div>
             </div>
 
-            <div class="flex flex-col gap-1">
-              <label class="font-semibold text-slate-700">Written by / Author</label>
-              <input type="text" id="tpAuthorInput" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600" />
-            </div>
+            <label class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer text-xs text-slate-600 transition-all">
+              <span class="material-symbols-outlined text-[18px] text-blue-600">cloud_upload</span>
+              <span id="imgUploadLabel">Choose local image...</span>
+              <input type="file" id="imgFileInput" accept="image/*" class="hidden" />
+            </label>
 
-            <div class="flex flex-col gap-1">
-              <label class="font-semibold text-slate-700">Based on / Additional Credits (Optional)</label>
-              <input type="text" id="tpNotesInput" placeholder="e.g. Based on an original story by..." class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600" />
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <label class="font-semibold text-slate-700">Contact Information</label>
-              <textarea id="tpContactInput" rows="3" placeholder="Agency, management, email, phone number..." class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600 resize-none"></textarea>
-            </div>
+            <label class="text-[11px] font-semibold text-slate-600 mt-1">Caption (optional)</label>
+            <input type="text" id="imgCaptionInput" placeholder="Scene visual concept..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" />
           </div>
 
-          <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
-            <button id="cancelTitlePageBtn" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-medium">Cancel</button>
-            <button id="saveTitlePageBtn" class="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs hover:bg-blue-700">
-              <span class="material-symbols-outlined text-[16px]">save</span>
-              <span>Save Title Page</span>
-            </button>
+          <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button id="cancelImageBtn" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-medium">Cancel</button>
+            <button id="insertImageBtn" class="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs">Insert</button>
           </div>
         </div>
       </div>
@@ -684,16 +817,76 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 }
 
 // =========================================================================
+// =========================================================================
+// HIERARCHICAL NAVIGATION STACK & EVENTS (Prompts 23, 23A, 23B)
+// =========================================================================
+export function pushEditorSubView({ id, name, close, restore }) {
+  try {
+    window.history.pushState({ editorSubViewId: id, editorSubViewName: name }, '');
+  } catch (err) {}
+  editorNavStack.push({ id, name, close, restore });
+}
+
+export function closeEditorSubViewByName(id) {
+  const idx = editorNavStack.findIndex(item => item.id === id);
+  if (idx !== -1) {
+    if (idx === editorNavStack.length - 1) {
+      const top = editorNavStack.pop();
+      if (top && typeof top.close === 'function') top.close();
+      const parent = editorNavStack[editorNavStack.length - 1];
+      if (parent && typeof parent.restore === 'function') parent.restore();
+    } else {
+      const removed = editorNavStack.splice(idx, 1)[0];
+      if (removed && typeof removed.close === 'function') removed.close();
+    }
+    try {
+      window.history.back();
+    } catch (e) {}
+  }
+}
+
+export function handleEditorBack() {
+  if (editorNavStack.length > 0) {
+    const top = editorNavStack.pop();
+    if (top && typeof top.close === 'function') {
+      top.close();
+    }
+    const parent = editorNavStack[editorNavStack.length - 1];
+    if (parent && typeof parent.restore === 'function') {
+      parent.restore();
+    }
+    return true; // Successfully closed one hierarchy level; keep editor open!
+  }
+  return false; // Root editor reached; proceed to workspace
+}
+
+// =========================================================================
 // ATTACH EDITOR EVENTS & PROFESSIONAL LOGIC
 // =========================================================================
 export async function attachEditorEvents(scriptId, navigate) {
-  // 1. Back button
+  // Clear any existing stack on clean session enter
+  editorNavStack.length = 0;
+
+  // Intercept browser Back & phone Back gestures via router popstate hook
+  window.__scriptoraEditorPopstate = (e) => {
+    if (editorNavStack.length > 0) {
+      return handleEditorBack();
+    }
+    return false;
+  };
+
+  // 1. Back button (Uses Hierarchical Stack: closes subview/tab first, only leaves at root)
   const backBtn = document.getElementById('editor-back-btn');
   if (backBtn) {
     backBtn.onclick = () => {
+      if (editorNavStack.length > 0) {
+        window.history.back();
+        return;
+      }
       if (hasUnsavedChanges) {
         performSave(false);
       }
+      window.__scriptoraEditorPopstate = null;
       navigate('/workspace');
     };
   }
@@ -721,16 +914,20 @@ export async function attachEditorEvents(scriptId, navigate) {
   // 7. Navigation Selectors
   setupNavigationSelectors();
 
-  // 8. Element Bar (Scene, Action, Char, Dia, Paren, Trans)
+  // 8. Element Bar (22 compact tools with icon-above-label)
   setupElementBar();
 
-  // 9. Find & Replace
+  // 9. Document Tabs & Title Page parallel view (Prompt 24)
+  setupDocumentTabs();
+  initTitlePageDocEvents();
+
+  // 10. Find & Replace compact floating popup modal
   setupFindReplace();
 
-  // 10. Modals (Title Page, Preferences, Export, Versions, Diff)
+  // 11. Modals (Image modal, Preferences, Export, Versions, Compare)
   setupModals(scriptId);
 
-  // 11. Autocomplete dropdown setup
+  // 12. Autocomplete dropdown setup
   setupAutocomplete();
 }
 
@@ -777,6 +974,127 @@ function setupAutoSaveToggle() {
     };
   }
 }
+
+// =========================================================================
+// DOCUMENT TABS & TITLE PAGE PARALLEL VIEW (Prompt 24: 19-20)
+// =========================================================================
+function setupDocumentTabs() {
+  const tabScreenplay = document.getElementById('doc-tab-screenplay');
+  const tabTitlePage = document.getElementById('doc-tab-titlepage');
+  const btnQuickTP = document.getElementById('btn-quick-title-page');
+  const btnMenuTP = document.getElementById('menu-btn-title-page');
+
+  if (tabScreenplay) {
+    tabScreenplay.onclick = () => switchDocumentTab('screenplay');
+  }
+  if (tabTitlePage) {
+    tabTitlePage.onclick = () => switchDocumentTab('titlepage');
+  }
+  if (btnQuickTP) {
+    btnQuickTP.onclick = () => switchDocumentTab('titlepage');
+  }
+  if (btnMenuTP) {
+    btnMenuTP.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
+      switchDocumentTab('titlepage');
+    };
+  }
+}
+
+export function switchDocumentTab(tab) {
+  if (activeDocumentTab === tab) return;
+  activeDocumentTab = tab;
+  const screenplayContainer = document.getElementById('screenplay-pages-container');
+  const titlePageContainer = document.getElementById('title-page-container');
+  const tabScreenplayBtn = document.getElementById('doc-tab-screenplay');
+  const tabTitlePageBtn = document.getElementById('doc-tab-titlepage');
+
+  if (tab === 'titlepage') {
+    if (screenplayContainer) screenplayContainer.classList.add('hidden');
+    if (titlePageContainer) {
+      titlePageContainer.classList.remove('hidden');
+      titlePageContainer.classList.add('flex');
+    }
+    if (tabTitlePageBtn) {
+      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs';
+    }
+    if (tabScreenplayBtn) {
+      tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all';
+    }
+    populateTitlePageDoc();
+    pushEditorSubView({
+      id: 'titlePageTab',
+      name: 'Title Page',
+      close: () => switchDocumentTab('screenplay')
+    });
+  } else {
+    if (titlePageContainer) {
+      titlePageContainer.classList.add('hidden');
+      titlePageContainer.classList.remove('flex');
+    }
+    if (screenplayContainer) screenplayContainer.classList.remove('hidden');
+    if (tabScreenplayBtn) {
+      tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs';
+    }
+    if (tabTitlePageBtn) {
+      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all';
+    }
+    const idx = editorNavStack.findIndex(x => x.id === 'titlePageTab');
+    if (idx !== -1) editorNavStack.splice(idx, 1);
+  }
+}
+
+function populateTitlePageDoc() {
+  if (!currentScreenplay) return;
+  const tp = currentScreenplay.titlePage || {};
+  const tEl = document.getElementById('tp-doc-title');
+  const aEl = document.getElementById('tp-doc-author');
+  const cEl = document.getElementById('tp-doc-contact');
+  const eEl = document.getElementById('tp-doc-email');
+
+  if (tEl) tEl.innerText = tp.title || '';
+  if (aEl) aEl.innerText = tp.author || '';
+  if (cEl) cEl.innerText = tp.contact || '';
+  if (eEl) eEl.innerText = tp.email || '';
+}
+
+function initTitlePageDocEvents() {
+  const tEl = document.getElementById('tp-doc-title');
+  const aEl = document.getElementById('tp-doc-author');
+  const cEl = document.getElementById('tp-doc-contact');
+  const eEl = document.getElementById('tp-doc-email');
+
+  const onTpInput = () => {
+    if (!currentScreenplay) return;
+    if (!currentScreenplay.titlePage) currentScreenplay.titlePage = {};
+    const titleVal = tEl ? tEl.innerText.trim() : '';
+    const authorVal = aEl ? aEl.innerText.trim() : '';
+    const contactVal = cEl ? cEl.innerText.trim() : '';
+    const emailVal = eEl ? eEl.innerText.trim() : '';
+
+    currentScreenplay.titlePage.title = titleVal;
+    currentScreenplay.titlePage.author = authorVal;
+    currentScreenplay.titlePage.contact = contactVal;
+    currentScreenplay.titlePage.email = emailVal;
+
+    if (titleVal) {
+      currentScreenplay.title = titleVal;
+      const titleLabel = document.getElementById('editor-script-title');
+      const tabLabel = document.getElementById('doc-tab-title-label');
+      if (titleLabel) titleLabel.textContent = titleVal;
+      if (tabLabel) tabLabel.textContent = titleVal;
+    }
+
+    hasUnsavedChanges = true;
+    updateSaveStatus('Unsaved');
+    if (autoSaveEnabled) scheduleAutosave();
+  };
+
+  [tEl, aEl, cEl, eEl].forEach(el => {
+    if (el) el.oninput = onTpInput;
+  });
+}
+
 
 // =========================================================================
 // NATURAL A4 MULTI-PAGE SCREENPLAY RENDERING (Sections 11, 12, 13, 23)
@@ -878,6 +1196,15 @@ function estimateBlockLines(block) {
   if (block.type === 'parenthetical') return 1;
   if (block.type === 'dialogue') return Math.max(1, Math.ceil(content.length / 38)) + 1;
   if (block.type === 'transition') return 2;
+  if (block.type === 'shot') return 2;
+  if (block.type === 'text') return Math.max(1, Math.ceil(content.length / 60)) + 1;
+  if (block.type === 'note') return 2;
+  if (block.type === 'outline') return 2;
+  if (block.type === 'act' || block.type === 'endact') return 3;
+  if (block.type === 'sequence') return 2;
+  if (block.type === 'dual') return 4;
+  if (block.type === 'lyrics') return 2;
+  if (block.type === 'image') return 10;
   return 2;
 }
 
@@ -887,7 +1214,17 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   const isParen = block.type === 'parenthetical';
   const isDia = block.type === 'dialogue';
   const isTrans = block.type === 'transition';
-  const isAction = block.type === 'action' || (!isScene && !isChar && !isParen && !isDia && !isTrans);
+  const isShot = block.type === 'shot';
+  const isText = block.type === 'text';
+  const isNote = block.type === 'note';
+  const isOutline = block.type === 'outline';
+  const isAct = block.type === 'act';
+  const isEndAct = block.type === 'endact';
+  const isSequence = block.type === 'sequence';
+  const isDual = block.type === 'dual';
+  const isLyrics = block.type === 'lyrics';
+  const isImage = block.type === 'image';
+  const isAction = block.type === 'action' || (!isScene && !isChar && !isParen && !isDia && !isTrans && !isShot && !isText && !isNote && !isOutline && !isAct && !isEndAct && !isSequence && !isDual && !isLyrics && !isImage);
 
   if (isScene) {
     return `
@@ -926,6 +1263,79 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   if (isTrans) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+    `;
+  }
+
+  if (isShot) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'CLOSE ON:')}</div>
+    `;
+  }
+
+  if (isText) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+    `;
+  }
+
+  if (isNote) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || '[[ NOTE: Script comment... ]]')}</div>
+    `;
+  }
+
+  if (isOutline) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'OUTLINE BEAT')}</div>
+    `;
+  }
+
+  if (isAct) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'ACT I')}</div>
+    `;
+  }
+
+  if (isEndAct) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'END OF ACT I')}</div>
+    `;
+  }
+
+  if (isSequence) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'SEQUENCE 1')}</div>
+    `;
+  }
+
+  if (isDual) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dual" class="screenplay-block screenplay-dual-dialogue-grid">
+        <div class="flex flex-col">
+          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.char1 || 'CHARACTER A')}</div>
+          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.dia1 || 'Dialogue A')}</div>
+        </div>
+        <div class="flex flex-col">
+          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.char2 || 'CHARACTER B')}</div>
+          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.dia2 || 'Dialogue B')}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (isLyrics) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || '♫ Musical lyrics... ♫')}</div>
+    `;
+  }
+
+  if (isImage) {
+    return `
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2">
+        <img src="${escapeHtml(block.url || '')}" alt="${escapeHtml(block.caption || 'Storyboard')}" class="max-h-80 w-auto rounded-lg object-contain shadow-xs" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'p-4 text-xs text-red-500 font-sans\\'>Image failed to load</div>'" />
+        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white" contenteditable="true">${escapeHtml(block.caption || '')}</div>
+        <button class="btn-delete-img-block absolute top-3 right-3 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
+      </div>
     `;
   }
 
@@ -1069,6 +1479,14 @@ function attachSingleBlockListeners(block) {
         updateBlockModel(block, formattedText);
       }
     }
+
+    // Commit ONLY completed entities upon blur (Prompt 23: 4-8)
+    if (type === 'character') {
+      commitCharacterToMemory(editable.innerText);
+    } else if (type === 'scene') {
+      const parsed = parseSceneHeading(editable.innerText);
+      if (parsed.location) commitLocationToMemory(parsed.location);
+    }
   };
 
   editable.onpaste = () => {
@@ -1095,6 +1513,16 @@ function attachSingleBlockListeners(block) {
 function attachBlockListeners() {
   const blocks = document.querySelectorAll('.screenplay-block');
   blocks.forEach(attachSingleBlockListeners);
+
+  // Attach delete buttons on image blocks if present
+  document.querySelectorAll('.btn-delete-img-block').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const bId = btn.getAttribute('data-block-id');
+      const sId = btn.getAttribute('data-scene-id');
+      if (bId && sId) deleteBlock(sId, bId);
+    };
+  });
 }
 
 // Scene Heading Structured Parser (Section 8)
@@ -1109,6 +1537,56 @@ export function parseSceneHeading(text) {
   return { intExt, location, time };
 }
 
+// Memory Commit: Only commit ACTUAL COMPLETED entities, never keystroke prefixes! (Prompt 23: 4-8, 35)
+export function commitCharacterToMemory(rawName) {
+  if (!currentScreenplay) return;
+  const clean = (rawName || '').replace(/\(.*\)/g, '').trim().toUpperCase();
+  if (!clean || clean.length < 2) return;
+
+  if (!Array.isArray(currentScreenplay.characters)) {
+    currentScreenplay.characters = [];
+  }
+
+  // Prune any accidental prefixes of this completed name
+  currentScreenplay.characters = currentScreenplay.characters.filter(c => {
+    if (clean.startsWith(c) && c.length < clean.length) {
+      const existsElsewhere = currentScreenplay.scenes?.some(sc =>
+        sc.blocks?.some(b => b.type === 'character' && b.content.replace(/\(.*\)/g, '').trim().toUpperCase() === c)
+      );
+      return existsElsewhere;
+    }
+    return true;
+  });
+
+  if (!currentScreenplay.characters.includes(clean)) {
+    currentScreenplay.characters.push(clean);
+  }
+}
+
+export function commitLocationToMemory(rawLoc) {
+  if (!currentScreenplay) return;
+  const clean = (rawLoc || '').trim().toUpperCase();
+  if (!clean || clean.length < 2) return;
+
+  if (!Array.isArray(currentScreenplay.locations)) {
+    currentScreenplay.locations = [];
+  }
+
+  currentScreenplay.locations = currentScreenplay.locations.filter(l => {
+    if (clean.startsWith(l) && l.length < clean.length) {
+      const existsElsewhere = currentScreenplay.scenes?.some(sc =>
+        sc.blocks?.some(b => b.type === 'scene' && parseSceneHeading(b.content).location === l)
+      );
+      return existsElsewhere;
+    }
+    return true;
+  });
+
+  if (!currentScreenplay.locations.includes(clean)) {
+    currentScreenplay.locations.push(clean);
+  }
+}
+
 function updateBlockModel(blockEl, text) {
   if (!currentScreenplay) return;
   const blockId = blockEl.getAttribute('data-block-id');
@@ -1119,15 +1597,7 @@ function updateBlockModel(blockEl, text) {
   if (b) {
     b.content = text;
 
-    // Character memory tracking (Section 19: Character memory while writing)
-    if (b.type === 'character') {
-      const cleanName = text.replace(/\(.*\)/g, '').trim().toUpperCase();
-      if (cleanName && cleanName.length >= 2 && !currentScreenplay.characters.includes(cleanName)) {
-        currentScreenplay.characters.push(cleanName);
-      }
-    }
-
-    // Scene heading structured parsing (Section 8)
+    // Structured metadata for scene heading (Does NOT push keystrokes to memory!)
     if (b.type === 'scene') {
       const parsed = parseSceneHeading(text);
       b.intExt = parsed.intExt;
@@ -1136,17 +1606,42 @@ function updateBlockModel(blockEl, text) {
       scene.slugline = text;
       scene.location = parsed.location;
       scene.time = parsed.time;
-
-      // Location memory tracking
-      if (parsed.location && parsed.location.length >= 2 && !currentScreenplay.locations.includes(parsed.location)) {
-        currentScreenplay.locations.push(parsed.location);
-      }
     }
   }
 }
 
+// Delete block from model & DOM (Prompt 23: 10-14)
+function deleteBlock(sceneId, blockId) {
+  if (!currentScreenplay) return;
+  const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
+  if (!scene) return;
+  const bIdx = scene.blocks.findIndex(b => b.id === blockId);
+  if (bIdx !== -1) {
+    scene.blocks.splice(bIdx, 1);
+    hasUnsavedChanges = true;
+    if (autoSaveEnabled) scheduleAutosave();
+  }
+
+  // Remove empty scenes if more than 1 scene exists
+  if (scene.blocks.length === 0 && currentScreenplay.scenes.length > 1) {
+    const sIdx = currentScreenplay.scenes.findIndex(s => s.id === sceneId);
+    if (sIdx !== -1) {
+      currentScreenplay.scenes.splice(sIdx, 1);
+      currentScreenplay.scenes.forEach((sc, i) => { sc.number = i + 1; });
+      populateNavigators();
+    }
+  } else if (scene.blocks.length === 0) {
+    // Keep at least one empty block
+    scene.blocks.push({ id: `b-${Date.now().toString().slice(-6)}`, type: 'action', content: '' });
+  }
+
+  const el = document.getElementById(blockId);
+  if (el) el.remove();
+  updateTelemetry();
+}
+
 // =========================================================================
-// ENTER / TAB CONTEXTUAL AUTOMATION (Sections 9, 10, 11, 16, 17, 18)
+// CONTINUOUS CURSOR, BACKSPACE & DELETE NAVIGATION ACROSS BLOCKS (Sections 10-14)
 // =========================================================================
 function handleBlockKeydown(e, blockEl, editableEl) {
   const type = blockEl.getAttribute('data-block-type');
@@ -1180,6 +1675,137 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
+  // 1. BACKSPACE AT OFFSET 0: Never trap cursor at start of line! (Prompt 23: 10-14)
+  if (e.key === 'Backspace' && !e.ctrlKey && !e.metaKey) {
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    const isCollapsed = !sel || sel.isCollapsed;
+
+    if (offset === 0 && isCollapsed) {
+      const allBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+      const currentIdx = allBlocks.indexOf(blockEl);
+
+      if (currentIdx > 0) {
+        e.preventDefault();
+        const prevBlockEl = allBlocks[currentIdx - 1];
+        const prevEditable = prevBlockEl.hasAttribute('contenteditable') ? prevBlockEl : prevBlockEl.querySelector('[contenteditable="true"]');
+        const currentText = editableEl.innerText.trim();
+
+        // If current block is empty (or parenthetical '()')
+        if (currentText === '' || (type === 'parenthetical' && (currentText === '()' || currentText === ''))) {
+          deleteBlock(sceneId, blockId);
+          if (prevEditable) {
+            prevEditable.focus();
+            setCursorAtEnd(prevEditable);
+          }
+          return;
+        }
+
+        // If current block has content: merge if same block type
+        const prevType = prevBlockEl.getAttribute('data-block-type');
+        if (prevEditable && ((type === 'action' && prevType === 'action') || (type === 'dialogue' && prevType === 'dialogue') || (type === 'text' && prevType === 'text'))) {
+          const prevLen = prevEditable.innerText.length;
+          const merged = prevEditable.innerText + (prevEditable.innerText ? ' ' : '') + editableEl.innerText;
+          prevEditable.innerText = merged;
+          updateBlockModel(prevBlockEl, merged);
+          deleteBlock(sceneId, blockId);
+          prevEditable.focus();
+          setCaretCharacterOffsetWithin(prevEditable, prevLen + (prevEditable.innerText ? 1 : 0));
+          return;
+        }
+
+        // Otherwise (different block types), move cursor to end of previous block without destroying structure
+        if (prevEditable) {
+          prevEditable.focus();
+          setCursorAtEnd(prevEditable);
+          return;
+        }
+      }
+    }
+  }
+
+  // 2. DELETE KEY AT END OF BLOCK: Move or merge forward
+  if (e.key === 'Delete' && !e.ctrlKey && !e.metaKey) {
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    const isCollapsed = !sel || sel.isCollapsed;
+
+    if (offset >= editableEl.innerText.length && isCollapsed) {
+      const allBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+      const currentIdx = allBlocks.indexOf(blockEl);
+
+      if (currentIdx < allBlocks.length - 1) {
+        const nextBlockEl = allBlocks[currentIdx + 1];
+        const nextEditable = nextBlockEl.hasAttribute('contenteditable') ? nextBlockEl : nextBlockEl.querySelector('[contenteditable="true"]');
+        const nextSceneId = nextBlockEl.getAttribute('data-scene-id');
+        const nextBlockId = nextBlockEl.getAttribute('data-block-id');
+        const nextType = nextBlockEl.getAttribute('data-block-type');
+        const nextText = (nextEditable ? nextEditable.innerText : '').trim();
+
+        if (nextText === '' || (nextType === 'parenthetical' && (nextText === '()' || nextText === ''))) {
+          e.preventDefault();
+          deleteBlock(nextSceneId, nextBlockId);
+          return;
+        }
+
+        if (nextEditable && ((type === 'action' && nextType === 'action') || (type === 'dialogue' && nextType === 'dialogue') || (type === 'text' && nextType === 'text'))) {
+          e.preventDefault();
+          const currLen = editableEl.innerText.length;
+          const merged = editableEl.innerText + (editableEl.innerText ? ' ' : '') + nextEditable.innerText;
+          editableEl.innerText = merged;
+          updateBlockModel(blockEl, merged);
+          deleteBlock(nextSceneId, nextBlockId);
+          setCaretCharacterOffsetWithin(editableEl, currLen + (editableEl.innerText ? 1 : 0));
+          return;
+        }
+
+        if (nextEditable) {
+          e.preventDefault();
+          nextEditable.focus();
+          setCaretCharacterOffsetWithin(nextEditable, 0);
+          return;
+        }
+      }
+    }
+  }
+
+  // 3. CONTINUOUS ARROW KEY NAVIGATION ACROSS BLOCKS (Prompt 23: 12-13)
+  if (e.key === 'ArrowLeft') {
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    if (offset === 0 && (!sel || sel.isCollapsed)) {
+      const allBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+      const currentIdx = allBlocks.indexOf(blockEl);
+      if (currentIdx > 0) {
+        e.preventDefault();
+        const prevBlockEl = allBlocks[currentIdx - 1];
+        const prevEd = prevBlockEl.querySelector('[contenteditable="true"]') || prevBlockEl;
+        if (prevEd) {
+          prevEd.focus();
+          setCursorAtEnd(prevEd);
+        }
+      }
+    }
+  }
+
+  if (e.key === 'ArrowRight') {
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    if (offset >= editableEl.innerText.length && (!sel || sel.isCollapsed)) {
+      const allBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+      const currentIdx = allBlocks.indexOf(blockEl);
+      if (currentIdx < allBlocks.length - 1) {
+        e.preventDefault();
+        const nextBlockEl = allBlocks[currentIdx + 1];
+        const nextEd = nextBlockEl.querySelector('[contenteditable="true"]') || nextBlockEl;
+        if (nextEd) {
+          nextEd.focus();
+          setCaretCharacterOffsetWithin(nextEd, 0);
+        }
+      }
+    }
+  }
+
   // Auto-parenthetical shortcut: Typing "(" in Character or Dialogue (Section 9)
   if (e.key === '(' && (type === 'character' || type === 'dialogue')) {
     const sel = window.getSelection();
@@ -1203,13 +1829,15 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // ENTER key handling
+  // ENTER key handling: Contextual screenplay transition flow
   if (e.key === 'Enter' && !e.shiftKey) {
     hideAutocomplete();
 
     // 1. SCENE -> ACTION
     if (type === 'scene') {
       e.preventDefault();
+      const parsed = parseSceneHeading(editableEl.innerText);
+      if (parsed.location) commitLocationToMemory(parsed.location);
       insertNewBlockAfter(sceneId, blockId, 'action', '');
       return;
     }
@@ -1217,11 +1845,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     // 2. CHARACTER -> DIALOGUE
     if (type === 'character') {
       e.preventDefault();
-      // Ensure character is stored in memory
-      const cName = editableEl.innerText.replace(/\(.*\)/g, '').trim().toUpperCase();
-      if (cName && !currentScreenplay.characters.includes(cName)) {
-        currentScreenplay.characters.push(cName);
-      }
+      commitCharacterToMemory(editableEl.innerText);
       insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       return;
     }
@@ -1233,7 +1857,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       return;
     }
 
-    // 4. PARENTHETICAL -> DIALOGUE (Section 10: Parenthetical Enter returns to dialogue)
+    // 4. PARENTHETICAL -> DIALOGUE
     if (type === 'parenthetical') {
       e.preventDefault();
       let text = editableEl.innerText.trim();
@@ -1246,17 +1870,38 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       return;
     }
 
-    // 5. TRANSITION -> NEXT SCENE (Section 11: Does NOT force a new page!)
+    // 5. TRANSITION -> NEXT SCENE (Does NOT force a new page!)
     if (type === 'transition') {
       e.preventDefault();
       createNewSceneAfter(sceneId);
       return;
     }
 
-    // 6. ACTION -> continue ACTION
-    if (type === 'action') {
+    // 6. SHOT / NOTE / OUTLINE -> ACTION
+    if (type === 'shot' || type === 'note' || type === 'outline') {
       e.preventDefault();
       insertNewBlockAfter(sceneId, blockId, 'action', '');
+      return;
+    }
+
+    // 7. ACT / END ACT / SEQUENCE -> NEW SCENE HEADING
+    if (type === 'act' || type === 'endact' || type === 'sequence') {
+      e.preventDefault();
+      insertNewBlockAfter(sceneId, blockId, 'scene', '');
+      return;
+    }
+
+    // 8. LYRICS -> continue LYRICS
+    if (type === 'lyrics') {
+      e.preventDefault();
+      insertNewBlockAfter(sceneId, blockId, 'lyrics', '');
+      return;
+    }
+
+    // 9. ACTION / TEXT -> continue ACTION
+    if (type === 'action' || type === 'text') {
+      e.preventDefault();
+      insertNewBlockAfter(sceneId, blockId, type, '');
       return;
     }
   }
@@ -1457,10 +2102,11 @@ function hideAutocomplete() {
   if (dropdown) dropdown.classList.add('hidden');
 }
 
-// Helper to get only user-created or active screenplay characters (Zero fake suggestions!)
+// Helper to get only user-created or active screenplay characters (Prompt 23: 4-8)
 function getKnownCharacters() {
   if (!currentScreenplay) return [];
   const set = new Set();
+
   (currentScreenplay.scenes || []).forEach(scene => {
     (scene.blocks || []).forEach(b => {
       if (b.type === 'character') {
@@ -1469,10 +2115,56 @@ function getKnownCharacters() {
       }
     });
   });
+
   (currentScreenplay.characters || []).forEach(c => {
-    if (c && c.length >= 2) set.add(c.toUpperCase());
+    const clean = (c || '').replace(/\(.*\)/g, '').trim().toUpperCase();
+    if (clean && clean.length >= 2) set.add(clean);
   });
-  return Array.from(set);
+
+  const list = Array.from(set);
+  return list.filter(item => {
+    const isPrefixOfLonger = list.some(other => other !== item && other.startsWith(item));
+    if (isPrefixOfLonger) {
+      const hasDirectBlock = currentScreenplay.scenes?.some(sc =>
+        sc.blocks?.some(b => b.type === 'character' && b.content.replace(/\(.*\)/g, '').trim().toUpperCase() === item)
+      );
+      return hasDirectBlock;
+    }
+    return true;
+  });
+}
+
+function getKnownLocations() {
+  if (!currentScreenplay) return [];
+  const set = new Set();
+
+  (currentScreenplay.scenes || []).forEach(scene => {
+    (scene.blocks || []).forEach(b => {
+      if (b.type === 'scene') {
+        const parsed = parseSceneHeading(b.content);
+        if (parsed.location && parsed.location.length >= 2) {
+          set.add(parsed.location);
+        }
+      }
+    });
+  });
+
+  (currentScreenplay.locations || []).forEach(l => {
+    const clean = (l || '').trim().toUpperCase();
+    if (clean && clean.length >= 2) set.add(clean);
+  });
+
+  const list = Array.from(set);
+  return list.filter(item => {
+    const isPrefixOfLonger = list.some(other => other !== item && other.startsWith(item));
+    if (isPrefixOfLonger) {
+      const hasDirectBlock = currentScreenplay.scenes?.some(sc =>
+        sc.blocks?.some(b => b.type === 'scene' && parseSceneHeading(b.content).location === item)
+      );
+      return hasDirectBlock;
+    }
+    return true;
+  });
 }
 
 function triggerAutocomplete(blockEl, editableEl) {
@@ -1495,7 +2187,6 @@ function triggerAutocomplete(blockEl, editableEl) {
       const matchingTimes = standardTimes.filter(t => t.startsWith(timeQuery));
       
       const baseHeading = text.replace(/\s+-\s*[A-Za-z]*$/, ' - ');
-      // Dropdown displays ONLY the time word box (DAY, NIGHT, etc.), not the whole heading!
       suggestions = matchingTimes.map(t => ({ label: t, val: baseHeading + t }));
     } 
     // Start of scene line: I -> INT., INT./EXT., I/E.
@@ -1504,20 +2195,20 @@ function triggerAutocomplete(blockEl, editableEl) {
     } else if (upper === 'E' || upper === 'EX') {
       suggestions = ['EXT.', 'INT./EXT.', 'I/E.'].map(p => ({ label: p, val: p + ' ' }));
     }
-    // Location memory: only suggest locations actually in currentScreenplay.locations
+    // Location memory: only suggest locations actually in known locations
     else if (/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i.test(text)) {
       const m = text.match(/^(INT\.|EXT\.|INT\.\/EXT\.|I\/E\.)\s+([A-Za-z0-9 ]*)$/i);
       const prefix = m[1].toUpperCase() + ' ';
       const locQuery = (m[2] || '').trim().toUpperCase();
       if (locQuery.length > 0) {
-        const locations = currentScreenplay.locations || [];
+        const locations = getKnownLocations();
         const matches = locations.filter(l => l.startsWith(locQuery));
         suggestions = matches.map(l => ({ label: l, val: `${prefix}${l}` }));
       }
     }
   }
 
-  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Zero fake characters!)
+  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Zero fake characters, no partial strings!)
   else if (type === 'character') {
     const upper = text.trim().toUpperCase();
     if (upper.length > 0) {
@@ -1542,7 +2233,7 @@ function triggerAutocomplete(blockEl, editableEl) {
     return;
   }
 
-  // Render suggestion items: label is displayed in dropdown, val is stored in data-val
+  // Render suggestion items
   dropdown.innerHTML = suggestions.map((item, idx) => {
     const label = typeof item === 'object' ? item.label : item;
     const val = typeof item === 'object' ? item.val : item;
@@ -1565,6 +2256,12 @@ function triggerAutocomplete(blockEl, editableEl) {
       const val = el.getAttribute('data-val');
       editableEl.innerText = val;
       updateBlockModel(blockEl, val);
+      if (type === 'character') {
+        commitCharacterToMemory(val);
+      } else if (type === 'scene') {
+        const parsed = parseSceneHeading(val);
+        if (parsed.location) commitLocationToMemory(parsed.location);
+      }
       hideAutocomplete();
       setCursorAtEnd(editableEl);
       hasUnsavedChanges = true;
@@ -1700,23 +2397,70 @@ function scrollToScene(sceneId) {
 }
 
 // =========================================================================
-// ELEMENT BAR CONVERSIONS (Section 9: Paren starts at (|))
+// =========================================================================
+// ELEMENT BAR CONVERSIONS & FORMATTING TOOLS (Prompt 24: 1-18)
 // =========================================================================
 function setupElementBar() {
   const bar = document.getElementById('element-bar');
   if (!bar) return;
 
   bar.querySelectorAll('.element-btn').forEach(btn => {
-    btn.onclick = () => {
+    btn.onclick = (e) => {
+      e.preventDefault();
       const targetType = btn.getAttribute('data-type');
-      if (!activeBlockId) return;
-      const blockEl = document.getElementById(activeBlockId);
-      if (blockEl) {
-        convertBlockType(blockEl, targetType);
-        highlightElementButton(targetType);
-      }
+      handleToolbarToolClick(targetType);
     };
   });
+}
+
+function handleToolbarToolClick(type) {
+  // 1. Text formatting commands (Operate on selection or future typing)
+  if (type === 'bold') {
+    document.execCommand('bold', false, null);
+    return;
+  }
+  if (type === 'italic') {
+    document.execCommand('italic', false, null);
+    return;
+  }
+  if (type === 'underline') {
+    document.execCommand('underline', false, null);
+    return;
+  }
+  if (type === 'strike') {
+    document.execCommand('strikeThrough', false, null);
+    return;
+  }
+  if (type === 'undo') {
+    document.execCommand('undo', false, null);
+    return;
+  }
+  if (type === 'redo') {
+    document.execCommand('redo', false, null);
+    return;
+  }
+
+  // 2. Storyboard Image insertion modal
+  if (type === 'image') {
+    toggleImageModal(true);
+    return;
+  }
+
+  // 3. Screenplay elements conversion
+  if (!activeBlockId) {
+    const firstBlock = document.querySelector('.screenplay-block');
+    if (firstBlock) {
+      activeBlockId = firstBlock.getAttribute('data-block-id');
+    }
+  }
+
+  if (activeBlockId) {
+    const blockEl = document.getElementById(activeBlockId);
+    if (blockEl) {
+      convertBlockType(blockEl, type);
+      highlightElementButton(type);
+    }
+  }
 }
 
 function highlightElementButton(type) {
@@ -1725,15 +2469,15 @@ function highlightElementButton(type) {
   bar.querySelectorAll('.element-btn').forEach(btn => {
     const bType = btn.getAttribute('data-type');
     if (bType === type) {
-      btn.className = 'element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 shrink-0 bg-blue-600 text-white shadow-xs';
+      btn.className = 'element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-white bg-blue-600 shadow-2xs font-semibold shrink-0';
     } else {
-      btn.className = 'element-btn flex-1 min-w-0 py-1 px-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1 shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200';
+      btn.className = 'element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0';
     }
   });
 }
 
 // =========================================================================
-// HORIZONTAL TOOLBAR & THREE-DOT MENU (Section 21)
+// HORIZONTAL TOOLBAR & THREE-DOT MENU (Prompt 23, 23A: Section 21)
 // =========================================================================
 function setupToolbarAndMenu(scriptId, navigate) {
   const moreMenuBtn = document.getElementById('editor-more-menu-btn');
@@ -1745,37 +2489,51 @@ function setupToolbarAndMenu(scriptId, navigate) {
     if (open) {
       moreMenuModal.classList.remove('hidden');
       moreMenuModal.classList.add('flex');
+      pushEditorSubView({
+        id: 'moreMenu',
+        name: 'Screenplay Tools',
+        close: () => {
+          moreMenuModal.classList.add('hidden');
+          moreMenuModal.classList.remove('flex');
+        },
+        restore: () => {
+          moreMenuModal.classList.remove('hidden');
+          moreMenuModal.classList.add('flex');
+        }
+      });
     } else {
       moreMenuModal.classList.add('hidden');
       moreMenuModal.classList.remove('flex');
+      const idx = editorNavStack.findIndex(x => x.id === 'moreMenu');
+      if (idx !== -1) editorNavStack.splice(idx, 1);
     }
   }
 
   if (moreMenuBtn) moreMenuBtn.onclick = () => toggleMoreMenu(true);
-  if (closeMoreMenuBtn) closeMoreMenuBtn.onclick = () => toggleMoreMenu(false);
+  if (closeMoreMenuBtn) closeMoreMenuBtn.onclick = () => closeEditorSubViewByName('moreMenu');
   if (moreMenuModal) {
     moreMenuModal.onclick = (e) => {
-      if (e.target === moreMenuModal) toggleMoreMenu(false);
+      if (e.target === moreMenuModal) closeEditorSubViewByName('moreMenu');
     };
   }
 
-  // Scene Navigator from Three-dot menu (Section 6)
+  // Scene Navigator from Three-dot menu
   const menuSceneNav = document.getElementById('menu-btn-scene-navigator');
   if (menuSceneNav) {
     menuSceneNav.onclick = () => {
-      toggleMoreMenu(false);
+      closeEditorSubViewByName('moreMenu');
       const sceneSelect = document.getElementById('navSceneSelect');
       if (sceneSelect) sceneSelect.focus();
     };
   }
 
-  // Character Navigator from Three-dot menu (Section 6)
+  // Character Navigator from Three-dot menu
   const menuCharNav = document.getElementById('menu-btn-char-navigator');
   if (menuCharNav) {
     menuCharNav.onclick = () => {
-      toggleMoreMenu(false);
-      const chars = currentScreenplay.characters || [];
-      const charName = prompt(`Select character to navigate to:\n${chars.join(', ')}`, chars[0] || 'KEVIN');
+      closeEditorSubViewByName('moreMenu');
+      const chars = getKnownCharacters();
+      const charName = prompt(`Select character to navigate to:\n${chars.join(', ')}`, chars[0] || 'HILL');
       if (charName) {
         for (const scene of currentScreenplay.scenes) {
           for (const block of scene.blocks) {
@@ -1814,31 +2572,48 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (menuSceneNumBtn) {
     menuSceneNumBtn.onclick = () => {
       toggleSceneNumbers();
-      toggleMoreMenu(false);
+      closeEditorSubViewByName('moreMenu');
     };
   }
 
-  // Focus Mode Toggle
+  // Focus Mode Toggle (Prompt 23: 1 & Prompt 23A)
   const focusBtn = document.getElementById('focusModeToggle');
   const focusText = document.getElementById('focusModeText');
   const menuFocusBtn = document.getElementById('menu-btn-focus-mode');
   const menuFocusState = document.getElementById('menuFocusState');
 
-  function toggleFocusMode() {
-    focusModeActive = !focusModeActive;
+  function toggleFocusMode(desiredState = null) {
+    focusModeActive = desiredState !== null ? desiredState : !focusModeActive;
     if (focusText) focusText.textContent = focusModeActive ? 'Exit Focus' : 'Focus';
     if (menuFocusState) menuFocusState.textContent = focusModeActive ? 'Active' : 'Off';
-    document.getElementById('editor-toolbar-strip').style.display = focusModeActive ? 'none' : 'flex';
-    document.getElementById('editor-accessory-tray').style.display = focusModeActive ? 'none' : 'flex';
-    document.getElementById('editor-main-scroll').style.paddingTop = focusModeActive ? '56px' : '156px';
-    showToast(focusModeActive ? 'Focus Mode active (distraction-free)' : 'Exited Focus Mode');
+    const strip = document.getElementById('editor-toolbar-strip');
+    const tray = document.getElementById('editor-accessory-tray');
+    const tabs = document.getElementById('editor-document-tabs');
+    const scroll = document.getElementById('editor-main-scroll');
+    if (strip) strip.style.display = focusModeActive ? 'none' : 'flex';
+    if (tray) tray.style.display = focusModeActive ? 'none' : 'flex';
+    if (tabs) tabs.style.display = focusModeActive ? 'none' : 'flex';
+    if (scroll) scroll.style.paddingTop = focusModeActive ? '56px' : '190px';
+
+    if (focusModeActive) {
+      pushEditorSubView({
+        id: 'focusMode',
+        name: 'Focus Mode',
+        close: () => toggleFocusMode(false)
+      });
+      showToast('Focus Mode active (distraction-free)');
+    } else {
+      const idx = editorNavStack.findIndex(x => x.id === 'focusMode');
+      if (idx !== -1) editorNavStack.splice(idx, 1);
+      showToast('Exited Focus Mode');
+    }
   }
 
-  if (focusBtn) focusBtn.onclick = toggleFocusMode;
+  if (focusBtn) focusBtn.onclick = () => toggleFocusMode();
   if (menuFocusBtn) {
     menuFocusBtn.onclick = () => {
+      closeEditorSubViewByName('moreMenu');
       toggleFocusMode();
-      toggleMoreMenu(false);
     };
   }
 
@@ -1866,7 +2641,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   document.querySelectorAll('.lang-choice-btn').forEach(btn => {
     btn.onclick = () => {
       setLanguage(btn.getAttribute('data-lang'));
-      toggleMoreMenu(false);
+      closeEditorSubViewByName('moreMenu');
     };
   });
 
@@ -1881,7 +2656,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (prodBtn) prodBtn.onclick = openProductionFromEditor;
   if (menuProdBtn) {
     menuProdBtn.onclick = () => {
-      toggleMoreMenu(false);
+      closeEditorSubViewByName('moreMenu');
       openProductionFromEditor();
     };
   }
@@ -1890,7 +2665,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   const menuGoPage = document.getElementById('menu-btn-go-page');
   if (menuGoPage) {
     menuGoPage.onclick = () => {
-      toggleMoreMenu(false);
+      closeEditorSubViewByName('moreMenu');
       const pageStr = prompt('Enter page number to jump to (1-5):', '1');
       if (pageStr) {
         const pageSheet = document.querySelector(`[data-page-num="${pageStr}"]`);
@@ -1899,7 +2674,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
     };
   }
 
-  // Undo / Redo
+  // Undo / Redo in sub-row
   const undoBtn = document.getElementById('btn-undo');
   const redoBtn = document.getElementById('btn-redo');
   if (undoBtn) undoBtn.onclick = () => document.execCommand('undo');
@@ -1907,7 +2682,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
 }
 
 // =========================================================================
-// FIND & REPLACE
+// FIND & REPLACE COMPACT FLOATING POPUP OVERLAY (Prompt 23: 15-18)
 // =========================================================================
 function setupFindReplace() {
   const quickFindBtn = document.getElementById('btn-quick-find');
@@ -1919,16 +2694,21 @@ function setupFindReplace() {
   const findPrevBtn = document.getElementById('findPrevBtn');
   const replaceBtn = document.getElementById('replaceBtn');
   const replaceAllBtn = document.getElementById('replaceAllBtn');
+  const findModal = document.getElementById('findReplaceModal');
 
   if (quickFindBtn) quickFindBtn.onclick = () => toggleFindReplace(true);
   if (menuFindBtn) {
     menuFindBtn.onclick = () => {
-      const modal = document.getElementById('editorMoreMenuModal');
-      if (modal) modal.classList.add('hidden');
+      closeEditorSubViewByName('moreMenu');
       toggleFindReplace(true);
     };
   }
-  if (closeFindBtn) closeFindBtn.onclick = () => toggleFindReplace(false);
+  if (closeFindBtn) closeFindBtn.onclick = () => closeEditorSubViewByName('findModal');
+  if (findModal) {
+    findModal.onclick = (e) => {
+      if (e.target === findModal) closeEditorSubViewByName('findModal');
+    };
+  }
 
   if (findInput) {
     findInput.oninput = () => executeFind(findInput.value);
@@ -1960,7 +2740,7 @@ function setupFindReplace() {
       let count = 0;
       currentScreenplay.scenes.forEach(s => {
         s.blocks.forEach(b => {
-          if (b.content.includes(q)) {
+          if (b.content && b.content.includes(q)) {
             b.content = b.content.split(q).join(rep);
             count++;
           }
@@ -1975,15 +2755,37 @@ function setupFindReplace() {
   }
 }
 
-function toggleFindReplace(open) {
-  const bar = document.getElementById('findReplaceBar');
-  if (!bar) return;
+export function toggleFindReplace(open) {
+  const modal = document.getElementById('findReplaceModal');
+  if (!modal) return;
   if (open) {
-    bar.classList.remove('hidden');
-    document.getElementById('findInput')?.focus();
+    savedScrollBeforeFind = document.getElementById('editor-main-scroll')?.scrollTop || 0;
+    savedActiveBlockBeforeFind = activeBlockId;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    pushEditorSubView({
+      id: 'findModal',
+      name: 'Find & Replace',
+      close: () => toggleFindReplace(false)
+    });
+    setTimeout(() => {
+      document.getElementById('findInput')?.focus();
+    }, 40);
   } else {
-    bar.classList.add('hidden');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
     clearFindHighlights();
+    const scrollContainer = document.getElementById('editor-main-scroll');
+    if (scrollContainer && savedScrollBeforeFind !== null) {
+      scrollContainer.scrollTop = savedScrollBeforeFind;
+    }
+    if (savedActiveBlockBeforeFind) {
+      const el = document.getElementById(savedActiveBlockBeforeFind);
+      const ed = el?.querySelector('[contenteditable="true"]') || el;
+      if (ed) ed.focus();
+    }
+    const idx = editorNavStack.findIndex(x => x.id === 'findModal');
+    if (idx !== -1) editorNavStack.splice(idx, 1);
   }
 }
 
@@ -1999,7 +2801,7 @@ function executeFind(query) {
 
   currentScreenplay.scenes.forEach(scene => {
     scene.blocks.forEach(block => {
-      if (block.content.toLowerCase().includes(query.toLowerCase())) {
+      if (block.content && block.content.toLowerCase().includes(query.toLowerCase())) {
         findMatches.push({ block, sceneId: scene.id });
       }
     });
@@ -2036,53 +2838,96 @@ function clearFindHighlights() {
 }
 
 // =========================================================================
-// MODALS (Title Page, Preferences, Export, Versions, Diff)
+// STORYBOARD IMAGE MODAL (Prompt 24: 13)
+// =========================================================================
+export function toggleImageModal(open) {
+  const modal = document.getElementById('imageModal');
+  if (!modal) return;
+  if (open) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    pushEditorSubView({
+      id: 'imageModal',
+      name: 'Insert Image',
+      close: () => toggleImageModal(false)
+    });
+  } else {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    const idx = editorNavStack.findIndex(x => x.id === 'imageModal');
+    if (idx !== -1) editorNavStack.splice(idx, 1);
+  }
+}
+
+// =========================================================================
+// MODALS WITH HIERARCHICAL STACK (Preferences, Export, Versions, Compare)
 // =========================================================================
 function setupModals(scriptId) {
-  // 1. Title Page Modal
-  const tpModal = document.getElementById('titlePageModal');
-  const btnQuickTP = document.getElementById('btn-quick-title-page');
-  const btnMenuTP = document.getElementById('menu-btn-title-page');
-  const closeTP = document.getElementById('closeTitlePageModal');
-  const cancelTP = document.getElementById('cancelTitlePageBtn');
-  const saveTP = document.getElementById('saveTitlePageBtn');
+  // 1. Storyboard Image Modal
+  const imgModal = document.getElementById('imageModal');
+  const closeImg = document.getElementById('closeImageModal');
+  const cancelImg = document.getElementById('cancelImageBtn');
+  const insertImg = document.getElementById('insertImageBtn');
+  const imgFileInput = document.getElementById('imgFileInput');
+  const imgUploadLabel = document.getElementById('imgUploadLabel');
+  let selectedImageDataUrl = '';
 
-  function openTitlePageModal() {
-    if (!tpModal || !currentScreenplay) return;
-    const tp = currentScreenplay.titlePage || {};
-    document.getElementById('tpTitleInput').value = tp.title || currentScreenplay.title;
-    document.getElementById('tpAuthorInput').value = tp.author || 'Arun Kumar';
-    document.getElementById('tpNotesInput').value = tp.notes || '';
-    document.getElementById('tpContactInput').value = tp.contact || '';
-    tpModal.classList.remove('hidden');
-    tpModal.classList.add('flex');
-  }
-
-  if (btnQuickTP) btnQuickTP.onclick = openTitlePageModal;
-  if (btnMenuTP) {
-    btnMenuTP.onclick = () => {
-      document.getElementById('editorMoreMenuModal')?.classList.add('hidden');
-      openTitlePageModal();
+  if (closeImg) closeImg.onclick = () => closeEditorSubViewByName('imageModal');
+  if (cancelImg) cancelImg.onclick = () => closeEditorSubViewByName('imageModal');
+  if (imgModal) {
+    imgModal.onclick = (e) => {
+      if (e.target === imgModal) closeEditorSubViewByName('imageModal');
     };
   }
-  if (closeTP) closeTP.onclick = () => tpModal.classList.add('hidden');
-  if (cancelTP) cancelTP.onclick = () => tpModal.classList.add('hidden');
 
-  if (saveTP) {
-    saveTP.onclick = async () => {
-      const tp = {
-        title: document.getElementById('tpTitleInput')?.value || currentScreenplay.title,
-        author: document.getElementById('tpAuthorInput')?.value || '',
-        notes: document.getElementById('tpNotesInput')?.value || '',
-        contact: document.getElementById('tpContactInput')?.value || ''
+  if (imgFileInput) {
+    imgFileInput.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (imgUploadLabel) imgUploadLabel.textContent = file.name;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          selectedImageDataUrl = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (insertImg) {
+    insertImg.onclick = () => {
+      const urlInput = document.getElementById('imgUrlInput')?.value.trim();
+      const caption = document.getElementById('imgCaptionInput')?.value.trim();
+      const finalUrl = selectedImageDataUrl || urlInput;
+      if (!finalUrl) {
+        showToast('Please provide an image URL or choose a file');
+        return;
+      }
+
+      const imgBlock = {
+        id: `b-${Date.now().toString().slice(-6)}`,
+        type: 'image',
+        url: finalUrl,
+        caption: caption || ''
       };
-      currentScreenplay.titlePage = tp;
-      currentScreenplay.title = tp.title;
-      document.getElementById('editor-script-title').textContent = tp.title;
-      tpModal.classList.add('hidden');
-      showToast('Title Page saved');
+
+      if (!currentScreenplay.scenes || currentScreenplay.scenes.length === 0) {
+        currentScreenplay.scenes = [{
+          id: 'scene-1',
+          number: 1,
+          slugline: 'INT. SCENE - DAY',
+          blocks: [imgBlock]
+        }];
+      } else {
+        const lastScene = currentScreenplay.scenes[currentScreenplay.scenes.length - 1];
+        lastScene.blocks.push(imgBlock);
+      }
+
+      renderScreenplayPages();
       hasUnsavedChanges = true;
-      await performSave(true);
+      if (autoSaveEnabled) scheduleAutosave();
+      showToast('Storyboard image inserted');
+      closeEditorSubViewByName('imageModal');
     };
   }
 
@@ -2092,18 +2937,40 @@ function setupModals(scriptId) {
   const closePref = document.getElementById('closePrefModal');
   const savePref = document.getElementById('savePrefBtn');
 
+  function togglePref(open) {
+    if (!prefModal) return;
+    if (open) {
+      prefModal.classList.remove('hidden');
+      prefModal.classList.add('flex');
+      pushEditorSubView({
+        id: 'preferencesModal',
+        name: 'Preferences',
+        close: () => togglePref(false)
+      });
+    } else {
+      prefModal.classList.add('hidden');
+      prefModal.classList.remove('flex');
+      const idx = editorNavStack.findIndex(x => x.id === 'preferencesModal');
+      if (idx !== -1) editorNavStack.splice(idx, 1);
+    }
+  }
+
   if (btnMenuPref) {
     btnMenuPref.onclick = () => {
-      document.getElementById('editorMoreMenuModal')?.classList.add('hidden');
-      prefModal?.classList.remove('hidden');
-      prefModal?.classList.add('flex');
+      // Close more menu first but keep it as parent if desired
+      closeEditorSubViewByName('moreMenu');
+      togglePref(true);
     };
   }
-  if (closePref) closePref.onclick = () => prefModal?.classList.add('hidden');
+  if (closePref) closePref.onclick = () => closeEditorSubViewByName('preferencesModal');
+  if (prefModal) {
+    prefModal.onclick = (e) => {
+      if (e.target === prefModal) closeEditorSubViewByName('preferencesModal');
+    };
+  }
 
   if (savePref) {
     savePref.onclick = () => {
-      const smartFormat = document.getElementById('prefSmartFormat')?.checked;
       const sceneNums = document.getElementById('prefSceneNumbers')?.checked;
       const lineSpacing = document.getElementById('prefLineSpacing')?.value;
       const fontSize = document.getElementById('prefFontSize')?.value;
@@ -2117,7 +2984,7 @@ function setupModals(scriptId) {
         sheet.style.fontSize = fontSize === '14pt' ? '16px' : '15px';
       }
 
-      prefModal?.classList.add('hidden');
+      closeEditorSubViewByName('preferencesModal');
       showToast('Preferences applied');
     };
   }
@@ -2138,22 +3005,34 @@ function setupModals(scriptId) {
     if (open) {
       exportModal.classList.remove('hidden');
       exportModal.classList.add('flex');
+      pushEditorSubView({
+        id: 'exportModal',
+        name: 'Export',
+        close: () => toggleExport(false)
+      });
     } else {
       exportModal.classList.add('hidden');
       exportModal.classList.remove('flex');
       exportProgressArea?.classList.add('hidden');
+      const idx = editorNavStack.findIndex(x => x.id === 'exportModal');
+      if (idx !== -1) editorNavStack.splice(idx, 1);
     }
   }
 
   if (exportBtn) exportBtn.onclick = () => toggleExport(true);
   if (menuExportBtn) {
     menuExportBtn.onclick = () => {
-      document.getElementById('editorMoreMenuModal')?.classList.add('hidden');
+      closeEditorSubViewByName('moreMenu');
       toggleExport(true);
     };
   }
-  if (closeExportModal) closeExportModal.onclick = () => toggleExport(false);
-  if (cancelExportBtn) cancelExportBtn.onclick = () => toggleExport(false);
+  if (closeExportModal) closeExportModal.onclick = () => closeEditorSubViewByName('exportModal');
+  if (cancelExportBtn) cancelExportBtn.onclick = () => closeEditorSubViewByName('exportModal');
+  if (exportModal) {
+    exportModal.onclick = (e) => {
+      if (e.target === exportModal) closeEditorSubViewByName('exportModal');
+    };
+  }
 
   if (startExportBtn) {
     startExportBtn.onclick = () => {
@@ -2174,7 +3053,7 @@ function setupModals(scriptId) {
         let exportBody = '';
         if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage) {
           exportBody += `${currentScreenplay.titlePage.title || currentScreenplay.title}\n`;
-          exportBody += `Written by ${currentScreenplay.titlePage.author || 'Arun Kumar'}\n\n`;
+          exportBody += `Written by ${currentScreenplay.titlePage.author || 'Author'}\n\n`;
           if (currentScreenplay.titlePage.contact) {
             exportBody += `${currentScreenplay.titlePage.contact}\n\n`;
           }
@@ -2202,17 +3081,44 @@ function setupModals(scriptId) {
         a.remove();
 
         showToast(`Exported "${a.download}" successfully`);
-        setTimeout(() => toggleExport(false), 800);
+        setTimeout(() => closeEditorSubViewByName('exportModal'), 800);
       }, 1000);
     };
   }
 
-  // 4. Versions Modal
+  // 4. Versions Modal (Hierarchical Stack: Versions -> Compare or New Version)
   const versionsModal = document.getElementById('versionsModal');
   const versionsBtn = document.getElementById('versionsModalBtn');
   const menuVersionsBtn = document.getElementById('menu-btn-versions');
   const closeVersionsModal = document.getElementById('closeVersionsModal');
   const versionsContainer = document.getElementById('versionsListContainer');
+
+  function toggleVersions(open) {
+    if (!versionsModal) return;
+    if (open) {
+      versionsModal.classList.remove('hidden');
+      versionsModal.classList.add('flex');
+      loadVersions();
+      pushEditorSubView({
+        id: 'versionsModal',
+        name: 'Versions',
+        close: () => {
+          versionsModal.classList.add('hidden');
+          versionsModal.classList.remove('flex');
+        },
+        restore: () => {
+          versionsModal.classList.remove('hidden');
+          versionsModal.classList.add('flex');
+          loadVersions();
+        }
+      });
+    } else {
+      versionsModal.classList.add('hidden');
+      versionsModal.classList.remove('flex');
+      const idx = editorNavStack.findIndex(x => x.id === 'versionsModal');
+      if (idx !== -1) editorNavStack.splice(idx, 1);
+    }
+  }
 
   async function loadVersions() {
     const list = await api.getVersions(scriptId);
@@ -2242,43 +3148,49 @@ function setupModals(scriptId) {
         const vname = btn.getAttribute('data-vname');
         showToast(`Restored version "${vname}"`);
         document.getElementById('currentVersionTag').textContent = vname;
-        versionsModal.classList.add('hidden');
+        closeEditorSubViewByName('versionsModal');
       };
     });
   }
 
-  if (versionsBtn) {
-    versionsBtn.onclick = () => {
-      versionsModal.classList.remove('hidden');
-      versionsModal.classList.add('flex');
-      loadVersions();
-    };
-  }
+  if (versionsBtn) versionsBtn.onclick = () => toggleVersions(true);
   if (menuVersionsBtn) {
     menuVersionsBtn.onclick = () => {
-      document.getElementById('editorMoreMenuModal')?.classList.add('hidden');
-      versionsModal.classList.remove('hidden');
-      versionsModal.classList.add('flex');
-      loadVersions();
+      closeEditorSubViewByName('moreMenu');
+      toggleVersions(true);
     };
   }
-  if (closeVersionsModal) {
-    closeVersionsModal.onclick = () => versionsModal.classList.add('hidden');
+  if (closeVersionsModal) closeVersionsModal.onclick = () => closeEditorSubViewByName('versionsModal');
+  if (versionsModal) {
+    versionsModal.onclick = (e) => {
+      if (e.target === versionsModal) closeEditorSubViewByName('versionsModal');
+    };
   }
 
-  // 5. New Version Snapshot Modal
+  // 5. New Version Snapshot Modal (Child of Versions Modal)
   const newVModal = document.getElementById('newVersionModal');
   const openNewVPrompt = document.getElementById('openNewVersionPrompt');
   const closeNewVModal = document.getElementById('closeNewVersionModal');
   const cancelNewVBtn = document.getElementById('cancelNewVersionBtn');
   const saveNewVBtn = document.getElementById('saveNewVersionBtn');
 
-  if (openNewVPrompt) openNewVPrompt.onclick = () => {
+  function openNewVersionSnapshot() {
+    versionsModal.classList.add('hidden');
     newVModal.classList.remove('hidden');
     newVModal.classList.add('flex');
-  };
-  if (closeNewVModal) closeNewVModal.onclick = () => newVModal.classList.add('hidden');
-  if (cancelNewVBtn) cancelNewVBtn.onclick = () => newVModal.classList.add('hidden');
+    pushEditorSubView({
+      id: 'newVersionModal',
+      name: 'New Version',
+      close: () => {
+        newVModal.classList.add('hidden');
+        newVModal.classList.remove('flex');
+      }
+    });
+  }
+
+  if (openNewVPrompt) openNewVPrompt.onclick = openNewVersionSnapshot;
+  if (closeNewVModal) closeNewVModal.onclick = () => closeEditorSubViewByName('newVersionModal');
+  if (cancelNewVBtn) cancelNewVBtn.onclick = () => closeEditorSubViewByName('newVersionModal');
 
   if (saveNewVBtn) {
     saveNewVBtn.onclick = async () => {
@@ -2288,38 +3200,45 @@ function setupModals(scriptId) {
       await api.createVersion(scriptId, { name, notes });
       showToast(`Created version snapshot "${name}"`);
       document.getElementById('currentVersionTag').textContent = name;
-      newVModal.classList.add('hidden');
-      loadVersions();
+      closeEditorSubViewByName('newVersionModal');
     };
   }
 
-  // 6. Compare Modal
+  // 6. Compare Modal (Child of Versions Modal)
   const compareModal = document.getElementById('compareModal');
   const openCompareBtn = document.getElementById('openCompareBtn');
   const menuCompareBtn = document.getElementById('menu-btn-compare');
   const closeCompareModal = document.getElementById('closeCompareModal');
   const closeCompareBtn2 = document.getElementById('closeCompareBtn2');
 
-  function toggleCompare(open) {
-    if (!compareModal) return;
-    if (open) {
-      compareModal.classList.remove('hidden');
-      compareModal.classList.add('flex');
-    } else {
-      compareModal.classList.add('hidden');
-      compareModal.classList.remove('flex');
-    }
+  function openCompareView() {
+    versionsModal.classList.add('hidden');
+    compareModal.classList.remove('hidden');
+    compareModal.classList.add('flex');
+    pushEditorSubView({
+      id: 'compareModal',
+      name: 'Compare Versions',
+      close: () => {
+        compareModal.classList.add('hidden');
+        compareModal.classList.remove('flex');
+      }
+    });
   }
 
-  if (openCompareBtn) openCompareBtn.onclick = () => toggleCompare(true);
+  if (openCompareBtn) openCompareBtn.onclick = openCompareView;
   if (menuCompareBtn) {
     menuCompareBtn.onclick = () => {
-      document.getElementById('editorMoreMenuModal')?.classList.add('hidden');
-      toggleCompare(true);
+      closeEditorSubViewByName('moreMenu');
+      openCompareView();
     };
   }
-  if (closeCompareModal) closeCompareModal.onclick = () => toggleCompare(false);
-  if (closeCompareBtn2) closeCompareBtn2.onclick = () => toggleCompare(false);
+  if (closeCompareModal) closeCompareModal.onclick = () => closeEditorSubViewByName('compareModal');
+  if (closeCompareBtn2) closeCompareBtn2.onclick = () => closeEditorSubViewByName('compareModal');
+  if (compareModal) {
+    compareModal.onclick = (e) => {
+      if (e.target === compareModal) closeEditorSubViewByName('compareModal');
+    };
+  }
 }
 
 function updateTelemetry() {
