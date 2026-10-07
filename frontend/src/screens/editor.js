@@ -299,11 +299,15 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span class="material-symbols-outlined text-[14px]">description</span>
             <span class="truncate max-w-[150px]" id="doc-tab-title-label">${script.title || 'Screenplay'}</span>
           </button>
-          <button id="doc-tab-titlepage" class="doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all group">
-            <span class="material-symbols-outlined text-[14px]">article</span>
-            <span>Title Page</span>
-            <span id="doc-tab-titlepage-close" class="material-symbols-outlined text-[13px] p-0.5 rounded-full hover:bg-slate-300 text-slate-400 hover:text-slate-800 ml-1 transition-colors cursor-pointer" title="Close Title Page">close</span>
-          </button>
+          <div id="doc-tab-titlepage-wrap" class="flex items-center rounded-t-lg transition-all border-b-2 border-transparent bg-slate-200/60 hover:bg-slate-200 text-slate-600 hover:text-slate-900 group">
+            <button id="doc-tab-titlepage" type="button" class="doc-tab-btn flex items-center gap-1.5 pl-3 pr-1 py-1 font-medium cursor-pointer bg-transparent border-0 outline-none text-inherit">
+              <span class="material-symbols-outlined text-[14px]">article</span>
+              <span>Title Page</span>
+            </button>
+            <button id="doc-tab-titlepage-close" type="button" class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-300 text-slate-400 hover:text-slate-800 mr-1.5 transition-colors cursor-pointer bg-transparent border-0 outline-none active:scale-95" title="Close Title Page" aria-label="Close Title Page">
+              <span class="material-symbols-outlined text-[13px] pointer-events-none">close</span>
+            </button>
+          </div>
         </div>
 
       </header>
@@ -370,31 +374,31 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-4xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[800px] min-h-[1130px] p-10 sm:p-16 flex flex-col justify-between font-courier text-slate-900 rounded-md relative">
+          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[800px] min-h-[1130px] p-10 sm:p-20 flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
             <!-- Close Title Page button at top right -->
-            <button id="btn-close-titlepage-sheet" class="self-end -mt-4 -mr-4 sm:-mt-8 sm:-mr-8 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs" title="Close Title Page (Return to Screenplay)">
+            <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
-            <!-- Top Third Spacer -->
-            <div class="h-24 sm:h-32"></div>
+            
+            <!-- Generous top whitespace (1/3 of the page) -->
+            <div class="h-32 sm:h-44"></div>
 
-            <!-- Middle Third: Title and Written By / Author -->
-            <div class="flex flex-col items-center text-center my-auto">
-              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="w-full text-center uppercase tracking-widest text-2xl sm:text-3xl font-bold py-2 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Your Title"></div>
-              <div class="text-xs sm:text-sm font-medium text-slate-500 my-4 tracking-wider select-none">Written by</div>
-              <div id="tp-doc-author" contenteditable="true" spellcheck="false" class="w-full text-center text-base sm:text-lg font-medium py-1 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Your Name"></div>
+            <!-- Centered Screenplay Title & Author Block -->
+            <div class="flex flex-col items-center text-center my-auto w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
+              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="tp-field w-full text-center uppercase outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Your Script Title" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+              
+              <div class="my-6 w-full text-center">
+                <div id="tp-doc-by" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Written by" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;">Written by</div>
+              </div>
+
+              <div id="tp-doc-author" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Your Name" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
             </div>
 
-            <!-- Bottom Third: Contact & Email -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 text-xs pt-16">
-              <div class="flex flex-col">
-                <span class="text-[10px] text-slate-400 font-sans uppercase font-bold tracking-wider mb-1 select-none">Contact</span>
-                <div id="tp-doc-contact" contenteditable="true" spellcheck="false" class="min-w-[160px] py-1 outline-none focus:bg-blue-50/40 rounded transition-colors cursor-text" data-placeholder="Phone Number"></div>
-              </div>
-              <div class="flex flex-col sm:items-end">
-                <span class="text-[10px] text-slate-400 font-sans uppercase font-bold tracking-wider mb-1 select-none">Email</span>
-                <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="min-w-[160px] py-1 outline-none focus:bg-blue-50/40 rounded transition-colors sm:text-right cursor-text" data-placeholder="Email Address"></div>
-              </div>
+            <!-- Bottom Left Contact Block -->
+            <div class="flex flex-col items-start text-left mt-auto pt-24 w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
+              <div id="tp-doc-phone" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Phone Number" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+              <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Email Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+              <div id="tp-doc-address" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
             </div>
           </div>
         </div>
@@ -905,6 +909,10 @@ export function closeEditorSubViewByName(id) {
 }
 
 export function handleEditorBack() {
+  if (activeDocumentTab === 'titlepage') {
+    closeTitlePageDoc();
+    return true;
+  }
   if (editorNavStack.length > 0) {
     const top = editorNavStack.pop();
     if (top && typeof top.close === 'function') {
@@ -928,6 +936,10 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   // Intercept browser Back & phone Back gestures via router popstate hook
   window.__scriptoraEditorPopstate = (e) => {
+    if (activeDocumentTab === 'titlepage') {
+      switchDocumentTab('screenplay');
+      return true;
+    }
     if (editorNavStack.length > 0) {
       return handleEditorBack();
     }
@@ -938,6 +950,10 @@ export async function attachEditorEvents(scriptId, navigate) {
   const backBtn = document.getElementById('editor-back-btn');
   if (backBtn) {
     backBtn.onclick = () => {
+      if (activeDocumentTab === 'titlepage') {
+        closeTitlePageDoc();
+        return;
+      }
       if (editorNavStack.length > 0) {
         window.history.back();
         return;
@@ -1090,8 +1106,19 @@ function setupToolbarCollapseToggle() {
 }
 
 // =========================================================================
-// DOCUMENT TABS & TITLE PAGE PARALLEL VIEW (Prompt 24: 19-20)
+// DOCUMENT TABS & TITLE PAGE PARALLEL VIEW (Prompt 24: 19-20 & Title Page Fix)
 // =========================================================================
+export function closeTitlePageDoc() {
+  if (activeDocumentTab === 'titlepage') {
+    switchDocumentTab('screenplay');
+    try {
+      if (window.history.state?.editorTab === 'titlepage') {
+        window.history.back();
+      }
+    } catch (e) {}
+  }
+}
+
 function setupDocumentTabs() {
   const tabScreenplay = document.getElementById('doc-tab-screenplay');
   const tabTitlePage = document.getElementById('doc-tab-titlepage');
@@ -1101,13 +1128,11 @@ function setupDocumentTabs() {
   const closeSheetBtn = document.getElementById('btn-close-titlepage-sheet');
 
   if (tabScreenplay) {
-    tabScreenplay.onclick = () => switchDocumentTab('screenplay');
+    tabScreenplay.onclick = () => closeTitlePageDoc();
   }
   if (tabTitlePage) {
     tabTitlePage.onclick = (e) => {
-      if (e.target && (e.target.id === 'doc-tab-titlepage-close' || e.target.closest('#doc-tab-titlepage-close'))) {
-        return;
-      }
+      e.preventDefault();
       switchDocumentTab('titlepage');
     };
   }
@@ -1115,14 +1140,14 @@ function setupDocumentTabs() {
     closeTabBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      switchDocumentTab('screenplay');
+      closeTitlePageDoc();
     };
   }
   if (closeSheetBtn) {
     closeSheetBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      switchDocumentTab('screenplay');
+      closeTitlePageDoc();
     };
   }
   if (btnQuickTP) {
@@ -1142,7 +1167,7 @@ export function switchDocumentTab(tab) {
   const screenplayContainer = document.getElementById('screenplay-pages-container');
   const titlePageContainer = document.getElementById('title-page-container');
   const tabScreenplayBtn = document.getElementById('doc-tab-screenplay');
-  const tabTitlePageBtn = document.getElementById('doc-tab-titlepage');
+  const tabTitlePageWrap = document.getElementById('doc-tab-titlepage-wrap');
 
   if (tab === 'titlepage') {
     if (screenplayContainer) screenplayContainer.classList.add('hidden');
@@ -1150,18 +1175,18 @@ export function switchDocumentTab(tab) {
       titlePageContainer.classList.remove('hidden');
       titlePageContainer.classList.add('flex');
     }
-    if (tabTitlePageBtn) {
-      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs group';
+    if (tabTitlePageWrap) {
+      tabTitlePageWrap.className = 'flex items-center rounded-t-lg transition-all border-b-2 border-blue-600 bg-white text-blue-700 shadow-2xs group';
     }
     if (tabScreenplayBtn) {
       tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all';
     }
     populateTitlePageDoc();
-    pushEditorSubView({
-      id: 'titlePageTab',
-      name: 'Title Page',
-      close: () => switchDocumentTab('screenplay')
-    });
+    try {
+      if (window.history.state?.editorTab !== 'titlepage') {
+        window.history.pushState({ editorTab: 'titlepage' }, '');
+      }
+    } catch (e) {}
   } else {
     if (titlePageContainer) {
       titlePageContainer.classList.add('hidden');
@@ -1171,11 +1196,9 @@ export function switchDocumentTab(tab) {
     if (tabScreenplayBtn) {
       tabScreenplayBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-blue-600 text-blue-700 bg-white rounded-t-lg transition-all shadow-2xs';
     }
-    if (tabTitlePageBtn) {
-      tabTitlePageBtn.className = 'doc-tab-btn flex items-center gap-1.5 px-3 py-1 font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 rounded-t-lg transition-all group';
+    if (tabTitlePageWrap) {
+      tabTitlePageWrap.className = 'flex items-center rounded-t-lg transition-all border-b-2 border-transparent text-slate-600 hover:text-slate-900 bg-slate-200/60 hover:bg-slate-200 group';
     }
-    const idx = editorNavStack.findIndex(x => x.id === 'titlePageTab');
-    if (idx !== -1) editorNavStack.splice(idx, 1);
   }
   updateEditorHeaderOffset();
 }
@@ -1184,34 +1207,84 @@ function populateTitlePageDoc() {
   if (!currentScreenplay) return;
   const tp = currentScreenplay.titlePage || {};
   const tEl = document.getElementById('tp-doc-title');
+  const bEl = document.getElementById('tp-doc-by');
   const aEl = document.getElementById('tp-doc-author');
-  const cEl = document.getElementById('tp-doc-contact');
+  const pEl = document.getElementById('tp-doc-phone');
   const eEl = document.getElementById('tp-doc-email');
+  const adEl = document.getElementById('tp-doc-address');
 
-  if (tEl) tEl.innerText = tp.title || '';
-  if (aEl) aEl.innerText = tp.author || '';
-  if (cEl) cEl.innerText = tp.contact || '';
-  if (eEl) eEl.innerText = tp.email || '';
+  const titleVal = tp.title || currentScreenplay.title || '';
+  if (tEl) {
+    tEl.innerText = titleVal;
+    if (!titleVal) tEl.innerHTML = '';
+  }
+
+  const byVal = tp.by !== undefined ? tp.by : 'Written by';
+  if (bEl) {
+    bEl.innerText = byVal;
+    if (!byVal) bEl.innerHTML = '';
+  }
+
+  const authorVal = tp.author || '';
+  if (aEl) {
+    aEl.innerText = authorVal;
+    if (!authorVal) aEl.innerHTML = '';
+  }
+
+  let phoneVal = tp.phone || '';
+  if (!phoneVal && tp.contact) {
+    const parts = tp.contact.split('·').map(p => p.trim());
+    const phonePart = parts.find(p => p.includes('+') || /\d{3}/.test(p));
+    if (phonePart) phoneVal = phonePart;
+  }
+  if (pEl) {
+    pEl.innerText = phoneVal;
+    if (!phoneVal) pEl.innerHTML = '';
+  }
+
+  let emailVal = tp.email || '';
+  if (!emailVal && tp.contact && tp.contact.includes('@')) {
+    const emailMatch = tp.contact.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) emailVal = emailMatch[0];
+  }
+  if (eEl) {
+    eEl.innerText = emailVal;
+    if (!emailVal) eEl.innerHTML = '';
+  }
+
+  const addressVal = tp.address || '';
+  if (adEl) {
+    adEl.innerText = addressVal;
+    if (!addressVal) adEl.innerHTML = '';
+  }
 }
 
 function initTitlePageDocEvents() {
   const tEl = document.getElementById('tp-doc-title');
+  const bEl = document.getElementById('tp-doc-by');
   const aEl = document.getElementById('tp-doc-author');
-  const cEl = document.getElementById('tp-doc-contact');
+  const pEl = document.getElementById('tp-doc-phone');
   const eEl = document.getElementById('tp-doc-email');
+  const adEl = document.getElementById('tp-doc-address');
 
   const onTpInput = () => {
     if (!currentScreenplay) return;
     if (!currentScreenplay.titlePage) currentScreenplay.titlePage = {};
+    
     const titleVal = tEl ? tEl.innerText.trim() : '';
+    const byVal = bEl ? bEl.innerText.trim() : '';
     const authorVal = aEl ? aEl.innerText.trim() : '';
-    const contactVal = cEl ? cEl.innerText.trim() : '';
+    const phoneVal = pEl ? pEl.innerText.trim() : '';
     const emailVal = eEl ? eEl.innerText.trim() : '';
+    const addressVal = adEl ? adEl.innerText.trim() : '';
 
     currentScreenplay.titlePage.title = titleVal;
+    currentScreenplay.titlePage.by = byVal || 'Written by';
     currentScreenplay.titlePage.author = authorVal;
-    currentScreenplay.titlePage.contact = contactVal;
+    currentScreenplay.titlePage.phone = phoneVal;
     currentScreenplay.titlePage.email = emailVal;
+    currentScreenplay.titlePage.address = addressVal;
+    currentScreenplay.titlePage.contact = [phoneVal, emailVal, addressVal].filter(Boolean).join(' · ');
 
     if (titleVal) {
       currentScreenplay.title = titleVal;
@@ -1226,8 +1299,15 @@ function initTitlePageDocEvents() {
     if (autoSaveEnabled) scheduleAutosave();
   };
 
-  [tEl, aEl, cEl, eEl].forEach(el => {
-    if (el) el.oninput = onTpInput;
+  [tEl, bEl, aEl, pEl, eEl, adEl].forEach(el => {
+    if (!el) return;
+    el.oninput = onTpInput;
+    el.onblur = () => {
+      if (el.innerText.trim() === '') {
+        el.innerHTML = '';
+      }
+      onTpInput();
+    };
   });
 }
 
@@ -3637,31 +3717,35 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
 
     let curY = 520;
     titleLines.forEach(tl => {
-      tpLines.push({ text: tl, x: 180, y: curY, font: 'F2', size: 16 });
-      curY -= 22;
+      tpLines.push({ text: tl, x: 180, y: curY, font: 'F2', size: 14 });
+      curY -= 20;
     });
 
     curY -= 20;
-    tpLines.push({ text: 'Written by', x: 260, y: curY, font: 'F1', size: 10 });
-    curY -= 16;
+    tpLines.push({ text: tp.by || 'Written by', x: 260, y: curY, font: 'F1', size: 11 });
+    curY -= 18;
     tpLines.push({ text: tp.author || 'Author', x: 250, y: curY, font: 'F2', size: 12 });
 
-    let bottomY = 130;
-    if (tp.contact) {
-      wrapPdfText(tp.contact, 40).forEach(cl => {
-        tpLines.push({ text: cl, x: 54, y: bottomY, font: 'F1', size: 9 });
-        bottomY -= 13;
-      });
+    let bottomY = 140;
+    if (tp.phone) {
+      tpLines.push({ text: tp.phone, x: 54, y: bottomY, font: 'F1', size: 10 });
+      bottomY -= 14;
     }
     if (tp.email) {
-      tpLines.push({ text: tp.email, x: 54, y: bottomY, font: 'F1', size: 9 });
-      bottomY -= 13;
+      tpLines.push({ text: tp.email, x: 54, y: bottomY, font: 'F1', size: 10 });
+      bottomY -= 14;
     }
-
-    const draftStr = `Draft: ${screenplay.draft || 'Draft 1.0'}`;
-    tpLines.push({ text: draftStr, x: 390, y: 130, font: 'F1', size: 9 });
-    const dateStr = new Date().toLocaleDateString();
-    tpLines.push({ text: dateStr, x: 390, y: 117, font: 'F1', size: 9 });
+    if (tp.address) {
+      wrapPdfText(tp.address, 40).forEach(al => {
+        tpLines.push({ text: al, x: 54, y: bottomY, font: 'F1', size: 10 });
+        bottomY -= 14;
+      });
+    } else if (!tp.phone && !tp.email && tp.contact) {
+      wrapPdfText(tp.contact, 40).forEach(cl => {
+        tpLines.push({ text: cl, x: 54, y: bottomY, font: 'F1', size: 10 });
+        bottomY -= 14;
+      });
+    }
 
     pdfPages.push(tpLines);
   }
@@ -3924,15 +4008,17 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
 
         let exportBody = '';
         if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage && (targetPageNumbers.has(1) || rangeType === 'all')) {
-          exportBody += `${currentScreenplay.titlePage.title || currentScreenplay.title}\n\n`;
-          exportBody += `Written by\n${currentScreenplay.titlePage.author || 'Author'}\n\n`;
-          if (currentScreenplay.titlePage.contact) {
-            exportBody += `${currentScreenplay.titlePage.contact}\n\n`;
+          const tp = currentScreenplay.titlePage;
+          exportBody += `${tp.title || currentScreenplay.title}\n\n`;
+          exportBody += `${tp.by || 'Written by'}\n\n`;
+          exportBody += `${tp.author || 'Author'}\n\n`;
+          if (tp.phone) exportBody += `${tp.phone}\n`;
+          if (tp.email) exportBody += `${tp.email}\n`;
+          if (tp.address) exportBody += `${tp.address}\n`;
+          if (!tp.phone && !tp.email && !tp.address && tp.contact) {
+            exportBody += `${tp.contact}\n`;
           }
-          if (document.getElementById('optRevisionInfo')?.checked) {
-            exportBody += `Draft: ${currentScreenplay.draft || 'Draft 1.0'}  ·  Date: ${new Date().toLocaleDateString()}\n\n`;
-          }
-          exportBody += `================================================================================\n\f\n`;
+          exportBody += `\n\n================================================================================\n\f\n`;
         }
 
         // Export blocks grouped by page

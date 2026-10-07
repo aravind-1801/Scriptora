@@ -63,7 +63,7 @@ button, a {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Empty contenteditable placeholder (Disappears immediately on tap/focus, returns on clear) */
+/* Empty contenteditable placeholder (Disappears naturally when characters are typed, returns on clear) */
 [contenteditable="true"]:empty:before {
   content: attr(data-placeholder);
   color: #94a3b8;
@@ -72,7 +72,25 @@ button, a {
   text-transform: none;
 }
 [contenteditable="true"]:focus:empty:before {
-  content: "" !important;
+  content: attr(data-placeholder);
+  color: #94a3b8;
+}
+
+/* Screenplay Title Page Field Typography & Natural Placeholders */
+.tp-field {
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace !important;
+  font-size: 12pt !important;
+  line-height: 1.5 !important;
+}
+.tp-field:empty:before,
+.tp-field:focus:empty:before {
+  content: attr(data-placeholder) !important;
+  color: #94a3b8 !important;
+  pointer-events: none;
+  font-weight: normal;
+  text-transform: none;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace !important;
+  font-size: 12pt !important;
 }
 
 /* Controlled horizontal toolbar scrolling */
