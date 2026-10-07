@@ -19,6 +19,7 @@ let savedActiveBlockBeforeFind = null;
 let savedActiveBlockBeforeImage = null;
 let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
 let activeDocumentTab = 'screenplay'; // 'screenplay' or 'titlepage'
+let editorToolbarExpanded = false; // Master visibility control for secondary toolbar rows (Default: collapsed)
 
 // Hierarchical Navigation Stack (Prompts 23, 23A, 23B)
 const editorNavStack = [];
@@ -77,6 +78,11 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </button>
             </div>
 
+            <!-- Master Toolbar Visibility Toggle [⋮] (Section 2: Master visibility control for secondary toolbars) -->
+            <button id="btn-toggle-editor-toolbar" class="w-7 h-7 flex items-center justify-center ${editorToolbarExpanded ? 'text-blue-600 bg-blue-50 border-blue-200/90' : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200 hover:bg-slate-50'} rounded-lg border active:scale-95 transition-all shadow-2xs shrink-0" title="${editorToolbarExpanded ? 'Collapse Editor Toolbars (Writing Mode)' : 'Expand Editor Toolbars (Tools & Formatting)'}" aria-label="Toggle Editor Toolbars">
+              <span class="material-symbols-outlined text-[18px]">more_vert</span>
+            </button>
+
             <!-- Collaborate Link -->
             <a href="/profile/collaborators" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
               <span class="material-symbols-outlined text-[19px]">group</span>
@@ -89,13 +95,16 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </div>
         </div>
 
-        <!-- ROW 2: HORIZONTAL EDITOR TOOLBAR ([ ⋮ ] MUST appear BEFORE Production) -->
-        <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all toolbar-scroll">
+        <!-- COLLAPSIBLE SECONDARY TOOLBAR ROWS (Master Visibility via Header [⋮]) -->
+        <div id="editor-collapsible-toolbars" class="${editorToolbarExpanded ? '' : 'hidden'} w-full transition-all duration-200">
           
-          <!-- [ ⋮ ] Three-Dot Menu (FIRST item as required by Section F & G) -->
-          <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="More Tools (Title Page, Scene Navigator, Character Navigator, Preferences)">
-            <span class="material-symbols-outlined text-[18px]">more_vert</span>
-          </button>
+          <!-- ROW A: HORIZONTAL EDITOR TOOLBAR ([⚙] Settings replaces old three-dot) -->
+          <div id="editor-toolbar-strip" class="w-full bg-slate-50/90 border-t border-slate-200/80 px-3 py-1 flex items-center gap-2 overflow-x-auto scrollbar-none text-nowrap max-w-5xl mx-auto transition-all toolbar-scroll">
+            
+            <!-- [⚙] Settings Icon Button (Formerly three-dot, opens Screenplay Tools & Settings) -->
+            <button id="editor-more-menu-btn" class="flex items-center justify-center w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 active:scale-95 transition-all shrink-0 shadow-2xs" title="Screenplay Tools & Settings">
+              <span class="material-symbols-outlined text-[18px]">settings</span>
+            </button>
 
           <!-- Production -->
           <button id="btn-open-production" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0">
@@ -282,6 +291,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </button>
           </div>
         </div>
+        </div>
 
         <!-- DOCUMENT TABS (Screenplay & Title Page parallel views as in reference) -->
         <div id="editor-document-tabs" class="w-full bg-slate-100/90 border-t border-slate-200 px-3 flex items-center gap-1.5 max-w-5xl mx-auto overflow-x-auto scrollbar-none text-xs">
@@ -348,7 +358,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
       <!-- ========================================================= -->
-      <main id="editor-main-scroll" class="flex-1 w-full pt-[190px] pb-16 overflow-y-auto min-h-screen flex flex-col items-center">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-screen flex flex-col items-center transition-[padding] duration-200 ease-out" style="padding-top: ${editorToolbarExpanded ? '190px' : '82px'}; transition: padding-top 0.2s ease-out;">
         
         <!-- Document 1: Continuous A4 Sheets Container -->
         <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4">
@@ -964,6 +974,9 @@ export async function attachEditorEvents(scriptId, navigate) {
   // 4. Auto-save toggle setup (Section 2)
   setupAutoSaveToggle();
 
+  // 4b. Master Toolbar Collapse / Expand ([⋮] in header)
+  setupToolbarCollapseToggle();
+
   // 5. Global Keyboard Shortcuts (Ctrl+S / Cmd+S, Ctrl+F / Cmd+F)
   window.addEventListener('keydown', handleGlobalKeydown);
 
@@ -1035,6 +1048,53 @@ function setupAutoSaveToggle() {
         clearTimeout(saveDebounceTimer);
         showToast('Auto-save disabled · Tap floppy to save');
       }
+    };
+  }
+}
+
+// =========================================================================
+// MASTER TOOLBAR COLLAPSE / EXPAND TOGGLE (Section 2, 3, 4, 15)
+// =========================================================================
+export function updateEditorHeaderOffset() {
+  const headerEl = document.getElementById('editor-fixed-header');
+  const scrollEl = document.getElementById('editor-main-scroll');
+  if (!headerEl || !scrollEl) return;
+  if (focusModeActive) {
+    scrollEl.style.paddingTop = '56px';
+    return;
+  }
+  const height = headerEl.offsetHeight;
+  if (height > 0) {
+    scrollEl.style.paddingTop = `${height}px`;
+  }
+}
+
+function setupToolbarCollapseToggle() {
+  const toggleBtn = document.getElementById('btn-toggle-editor-toolbar');
+  const collapsibleArea = document.getElementById('editor-collapsible-toolbars');
+
+  // Measure and align header offset on initialization and window resize
+  updateEditorHeaderOffset();
+  window.addEventListener('resize', updateEditorHeaderOffset);
+
+  if (toggleBtn) {
+    toggleBtn.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      editorToolbarExpanded = !editorToolbarExpanded;
+
+      if (editorToolbarExpanded) {
+        if (collapsibleArea) collapsibleArea.classList.remove('hidden');
+        toggleBtn.className = 'w-7 h-7 flex items-center justify-center text-blue-600 bg-blue-50 border-blue-200/90 rounded-lg border active:scale-95 transition-all shadow-2xs shrink-0';
+        toggleBtn.title = 'Collapse Editor Toolbars (Writing Mode)';
+      } else {
+        if (collapsibleArea) collapsibleArea.classList.add('hidden');
+        toggleBtn.className = 'w-7 h-7 flex items-center justify-center text-slate-600 hover:text-slate-900 bg-white border-slate-200 hover:bg-slate-50 rounded-lg border active:scale-95 transition-all shadow-2xs shrink-0';
+        toggleBtn.title = 'Expand Editor Toolbars (Tools & Formatting)';
+      }
+
+      // Smoothly reflow screenplay without jumping or resetting cursor/scroll
+      updateEditorHeaderOffset();
     };
   }
 }
@@ -1127,6 +1187,7 @@ export function switchDocumentTab(tab) {
     const idx = editorNavStack.findIndex(x => x.id === 'titlePageTab');
     if (idx !== -1) editorNavStack.splice(idx, 1);
   }
+  updateEditorHeaderOffset();
 }
 
 function populateTitlePageDoc() {
@@ -3069,14 +3130,11 @@ function setupToolbarAndMenu(scriptId, navigate) {
     focusModeActive = desiredState !== null ? desiredState : !focusModeActive;
     if (focusText) focusText.textContent = focusModeActive ? 'Exit Focus' : 'Focus';
     if (menuFocusState) menuFocusState.textContent = focusModeActive ? 'Active' : 'Off';
-    const strip = document.getElementById('editor-toolbar-strip');
-    const tray = document.getElementById('editor-accessory-tray');
+    const collapsibleArea = document.getElementById('editor-collapsible-toolbars');
     const tabs = document.getElementById('editor-document-tabs');
-    const scroll = document.getElementById('editor-main-scroll');
-    if (strip) strip.style.display = focusModeActive ? 'none' : 'flex';
-    if (tray) tray.style.display = focusModeActive ? 'none' : 'flex';
+    if (collapsibleArea) collapsibleArea.style.display = focusModeActive ? 'none' : '';
     if (tabs) tabs.style.display = focusModeActive ? 'none' : 'flex';
-    if (scroll) scroll.style.paddingTop = focusModeActive ? '56px' : '190px';
+    updateEditorHeaderOffset();
 
     if (focusModeActive) {
       pushEditorSubView({
