@@ -163,6 +163,18 @@ export function renderEditorScreen(scriptId, targetScene = null) {
                 <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
               </div>
 
+              <!-- Scene & Act Navigator (always visible) -->
+              <button id="tray-btn-scene-navigator" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap" title="Scene &amp; Act Navigator">
+                <span class="material-symbols-outlined text-[14px] text-blue-600">movie</span>
+                <span>Scene</span>
+              </button>
+
+              <!-- Character Navigator (always visible) -->
+              <button id="tray-btn-char-navigator" class="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap" title="Character Navigator">
+                <span class="material-symbols-outlined text-[14px] text-purple-600">person</span>
+                <span>Char</span>
+              </button>
+
               <!-- Draft Version button -->
               <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
                 <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
@@ -465,16 +477,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
                 <span class="flex-1 font-medium">Toggle Focus Mode</span>
                 <span id="menuFocusState" class="text-[10px] text-blue-600 font-semibold">Off</span>
               </button>
-              <button id="menu-btn-scene-navigator" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
-                <span class="material-symbols-outlined text-[16px] text-blue-600">movie</span>
-                <span class="flex-1 font-medium">Scene & Act Navigator</span>
-                <span class="text-[10px] text-slate-400">All Scenes</span>
-              </button>
-              <button id="menu-btn-char-navigator" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
-                <span class="material-symbols-outlined text-[16px] text-purple-600">person</span>
-                <span class="flex-1 font-medium">Character Navigator</span>
-                <span class="text-[10px] text-slate-400">Jump to Dialogue</span>
-              </button>
+
               <button id="menu-btn-go-page" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 text-slate-800 text-left">
                 <span class="material-symbols-outlined text-[16px] text-slate-600">auto_stories</span>
                 <span class="flex-1 font-medium">Go to Page...</span>
@@ -3092,6 +3095,40 @@ function setupToolbarAndMenu(scriptId, navigate) {
             }
           }
         }
+      }
+    };
+  }
+
+  // Scene Navigator tray button (always visible in accessory tray)
+  const traySceneNav = document.getElementById('tray-btn-scene-navigator');
+  if (traySceneNav) {
+    traySceneNav.onclick = () => {
+      const sceneSelect = document.getElementById('navSceneSelect');
+      if (sceneSelect) { sceneSelect.focus(); sceneSelect.click(); }
+    };
+  }
+
+  // Character Navigator tray button (always visible in accessory tray)
+  const trayCharNav = document.getElementById('tray-btn-char-navigator');
+  if (trayCharNav) {
+    trayCharNav.onclick = () => {
+      const chars = getKnownCharacters();
+      const charName = prompt(`Select character to navigate to:\n${chars.join(', ')}`, chars[0] || '');
+      if (charName) {
+        for (const scene of currentScreenplay.scenes) {
+          for (const block of scene.blocks) {
+            if (block.type === 'character' && block.content.toUpperCase().includes(charName.trim().toUpperCase())) {
+              const el = document.getElementById(block.id);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('bg-blue-100/60');
+                setTimeout(() => el.classList.remove('bg-blue-100/60'), 1500);
+                return;
+              }
+            }
+          }
+        }
+        showToast(`Character "${charName}" not found`);
       }
     };
   }
