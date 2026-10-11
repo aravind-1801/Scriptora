@@ -113,3 +113,61 @@ button, a {
     gap: 8px;
   }
 }
+
+/* Professional Screenplay Page Sheet (Standard A4 Geometry & Margins) */
+.screenplay-page-sheet {
+  width: 100%;
+  max-width: 816px; /* 8.5in at 96dpi or 210mm A4 */
+  min-height: 1123px; /* A4 standard 297mm */
+  background-color: #ffffff;
+  padding: 72px 72px 72px 108px !important; /* 1.0in top, 1.0in right, 1.0in bottom, 1.5in left */
+  box-sizing: border-box;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-size: 12pt;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+/* Screenplay Title Page Sheet (Symmetric 1.5in margins for true horizontal page centering) */
+.screenplay-title-page-sheet {
+  padding: 72px 108px 72px 108px !important;
+}
+
+@media (max-width: 640px) {
+  .screenplay-page-sheet {
+    padding: 36px 20px 36px 36px !important;
+  }
+  .screenplay-title-page-sheet {
+    padding: 36px 36px 36px 36px !important;
+  }
+}
+
+/* Professional Screenplay Element Indentation Rules */
+.screenplay-block[data-block-type="action"] {
+  width: 100%;
+  max-width: 60ch;
+  text-align: left;
+}
+
+.screenplay-block[data-block-type="character"] {
+  margin-left: 37% !important;
+  max-width: 28ch !important;
+  text-align: left !important;
+}
+
+.screenplay-block[data-block-type="parenthetical"] {
+  margin-left: 26% !important;
+  max-width: 24ch !important;
+  text-align: left !important;
+}
+
+.screenplay-block[data-block-type="dialogue"] {
+  margin-left: 17% !important;
+  max-width: 36ch !important;
+  text-align: left !important;
+}
+
+.screenplay-block[data-block-type="transition"] {
+  width: 100% !important;
+  text-align: right !important;
+}

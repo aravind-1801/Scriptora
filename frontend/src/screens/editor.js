@@ -374,7 +374,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-4xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[800px] min-h-[1130px] p-10 sm:p-20 flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
+          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[816px] min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
@@ -383,22 +383,22 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <!-- Generous top whitespace (1/3 of the page) -->
             <div class="h-32 sm:h-44"></div>
 
-            <!-- Centered Screenplay Title & Author Block -->
-            <div class="flex flex-col items-center text-center my-auto w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
-              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="tp-field w-full text-center uppercase outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Your Script Title" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+            <!-- Centered Screenplay Title & Author Block (Horizontally centered relative to actual page) -->
+            <div class="flex flex-col items-center text-center my-auto w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="tp-field w-full text-center uppercase outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text font-bold" data-placeholder="CHRONICLES OF DUST" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
               
               <div class="my-6 w-full text-center">
-                <div id="tp-doc-by" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Written by" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;">Written by</div>
+                <div id="tp-doc-by" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Written by" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;">Written by</div>
               </div>
 
-              <div id="tp-doc-author" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Your Name" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+              <div id="tp-doc-author" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text font-bold" data-placeholder="Author Name" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
             </div>
 
-            <!-- Bottom Left Contact Block -->
-            <div class="flex flex-col items-start text-left mt-auto pt-24 w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5;">
-              <div id="tp-doc-phone" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Phone Number" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
-              <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Email Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
-              <div id="tp-doc-address" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #0f172a;"></div>
+            <!-- Bottom Left Contact Block (Positioned at 1.5 in left margin line) -->
+            <div class="flex flex-col items-start text-left mt-auto pt-20 w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+              <div id="tp-doc-phone" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Phone: 8680812008" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
+              <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="E-mail: aravind.s0618@gmail.com" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
+              <div id="tp-doc-address" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
             </div>
           </div>
         </div>
@@ -1437,16 +1437,15 @@ function renderScreenplayPages() {
 
   // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet w-full max-w-[800px] min-h-[1130px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 px-8 sm:px-16 py-12 flex flex-col font-courier text-[14px] sm:text-[15px] leading-[22px] sm:leading-[24px] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet w-full max-w-[816px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
-      <!-- Top Page Header: Page number in top right -->
-      <div class="w-full flex items-center justify-between pb-4 select-none text-[12px] text-slate-400 font-mono border-b border-transparent">
-        <span class="text-[10px] text-slate-300 uppercase tracking-widest font-sans font-semibold">${currentScreenplay.title || 'Untitled Screenplay'} · ${currentScreenplay.draft || 'Draft 1.0'}</span>
-        <span class="font-bold text-slate-500">${page.pageNumber}.</span>
+      <!-- Top Page Header: Page number in top right (Only for Page > 1, no watermark overlay) -->
+      <div class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
+        <span>${page.pageNumber > 1 ? `${page.pageNumber}.` : ''}</span>
       </div>
 
       <!-- Screenplay Blocks naturally flowing across this A4 page -->
-      <div class="page-blocks-wrapper flex flex-col flex-1">
+      <div class="page-blocks-wrapper flex flex-col flex-1 w-full">
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
@@ -1774,9 +1773,9 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isScene) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2.5 font-bold text-slate-900 mt-2 mb-2 group">
-        <!-- Scene Number shown on LEFT side ONLY (Section I) -->
-        <span class="scene-num-indicator mr-3 sm:mr-4 shrink-0 font-mono text-slate-400 font-bold select-none text-[13px] w-6 text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
+        <!-- Scene Number shown in left gutter -->
+        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
         <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
@@ -1784,25 +1783,25 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isAction) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isChar) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block w-7/12 mx-auto uppercase font-bold tracking-wider text-slate-900 text-center mt-3 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isParen) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block w-6/12 mx-auto italic text-slate-600 text-center mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isDia) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block w-9/12 sm:w-8/12 mx-auto text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
@@ -1814,7 +1813,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isShot) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
     `;
   }
 
@@ -4092,43 +4091,82 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
 
   const pdfPages = [];
 
-  // 1. Title Page (A4 centered layout)
+  // Standard A4 Layout in Points (72 points = 1 inch, 210mm x 297mm = 595.28 x 841.89 pt)
+  const PAGE_WIDTH = 595.28;
+  const PAGE_HEIGHT = 841.89;
+  const CENTER_X = PAGE_WIDTH / 2; // 297.64 pt
+  const LEFT_MARGIN = 108.0; // 1.5 in from left page edge
+  const RIGHT_MARGIN_X = 525.0; // 1.0 in from right page edge boundary
+  const LINE_HEIGHT_12 = 14.4; // 12pt Courier line pitch
+  const PARAGRAPH_GAP = 14.4; // single blank line separation
+
+  const getTextWidth = (text, size = 12) => (text ? text.length : 0) * (size * 0.6);
+  const getCenterX = (text, size = 12) => Math.round(CENTER_X - getTextWidth(text, size) / 2);
+  const getRightX = (text, size = 12, rightBound = RIGHT_MARGIN_X) => Math.round(rightBound - getTextWidth(text, size));
+
+  // 1. Title Page (Symmetric page centering, Courier 12pt, bottom-left contact info)
   if (includeTitlePage && screenplay.titlePage && (targetPageNumbers.has(1) || options.rangeType === 'all')) {
     const tp = screenplay.titlePage;
-    const titleLines = wrapPdfText((tp.title || screenplay.title || 'UNTITLED SCREENPLAY').toUpperCase(), 35);
+    const titleVal = (tp.title || screenplay.title || 'UNTITLED SCREENPLAY').toUpperCase();
+    const titleLines = wrapPdfText(titleVal, 35);
     const tpLines = [];
 
+    // Title centered in upper portion of sheet (~520pt)
     let curY = 520;
     titleLines.forEach(tl => {
-      tpLines.push({ text: tl, x: 180, y: curY, font: 'F2', size: 14 });
-      curY -= 20;
+      tpLines.push({ text: tl, x: getCenterX(tl, 12), y: curY, font: 'F2', size: 12 });
+      curY -= LINE_HEIGHT_12;
     });
 
-    curY -= 20;
-    tpLines.push({ text: tp.by || 'Written by', x: 260, y: curY, font: 'F1', size: 11 });
-    curY -= 18;
-    tpLines.push({ text: tp.author || 'Author', x: 250, y: curY, font: 'F2', size: 12 });
+    // Vertical gap between Title and Writer Credit
+    curY -= 24;
+    const byText = tp.by !== undefined ? tp.by : 'Written by';
+    if (byText) {
+      tpLines.push({ text: byText, x: getCenterX(byText, 12), y: curY, font: 'F1', size: 12 });
+      curY -= (LINE_HEIGHT_12 + 4);
+    }
 
-    let bottomY = 140;
-    if (tp.phone) {
-      tpLines.push({ text: tp.phone, x: 54, y: bottomY, font: 'F1', size: 10 });
-      bottomY -= 14;
+    const authorText = tp.author || 'Author';
+    if (authorText) {
+      tpLines.push({ text: authorText, x: getCenterX(authorText, 12), y: curY, font: 'F2', size: 12 });
     }
-    if (tp.email) {
-      tpLines.push({ text: tp.email, x: 54, y: bottomY, font: 'F1', size: 10 });
-      bottomY -= 14;
+
+    // Contact Information positioned separately in lower-left portion at 1.5in (108pt) left margin
+    let phoneVal = (tp.phone || '').trim();
+    if (!phoneVal && tp.contact) {
+      const parts = tp.contact.split('·').map(p => p.trim());
+      const phonePart = parts.find(p => p.includes('+') || /\d{3}/.test(p));
+      if (phonePart) phoneVal = phonePart;
     }
+    if (phoneVal && !phoneVal.toLowerCase().startsWith('phone')) {
+      phoneVal = `Phone: ${phoneVal}`;
+    }
+
+    let emailVal = (tp.email || '').trim();
+    if (!emailVal && tp.contact && tp.contact.includes('@')) {
+      const emailMatch = tp.contact.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) emailVal = emailMatch[0];
+    }
+    if (emailVal && !emailVal.toLowerCase().startsWith('e-mail') && !emailVal.toLowerCase().startsWith('email')) {
+      emailVal = `E-mail: ${emailVal}`;
+    }
+
+    const contactLines = [];
+    if (phoneVal) contactLines.push(phoneVal);
+    if (emailVal) contactLines.push(emailVal);
     if (tp.address) {
-      wrapPdfText(tp.address, 40).forEach(al => {
-        tpLines.push({ text: al, x: 54, y: bottomY, font: 'F1', size: 10 });
-        bottomY -= 14;
-      });
-    } else if (!tp.phone && !tp.email && tp.contact) {
-      wrapPdfText(tp.contact, 40).forEach(cl => {
-        tpLines.push({ text: cl, x: 54, y: bottomY, font: 'F1', size: 10 });
-        bottomY -= 14;
-      });
+      const addrLines = wrapPdfText(tp.address.trim(), 40);
+      contactLines.push(...addrLines);
+    } else if (!phoneVal && !emailVal && tp.contact) {
+      const rawParts = tp.contact.split('·').map(p => p.trim()).filter(Boolean);
+      contactLines.push(...rawParts);
     }
+
+    let contactY = 130;
+    contactLines.forEach(cl => {
+      tpLines.push({ text: cl, x: LEFT_MARGIN, y: contactY, font: 'F1', size: 12 });
+      contactY -= LINE_HEIGHT_12;
+    });
 
     pdfPages.push(tpLines);
   }
@@ -4139,81 +4177,97 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     if (!targetPageNumbers.has(pageNum)) return;
 
     const pageLines = [];
+    // Page number: top right flush with right margin (525pt, y=805), ONLY for pageNum > 1
     if (includePageNumbers && pageNum > 1) {
-      pageLines.push({ text: `${pageNum}.`, x: 540, y: 800, font: 'F1', size: 10 });
+      const pageNumStr = `${pageNum}.`;
+      pageLines.push({
+        text: pageNumStr,
+        x: getRightX(pageNumStr, 12, RIGHT_MARGIN_X),
+        y: 805,
+        font: 'F1',
+        size: 12
+      });
     }
 
-    let y = 780;
+    let y = 765;
     const blocks = sheet.querySelectorAll('.screenplay-block');
 
     blocks.forEach(bEl => {
-      if (y < 60) return;
+      if (y < 65) return;
       const bType = bEl.getAttribute('data-block-type');
 
       if (bType === 'pagebreak') {
         if (preservePageBreaks) {
-          y -= 14;
-          pageLines.push({ text: '----------------------------------------', x: 180, y, font: 'F1', size: 9 });
-          y -= 14;
+          y -= LINE_HEIGHT_12;
+          const pbRule = '----------------------------------------';
+          pageLines.push({ text: pbRule, x: getCenterX(pbRule, 12), y, font: 'F1', size: 12 });
+          y -= LINE_HEIGHT_12;
         }
         return;
       }
 
       if (bType === 'scene') {
         const editable = bEl.querySelector('[contenteditable="true"]');
-        const text = editable ? editable.innerText.trim() : bEl.innerText.trim();
+        const text = (editable ? editable.innerText.trim() : bEl.innerText.trim()).toUpperCase();
         const sNum = sceneNumbers ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
-        const fullScene = sNum ? `${sNum}.  ${text.toUpperCase()}` : text.toUpperCase();
-        y -= 16;
-        wrapPdfText(fullScene, 60).forEach(line => {
-          pageLines.push({ text: line, x: 54, y, font: 'F2', size: 10 });
-          y -= 13;
+
+        y -= PARAGRAPH_GAP;
+        const sceneLines = wrapPdfText(text, 57);
+        sceneLines.forEach((line, idx) => {
+          if (idx === 0 && sNum) {
+            // Scene number in left gutter (76pt), does not displace heading text inward
+            pageLines.push({ text: sNum, x: 76, y, font: 'F2', size: 12 });
+          }
+          pageLines.push({ text: line, x: LEFT_MARGIN, y, font: 'F2', size: 12 });
+          y -= LINE_HEIGHT_12;
         });
-        y -= 4;
       } else if (bType === 'character') {
         const text = bEl.innerText.trim().toUpperCase();
-        y -= 12;
-        pageLines.push({ text, x: 240, y, font: 'F2', size: 10 });
-        y -= 13;
+        y -= PARAGRAPH_GAP;
+        // Character cue indented to 3.7 inches from page left edge (266pt)
+        pageLines.push({ text, x: 266, y, font: 'F2', size: 12 });
+        y -= LINE_HEIGHT_12;
       } else if (bType === 'parenthetical') {
         let text = bEl.innerText.trim();
         if (!text.startsWith('(')) text = '(' + text;
         if (!text.endsWith(')')) text = text + ')';
-        wrapPdfText(text, 34).forEach(line => {
-          pageLines.push({ text: line, x: 200, y, font: 'F1', size: 10 });
-          y -= 13;
+        // Parenthetical indented to 3.1 inches (223pt), max width 26ch
+        wrapPdfText(text, 26).forEach(line => {
+          pageLines.push({ text: line, x: 223, y, font: 'F1', size: 12 });
+          y -= LINE_HEIGHT_12;
         });
       } else if (bType === 'dialogue') {
         const text = bEl.innerText.trim();
-        wrapPdfText(text, 36).forEach(line => {
-          pageLines.push({ text: line, x: 160, y, font: 'F1', size: 10 });
-          y -= 13;
+        // Dialogue indented to 2.5 inches (180pt), max width 35ch
+        wrapPdfText(text, 35).forEach(line => {
+          pageLines.push({ text: line, x: 180, y, font: 'F1', size: 12 });
+          y -= LINE_HEIGHT_12;
         });
-        y -= 4;
       } else if (bType === 'transition') {
         const text = bEl.innerText.trim().toUpperCase();
-        y -= 12;
-        pageLines.push({ text, x: 380, y, font: 'F2', size: 10 });
-        y -= 16;
+        y -= PARAGRAPH_GAP;
+        // Transition flush with right writing boundary (525pt)
+        pageLines.push({ text, x: getRightX(text, 12, RIGHT_MARGIN_X), y, font: 'F2', size: 12 });
+        y -= LINE_HEIGHT_12;
       } else if (bType === 'shot') {
         const text = bEl.innerText.trim().toUpperCase();
-        y -= 12;
-        pageLines.push({ text, x: 54, y, font: 'F2', size: 10 });
-        y -= 14;
+        y -= PARAGRAPH_GAP;
+        pageLines.push({ text, x: LEFT_MARGIN, y, font: 'F2', size: 12 });
+        y -= LINE_HEIGHT_12;
       } else if (bType === 'image') {
         const caption = bEl.querySelector('[contenteditable="true"]')?.innerText?.trim() || 'Storyboard Image';
-        y -= 12;
-        pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: 54, y, font: 'F1', size: 9 });
-        y -= 14;
+        y -= PARAGRAPH_GAP;
+        pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: LEFT_MARGIN, y, font: 'F1', size: 12 });
+        y -= LINE_HEIGHT_12;
       } else {
         const text = bEl.innerText.trim();
         if (text) {
-          y -= 10;
-          wrapPdfText(text, 60).forEach(line => {
-            pageLines.push({ text: line, x: 54, y, font: 'F1', size: 10 });
-            y -= 13;
+          y -= PARAGRAPH_GAP;
+          // Action flush left at 108pt, max 58 characters
+          wrapPdfText(text, 58).forEach(line => {
+            pageLines.push({ text: line, x: LEFT_MARGIN, y, font: 'F1', size: 12 });
+            y -= LINE_HEIGHT_12;
           });
-          y -= 4;
         }
       }
     });
@@ -4222,7 +4276,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
   });
 
   if (pdfPages.length === 0) {
-    pdfPages.push([{ text: screenplay.title || 'Screenplay', x: 54, y: 750, font: 'F2', size: 12 }]);
+    pdfPages.push([{ text: screenplay.title || 'Screenplay', x: LEFT_MARGIN, y: 750, font: 'F2', size: 12 }]);
   }
 
   // Construct PDF 1.4 Binary Document (A4 MediaBox: 595.28 x 841.89 pt)
@@ -4251,8 +4305,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     const streamOps = [];
     for (const item of pdfPages[i]) {
       const font = item.font || 'F1';
-      const size = item.size || 10;
-      const x = item.x || 54;
+      const size = item.size || 12;
+      const x = item.x || LEFT_MARGIN;
       const y = item.y || 750;
       const safe = escapePdfText(item.text);
       streamOps.push(`BT /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${safe}) Tj ET`);
