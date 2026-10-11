@@ -84,12 +84,12 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </button>
 
             <!-- Collaborate Link -->
-            <a href="/profile/collaborators" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
+            <a href="/profile/collaborators?from=editor&scriptId=${scriptId}" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
               <span class="material-symbols-outlined text-[19px]">group</span>
             </a>
 
             <!-- User Avatar -->
-            <a href="/profile" aria-label="User profile" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs no-underline">
+            <a href="/profile?from=editor&scriptId=${scriptId}" id="editor-profile-btn" aria-label="User profile" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs no-underline hover:ring-2 hover:ring-blue-400 transition-all">
               ${userInitials}
             </a>
           </div>
@@ -982,6 +982,31 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   // 4b. Master Toolbar Collapse / Expand ([⋮] in header)
   setupToolbarCollapseToggle();
+
+  // 4c. Collaborators & Profile Navigation with Return Tracking
+  const collabBtn = document.getElementById('editor-collab-btn');
+  if (collabBtn) {
+    collabBtn.onclick = (e) => {
+      e.preventDefault();
+      if (hasUnsavedChanges) performSave(false);
+      store.setState({ editorReturnScriptId: scriptId, editorReturnUrl: `/editor/${scriptId}` });
+      sessionStorage.setItem('scriptora_editor_return', `/editor/${scriptId}`);
+      sessionStorage.setItem('scriptora_from_editor', 'true');
+      navigate(`/profile/collaborators?from=editor&scriptId=${scriptId}`);
+    };
+  }
+
+  const profileBtn = document.getElementById('editor-profile-btn');
+  if (profileBtn) {
+    profileBtn.onclick = (e) => {
+      e.preventDefault();
+      if (hasUnsavedChanges) performSave(false);
+      store.setState({ editorReturnScriptId: scriptId, editorReturnUrl: `/editor/${scriptId}` });
+      sessionStorage.setItem('scriptora_editor_return', `/editor/${scriptId}`);
+      sessionStorage.setItem('scriptora_from_editor', 'true');
+      navigate(`/profile?from=editor&scriptId=${scriptId}`);
+    };
+  }
 
   // 5. Global Keyboard Shortcuts (Ctrl+S / Cmd+S, Ctrl+F / Cmd+F)
   window.addEventListener('keydown', handleGlobalKeydown);

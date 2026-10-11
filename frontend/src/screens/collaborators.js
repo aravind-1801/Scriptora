@@ -4,8 +4,14 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 
-export function renderCollaboratorsScreen() {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const isFromEditor = from === 'editor';
+  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
+  const returnLabel = isFromEditor ? 'Back to Editor' : 'Back to Profile';
+
   const script = store.state.scripts.find(s => s.id === scriptId) || store.state.scripts[0] || {
     id: 'chronicles-of-dust',
     title: 'Chronicles of Dust',
@@ -21,9 +27,9 @@ export function renderCollaboratorsScreen() {
         
         <!-- Back Navigation & Title -->
         <div class="flex flex-col gap-1">
-          <a href="/profile" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit">
+          <a href="${returnUrl}" id="collab-back-btn" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Back to Profile</span>
+            <span>${returnLabel}</span>
           </a>
           <h1 class="font-heading text-2xl font-bold text-slate-900 tracking-tight mt-1">Collaborators</h1>
           <p class="text-xs text-slate-500">Work together on your screenplay with controlled access.</p>
@@ -183,6 +189,15 @@ export function renderCollaboratorsScreen() {
 
         </div>
 
+        ${isFromEditor ? `
+          <div class="pt-2">
+            <a href="${returnUrl}" id="collab-bottom-return-btn" class="w-full py-2.5 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center gap-2 border border-blue-200 shadow-2xs no-underline transition-all active:scale-98">
+              <span class="material-symbols-outlined text-[18px]">edit_note</span>
+              <span>Return to Editor (${script.title || 'Screenplay'})</span>
+            </a>
+          </div>
+        ` : ''}
+
       </div>
     </main>
 
@@ -190,8 +205,32 @@ export function renderCollaboratorsScreen() {
   `;
 }
 
-export function attachCollaboratorsEvents(navigate) {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+export function attachCollaboratorsEvents(navigate, fromParam = null, scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const isFromEditor = from === 'editor';
+  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
+
+  // Back button handling
+  const backBtn = document.getElementById('collab-back-btn');
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      if (isFromEditor) sessionStorage.removeItem('scriptora_from_editor');
+      navigate(returnUrl);
+    };
+  }
+
+  const bottomReturnBtn = document.getElementById('collab-bottom-return-btn');
+  if (bottomReturnBtn) {
+    bottomReturnBtn.onclick = (e) => {
+      e.preventDefault();
+      if (isFromEditor) sessionStorage.removeItem('scriptora_from_editor');
+      navigate(returnUrl);
+    };
+  }
+
   let activeCode = 'A7K9-XP42';
 
   // Load collaborators list
@@ -249,7 +288,7 @@ export function attachCollaboratorsEvents(navigate) {
       const id = opt.getAttribute('data-id');
       store.selectScript(id);
       projDropdown?.classList.add('hidden');
-      navigate('/profile/collaborators');
+      navigate(`/profile/collaborators${isFromEditor ? `?from=editor&scriptId=${id}` : ''}`);
     };
   });
 

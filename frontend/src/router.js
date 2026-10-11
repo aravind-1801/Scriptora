@@ -203,12 +203,22 @@ class Router {
     }
 
     if (path === '/profile') {
-      this.render(renderProfileScreen(), () => attachProfileEvents(this.navigate.bind(this)));
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderProfileScreen(fromParam, scriptParam),
+        () => attachProfileEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
       return;
     }
 
     if (path === '/profile/collaborators') {
-      this.render(renderCollaboratorsScreen(), () => attachCollaboratorsEvents(this.navigate.bind(this)));
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderCollaboratorsScreen(fromParam, scriptParam),
+        () => attachCollaboratorsEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
       return;
     }
 

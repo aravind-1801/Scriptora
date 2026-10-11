@@ -4,7 +4,14 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 
-export function renderProfileScreen() {
+export function renderProfileScreen(fromParam = null, scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const isFromEditor = from === 'editor';
+  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
+  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.scripts[0] || {};
+
   const user = store.state.currentUser || {
     name: "Arun Kumar",
     headline: "Screenwriter & Narrative Director",
@@ -22,6 +29,16 @@ export function renderProfileScreen() {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
         
+        <!-- Back Navigation to Editor (When entered from Editor) -->
+        ${isFromEditor ? `
+          <div class="flex flex-col gap-1 -mb-3">
+            <a href="${returnUrl}" id="profile-back-to-editor-btn" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span>Back to Editor</span>
+            </a>
+          </div>
+        ` : ''}
+
         <!-- Profile Header -->
         <div class="flex items-center justify-between">
           <div class="flex flex-col">
@@ -144,7 +161,7 @@ export function renderProfileScreen() {
         <div class="flex flex-col">
           <div class="text-xs font-bold text-slate-500 tracking-wider uppercase mb-2 px-1 font-heading">Collaboration</div>
           <div class="flex flex-col gap-2">
-            <a href="/profile/collaborators" class="w-full border border-slate-200/80 bg-white hover:bg-slate-50 p-3.5 rounded-xl flex items-center justify-between text-left transition-colors shadow-xs group no-underline text-inherit cursor-pointer">
+            <a href="/profile/collaborators${isFromEditor ? `?from=editor&scriptId=${scriptId}` : ''}" class="w-full border border-slate-200/80 bg-white hover:bg-slate-50 p-3.5 rounded-xl flex items-center justify-between text-left transition-colors shadow-xs group no-underline text-inherit cursor-pointer">
               <div class="flex items-center min-w-0">
                 <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mr-3 border border-blue-100">
                   <span class="material-symbols-outlined text-[18px]">group</span>
@@ -161,6 +178,15 @@ export function renderProfileScreen() {
             </a>
           </div>
         </div>
+
+        ${isFromEditor ? `
+          <div class="pt-1">
+            <a href="${returnUrl}" id="profile-bottom-return-btn" class="w-full py-2.5 px-4 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs flex items-center justify-center gap-2 border border-blue-200 shadow-2xs no-underline transition-all active:scale-98">
+              <span class="material-symbols-outlined text-[18px]">edit_note</span>
+              <span>Return to Editor (${script.title || 'Screenplay'})</span>
+            </a>
+          </div>
+        ` : ''}
 
         <!-- Account Actions: Sign Out & Delete Account -->
         <div class="flex flex-col gap-2 pt-2">
@@ -258,7 +284,31 @@ export function renderProfileScreen() {
   `;
 }
 
-export function attachProfileEvents(navigate) {
+export function attachProfileEvents(navigate, fromParam = null, scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const isFromEditor = from === 'editor';
+  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
+
+  const backBtn = document.getElementById('profile-back-to-editor-btn');
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem('scriptora_from_editor');
+      navigate(returnUrl);
+    };
+  }
+
+  const bottomReturnBtn = document.getElementById('profile-bottom-return-btn');
+  if (bottomReturnBtn) {
+    bottomReturnBtn.onclick = (e) => {
+      e.preventDefault();
+      sessionStorage.removeItem('scriptora_from_editor');
+      navigate(returnUrl);
+    };
+  }
+
   // Search Settings
   const search = document.getElementById('settings-search-input');
   if (search) {
