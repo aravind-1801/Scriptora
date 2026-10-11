@@ -918,6 +918,11 @@ export async function updateProfile(updates) {
   } catch {
     const current = await getCurrentUser() || {};
     const updated = { ...current, ...updates };
+    if (updates.name) {
+      const parts = updates.name.trim().split(/\s+/);
+      updated.initials = ((parts[0]?.[0] || 'A') + (parts[1]?.[0] || '')).toUpperCase();
+      updated.displayName = updates.name;
+    }
     localStorage.setItem('scriptora_user', JSON.stringify(updated));
     return updated;
   }
