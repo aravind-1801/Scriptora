@@ -570,23 +570,48 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </button>
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label class="text-[11px] font-semibold text-slate-600">Image URL</label>
-            <input type="url" id="imgUrlInput" placeholder="https://example.com/storyboard.jpg" class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" />
-            
-            <div class="flex items-center gap-2 my-1">
+          <div class="flex flex-col gap-2.5">
+            <!-- Quick Preset Visuals -->
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Quick Visual Presets</span>
+              <div class="grid grid-cols-3 gap-1.5" id="imgPresetsRow">
+                <button type="button" class="img-preset-btn p-1 rounded-lg border border-slate-200 hover:border-blue-500 bg-slate-50 flex flex-col items-center gap-1 text-[10px] text-slate-600 transition-all cursor-pointer" data-url="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80" data-caption="INT. CUSTOMS OFFICE - Concept Lighting">
+                  <img src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=160&auto=format&fit=crop&q=60" class="w-full h-10 object-cover rounded pointer-events-none" />
+                  <span class="truncate w-full text-center font-medium">Interior</span>
+                </button>
+                <button type="button" class="img-preset-btn p-1 rounded-lg border border-slate-200 hover:border-blue-500 bg-slate-50 flex flex-col items-center gap-1 text-[10px] text-slate-600 transition-all cursor-pointer" data-url="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=800&auto=format&fit=crop&q=80" data-caption="EXT. INDUSTRIAL SECTOR - Wide Framing">
+                  <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=160&auto=format&fit=crop&q=60" class="w-full h-10 object-cover rounded pointer-events-none" />
+                  <span class="truncate w-full text-center font-medium">Exterior</span>
+                </button>
+                <button type="button" class="img-preset-btn p-1 rounded-lg border border-slate-200 hover:border-blue-500 bg-slate-50 flex flex-col items-center gap-1 text-[10px] text-slate-600 transition-all cursor-pointer" data-url="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&auto=format&fit=crop&q=80" data-caption="CHARACTER FOCUS - High Tension Beat">
+                  <img src="https://images.unsplash.com/photo-1485846234645-a62644f84728?w=160&auto=format&fit=crop&q=60" class="w-full h-10 object-cover rounded pointer-events-none" />
+                  <span class="truncate w-full text-center font-medium">Character</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 my-0.5">
               <div class="h-[1px] bg-slate-200 flex-1"></div>
-              <span class="text-[10px] text-slate-400 font-medium">OR UPLOAD</span>
+              <span class="text-[10px] text-slate-400 font-medium">OR CUSTOM IMAGE</span>
               <div class="h-[1px] bg-slate-200 flex-1"></div>
             </div>
 
+            <label class="text-[11px] font-semibold text-slate-600">Image URL</label>
+            <input type="url" id="imgUrlInput" placeholder="https://example.com/storyboard.jpg" class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" />
+            
             <label class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 hover:bg-blue-50/50 cursor-pointer text-xs text-slate-600 transition-all">
               <span class="material-symbols-outlined text-[18px] text-blue-600">cloud_upload</span>
               <span id="imgUploadLabel">Choose local image...</span>
               <input type="file" id="imgFileInput" accept="image/*" class="hidden" />
             </label>
 
-            <label class="text-[11px] font-semibold text-slate-600 mt-1">Caption (optional)</label>
+            <!-- Preview box -->
+            <div id="imgPreviewContainer" class="hidden w-full h-24 rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200">
+              <img id="imgPreviewThumb" src="" alt="Preview" class="w-full h-full object-cover" />
+              <button type="button" id="clearImgPreviewBtn" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/70 text-white flex items-center justify-center text-[10px]">✕</button>
+            </div>
+
+            <label class="text-[11px] font-semibold text-slate-600 mt-0.5">Caption (optional)</label>
             <input type="text" id="imgCaptionInput" placeholder="Scene visual concept..." class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 outline-none focus:border-blue-500 bg-slate-50" />
           </div>
 
@@ -1851,13 +1876,15 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   }
 
   if (isImage) {
-    const safeUrl = block.url || '';
+    const safeUrl = block.url || block.content || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';
     const safeCaption = escapeHtml(block.caption || '');
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2 shadow-2xs">
-        <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-96 w-auto max-w-full rounded-lg object-contain shadow-xs bg-white" />
-        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption}</div>
-        <button class="btn-delete-img-block absolute top-3 right-3 w-6 h-6 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2.5 shadow-2xs transition-all">
+        <div class="w-full flex items-center justify-center min-h-[180px] max-h-[420px] rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200/60">
+          <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-[400px] w-auto max-w-full object-contain rounded-md shadow-xs bg-white" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';" loading="eager" />
+        </div>
+        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
+        <button class="btn-delete-img-block absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
       </div>
     `;
   }
@@ -2155,7 +2182,11 @@ function updateBlockModel(blockEl, text) {
   if (!scene) return;
   const b = scene.blocks.find(x => x.id === blockId);
   if (b) {
-    b.content = text;
+    if (b.type === 'image') {
+      b.caption = text;
+    } else {
+      b.content = text;
+    }
 
     // Structured metadata for scene heading (Does NOT push keystrokes to memory!)
     if (b.type === 'scene') {
@@ -3038,6 +3069,17 @@ function handleToolbarToolClick(type) {
 
   // 2. Storyboard Image insertion modal
   if (type === 'image') {
+    if (!activeBlockId) {
+      const visibleBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+      const middleY = window.innerHeight / 2;
+      for (const el of visibleBlocks) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= middleY && rect.bottom >= middleY) {
+          activeBlockId = el.getAttribute('data-block-id');
+          break;
+        }
+      }
+    }
     savedActiveBlockBeforeImage = activeBlockId;
     toggleImageModal(true);
     return;
@@ -3564,13 +3606,93 @@ function setupModals(scriptId) {
   const insertImg = document.getElementById('insertImageBtn');
   const imgFileInput = document.getElementById('imgFileInput');
   const imgUploadLabel = document.getElementById('imgUploadLabel');
+  const imgUrlInput = document.getElementById('imgUrlInput');
+  const imgCaptionInput = document.getElementById('imgCaptionInput');
+  const imgPreviewContainer = document.getElementById('imgPreviewContainer');
+  const imgPreviewThumb = document.getElementById('imgPreviewThumb');
+  const clearImgPreviewBtn = document.getElementById('clearImgPreviewBtn');
   let selectedImageDataUrl = '';
+
+  function showPreview(url) {
+    if (imgPreviewContainer && imgPreviewThumb) {
+      if (url) {
+        imgPreviewThumb.src = url;
+        imgPreviewContainer.classList.remove('hidden');
+      } else {
+        imgPreviewContainer.classList.add('hidden');
+        imgPreviewThumb.src = '';
+      }
+    }
+  }
+
+  function resizeImageIfNeeded(dataUrl, callback) {
+    const img = new Image();
+    img.onload = () => {
+      const maxWidth = 900;
+      const maxHeight = 600;
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        if (width / height > maxWidth / maxHeight) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        } else {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      callback(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => callback(dataUrl);
+    img.src = dataUrl;
+  }
 
   if (closeImg) closeImg.onclick = () => closeEditorSubViewByName('imageModal');
   if (cancelImg) cancelImg.onclick = () => closeEditorSubViewByName('imageModal');
   if (imgModal) {
     imgModal.onclick = (e) => {
       if (e.target === imgModal) closeEditorSubViewByName('imageModal');
+    };
+  }
+
+  // Quick Preset buttons
+  document.querySelectorAll('.img-preset-btn').forEach(btn => {
+    btn.onclick = () => {
+      const presetUrl = btn.getAttribute('data-url');
+      const presetCaption = btn.getAttribute('data-caption');
+      if (imgUrlInput) imgUrlInput.value = presetUrl;
+      if (imgCaptionInput && !imgCaptionInput.value) imgCaptionInput.value = presetCaption;
+      selectedImageDataUrl = presetUrl;
+      showPreview(presetUrl);
+    };
+  });
+
+  if (imgUrlInput) {
+    imgUrlInput.oninput = () => {
+      const val = imgUrlInput.value.trim();
+      if (val) {
+        selectedImageDataUrl = '';
+        showPreview(val);
+      } else if (!selectedImageDataUrl) {
+        showPreview('');
+      }
+    };
+  }
+
+  if (clearImgPreviewBtn) {
+    clearImgPreviewBtn.onclick = () => {
+      selectedImageDataUrl = '';
+      if (imgUrlInput) imgUrlInput.value = '';
+      if (imgFileInput) imgFileInput.value = '';
+      if (imgUploadLabel) imgUploadLabel.textContent = 'Choose local image...';
+      showPreview('');
     };
   }
 
@@ -3581,7 +3703,10 @@ function setupModals(scriptId) {
         if (imgUploadLabel) imgUploadLabel.textContent = file.name;
         const reader = new FileReader();
         reader.onload = (ev) => {
-          selectedImageDataUrl = ev.target.result;
+          resizeImageIfNeeded(ev.target.result, (optimized) => {
+            selectedImageDataUrl = optimized;
+            showPreview(optimized);
+          });
         };
         reader.readAsDataURL(file);
       }
@@ -3590,39 +3715,78 @@ function setupModals(scriptId) {
 
   if (insertImg) {
     insertImg.onclick = () => {
-      const urlInput = document.getElementById('imgUrlInput')?.value.trim();
-      const caption = document.getElementById('imgCaptionInput')?.value.trim();
-      const finalUrl = selectedImageDataUrl || urlInput;
+      const urlInput = imgUrlInput?.value.trim();
+      const caption = imgCaptionInput?.value.trim();
+      let finalUrl = selectedImageDataUrl || urlInput;
+      
+      // If user clicks insert without selecting an image, default to a high-quality storyboard visual
       if (!finalUrl) {
-        showToast('Please provide an image URL or choose a file');
-        return;
+        finalUrl = 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';
       }
 
       const imgBlock = {
         id: `b-${Date.now().toString().slice(-6)}`,
         type: 'image',
         url: finalUrl,
+        content: finalUrl,
         caption: caption || ''
       };
 
       const targetBlockId = savedActiveBlockBeforeImage || activeBlockId;
-      let inserted = false;
+      let targetScene = null;
+      let insertIdx = -1;
 
+      // 1. First attempt: match active block in screenplay
       if (currentScreenplay.scenes && currentScreenplay.scenes.length > 0) {
         if (targetBlockId) {
           for (const sc of currentScreenplay.scenes) {
             const bIdx = (sc.blocks || []).findIndex(b => b.id === targetBlockId);
             if (bIdx !== -1) {
-              sc.blocks.splice(bIdx + 1, 0, imgBlock);
-              inserted = true;
+              targetScene = sc;
+              insertIdx = bIdx + 1;
               break;
             }
           }
         }
-        if (!inserted) {
-          const firstScene = currentScreenplay.scenes[0];
-          if (!firstScene.blocks) firstScene.blocks = [];
-          firstScene.blocks.push(imgBlock);
+
+        // 2. Second attempt: match scene dropdown or store.state.currentSceneId
+        if (!targetScene) {
+          const navSceneSelect = document.getElementById('navSceneSelect');
+          const activeSceneId = navSceneSelect?.value || (store.state.currentSceneId ? `scene-${store.state.currentSceneId}` : null);
+          if (activeSceneId) {
+            targetScene = currentScreenplay.scenes.find(s => s.id === activeSceneId || String(s.number) === String(store.state.currentSceneId));
+          }
+        }
+
+        // 3. Third attempt: match scene currently in the middle of viewport
+        if (!targetScene) {
+          const visibleBlocks = Array.from(document.querySelectorAll('.screenplay-block'));
+          const middleY = window.innerHeight / 2;
+          for (const el of visibleBlocks) {
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= middleY && rect.bottom >= middleY) {
+              const scId = el.getAttribute('data-scene-id');
+              targetScene = currentScreenplay.scenes.find(s => s.id === scId);
+              const bId = el.getAttribute('data-block-id');
+              if (targetScene && bId) {
+                const bIdx = (targetScene.blocks || []).findIndex(b => b.id === bId);
+                if (bIdx !== -1) insertIdx = bIdx + 1;
+              }
+              break;
+            }
+          }
+        }
+
+        // 4. Fallback to first scene
+        if (!targetScene) {
+          targetScene = currentScreenplay.scenes[0];
+        }
+
+        if (!targetScene.blocks) targetScene.blocks = [];
+        if (insertIdx !== -1 && insertIdx <= targetScene.blocks.length) {
+          targetScene.blocks.splice(insertIdx, 0, imgBlock);
+        } else {
+          targetScene.blocks.push(imgBlock);
         }
       } else {
         currentScreenplay.scenes = [{
@@ -3636,11 +3800,10 @@ function setupModals(scriptId) {
       // Reset modal inputs for next use
       selectedImageDataUrl = '';
       if (imgFileInput) imgFileInput.value = '';
-      const urlEl = document.getElementById('imgUrlInput');
-      if (urlEl) urlEl.value = '';
-      const capEl = document.getElementById('imgCaptionInput');
-      if (capEl) capEl.value = '';
-      if (imgUploadLabel) imgUploadLabel.textContent = 'Choose Image File';
+      if (imgUrlInput) imgUrlInput.value = '';
+      if (imgCaptionInput) imgCaptionInput.value = '';
+      if (imgUploadLabel) imgUploadLabel.textContent = 'Upload local image file...';
+      showPreview('');
 
       renderScreenplayPages();
       hasUnsavedChanges = true;
@@ -3650,8 +3813,12 @@ function setupModals(scriptId) {
 
       setTimeout(() => {
         const newEl = document.getElementById(imgBlock.id);
-        if (newEl) newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 60);
+        if (newEl) {
+          newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          newEl.classList.add('ring-2', 'ring-blue-500');
+          setTimeout(() => newEl.classList.remove('ring-2', 'ring-blue-500'), 1500);
+        }
+      }, 80);
     };
   }
 
