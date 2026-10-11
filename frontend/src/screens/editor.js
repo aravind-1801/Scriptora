@@ -2,6 +2,7 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
+import { isValidCharacterName, cleanCharacterName, sanitizeCharacterList } from '../utils/characters.js';
 
 // In-memory active screenplay state per editor session
 let currentScreenplay = null;
@@ -2172,21 +2173,19 @@ export function parseSceneHeading(text) {
 // Memory Commit: Only commit ACTUAL COMPLETED entities, never keystroke prefixes! (Prompt 23: 4-8, 35)
 export function commitCharacterToMemory(rawName) {
   if (!currentScreenplay) return;
-  const clean = (rawName || '').replace(/\(.*\)/g, '').trim().toUpperCase();
-  if (!clean || clean.length < 2) return;
+  const clean = cleanCharacterName(rawName);
+  if (!isValidCharacterName(clean)) return;
 
   if (!Array.isArray(currentScreenplay.characters)) {
     currentScreenplay.characters = [];
   }
 
-  // Prune any accidental prefixes of this completed name
+  // Prune any accidental prefixes or typing fragments of this completed name
   currentScreenplay.characters = currentScreenplay.characters.filter(c => {
-    if (clean.startsWith(c) && c.length < clean.length) {
-      const existsElsewhere = currentScreenplay.scenes?.some(sc =>
-        sc.blocks?.some(b => b.type === 'character' && b.content.replace(/\(.*\)/g, '').trim().toUpperCase() === c)
-      );
-      return existsElsewhere;
-    }
+    const cClean = cleanCharacterName(c);
+    if (!isValidCharacterName(cClean)) return false;
+    if (clean.startsWith(cClean) && cClean.length < clean.length) return false;
+    if (clean.length >= 5 && cClean.length <= 4 && clean.startsWith(cClean.slice(0, 3))) return false;
     return true;
   });
 
@@ -2781,33 +2780,21 @@ function hideAutocomplete() {
 // Helper to get only user-created or active screenplay characters (Prompt 23: 4-8)
 function getKnownCharacters() {
   if (!currentScreenplay) return [];
-  const set = new Set();
+  const candidates = [];
 
   (currentScreenplay.scenes || []).forEach(scene => {
     (scene.blocks || []).forEach(b => {
-      if (b.type === 'character') {
-        const name = b.content.replace(/\(.*\)/g, '').trim().toUpperCase();
-        if (name && name.length >= 2) set.add(name);
+      if (b.type === 'character' && b.content) {
+        candidates.push(b.content);
       }
     });
   });
 
   (currentScreenplay.characters || []).forEach(c => {
-    const clean = (c || '').replace(/\(.*\)/g, '').trim().toUpperCase();
-    if (clean && clean.length >= 2) set.add(clean);
+    if (c) candidates.push(c);
   });
 
-  const list = Array.from(set);
-  return list.filter(item => {
-    const isPrefixOfLonger = list.some(other => other !== item && other.startsWith(item));
-    if (isPrefixOfLonger) {
-      const hasDirectBlock = currentScreenplay.scenes?.some(sc =>
-        sc.blocks?.some(b => b.type === 'character' && b.content.replace(/\(.*\)/g, '').trim().toUpperCase() === item)
-      );
-      return hasDirectBlock;
-    }
-    return true;
-  });
+  return sanitizeCharacterList(candidates);
 }
 
 function getKnownLocations() {

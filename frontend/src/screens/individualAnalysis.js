@@ -3,6 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { sanitizeCharacterList, cleanCharacterName } from '../utils/characters.js';
 
 export const vectorDetails = {
   pacing: {
@@ -177,46 +178,54 @@ export function getAvailableScenes(screenplay, scriptId) {
 }
 
 export function getAvailableCharacters(screenplay) {
-  const chars = [];
-  const set = new Set();
+  const candidates = [];
 
   if (screenplay) {
     (screenplay.characters || []).forEach(c => {
       const name = typeof c === 'string' ? c : (c.name || '');
-      const clean = name.replace(/\(.*\)/g, '').trim();
-      if (clean && clean.length >= 2) {
-        const key = clean.toUpperCase();
-        if (!set.has(key)) {
-          set.add(key);
-          chars.push({ name: clean, role: key === 'KEVIN' ? 'Protagonist' : (key === 'MEERA' ? 'Confidante' : 'Character') });
-        }
-      }
+      if (name) candidates.push(name);
     });
 
     (screenplay.scenes || []).forEach(sc => {
       (sc.blocks || []).forEach(b => {
-        if (b.type === 'character') {
-          const clean = (b.content || '').replace(/\(.*\)/g, '').trim();
-          if (clean && clean.length >= 2) {
-            const key = clean.toUpperCase();
-            if (!set.has(key)) {
-              set.add(key);
-              chars.push({ name: clean, role: key === 'KEVIN' ? 'Protagonist' : (key === 'MEERA' ? 'Confidante' : 'Character') });
-            }
-          }
+        if (b.type === 'character' && b.content) {
+          candidates.push(b.content);
         }
       });
     });
   }
 
-  if (chars.length === 0) {
-    chars.push(
-      { name: 'Kevin', role: 'Protagonist' },
-      { name: 'Meera', role: 'Confidante' }
-    );
+  let cleanedNames = sanitizeCharacterList(candidates);
+
+  // If list is empty after purging noise, fallback to primary story protagonists
+  if (cleanedNames.length === 0) {
+    if (screenplay && (screenplay.id === 'chronicles-of-dust' || screenplay.title?.includes('Dust'))) {
+      cleanedNames = ['SANTHOSH', 'ARAVIND', 'KEVIN', 'MEERA'];
+    } else {
+      cleanedNames = ['SANTHOSH', 'ARAVIND'];
+    }
   }
 
-  return chars;
+  // Update screenplay model and persist to purge previous dirty prefixes from storage
+  if (screenplay) {
+    screenplay.characters = cleanedNames;
+    if (screenplay.id) {
+      try {
+        localStorage.setItem(`scriptora_screenplay_${screenplay.id}`, JSON.stringify(screenplay));
+      } catch (_) {}
+    }
+  }
+
+  return cleanedNames.map(name => {
+    const key = name.toUpperCase();
+    let role = 'Character';
+    if (key === 'SANTHOSH' || key === 'ARAVIND' || key === 'KEVIN') {
+      role = 'Protagonist';
+    } else if (key === 'MEERA') {
+      role = 'Confidante';
+    }
+    return { name, role };
+  });
 }
 
 export function getSceneDetails(sceneNum, availableScenes = []) {
@@ -327,14 +336,73 @@ export function getSceneDetails(sceneNum, availableScenes = []) {
 }
 
 export function getCharacterDetails(charName, screenplay) {
-  const norm = (charName || 'Kevin').trim();
+  const norm = cleanCharacterName(charName || 'SANTHOSH');
   const key = norm.toUpperCase();
+
+  let dynamicCount = 0;
+  if (screenplay && Array.isArray(screenplay.scenes)) {
+    screenplay.scenes.forEach(sc => {
+      if (sc.blocks && sc.blocks.some(b => b.type === 'character' && cleanCharacterName(b.content) === key)) {
+        dynamicCount++;
+      }
+    });
+  }
+
+  if (key === 'SANTHOSH') {
+    return {
+      name: 'SANTHOSH',
+      role: 'Protagonist',
+      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '36 scenes tracked',
+      step1Title: 'Silent Conviction & Initial Resistance',
+      step1Tag: 'Fatal Flaw',
+      step1Range: 'Beginning Beats',
+      step1Desc: 'Santhosh begins navigating intense internal conviction, wrestling with external constraints and uncovering initial stakes.',
+      step2Title: 'The Turning Point & Strategic Pivot',
+      step2Tag: 'Turning Point',
+      step2Range: 'Middle Beats (Midpoint)',
+      step2Desc: 'Santhosh breaks away from passive compromises, taking active control of the narrative direction under peak conflict.',
+      step3Title: 'Decisive Transformation & Resolution',
+      step3Tag: 'Resolution',
+      step3Range: 'Climactic Beats',
+      step3Desc: 'Santhosh embraces complete accountability and purpose, achieving an irreversible transformation through the climax.',
+      synthesis: 'Santhosh drives the core thematic arc of the story, transforming from cautious survival into an active, principled catalyst of change.',
+      findings: [
+        { scene: 'SCENE 01 · Narrative Baseline · Pg 01', act: 'Act I', title: 'Fatal Flaw: Internal Hesitation', desc: 'Santhosh operates with guarded vigilance before escalating pressures force decisive action.', targetScene: 1 },
+        { scene: 'SCENE 02 · The Turning Point · Pg 05', act: 'Act II', title: 'The Point of No Return', desc: 'Santhosh takes a defining stance that permanently pivots interpersonal relationships and story stakes.', targetScene: 2 }
+      ]
+    };
+  }
+
+  if (key === 'ARAVIND') {
+    return {
+      name: 'ARAVIND',
+      role: 'Protagonist',
+      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '32 scenes tracked',
+      step1Title: 'Guarded Precision & Calculated Loyalty',
+      step1Tag: 'Origin Stance',
+      step1Range: 'Beginning Beats',
+      step1Desc: 'Aravind maintains tactical focus and sharp perception, questioning surrounding motives and testing early alliances.',
+      step2Title: 'High-Stakes Partnership & Crucial Stand',
+      step2Tag: 'Midpoint Shift',
+      step2Range: 'Middle Beats (Midpoint)',
+      step2Desc: 'Aravind unites forces during the turning point, applying razor-sharp resolve to counter mounting narrative obstacles.',
+      step3Title: 'Decisive Breakthrough & Ultimate Climax',
+      step3Tag: 'Resolution',
+      step3Range: 'Climactic Beats',
+      step3Desc: 'Aravind executes the final breakthrough, sealing the resolution through steadfast commitment to the mission.',
+      synthesis: 'Aravind provides essential tactical momentum and intellectual force, elevating the stakes and cementing the dramatic payoff.',
+      findings: [
+        { scene: 'SCENE 01 · Tactical Introduction · Pg 01', act: 'Act I', title: 'Strategic Presence & Foresight', desc: 'Aravind introduces critical context and tactical perspective into the unfolding scenario.', targetScene: 1 },
+        { scene: 'SCENE 02 · Midpoint Crucible · Pg 06', act: 'Act II', title: 'Decisive Strategic Realignment', desc: 'Aravind commits to the high-stakes confrontation that defines the story trajectory.', targetScene: 2 }
+      ]
+    };
+  }
 
   if (key === 'KEVIN') {
     return {
       name: 'Kevin',
       role: 'Protagonist',
-      scenesCount: '48 scenes tracked',
+      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '48 scenes tracked',
       step1Title: 'Silent Compliance & Institutional Fear',
       step1Tag: 'Fatal Flaw',
       step1Range: 'Beginning · Scene 01–11',
@@ -359,7 +427,7 @@ export function getCharacterDetails(charName, screenplay) {
     return {
       name: 'Meera',
       role: 'Confidante',
-      scenesCount: '22 scenes tracked',
+      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '22 scenes tracked',
       step1Title: 'Vigilant Skepticism & Tactical Isolation',
       step1Tag: 'Origin Stance',
       step1Range: 'Beginning · Scene 01–12',
@@ -380,10 +448,13 @@ export function getCharacterDetails(charName, screenplay) {
     };
   }
 
+  const role = (key === 'KEVIN' || key === 'SANTHOSH' || key === 'ARAVIND') ? 'Protagonist' : 'Character';
+  const scenesCountStr = dynamicCount > 0 ? `${dynamicCount} scenes tracked` : 'Screenplay Character';
+
   return {
     name: norm,
-    role: 'Character',
-    scenesCount: 'Screenplay Character',
+    role,
+    scenesCount: scenesCountStr,
     step1Title: `Initial Presence & Motive Baseline`,
     step1Tag: 'Introduction',
     step1Range: 'Beginning Beats',
@@ -661,7 +732,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
               <div class="relative inline-flex items-center shrink-0">
                 <select id="analysis-char-selector" class="h-7 pl-2.5 pr-6 rounded-lg bg-white border border-slate-200 hover:border-blue-500 text-slate-800 text-xs font-semibold appearance-none cursor-pointer focus:outline-none shadow-2xs transition-colors">
                   ${availableChars.map(c => `
-                    <option value="${c.name}" ${c.name.toUpperCase() === (currentCharData.name || '').toUpperCase() ? 'selected' : ''}>${c.name} ▾</option>
+                    <option value="${c.name}" ${c.name.toUpperCase() === (currentCharData.name || '').toUpperCase() ? 'selected' : ''}>${c.name}</option>
                   `).join('')}
                 </select>
                 <span class="material-symbols-outlined text-[14px] text-slate-500 absolute right-1.5 pointer-events-none">expand_more</span>
@@ -1159,7 +1230,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
                 <div class="relative inline-flex items-center shrink-0">
                   <select id="analysis-scene-selector" class="h-7 pl-2.5 pr-6 rounded-lg bg-white border border-slate-200 hover:border-blue-500 text-slate-800 text-xs font-semibold appearance-none cursor-pointer focus:outline-none shadow-2xs transition-colors">
                     ${availableScenes.map(s => `
-                      <option value="${s.number}" ${String(s.number) === String(currentSceneData.number) ? 'selected' : ''}>Scene ${s.number} ▾</option>
+                      <option value="${s.number}" ${String(s.number) === String(currentSceneData.number) ? 'selected' : ''}>Scene ${s.number}</option>
                     `).join('')}
                   </select>
                   <span class="material-symbols-outlined text-[14px] text-slate-500 absolute right-1.5 pointer-events-none">expand_more</span>
