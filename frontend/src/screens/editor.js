@@ -118,7 +118,13 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span>Export</span>
           </button>
 
-          <!-- Title Page button (brought to Row 2 beside Production/Export as in screenshot) -->
+          <!-- Draft Version button (Moved to First Row between Export and Title Page as in reference) -->
+          <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0 whitespace-nowrap" title="Draft / Version History">
+            <span class="material-symbols-outlined text-[15px] text-blue-600">history</span>
+            <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
+          </button>
+
+          <!-- Title Page button -->
           <button id="btn-quick-title-page" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:bg-slate-50 active:scale-95 transition-all shrink-0" title="Screenplay Title Page Document">
             <span class="material-symbols-outlined text-[15px] text-blue-600">article</span>
             <span>Title Page</span>
@@ -149,7 +155,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </button>
         </div>
 
-        <!-- ROW B: SECONDARY ACCESSORY CONTROLS (Scene Jump, Draft Version, B/I/U/S, Undo/Redo) -->
+        <!-- ROW B: SECONDARY ACCESSORY CONTROLS (Scene Jump, B/I/U/S, Undo/Redo) -->
         <div id="editor-secondary-accessory-bar" class="w-full bg-slate-50/60 border-t border-slate-200/70 px-3 py-1 flex items-center justify-between gap-2 max-w-5xl mx-auto transition-all">
           <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-none min-w-0">
             <!-- Compact Scene Selector: small length for proper alignment -->
@@ -160,14 +166,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               <span class="material-symbols-outlined text-[14px] text-white absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
             </div>
 
-            <!-- Draft Version button -->
-            <button id="versionsModalBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-caption text-xs border border-slate-200 active:scale-95 transition-all shrink-0 whitespace-nowrap">
-              <span class="material-symbols-outlined text-[14px] text-blue-600">history</span>
-              <span id="currentVersionTag">${script.draft || 'Draft 1.0'}</span>
-            </button>
-
-            <!-- Text formatting: B, I, U, S (right of Draft button, symbol only, compact using standard app Material Symbols) -->
-            <div class="flex items-center gap-0.5 shrink-0 ml-1" id="text-formatting-group">
+            <!-- Text formatting: B, I, U, S (symbol only, compact using standard app Material Symbols) -->
+            <div class="flex items-center gap-1 shrink-0 ml-1" id="text-formatting-group">
               <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
                 <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold">format_bold</span>
               </button>
@@ -2925,7 +2925,30 @@ function setupNavigationSelectors() {
       const sceneId = e.target.value;
       if (!sceneId) return;
       scrollToScene(sceneId);
+      const scObj = currentScreenplay?.scenes?.find(s => s.id === sceneId);
+      if (scObj) {
+        store.setState({ currentSceneId: scObj.number });
+      }
     };
+  }
+
+  // Deep-link jump to scene on load if specified in URL query or store
+  let targetScene = null;
+  try {
+    const loc = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : window.location.search;
+    const p = new URLSearchParams(loc || '');
+    if (p.get('scene')) targetScene = p.get('scene');
+  } catch (e) {}
+  if (!targetScene && store.state.currentSceneId) {
+    targetScene = store.state.currentSceneId;
+  }
+
+  if (targetScene && currentScreenplay?.scenes) {
+    const matched = currentScreenplay.scenes.find(s => String(s.number) === String(targetScene) || s.id === String(targetScene) || s.id === `scene-${targetScene}`);
+    if (matched) {
+      if (sceneSelect) sceneSelect.value = matched.id;
+      setTimeout(() => scrollToScene(matched.id), 250);
+    }
   }
 }
 

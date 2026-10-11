@@ -507,8 +507,18 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
     { id: "act-2", name: "ACT II - The Pressure Surge" },
     { id: "act-3", name: "ACT III - The Floodgate Standoff" }
   ],
-  characters: [],
-  locations: [],
+  characters: [
+    "KEVIN",
+    "MEERA",
+    "HARI",
+    "AKASH"
+  ],
+  locations: [
+    "INT. HOME",
+    "INT. PORT AUDIT ROOM",
+    "INT. CUSTOMS OFFICE",
+    "EXT. FLOODGATE GANTRY"
+  ],
   times: [
     "DAY",
     "NIGHT",
@@ -533,9 +543,44 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
       id: "scene-1",
       number: 1,
       actId: "act-1",
-      slugline: "",
+      slugline: "INT. HOME - EVENING",
       blocks: [
-        { id: "b-1-1", type: "scene", content: "" }
+        { id: "b-1-1", type: "scene", content: "INT. HOME - EVENING" },
+        { id: "b-1-2", type: "action", content: "There stands a woman." },
+        { id: "b-1-3", type: "character", content: "HARI" },
+        { id: "b-1-4", type: "dialogue", content: "Who is that?" },
+        { id: "b-1-5", type: "character", content: "AKASH" },
+        { id: "b-1-6", type: "dialogue", content: "How do I know?" },
+        { id: "b-1-7", type: "action", content: "Both leaves the place." }
+      ]
+    },
+    {
+      id: "scene-4",
+      number: 4,
+      actId: "act-1",
+      slugline: "INT. PORT AUDIT ROOM - DAY",
+      blocks: [
+        { id: "b-4-1", type: "scene", content: "INT. PORT AUDIT ROOM - DAY" },
+        { id: "b-4-2", type: "action", content: "Kevin stamps irregular cargo manifests to keep peace with union superiors." },
+        { id: "b-4-3", type: "character", content: "KEVIN" },
+        { id: "b-4-4", type: "dialogue", content: "The manifests are sealed." }
+      ]
+    },
+    {
+      id: "scene-18",
+      number: 18,
+      actId: "act-2",
+      slugline: "INT. CUSTOMS OFFICE - NIGHT",
+      blocks: [
+        { id: "b-18-1", type: "scene", content: "INT. CUSTOMS OFFICE - NIGHT" },
+        { id: "b-18-2", type: "action", content: "Kevin kneels over the cracked hydro-sensor junction box. Static hiss whispers through the damp comm-link. A lone flicker illuminates the tarnished brass seal." },
+        { id: "b-18-3", type: "action", content: "Water droplets bead along the corroded circuit wires. He slides a copper probe between the connectors." },
+        { id: "b-18-4", type: "character", content: "KEVIN" },
+        { id: "b-18-5", type: "parenthetical", content: "(whispering into comm)" },
+        { id: "b-18-6", type: "dialogue", content: "If the seals break before dawn, the sector won't hold the surge." },
+        { id: "b-18-7", type: "character", content: "MEERA (O.S.)" },
+        { id: "b-18-8", type: "dialogue", content: "Then don't let them break. Reroute the secondary relay through the floodgate breaker." },
+        { id: "b-18-9", type: "transition", content: "CUT TO:" }
       ]
     }
   ]
@@ -546,10 +591,7 @@ export async function getScreenplay(scriptId) {
   try {
     const data = await request(`/screenplay/${scriptId}`);
     if (data.screenplay && data.screenplay.scenes && data.screenplay.scenes.length > 0) {
-      const isOldDemo = data.screenplay.scenes.some(s => s.blocks?.some(b => b.content?.includes('Kevin') || b.id === 'b-18-1'));
-      if (!isOldDemo) {
-        return data.screenplay;
-      }
+      return data.screenplay;
     }
   } catch {}
 
@@ -557,14 +599,13 @@ export async function getScreenplay(scriptId) {
   if (saved) {
     try {
       const sp = JSON.parse(saved);
-      const isOldDemo = sp && sp.scenes && sp.scenes.some(s => s.id === 'scene-18' || s.blocks?.some(b => b.content?.includes('Kevin') || b.id === 'b-18-1'));
-      if (sp && sp.scenes && sp.scenes.length > 0 && !isOldDemo) {
+      if (sp && sp.scenes && sp.scenes.length > 0) {
         return sp;
       }
     } catch {}
   }
 
-  // Fallback to fresh starting screenplay from scratch
+  // Fallback to fresh starting screenplay from template
   const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
   template.id = scriptId || 'script_01';
   localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));

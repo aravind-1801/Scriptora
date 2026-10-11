@@ -117,9 +117,9 @@ export function renderIntelligenceContextScreen() {
             <div class="flex flex-col items-center gap-1.5">
               <span class="text-[10px] uppercase font-bold text-slate-400">Minutes</span>
               <div class="flex items-center gap-2">
-                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="-5">-</button>
+                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="-1">-</button>
                 <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-min">${String(context.minutes || 36).padStart(2, '0')}</span>
-                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="5">+</button>
+                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="1">+</button>
               </div>
             </div>
 
@@ -127,9 +127,9 @@ export function renderIntelligenceContextScreen() {
             <div class="flex flex-col items-center gap-1.5">
               <span class="text-[10px] uppercase font-bold text-slate-400">Seconds</span>
               <div class="flex items-center gap-2">
-                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="-15">-</button>
+                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="-1">-</button>
                 <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-sec">${String(context.seconds || 0).padStart(2, '0')}</span>
-                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="15">+</button>
+                <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="1">+</button>
               </div>
             </div>
           </div>
@@ -153,10 +153,12 @@ export function renderIntelligenceContextScreen() {
 
 export function attachIntelligenceContextEvents(navigate) {
   const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  let selectedFormat = 'Feature';
-  let hours = 1;
-  let minutes = 36;
-  let seconds = 0;
+  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {};
+  const context = script.context || {};
+  let selectedFormat = context.format || script.format || 'Feature';
+  let hours = context.hours !== undefined ? context.hours : 1;
+  let minutes = context.minutes !== undefined ? context.minutes : 36;
+  let seconds = context.seconds !== undefined ? context.seconds : 0;
 
   // Format cards selection
   document.querySelectorAll('.format-card').forEach(btn => {
@@ -168,11 +170,11 @@ export function attachIntelligenceContextEvents(navigate) {
       btn.className = "format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer";
       
       if (selectedFormat === 'Short') {
-        hours = 0; minutes = 25;
+        hours = 0; minutes = 25; seconds = 0;
       } else if (selectedFormat === 'Pilot') {
-        hours = 0; minutes = 50;
+        hours = 0; minutes = 50; seconds = 30;
       } else {
-        hours = 1; minutes = 45;
+        hours = 1; minutes = 45; seconds = 0;
       }
       updateDuration();
     };
@@ -187,14 +189,14 @@ export function attachIntelligenceContextEvents(navigate) {
     document.getElementById('pacing-projection').textContent = `~${totalMinutes} standard script pages`;
   }
 
-  // Steppers
+  // Steppers: EXACTLY ±1 per press, bounded clock style: Hours 00-09, Minutes 00-59, Seconds 00-59
   document.querySelectorAll('.stepper-btn').forEach(btn => {
     btn.onclick = () => {
       const unit = btn.getAttribute('data-unit');
-      const delta = parseInt(btn.getAttribute('data-delta'));
-      if (unit === 'hr') hours = Math.max(0, Math.min(8, hours + delta));
-      if (unit === 'min') minutes = Math.max(0, Math.min(59, (minutes + delta + 60) % 60));
-      if (unit === 'sec') seconds = Math.max(0, Math.min(59, (seconds + delta + 60) % 60));
+      const delta = parseInt(btn.getAttribute('data-delta'), 10) || 0;
+      if (unit === 'hr') hours = Math.max(0, Math.min(9, hours + delta));
+      if (unit === 'min') minutes = Math.max(0, Math.min(59, minutes + delta));
+      if (unit === 'sec') seconds = Math.max(0, Math.min(59, seconds + delta));
       updateDuration();
     };
   });
