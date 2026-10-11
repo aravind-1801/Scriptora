@@ -1907,6 +1907,16 @@ export function renderFormattedContent(text) {
       const children = Array.from(node.childNodes);
       for (const child of children) {
         if (child.nodeType === Node.ELEMENT_NODE) {
+          if (child.tagName === 'SPAN') {
+            const isLineThrough = child.style?.textDecoration?.includes('line-through') || child.style?.textDecorationLine?.includes('line-through');
+            if (isLineThrough) {
+              const sTag = document.createElement('s');
+              sTag.innerHTML = child.innerHTML;
+              node.replaceChild(sTag, child);
+              sanitize(sTag);
+              continue;
+            }
+          }
           if (!allowedTags.has(child.tagName)) {
             const textNode = document.createTextNode(child.textContent || '');
             node.replaceChild(textNode, child);
@@ -2322,20 +2332,16 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // When active typing formatting is toggled on with collapsed cursor
+  // When active typing formatting is toggled on or off with collapsed cursor
   if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.length === 1) {
-    if (activeTypingFormats.bold && !document.queryCommandState('bold')) {
-      document.execCommand('bold', false, null);
-    }
-    if (activeTypingFormats.italic && !document.queryCommandState('italic')) {
-      document.execCommand('italic', false, null);
-    }
-    if (activeTypingFormats.underline && !document.queryCommandState('underline')) {
-      document.execCommand('underline', false, null);
-    }
-    if (activeTypingFormats.strike && !document.queryCommandState('strikeThrough')) {
-      document.execCommand('strikeThrough', false, null);
-    }
+    ['bold', 'italic', 'underline', 'strikeThrough'].forEach(cmd => {
+      if (typingOverrides[cmd] === true && !document.queryCommandState(cmd)) {
+        try { document.execCommand(cmd, false, null); } catch (_) {}
+      } else if (typingOverrides[cmd] === false && document.queryCommandState(cmd)) {
+        try { document.execCommand(cmd, false, null); } catch (_) {}
+      }
+    });
+    typingOverrides = { bold: null, italic: null, underline: null, strikeThrough: null };
   }
 
   // Ctrl+Enter: Insert Page Break
@@ -3106,22 +3112,70 @@ function setupElementBar() {
   });
 }
 
-export const activeTypingFormats = {
-  bold: false,
-  italic: false,
-  underline: false,
-  strike: false
+export const typingOverrides = {
+  bold: null,
+  italic: null,
+  underline: null,
+  strikeThrough: null
 };
 
-export function applyTextFormatting(cmd) {
-  const formatMap = {
-    'bold': 'bold',
-    'italic': 'italic',
-    'underline': 'underline',
-    'strikeThrough': 'strike'
-  };
-  const key = formatMap[cmd] || cmd;
+let formattingControlsInitialized = false;
 
+export function isFormatActive(cmd) {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return false;
+
+  const anchor = sel.anchorNode;
+  const el = anchor?.nodeType === Node.ELEMENT_NODE ? anchor : anchor?.parentElement;
+  if (!el) return false;
+
+  const blockEl = el.closest('.screenplay-block');
+  if (!blockEl) return false;
+
+  // If text is highlighted, native queryCommandState is fully accurate
+  if (!sel.isCollapsed && sel.toString().trim().length > 0) {
+    try {
+      return document.queryCommandState(cmd);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // When cursor is collapsed:
+  const bType = blockEl.getAttribute('data-block-type');
+  const isInherentlyBold = (bType === 'scene' || bType === 'character' || bType === 'transition');
+
+  try {
+    if (cmd === 'bold') {
+      if (isInherentlyBold) {
+        // Only active if explicitly wrapped in an inline <b> or <strong> tag
+        const tag = el.closest('b, strong');
+        return !!tag && tag !== blockEl;
+      }
+      return document.queryCommandState('bold');
+    }
+
+    if (cmd === 'strikeThrough') {
+      const tag = el.closest('s, strike, del');
+      if (tag) return true;
+      return document.queryCommandState('strikeThrough');
+    }
+
+    if (cmd === 'italic') {
+      return document.queryCommandState('italic');
+    }
+
+    if (cmd === 'underline') {
+      return document.queryCommandState('underline');
+    }
+  } catch (_) {
+    return false;
+  }
+
+  return false;
+}
+
+export function applyTextFormatting(cmd) {
   let activeEl = document.activeElement;
   let blockEl = activeEl ? activeEl.closest('.screenplay-block') : null;
   let editable = blockEl ? (blockEl.hasAttribute('contenteditable') ? blockEl : blockEl.querySelector('[contenteditable="true"]')) : null;
@@ -3134,7 +3188,6 @@ export function applyTextFormatting(cmd) {
     }
   }
 
-  // If still not found, fallback to first visible screenplay block
   if (!editable) {
     const firstBlock = document.querySelector('.screenplay-block');
     if (firstBlock) {
@@ -3152,18 +3205,22 @@ export function applyTextFormatting(cmd) {
 
   if (hasTextSelected) {
     // 1. Highlighted text: execute command directly on selection
-    document.execCommand(cmd, false, null);
+    try {
+      document.execCommand(cmd, false, null);
+    } catch (_) {}
     if (blockEl && editable) {
       updateBlockModel(blockEl, editable.innerHTML);
     }
     hasUnsavedChanges = true;
     if (autoSaveEnabled) scheduleAutosave();
+    typingOverrides[cmd] = null;
     updateTextFormatButtonStates();
   } else {
-    // 2. Collapsed cursor or no text selected: toggle persistent typing format
-    activeTypingFormats[key] = !activeTypingFormats[key];
+    // 2. Collapsed cursor: clean toggle on/off
+    const currentlyActive = typingOverrides[cmd] !== null ? typingOverrides[cmd] : isFormatActive(cmd);
+    const nextState = !currentlyActive;
+    typingOverrides[cmd] = nextState;
 
-    // Prime the contenteditable execution buffer
     try {
       document.execCommand(cmd, false, null);
     } catch (_) {}
@@ -3267,42 +3324,24 @@ export function setupTextFormattingControls() {
 
   configs.forEach(({ btn, cmd }) => {
     if (!btn) return;
-    // CRITICAL: mousedown preventDefault keeps contenteditable selection active
-    btn.addEventListener('mousedown', (e) => {
+    btn.onmousedown = (e) => {
       e.preventDefault();
       e.stopPropagation();
-    });
+    };
 
-    btn.addEventListener('click', (e) => {
+    btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       applyTextFormatting(cmd);
+    };
+  });
+
+  if (!formattingControlsInitialized) {
+    formattingControlsInitialized = true;
+    document.addEventListener('selectionchange', () => {
+      updateTextFormatButtonStates();
     });
-  });
-
-  // Automatically update button active states when selection or caret changes
-  document.addEventListener('selectionchange', () => {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-      const activeEl = document.activeElement;
-      if (activeEl && activeEl.closest('.screenplay-block')) {
-        try {
-          if (sel.isCollapsed) {
-            const qB = document.queryCommandState('bold');
-            const qI = document.queryCommandState('italic');
-            const qU = document.queryCommandState('underline');
-            const qS = document.queryCommandState('strikeThrough');
-
-            if (qB) activeTypingFormats.bold = true;
-            if (qI) activeTypingFormats.italic = true;
-            if (qU) activeTypingFormats.underline = true;
-            if (qS) activeTypingFormats.strike = true;
-          }
-        } catch (_) {}
-      }
-    }
-    updateTextFormatButtonStates();
-  });
+  }
 
   const mainScroll = document.getElementById('editor-main-scroll');
   if (mainScroll) {
@@ -3329,15 +3368,15 @@ export function updateTextFormatButtonStates() {
     let isS = false;
 
     if (sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().trim().length > 0) {
-      isB = document.queryCommandState('bold');
-      isI = document.queryCommandState('italic');
-      isU = document.queryCommandState('underline');
-      isS = document.queryCommandState('strikeThrough');
+      isB = isFormatActive('bold');
+      isI = isFormatActive('italic');
+      isU = isFormatActive('underline');
+      isS = isFormatActive('strikeThrough');
     } else {
-      isB = !!activeTypingFormats.bold || document.queryCommandState('bold');
-      isI = !!activeTypingFormats.italic || document.queryCommandState('italic');
-      isU = !!activeTypingFormats.underline || document.queryCommandState('underline');
-      isS = !!activeTypingFormats.strike || document.queryCommandState('strikeThrough');
+      isB = typingOverrides.bold !== null ? typingOverrides.bold : isFormatActive('bold');
+      isI = typingOverrides.italic !== null ? typingOverrides.italic : isFormatActive('italic');
+      isU = typingOverrides.underline !== null ? typingOverrides.underline : isFormatActive('underline');
+      isS = typingOverrides.strikeThrough !== null ? typingOverrides.strikeThrough : isFormatActive('strikeThrough');
     }
 
     bBtn.className = isB ? activeClass : inactiveClass;
