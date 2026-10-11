@@ -169,16 +169,16 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <!-- Text formatting: B, I, U, S (symbol only, compact using standard app Material Symbols) -->
             <div class="flex items-center gap-1 shrink-0 ml-1" id="text-formatting-group">
               <button type="button" id="btn-format-bold" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Bold Selected Text (Ctrl+B)">
-                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold">format_bold</span>
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 font-bold pointer-events-none">format_bold</span>
               </button>
               <button type="button" id="btn-format-italic" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Italic Selected Text (Ctrl+I)">
-                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_italic</span>
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 pointer-events-none">format_italic</span>
               </button>
               <button type="button" id="btn-format-underline" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Underline Selected Text (Ctrl+U)">
-                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">format_underlined</span>
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 pointer-events-none">format_underlined</span>
               </button>
               <button type="button" id="btn-format-strike" class="format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer" title="Strikethrough Selected Text">
-                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0">strikethrough_s</span>
+                <span class="material-symbols-outlined text-[16px] sm:text-[17px] leading-none shrink-0 pointer-events-none">strikethrough_s</span>
               </button>
             </div>
           </div>
@@ -1777,80 +1777,80 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2.5 font-bold text-slate-900 mt-2 mb-2 group">
         <!-- Scene Number shown on LEFT side ONLY (Section I) -->
         <span class="scene-num-indicator mr-3 sm:mr-4 shrink-0 font-mono text-slate-400 font-bold select-none text-[13px] w-6 text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+        <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
   }
 
   if (isAction) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isChar) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block w-7/12 mx-auto uppercase font-bold tracking-wider text-slate-900 text-center mt-3 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block w-7/12 mx-auto uppercase font-bold tracking-wider text-slate-900 text-center mt-3 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isParen) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block w-6/12 mx-auto italic text-slate-600 text-center mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block w-6/12 mx-auto italic text-slate-600 text-center mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isDia) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block w-9/12 sm:w-8/12 mx-auto text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block w-9/12 sm:w-8/12 mx-auto text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isTrans) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isShot) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'CLOSE ON:')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
     `;
   }
 
   if (isText) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isNote) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || '[[ NOTE: Script comment... ]]')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
     `;
   }
 
   if (isOutline) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'OUTLINE BEAT')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
     `;
   }
 
   if (isAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
     `;
   }
 
   if (isEndAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'END OF ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
     `;
   }
 
   if (isSequence) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || 'SEQUENCE 1')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
     `;
   }
 
@@ -1858,12 +1858,12 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dual" class="screenplay-block screenplay-dual-dialogue-grid">
         <div class="flex flex-col">
-          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.char1 || 'CHARACTER A')}</div>
-          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.dia1 || 'Dialogue A')}</div>
+          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
+          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
         </div>
         <div class="flex flex-col">
-          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.char2 || 'CHARACTER B')}</div>
-          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${escapeHtml(block.dia2 || 'Dialogue B')}</div>
+          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
+          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
         </div>
       </div>
     `;
@@ -1871,7 +1871,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isLyrics) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${escapeHtml(block.content || '♫ Musical lyrics... ♫')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
     `;
   }
 
@@ -1890,8 +1890,41 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   }
 
   return `
-    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true">${escapeHtml(block.content)}</div>
+    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true">${renderFormattedContent(block.content)}</div>
   `;
+}
+
+export function renderFormattedContent(text) {
+  if (!text) return '';
+  if (!/<[a-z][\s\S]*>/i.test(text)) {
+    return escapeHtml(text);
+  }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${text}</body>`, 'text/html');
+    const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'BR', 'SPAN']);
+    
+    function sanitize(node) {
+      const children = Array.from(node.childNodes);
+      for (const child of children) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          if (!allowedTags.has(child.tagName)) {
+            const textNode = document.createTextNode(child.textContent || '');
+            node.replaceChild(textNode, child);
+          } else {
+            while (child.attributes.length > 0) {
+              child.removeAttribute(child.attributes[0].name);
+            }
+            sanitize(child);
+          }
+        }
+      }
+    }
+    sanitize(doc.body);
+    return doc.body.innerHTML;
+  } catch (_) {
+    return escapeHtml(text);
+  }
 }
 
 function escapeHtml(text) {
@@ -1997,8 +2030,9 @@ function attachSingleBlockListeners(block) {
     hasUnsavedChanges = true;
     const type = block.getAttribute('data-block-type') || 'action';
 
-    // Auto-capitalize first letter of sentence in Action and Dialogue
-    if (type === 'action' || type === 'dialogue') {
+    // Auto-capitalize first letter of sentence in Action and Dialogue (only when no rich formatting tags present)
+    const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
+    if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
       const originalText = editable.innerText;
       const formattedText = capitalizeSentenceStarters(originalText);
       if (formattedText !== originalText) {
@@ -2008,7 +2042,7 @@ function attachSingleBlockListeners(block) {
       }
     }
 
-    updateBlockModel(block, editable.innerText);
+    updateBlockModel(block, editable.innerHTML);
     updateSaveStatus('Unsaved');
     
     // Auto-save only if enabled (Section 2 & 3)
@@ -2021,14 +2055,15 @@ function attachSingleBlockListeners(block) {
 
   editable.onblur = () => {
     const type = block.getAttribute('data-block-type') || 'action';
-    if (type === 'action' || type === 'dialogue') {
+    const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
+    if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
       const originalText = editable.innerText;
       const formattedText = capitalizeSentenceStarters(originalText);
       if (formattedText !== originalText) {
         editable.innerText = formattedText;
-        updateBlockModel(block, formattedText);
       }
     }
+    updateBlockModel(block, editable.innerHTML);
 
     // Commit ONLY completed entities upon blur (Prompt 23: 4-8)
     if (type === 'character') {
@@ -2041,18 +2076,19 @@ function attachSingleBlockListeners(block) {
 
   editable.onpaste = () => {
     const type = block.getAttribute('data-block-type') || 'action';
-    if (type === 'action' || type === 'dialogue') {
-      setTimeout(() => {
+    setTimeout(() => {
+      const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
+      if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
         const originalText = editable.innerText;
         const formattedText = capitalizeSentenceStarters(originalText);
         if (formattedText !== originalText) {
           const caretOffset = getCaretCharacterOffsetWithin(editable);
           editable.innerText = formattedText;
           setCaretCharacterOffsetWithin(editable, caretOffset);
-          updateBlockModel(block, formattedText);
         }
-      }, 0);
-    }
+      }
+      updateBlockModel(block, editable.innerHTML);
+    }, 0);
   };
 
   editable.onkeydown = (e) => {
@@ -2190,11 +2226,12 @@ function updateBlockModel(blockEl, text) {
 
     // Structured metadata for scene heading (Does NOT push keystrokes to memory!)
     if (b.type === 'scene') {
-      const parsed = parseSceneHeading(text);
+      const plainText = (text || '').replace(/<[^>]+>/g, '');
+      const parsed = parseSceneHeading(plainText);
       b.intExt = parsed.intExt;
       b.location = parsed.location;
       b.time = parsed.time;
-      scene.slugline = text;
+      scene.slugline = plainText;
       scene.location = parsed.location;
       scene.time = parsed.time;
     }
@@ -2263,6 +2300,42 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     if (e.key === 'Escape') {
       hideAutocomplete();
       return;
+    }
+  }
+
+  // Formatting keyboard shortcuts: Ctrl+B, Ctrl+I, Ctrl+U
+  if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    const k = e.key.toLowerCase();
+    if (k === 'b') {
+      e.preventDefault();
+      applyTextFormatting('bold');
+      return;
+    }
+    if (k === 'i') {
+      e.preventDefault();
+      applyTextFormatting('italic');
+      return;
+    }
+    if (k === 'u') {
+      e.preventDefault();
+      applyTextFormatting('underline');
+      return;
+    }
+  }
+
+  // When active typing formatting is toggled on with collapsed cursor
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.length === 1) {
+    if (activeTypingFormats.bold && !document.queryCommandState('bold')) {
+      document.execCommand('bold', false, null);
+    }
+    if (activeTypingFormats.italic && !document.queryCommandState('italic')) {
+      document.execCommand('italic', false, null);
+    }
+    if (activeTypingFormats.underline && !document.queryCommandState('underline')) {
+      document.execCommand('underline', false, null);
+    }
+    if (activeTypingFormats.strike && !document.queryCommandState('strikeThrough')) {
+      document.execCommand('strikeThrough', false, null);
     }
   }
 
@@ -3034,26 +3107,88 @@ function setupElementBar() {
   });
 }
 
+export const activeTypingFormats = {
+  bold: false,
+  italic: false,
+  underline: false,
+  strike: false
+};
+
+export function applyTextFormatting(cmd) {
+  const formatMap = {
+    'bold': 'bold',
+    'italic': 'italic',
+    'underline': 'underline',
+    'strikeThrough': 'strike'
+  };
+  const key = formatMap[cmd] || cmd;
+
+  let activeEl = document.activeElement;
+  let blockEl = activeEl ? activeEl.closest('.screenplay-block') : null;
+  let editable = blockEl ? (blockEl.hasAttribute('contenteditable') ? blockEl : blockEl.querySelector('[contenteditable="true"]')) : null;
+
+  if (!editable && activeBlockId) {
+    const b = document.getElementById(activeBlockId);
+    if (b) {
+      blockEl = b;
+      editable = b.hasAttribute('contenteditable') ? b : b.querySelector('[contenteditable="true"]');
+    }
+  }
+
+  // If still not found, fallback to first visible screenplay block
+  if (!editable) {
+    const firstBlock = document.querySelector('.screenplay-block');
+    if (firstBlock) {
+      blockEl = firstBlock;
+      editable = firstBlock.hasAttribute('contenteditable') ? firstBlock : firstBlock.querySelector('[contenteditable="true"]');
+    }
+  }
+
+  if (editable && document.activeElement !== editable) {
+    editable.focus();
+  }
+
+  const sel = window.getSelection();
+  const hasTextSelected = sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().trim().length > 0;
+
+  if (hasTextSelected) {
+    // 1. Highlighted text: execute command directly on selection
+    document.execCommand(cmd, false, null);
+    if (blockEl && editable) {
+      updateBlockModel(blockEl, editable.innerHTML);
+    }
+    hasUnsavedChanges = true;
+    if (autoSaveEnabled) scheduleAutosave();
+    updateTextFormatButtonStates();
+  } else {
+    // 2. Collapsed cursor or no text selected: toggle persistent typing format
+    activeTypingFormats[key] = !activeTypingFormats[key];
+
+    // Prime the contenteditable execution buffer
+    try {
+      document.execCommand(cmd, false, null);
+    } catch (_) {}
+
+    updateTextFormatButtonStates();
+  }
+}
+
 function handleToolbarToolClick(type) {
   // 1. Text formatting commands (Operate on selection or future typing)
   if (type === 'bold') {
-    document.execCommand('bold', false, null);
-    updateTextFormatButtonStates();
+    applyTextFormatting('bold');
     return;
   }
   if (type === 'italic') {
-    document.execCommand('italic', false, null);
-    updateTextFormatButtonStates();
+    applyTextFormatting('italic');
     return;
   }
   if (type === 'underline') {
-    document.execCommand('underline', false, null);
-    updateTextFormatButtonStates();
+    applyTextFormatting('underline');
     return;
   }
   if (type === 'strike') {
-    document.execCommand('strikeThrough', false, null);
-    updateTextFormatButtonStates();
+    applyTextFormatting('strikeThrough');
     return;
   }
   if (type === 'undo') {
@@ -3136,19 +3271,39 @@ export function setupTextFormattingControls() {
     // CRITICAL: mousedown preventDefault keeps contenteditable selection active
     btn.addEventListener('mousedown', (e) => {
       e.preventDefault();
+      e.stopPropagation();
     });
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();
-      document.execCommand(cmd, false, null);
-      updateTextFormatButtonStates();
-      hasUnsavedChanges = true;
-      if (autoSaveEnabled) scheduleAutosave();
+      e.stopPropagation();
+      applyTextFormatting(cmd);
     });
   });
 
   // Automatically update button active states when selection or caret changes
-  document.addEventListener('selectionchange', updateTextFormatButtonStates);
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.closest('.screenplay-block')) {
+        try {
+          if (sel.isCollapsed) {
+            const qB = document.queryCommandState('bold');
+            const qI = document.queryCommandState('italic');
+            const qU = document.queryCommandState('underline');
+            const qS = document.queryCommandState('strikeThrough');
+
+            if (qB) activeTypingFormats.bold = true;
+            if (qI) activeTypingFormats.italic = true;
+            if (qU) activeTypingFormats.underline = true;
+            if (qS) activeTypingFormats.strike = true;
+          }
+        } catch (_) {}
+      }
+    }
+    updateTextFormatButtonStates();
+  });
 
   const mainScroll = document.getElementById('editor-main-scroll');
   if (mainScroll) {
@@ -3168,10 +3323,23 @@ export function updateTextFormatButtonStates() {
   const inactiveClass = 'format-toggle-btn w-6 sm:w-7 h-6 sm:h-7 rounded-md sm:rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center border border-slate-200/90 active:scale-95 transition-all cursor-pointer';
 
   try {
-    const isB = document.queryCommandState('bold');
-    const isI = document.queryCommandState('italic');
-    const isU = document.queryCommandState('underline');
-    const isS = document.queryCommandState('strikeThrough');
+    const sel = window.getSelection();
+    let isB = false;
+    let isI = false;
+    let isU = false;
+    let isS = false;
+
+    if (sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().trim().length > 0) {
+      isB = document.queryCommandState('bold');
+      isI = document.queryCommandState('italic');
+      isU = document.queryCommandState('underline');
+      isS = document.queryCommandState('strikeThrough');
+    } else {
+      isB = !!activeTypingFormats.bold || document.queryCommandState('bold');
+      isI = !!activeTypingFormats.italic || document.queryCommandState('italic');
+      isU = !!activeTypingFormats.underline || document.queryCommandState('underline');
+      isS = !!activeTypingFormats.strike || document.queryCommandState('strikeThrough');
+    }
 
     bBtn.className = isB ? activeClass : inactiveClass;
     iBtn.className = isI ? activeClass : inactiveClass;
