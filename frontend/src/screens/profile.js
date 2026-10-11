@@ -99,12 +99,16 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
 
         <!-- User Information Card -->
         <div class="rounded-2xl border border-slate-100 bg-white p-5 shadow-xs flex flex-col items-center text-center">
-          <div class="relative group cursor-pointer" id="avatar-container-btn">
-            <div id="user-avatar-circle" class="w-16 h-16 rounded-full bg-blue-600 text-white font-bold text-xl flex items-center justify-center shadow-sm transition-transform active:scale-95">
-              ${user.initials || 'AK'}
+          <div class="relative group cursor-pointer" id="avatar-container-btn" title="Click to edit profile or change photo">
+            <div id="user-avatar-circle" class="w-20 h-20 rounded-full ${user.avatarColor || 'bg-blue-600'} text-white font-bold text-2xl flex items-center justify-center shadow-md overflow-hidden transition-transform active:scale-95 border-2 border-white ring-2 ring-slate-100">
+              ${user.avatarUrl ? `
+                <img id="user-avatar-img" src="${user.avatarUrl}" class="w-full h-full object-cover" alt="${user.name}" />
+              ` : `
+                <span id="user-avatar-initials">${user.initials || 'AK'}</span>
+              `}
             </div>
-            <button type="button" id="edit-avatar-btn" class="w-5 h-5 bg-white rounded-full border border-slate-200 text-slate-600 flex items-center justify-center absolute bottom-0 right-0 shadow-xs hover:bg-slate-50">
-              <span class="material-symbols-outlined text-[11px]">edit</span>
+            <button type="button" id="edit-avatar-btn" class="w-6 h-6 bg-white rounded-full border border-slate-200 text-slate-700 flex items-center justify-center absolute -bottom-0.5 -right-0.5 shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer" title="Add profile picture from local device">
+              <span class="material-symbols-outlined text-[13px]">add_a_photo</span>
             </button>
           </div>
           <h2 class="text-base font-bold text-slate-900 mt-2.5 leading-tight font-heading" id="profile-display-name">${user.name}</h2>
@@ -354,11 +358,40 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
 
       <!-- Edit Profile Modal -->
       <div id="modal-edit-profile" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h2 class="text-sm font-bold text-slate-900">Edit Profile & Account</h2>
             <button type="button" class="close-profile-modal p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><span class="material-symbols-outlined text-[18px]">close</span></button>
           </div>
+
+          <!-- Hidden local file input for photo upload -->
+          <input type="file" id="local-photo-input" accept="image/png, image/jpeg, image/webp, image/gif" class="hidden" />
+
+          <!-- Profile Photo Local Upload Block -->
+          <div class="flex flex-col items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
+            <div class="relative">
+              <div id="modal-preview-avatar" class="w-16 h-16 rounded-full ${user.avatarColor || 'bg-blue-600'} text-white font-bold text-xl flex items-center justify-center shadow-xs overflow-hidden border-2 border-white ring-2 ring-slate-200">
+                ${user.avatarUrl ? `
+                  <img id="modal-preview-img" src="${user.avatarUrl}" class="w-full h-full object-cover" alt="Preview" />
+                ` : `
+                  <span id="modal-preview-initials">${user.initials || 'AK'}</span>
+                `}
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button type="button" id="btn-modal-upload-photo" class="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[15px]">add_a_photo</span>
+                <span>Add Local Photo</span>
+              </button>
+              <button type="button" id="btn-modal-remove-photo" class="${user.avatarUrl ? '' : 'hidden'} h-8 px-2.5 rounded-lg bg-red-50 hover:bg-red-100 active:scale-95 text-red-600 text-xs font-semibold flex items-center gap-1 border border-red-200 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[15px]">delete</span>
+                <span>Remove</span>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400 text-center">Select any photo (PNG, JPG, WEBP) from your device</p>
+          </div>
+
           <form id="form-update-profile" class="flex flex-col gap-3">
             <div class="flex flex-col gap-1">
               <label class="text-[11px] font-semibold text-slate-600">Full Name</label>
@@ -373,7 +406,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
               <input type="email" id="prof-input-email" value="${user.email}" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600" required>
             </div>
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-600">Avatar Accent Style</label>
+              <label class="text-[11px] font-semibold text-slate-600">Fallback Avatar Color</label>
               <div class="flex items-center gap-2 pt-1">
                 <button type="button" class="prof-avatar-color-btn w-7 h-7 rounded-full bg-blue-600 ring-2 ring-offset-2 ring-blue-600" data-color="bg-blue-600"></button>
                 <button type="button" class="prof-avatar-color-btn w-7 h-7 rounded-full bg-indigo-600 hover:opacity-90" data-color="bg-indigo-600"></button>
@@ -1078,12 +1111,15 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     };
   }
 
-  // Edit Profile Modal
+  // Edit Profile Modal & Local Photo Handlers
   const editProfileModal = document.getElementById('modal-edit-profile');
   const triggerEmail = document.getElementById('trigger-modal-email');
   const triggerAvatar = document.getElementById('edit-avatar-btn');
   const triggerAvatarBox = document.getElementById('avatar-container-btn');
   const formUpdateProfile = document.getElementById('form-update-profile');
+  const localPhotoInput = document.getElementById('local-photo-input');
+  const btnModalUploadPhoto = document.getElementById('btn-modal-upload-photo');
+  const btnModalRemovePhoto = document.getElementById('btn-modal-remove-photo');
 
   function toggleProfileModal(open) {
     if (open) editProfileModal?.classList.remove('hidden');
@@ -1091,11 +1127,132 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   }
 
   if (triggerEmail) triggerEmail.onclick = () => toggleProfileModal(true);
-  if (triggerAvatar) triggerAvatar.onclick = (e) => { e.stopPropagation(); toggleProfileModal(true); };
   if (triggerAvatarBox) triggerAvatarBox.onclick = () => toggleProfileModal(true);
+  
+  // Clicking camera badge on avatar gives direct local photo picker
+  if (triggerAvatar) {
+    triggerAvatar.onclick = (e) => {
+      e.stopPropagation();
+      if (localPhotoInput) localPhotoInput.click();
+    };
+  }
+
+  if (btnModalUploadPhoto) {
+    btnModalUploadPhoto.onclick = () => {
+      if (localPhotoInput) localPhotoInput.click();
+    };
+  }
+
   document.querySelectorAll('.close-profile-modal').forEach(b => b.onclick = () => toggleProfileModal(false));
 
-  let selectedAvatarColor = 'bg-blue-600';
+  // Local Photo File Input Handler
+  if (localPhotoInput) {
+    localPhotoInput.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select a valid image file (PNG, JPG, WEBP)');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const img = new Image();
+        img.onload = () => {
+          // Canvas downscale to max 360x360 for high quality & fast localStorage storage
+          const canvas = document.createElement('canvas');
+          const MAX_DIM = 360;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_DIM) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            }
+          } else {
+            if (height > MAX_DIM) {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+          // Update user state and persist
+          const currentUser = store.state.currentUser || user;
+          const updatedUser = {
+            ...currentUser,
+            avatarUrl: dataUrl
+          };
+          store.setState({ currentUser: updatedUser });
+          localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+          api.updateProfile({ avatarUrl: dataUrl }).catch(() => {});
+
+          // Update profile card avatar
+          const mainAvatar = document.getElementById('user-avatar-circle');
+          if (mainAvatar) {
+            mainAvatar.innerHTML = `<img id="user-avatar-img" src="${dataUrl}" class="w-full h-full object-cover" alt="Profile" />`;
+          }
+
+          // Update modal preview avatar
+          const modalPreview = document.getElementById('modal-preview-avatar');
+          if (modalPreview) {
+            modalPreview.innerHTML = `<img id="modal-preview-img" src="${dataUrl}" class="w-full h-full object-cover" alt="Preview" />`;
+          }
+          if (btnModalRemovePhoto) btnModalRemovePhoto.classList.remove('hidden');
+
+          // Update header avatar
+          const headerProfileBtn = document.getElementById('header-profile-btn');
+          if (headerProfileBtn) {
+            headerProfileBtn.innerHTML = `<img src="${dataUrl}" class="w-full h-full object-cover" alt="Profile" />`;
+          }
+
+          showToast('Profile picture updated successfully!');
+        };
+        img.src = uploadEvent.target.result;
+      };
+      reader.readAsDataURL(file);
+      localPhotoInput.value = '';
+    };
+  }
+
+  // Remove Photo Handler
+  if (btnModalRemovePhoto) {
+    btnModalRemovePhoto.onclick = () => {
+      const currentUser = store.state.currentUser || user;
+      const updatedUser = {
+        ...currentUser,
+        avatarUrl: null
+      };
+      store.setState({ currentUser: updatedUser });
+      localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+      api.updateProfile({ avatarUrl: null }).catch(() => {});
+
+      const initials = updatedUser.initials || 'AK';
+      const mainAvatar = document.getElementById('user-avatar-circle');
+      if (mainAvatar) {
+        mainAvatar.innerHTML = `<span id="user-avatar-initials">${initials}</span>`;
+      }
+      const modalPreview = document.getElementById('modal-preview-avatar');
+      if (modalPreview) {
+        modalPreview.innerHTML = `<span id="modal-preview-initials">${initials}</span>`;
+      }
+      btnModalRemovePhoto.classList.add('hidden');
+
+      const headerProfileBtn = document.getElementById('header-profile-btn');
+      if (headerProfileBtn) {
+        headerProfileBtn.innerHTML = `<span>${initials}</span>`;
+      }
+
+      showToast('Profile photo removed');
+    };
+  }
+
+  let selectedAvatarColor = user.avatarColor || 'bg-blue-600';
   document.querySelectorAll('.prof-avatar-color-btn').forEach(btn => {
     btn.onclick = () => {
       selectedAvatarColor = btn.getAttribute('data-color');
@@ -1115,7 +1272,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       const initials = (parts[0]?.[0] || 'A') + (parts[1]?.[0] || '');
 
       const updatedUser = {
-        ...(store.state.currentUser || {}),
+        ...(store.state.currentUser || user),
         name,
         displayName: name,
         headline,
@@ -1136,9 +1293,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       if (nameEl) nameEl.textContent = name;
       if (headEl) headEl.textContent = headline;
       if (mailEl) mailEl.textContent = email;
-      if (avatarCircle) {
-        avatarCircle.textContent = initials.toUpperCase();
-        avatarCircle.className = `w-16 h-16 rounded-full ${selectedAvatarColor} text-white font-bold text-xl flex items-center justify-center shadow-sm transition-transform active:scale-95`;
+      if (avatarCircle && !updatedUser.avatarUrl) {
+        avatarCircle.innerHTML = `<span id="user-avatar-initials">${initials.toUpperCase()}</span>`;
+        avatarCircle.className = `w-20 h-20 rounded-full ${selectedAvatarColor} text-white font-bold text-2xl flex items-center justify-center shadow-md overflow-hidden transition-transform active:scale-95 border-2 border-white ring-2 ring-slate-100`;
       }
 
       toggleProfileModal(false);

@@ -24,8 +24,12 @@ export function renderHeader(sectionTitle = 'Workspace', subtitle = 'Your writin
           </a>
 
           <!-- Profile Avatar connecting to /profile -->
-          <a href="/profile" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-xs hover:bg-blue-700 active:scale-95 transition-all no-underline" aria-label="User account" id="header-profile-btn">
-            <span>${userInitials}</span>
+          <a href="/profile" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs shadow-xs hover:bg-blue-700 active:scale-95 transition-all no-underline overflow-hidden shrink-0" aria-label="User account" id="header-profile-btn">
+            ${store.state.currentUser?.avatarUrl ? `
+              <img src="${store.state.currentUser.avatarUrl}" class="w-full h-full object-cover" alt="Profile" />
+            ` : `
+              <span>${userInitials}</span>
+            `}
           </a>
         </div>
       </div>
