@@ -106,9 +106,9 @@ export function renderIntelligenceContextScreen() {
             <!-- Hours -->
             <div class="flex flex-col items-center gap-1.5">
               <span class="text-[10px] uppercase font-bold text-slate-400">Hours</span>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 sm:gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="hr" data-delta="-1">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-hr">${String(context.hours || 1).padStart(2, '0')}</span>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" id="val-hr" value="${String(context.hours !== undefined ? context.hours : 1).padStart(2, '0')}" class="font-mono text-base font-bold text-slate-900 w-8 h-7 text-center bg-transparent rounded border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer select-all transition-all" title="Click to edit hours" aria-label="Hours">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="hr" data-delta="1">+</button>
               </div>
             </div>
@@ -116,9 +116,9 @@ export function renderIntelligenceContextScreen() {
             <!-- Minutes -->
             <div class="flex flex-col items-center gap-1.5">
               <span class="text-[10px] uppercase font-bold text-slate-400">Minutes</span>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 sm:gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="-1">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-min">${String(context.minutes || 36).padStart(2, '0')}</span>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" id="val-min" value="${String(context.minutes !== undefined ? context.minutes : 36).padStart(2, '0')}" class="font-mono text-base font-bold text-slate-900 w-8 h-7 text-center bg-transparent rounded border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer select-all transition-all" title="Click to edit minutes" aria-label="Minutes">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="min" data-delta="1">+</button>
               </div>
             </div>
@@ -126,9 +126,9 @@ export function renderIntelligenceContextScreen() {
             <!-- Seconds -->
             <div class="flex flex-col items-center gap-1.5">
               <span class="text-[10px] uppercase font-bold text-slate-400">Seconds</span>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1 sm:gap-2">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="-1">-</button>
-                <span class="font-mono text-base font-bold text-slate-900 w-6 text-center" id="val-sec">${String(context.seconds || 0).padStart(2, '0')}</span>
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="2" id="val-sec" value="${String(context.seconds !== undefined ? context.seconds : 0).padStart(2, '0')}" class="font-mono text-base font-bold text-slate-900 w-8 h-7 text-center bg-transparent rounded border border-transparent hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer select-all transition-all" title="Click to edit seconds" aria-label="Seconds">
                 <button type="button" class="stepper-btn w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold" data-unit="sec" data-delta="1">+</button>
               </div>
             </div>
@@ -182,11 +182,17 @@ export function attachIntelligenceContextEvents(navigate) {
 
   function updateDuration() {
     const pad = (n) => String(n).padStart(2, '0');
-    document.getElementById('val-hr').textContent = pad(hours);
-    document.getElementById('val-min').textContent = pad(minutes);
-    document.getElementById('val-sec').textContent = pad(seconds);
+    const hrEl = document.getElementById('val-hr');
+    const minEl = document.getElementById('val-min');
+    const secEl = document.getElementById('val-sec');
+
+    if (hrEl) hrEl.value = pad(hours);
+    if (minEl) minEl.value = pad(minutes);
+    if (secEl) secEl.value = pad(seconds);
+
     const totalMinutes = (hours * 60) + minutes + Math.round(seconds / 60);
-    document.getElementById('pacing-projection').textContent = `~${totalMinutes} standard script pages`;
+    const proj = document.getElementById('pacing-projection');
+    if (proj) proj.textContent = `~${totalMinutes} standard script pages`;
   }
 
   // Steppers: EXACTLY ±1 per press, bounded clock style: Hours 00-09, Minutes 00-59, Seconds 00-59
@@ -198,6 +204,72 @@ export function attachIntelligenceContextEvents(navigate) {
       if (unit === 'min') minutes = Math.max(0, Math.min(59, minutes + delta));
       if (unit === 'sec') seconds = Math.max(0, Math.min(59, seconds + delta));
       updateDuration();
+    };
+  });
+
+  // Direct numeric input editing for Hours, Minutes, Seconds
+  const timeInputs = [
+    { id: 'val-hr', max: 9, get: () => hours, set: (v) => { hours = v; } },
+    { id: 'val-min', max: 59, get: () => minutes, set: (v) => { minutes = v; } },
+    { id: 'val-sec', max: 59, get: () => seconds, set: (v) => { seconds = v; } }
+  ];
+
+  timeInputs.forEach(({ id, max, set, get }) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+
+    input.onfocus = () => {
+      input.select();
+    };
+
+    input.oninput = () => {
+      let raw = input.value.replace(/\D/g, '');
+      if (raw === '') {
+        set(0);
+      } else {
+        let num = parseInt(raw, 10);
+        if (isNaN(num)) num = 0;
+        if (num > max) {
+          num = max;
+          input.value = String(num);
+        } else {
+          input.value = raw.slice(0, 2);
+        }
+        set(num);
+      }
+      const totalMinutes = (hours * 60) + minutes + Math.round(seconds / 60);
+      const proj = document.getElementById('pacing-projection');
+      if (proj) proj.textContent = `~${totalMinutes} standard script pages`;
+    };
+
+    input.onblur = () => {
+      let raw = input.value.replace(/\D/g, '');
+      let num = parseInt(raw, 10);
+      if (isNaN(num)) num = 0;
+      num = Math.max(0, Math.min(max, num));
+      set(num);
+      input.value = String(num).padStart(2, '0');
+      updateDuration();
+    };
+
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') {
+        input.blur();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        const current = get();
+        const next = Math.min(max, current + 1);
+        set(next);
+        input.value = String(next).padStart(2, '0');
+        updateDuration();
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        const current = get();
+        const next = Math.max(0, current - 1);
+        set(next);
+        input.value = String(next).padStart(2, '0');
+        updateDuration();
+      }
     };
   });
 
