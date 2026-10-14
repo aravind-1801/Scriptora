@@ -6,8 +6,8 @@ export function renderBottomNav(activeTab = 'workspace') {
   const isProfile = activeTab === 'profile';
 
   return `
-    <nav class="fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60">
-      <div class="h-14 px-3 flex items-center justify-around max-w-2xl mx-auto">
+    <nav class="fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60 overflow-visible">
+      <div class="h-14 px-3 flex items-center justify-around max-w-2xl mx-auto relative overflow-visible">
         <!-- 1. Workspace Tab -->
         <a href="/workspace" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${isWorkspace ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-workspace" aria-label="Workspace" title="Workspace">
           <span class="material-symbols-outlined text-[22px]" ${isWorkspace ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>description</span>
@@ -22,11 +22,21 @@ export function renderBottomNav(activeTab = 'workspace') {
           ${isIntelligence ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : ''}
         </a>
 
-        <!-- 3. AI Chat Tab (Symbol-only, no text label, 3rd position) -->
-        <a href="/chat" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${isChat ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-chat" aria-label="AI Chat" title="AI Chat">
-          <span class="material-symbols-outlined text-[22px]" ${isChat ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>chat_bubble_outline</span>
-          ${isChat ? '<span class="w-1 h-1 rounded-full bg-primary mt-1"></span>' : '<span class="w-1 h-1 mt-1 opacity-0"></span>'}
-        </a>
+        <!-- 3. Floating Center AI Chat Button (Raised rounded-square, symbol-only, 3rd position) -->
+        <div class="relative flex items-center justify-center min-w-[56px] -mt-4.5">
+          <a
+            href="/chat"
+            class="group relative flex items-center justify-center w-12 h-12 rounded-[16px] transition-all duration-200 select-none shadow-[0_4px_12px_rgba(15,23,42,0.18)] ${isChat
+              ? 'bg-blue-600 text-white ring-4 ring-blue-200/90 border border-blue-400/50 shadow-[0_6px_18px_rgba(37,99,235,0.35)] scale-105'
+              : 'bg-slate-900 text-white ring-4 ring-blue-50/90 border border-slate-700/40 hover:bg-slate-800 hover:ring-blue-100 active:scale-95'
+            } focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
+            id="nav-tab-chat"
+            aria-label="AI Chat"
+            title="AI Chat — Universal Assistant"
+          >
+            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-105" ${isChat ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>chat_bubble</span>
+          </a>
+        </div>
 
         <!-- 4. Pre-Production Tab (4th position) -->
         <a href="/production" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${isProduction ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">

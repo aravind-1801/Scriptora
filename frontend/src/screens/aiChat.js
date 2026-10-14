@@ -19,7 +19,7 @@ export function renderAiChatScreen() {
       ${renderHeader('AI Chat', 'Universal Assistant')}
 
       <!-- Main Conversation Screen: fills space between Header (56px) and Bottom Nav (56px) -->
-      <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-14 pb-14 overflow-hidden relative fade-in">
+      <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-14 pb-16 overflow-hidden relative fade-in">
         
         <!-- Compact, Unobtrusive Context Indicator Bar -->
         <div class="px-4 py-1.5 border-b border-slate-200/60 bg-surface/90 backdrop-blur-xs flex items-center justify-between text-xs shrink-0 z-10">
