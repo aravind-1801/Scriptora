@@ -22,6 +22,8 @@
   - Dynamic Character Name memory and suggestion dropdown.
   - Scene Heading autocomplete for time/lighting (`- DAY`, `- NIGHT`, `- CONTINUOUS`, etc.).
   - Automatic parenthetical cursor placement directly inside `()`.
+  - **Automatic Transition Suggestions**: Compact, scrollable autocomplete panel appearing instantly when focusing or entering an empty Transition line with 18 standard screenplay transitions (`CUT TO:`, `FADE IN:`, `FADE OUT.`, `DISSOLVE TO:`, `MATCH CUT TO:`, `SMASH CUT TO:`, `SLAM TO:`, etc.), case-insensitive letter filtering with exact-prefix ranking, keyboard navigation, and mobile virtual-keyboard collision avoidance.
+  - **Context-Aware Space Key Navigation (Mobile)**: Sequential rapid format cycling on empty lines (`Empty Action + Space → Character → Transition → Action`) with mobile virtual-keyboard (`beforeinput` / Gboard) debouncing, zero-width space normalization, and undo/redo integration without affecting regular text editing.
 - **Page Management & Navigation**:
   - Add Page at End, Insert Page Before, and Insert Page Break.
   - Scene Jump dropdown and Go to Page jump dialog.

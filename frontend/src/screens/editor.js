@@ -25,6 +25,89 @@ let editorToolbarExpanded = false; // Master visibility control for secondary to
 // Hierarchical Navigation Stack (Prompts 23, 23A, 23B)
 const editorNavStack = [];
 
+// Standard Screenplay Transitions (Prompt: Mobile Screenplay Editor Automatic Transitions)
+export const STANDARD_TRANSITIONS = [
+  'CUT TO:',
+  'CUT TO BLACK.',
+  'FADE IN:',
+  'FADE OUT.',
+  'FADE TO BLACK.',
+  'DISSOLVE TO:',
+  'MATCH CUT TO:',
+  'JUMP CUT TO:',
+  'SMASH CUT TO:',
+  'SLAM TO:',
+  'SLAM TO BLACK.',
+  'INTERCUT WITH:',
+  'WIPE TO:',
+  'IRIS IN:',
+  'IRIS OUT:',
+  'BACK TO:',
+  'CONTINUOUS',
+  'END'
+];
+
+let lastSpaceNavHandledTimestamp = 0;
+const spaceNavHistory = [];
+
+export function isBlockContentEmpty(editableEl) {
+  if (!editableEl) return true;
+  const raw = editableEl.innerText || editableEl.textContent || '';
+  const clean = raw.replace(/[\u200B\u00A0\r\n\t ]/g, '').trim();
+  return clean.length === 0;
+}
+
+export function isMobileContext() {
+  return window.innerWidth <= 768 ||
+    ('ontouchstart' in window) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 0) ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+function handleSpaceNavigation(blockEl, editableEl) {
+  const now = Date.now();
+  if (now - lastSpaceNavHandledTimestamp < 150) {
+    return true; // Already handled in this key event sequence
+  }
+
+  if (!isMobileContext()) return false;
+
+  const type = blockEl.getAttribute('data-block-type') || 'action';
+  if (!['action', 'text', 'character', 'transition'].includes(type)) {
+    return false;
+  }
+
+  if (!isBlockContentEmpty(editableEl)) {
+    return false;
+  }
+
+  // Intended cycle: Action -> Character -> Transition -> Action
+  let nextType = 'action';
+  if (type === 'action' || type === 'text') {
+    nextType = 'character';
+  } else if (type === 'character') {
+    nextType = 'transition';
+  } else if (type === 'transition') {
+    nextType = 'action';
+  }
+
+  lastSpaceNavHandledTimestamp = now;
+  spaceNavHistory.push({
+    blockId: blockEl.getAttribute('data-block-id'),
+    prevType: type,
+    newType: nextType
+  });
+
+  // Ensure content is strictly empty
+  editableEl.innerText = '';
+  convertBlockType(blockEl, nextType);
+  highlightElementButton(nextType);
+  hasUnsavedChanges = true;
+  if (autoSaveEnabled) scheduleAutosave();
+
+  return true;
+}
+
 // Standard A4 screenplay page capacity (~46 lines of Courier 12pt)
 const A4_PAGE_CAPACITY_LINES = 46;
 
@@ -2031,7 +2114,29 @@ function attachSingleBlockListeners(block) {
     activeBlockId = block.getAttribute('data-block-id');
     const type = block.getAttribute('data-block-type') || 'action';
     highlightElementButton(type);
+    if (type === 'transition' && isBlockContentEmpty(editable)) {
+      triggerAutocomplete(block, editable);
+    } else if (type !== 'transition') {
+      hideAutocomplete();
+    }
   };
+
+  editable.addEventListener('click', () => {
+    const type = block.getAttribute('data-block-type') || 'action';
+    if (type === 'transition' && isBlockContentEmpty(editable)) {
+      triggerAutocomplete(block, editable);
+    }
+  });
+
+  editable.addEventListener('beforeinput', (e) => {
+    if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
+      if (isBlockContentEmpty(editable)) {
+        if (handleSpaceNavigation(block, editable)) {
+          e.preventDefault();
+        }
+      }
+    }
+  });
 
   editable.oninput = () => {
     hasUnsavedChanges = true;
@@ -2305,6 +2410,29 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     if (e.key === 'Escape') {
       hideAutocomplete();
       return;
+    }
+  }
+
+  // Space key mobile navigation on empty lines: Action -> Character -> Transition -> Action
+  if (e.key === ' ' || e.code === 'Space') {
+    if (isBlockContentEmpty(editableEl)) {
+      if (handleSpaceNavigation(blockEl, editableEl)) {
+        e.preventDefault();
+        return;
+      }
+    }
+  }
+
+  // Undo Space navigation if empty and Ctrl+Z pressed
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    if (spaceNavHistory.length > 0) {
+      const lastNav = spaceNavHistory[spaceNavHistory.length - 1];
+      if (lastNav.blockId === blockId && isBlockContentEmpty(editableEl)) {
+        spaceNavHistory.pop();
+        e.preventDefault();
+        convertBlockType(blockEl, lastNav.prevType);
+        return;
+      }
     }
   }
 
@@ -2744,6 +2872,12 @@ function convertBlockType(blockEl, newType) {
         } else {
           setCursorAtEnd(ed);
         }
+        highlightElementButton(newType);
+        if (newType === 'transition') {
+          triggerAutocomplete(el, ed);
+        } else {
+          hideAutocomplete();
+        }
       }
     }
   }, 25);
@@ -2767,11 +2901,77 @@ function setupAutocomplete() {
       hideAutocomplete();
     }
   });
+
+  const scrollEl = document.getElementById('editor-main-scroll');
+  if (scrollEl && !scrollEl.__hasAcPositionListener) {
+    scrollEl.__hasAcPositionListener = true;
+    scrollEl.addEventListener('scroll', () => {
+      const dropdown = document.getElementById('editor-autocomplete-dropdown');
+      if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
+        const activeEl = document.getElementById(activeBlockId);
+        if (activeEl) {
+          const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
+          positionAutocomplete(dropdown, ed);
+        }
+      }
+    }, { passive: true });
+  }
+
+  if (window.visualViewport && !window.visualViewport.__hasAcPositionListener) {
+    window.visualViewport.__hasAcPositionListener = true;
+    window.visualViewport.addEventListener('resize', () => {
+      const dropdown = document.getElementById('editor-autocomplete-dropdown');
+      if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
+        const activeEl = document.getElementById(activeBlockId);
+        if (activeEl) {
+          const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
+          positionAutocomplete(dropdown, ed);
+        }
+      }
+    });
+  }
 }
 
 function hideAutocomplete() {
   const dropdown = document.getElementById('editor-autocomplete-dropdown');
   if (dropdown) dropdown.classList.add('hidden');
+}
+
+function positionAutocomplete(dropdown, editableEl) {
+  if (!dropdown || !editableEl) return;
+  const rect = editableEl.getBoundingClientRect();
+  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const dropdownHeight = Math.min(220, dropdown.scrollHeight || 190);
+  const dropdownWidth = Math.min(270, viewportWidth - 24);
+
+  dropdown.style.width = `${dropdownWidth}px`;
+
+  // Determine vertical position:
+  // If space below is tight (e.g. virtual keyboard open), position above the line
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  if (spaceBelow < dropdownHeight + 10 && spaceAbove > dropdownHeight + 10) {
+    // Position above the line
+    const topPos = Math.max(8, rect.top - dropdownHeight - 6);
+    dropdown.style.top = `${topPos}px`;
+  } else {
+    // Position below the line
+    const topPos = Math.min(viewportHeight - dropdownHeight - 8, rect.bottom + 6);
+    dropdown.style.top = `${topPos}px`;
+  }
+
+  // Determine horizontal position:
+  // Align towards right side of the editable or screen
+  let leftPos = rect.right - dropdownWidth;
+  if (leftPos + dropdownWidth > viewportWidth - 12) {
+    leftPos = viewportWidth - dropdownWidth - 12;
+  }
+  if (leftPos < 12) {
+    leftPos = 12;
+  }
+  dropdown.style.left = `${leftPos}px`;
 }
 
 // Helper to get only user-created or active screenplay characters (Prompt 23: 4-8)
@@ -2878,13 +3078,23 @@ function triggerAutocomplete(blockEl, editableEl) {
     }
   }
 
-  // 3. TRANSITION AUTOCOMPLETE
+  // 3. TRANSITION AUTOCOMPLETE (Automatic & Case-Insensitive Letter Search)
   else if (type === 'transition') {
-    const upper = text.trim().toUpperCase();
-    const transitions = currentScreenplay.transitions || ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'JUMP CUT TO:'];
-    if (upper.length > 0) {
-      const matches = transitions.filter(t => t.startsWith(upper));
-      suggestions = matches.map(t => ({ label: t, val: t }));
+    const cleanText = (text || '').replace(/[\u200B\u00A0\r\n\t]/g, '').trim();
+    const upper = cleanText.toUpperCase();
+    const baseList = Array.isArray(currentScreenplay?.transitions) && currentScreenplay.transitions.length > 0
+      ? Array.from(new Set([...STANDARD_TRANSITIONS, ...currentScreenplay.transitions]))
+      : STANDARD_TRANSITIONS;
+
+    if (upper.length === 0) {
+      // Empty line: show full predefined standard transition list immediately
+      suggestions = baseList.map(t => ({ label: t, val: t }));
+    } else {
+      // Rank exact-prefix matches first, then other containing matches
+      const prefixMatches = baseList.filter(t => t.toUpperCase().startsWith(upper));
+      const containsMatches = baseList.filter(t => !t.toUpperCase().startsWith(upper) && t.toUpperCase().includes(upper));
+      const allMatches = [...prefixMatches, ...containsMatches];
+      suggestions = allMatches.map(t => ({ label: t, val: t }));
     }
   }
 
@@ -2893,26 +3103,27 @@ function triggerAutocomplete(blockEl, editableEl) {
     return;
   }
 
-  // Render suggestion items
+  // Render suggestion items with comfortable touch targets and Courier styling
   dropdown.innerHTML = suggestions.map((item, idx) => {
     const label = typeof item === 'object' ? item.label : item;
     const val = typeof item === 'object' ? item.val : item;
     return `
-      <div class="autocomplete-item px-3 py-1.5 hover:bg-blue-50 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono ${idx === 0 ? 'active bg-blue-50/60 text-blue-700' : ''}" data-val="${val}">
-        <span>${label}</span>
-        <span class="text-[10px] text-slate-400 font-sans">Enter ↵</span>
+      <div class="autocomplete-item px-3 py-2 sm:py-1.5 hover:bg-blue-50 active:bg-blue-100 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono text-xs border-b border-slate-50 last:border-b-0 ${idx === 0 ? 'active bg-blue-50/70 text-blue-700 font-semibold' : ''}" data-val="${val}">
+        <span class="tracking-wide">${label}</span>
+        <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">Enter ↵</span>
       </div>
     `;
   }).join('');
 
-  // Position dropdown right below cursor / block
-  const rect = editableEl.getBoundingClientRect();
-  dropdown.style.top = `${Math.min(window.innerHeight - 200, rect.bottom + 4)}px`;
-  dropdown.style.left = `${Math.min(window.innerWidth - 240, Math.max(16, rect.left))}px`;
   dropdown.classList.remove('hidden');
+  positionAutocomplete(dropdown, editableEl);
 
   dropdown.querySelectorAll('.autocomplete-item').forEach(el => {
-    el.onclick = () => {
+    el.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+    });
+    el.onclick = (ev) => {
+      ev.stopPropagation();
       const val = el.getAttribute('data-val');
       editableEl.innerText = val;
       updateBlockModel(blockEl, val);
@@ -2936,9 +3147,9 @@ function navigateAutocomplete(dir) {
   const items = dropdown.querySelectorAll('.autocomplete-item');
   if (items.length === 0) return;
   let activeIdx = Array.from(items).findIndex(el => el.classList.contains('active'));
-  if (activeIdx !== -1) items[activeIdx].classList.remove('active', 'bg-blue-50/60', 'text-blue-700');
+  if (activeIdx !== -1) items[activeIdx].classList.remove('active', 'bg-blue-50/70', 'text-blue-700', 'font-semibold');
   activeIdx = (activeIdx + dir + items.length) % items.length;
-  items[activeIdx].classList.add('active', 'bg-blue-50/60', 'text-blue-700');
+  items[activeIdx].classList.add('active', 'bg-blue-50/70', 'text-blue-700', 'font-semibold');
   items[activeIdx].scrollIntoView({ block: 'nearest' });
 }
 
