@@ -254,35 +254,34 @@
     <nav class="fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60">
       <div class="h-14 px-3 flex items-center justify-around max-w-2xl mx-auto">
         <!-- 1. Workspace Tab -->
-        <a href="/workspace" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${t?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-workspace">
+        <a href="/workspace" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${t?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-workspace" aria-label="Workspace" title="Workspace">
           <span class="material-symbols-outlined text-[22px]" ${t?`style="font-variation-settings: 'FILL' 1;"`:""}>description</span>
           <span class="text-[10.5px] font-medium mt-0.5">Workspace</span>
           ${t?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
         </a>
 
         <!-- 2. Intelligence Tab -->
-        <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${s?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-intelligence">
+        <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${s?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-intelligence" aria-label="Intelligence" title="Intelligence">
           <span class="material-symbols-outlined text-[22px]" ${s?`style="font-variation-settings: 'FILL' 1;"`:""}>insights</span>
           <span class="text-[10.5px] font-medium mt-0.5">Intelligence</span>
           ${s?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
         </a>
 
-        <!-- 3. AI Chat Tab -->
-        <a href="/chat" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${n?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-chat">
-          <span class="material-symbols-outlined text-[22px]" ${n?`style="font-variation-settings: 'FILL' 1;"`:""}>forum</span>
-          <span class="text-[10.5px] font-medium mt-0.5">AI Chat</span>
-          ${n?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
+        <!-- 3. AI Chat Tab (Symbol-only, no text label, 3rd position) -->
+        <a href="/chat" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${n?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-chat" aria-label="AI Chat" title="AI Chat">
+          <span class="material-symbols-outlined text-[22px]" ${n?`style="font-variation-settings: 'FILL' 1;"`:""}>chat_bubble_outline</span>
+          ${n?'<span class="w-1 h-1 rounded-full bg-primary mt-1"></span>':'<span class="w-1 h-1 mt-1 opacity-0"></span>'}
         </a>
 
-        <!-- 4. Pre-Production Tab -->
-        <a href="/production" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${a?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-production">
+        <!-- 4. Pre-Production Tab (4th position) -->
+        <a href="/production" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${a?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">
           <span class="material-symbols-outlined text-[22px]" ${a?`style="font-variation-settings: 'FILL' 1;"`:""}>movie_creation</span>
           <span class="text-[10.5px] font-medium mt-0.5">Production</span>
           ${a?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
         </a>
 
         <!-- 5. Profile Tab -->
-        <a href="/profile" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${o?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-profile">
+        <a href="/profile" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] transition-colors ${o?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-profile" aria-label="Profile" title="Profile">
           <span class="material-symbols-outlined text-[22px]" ${o?`style="font-variation-settings: 'FILL' 1;"`:""}>account_circle</span>
           <span class="text-[10.5px] font-medium mt-0.5">Profile</span>
           ${o?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':""}
@@ -3939,102 +3938,96 @@ ${je?je+". ":""}${ge}
       ${Le("Pre-Production","Production Workspace & Tools")}
 
       <!-- Main Workspace Container -->
-      <main class="flex-1 w-full max-w-4xl mx-auto px-4 pt-16 pb-12 flex flex-col gap-4">
+      <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
         
-        <!-- Breadcrumb & Return Context Bar -->
-        <div class="flex items-center justify-between py-2 border-b border-slate-200/60 mt-1">
-          <div class="flex items-center gap-2">
-            <a href="${i}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium" id="prod-back-nav">
-              <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-              <span>${o?"Back to Screenplay Editor":"Back to Workspace"}</span>
+        <!-- Clean Unified Header Row (Back + Title + Mode Switch) -->
+        <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200/70">
+          <div class="flex items-center gap-2 min-w-0">
+            <a href="${i}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium shrink-0" id="prod-back-nav" title="${o?"Back to Screenplay Editor":"Back to Workspace"}">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span class="truncate">${o?"Editor":"Workspace"}</span>
             </a>
-            <span class="text-slate-300">/</span>
-            <span class="text-xs font-semibold text-slate-800">Production Studio</span>
+            <h1 class="font-heading font-bold text-sm text-slate-900 truncate">Production Studio</h1>
           </div>
 
           <!-- Mode Toggle: Simple vs Advanced (Preserves State) -->
-          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-            <button id="toggle-mode-simple" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${d?"text-slate-600 hover:text-slate-900":"bg-white text-blue-700 shadow-2xs font-semibold"}">
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+            <button id="toggle-mode-simple" class="px-2.5 py-0.5 text-xs font-medium rounded-lg transition-all ${d?"text-slate-600 hover:text-slate-900":"bg-white text-blue-700 shadow-2xs font-semibold"}">
               Simple
             </button>
-            <button id="toggle-mode-advanced" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${d?"bg-white text-blue-700 shadow-2xs font-semibold":"text-slate-600 hover:text-slate-900"}">
+            <button id="toggle-mode-advanced" class="px-2.5 py-0.5 text-xs font-medium rounded-lg transition-all ${d?"bg-white text-blue-700 shadow-2xs font-semibold":"text-slate-600 hover:text-slate-900"}">
               Advanced
             </button>
           </div>
         </div>
 
-        <!-- 1. Screenplay & Source Version Selector Bar -->
-        <section class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-              <span class="material-symbols-outlined text-[24px]">movie</span>
+        <!-- 1. Screenplay & Source Version Selector Card (Clean, Uncluttered, No Redundant Project Panel) -->
+        <section class="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+              <span class="material-symbols-outlined text-[20px]">movie_creation</span>
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <select id="prod-script-select" class="font-heading font-bold text-base text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer pr-1">
+              <div class="flex items-center gap-1.5">
+                <select id="prod-script-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer pr-1 truncate">
                   <option value="chronicles-of-dust" ${l.id==="chronicles-of-dust"?"selected":""}>Chronicles of Dust (Feature)</option>
                   <option value="the-neon-horizon" ${l.id==="the-neon-horizon"?"selected":""}>The Neon Horizon (Pilot)</option>
                 </select>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">Project: Badlands Anthology</span>
               </div>
-              <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
-                <span class="flex items-center gap-1 text-emerald-600 font-semibold" id="prod-pinned-version-badge">
-                  <span class="material-symbols-outlined text-[14px]">lock</span>
-                  <span id="pinned-version-label">${l.draft||"Draft 4.2"} (Pinned Source)</span>
+              <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1 text-emerald-700 font-medium" id="prod-pinned-version-badge">
+                  <span class="material-symbols-outlined text-[13px]">lock</span>
+                  <span id="pinned-version-label">${l.draft||"Draft 4.2"} (Pinned)</span>
                 </span>
                 <span>•</span>
                 <span>18 Scenes</span>
                 <span>•</span>
-                <span>78 Breakdown Elements</span>
+                <span>78 Elements</span>
               </div>
             </div>
           </div>
 
-          <!-- Role Concept Switcher (Owner, Director, AD, Production, Dept, Viewer) -->
-          <div class="flex items-center gap-2 self-start md:self-auto shrink-0">
-            <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Role:</span>
-            <div class="relative">
-              <select id="prod-role-select" class="text-xs font-semibold bg-blue-50/80 text-blue-700 border border-blue-200/80 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer">
-                <option value="Owner" ${r==="Owner"?"selected":""}>Owner (Arun Kumar)</option>
-                <option value="Director" ${r==="Director"?"selected":""}>Director (Elena Rostova)</option>
-                <option value="Assistant Director" ${r==="Assistant Director"?"selected":""}>Assistant Director (Marcus Vance)</option>
-                <option value="Production" ${r==="Production"?"selected":""}>Production Manager</option>
-                <option value="Department Member" ${r==="Department Member"?"selected":""}>Department Lead (Props/SFX)</option>
-                <option value="Viewer" ${r==="Viewer"?"selected":""}>Viewer (Read Only)</option>
-              </select>
-            </div>
+          <!-- Functional Role Selector -->
+          <div class="flex items-center gap-1.5 self-start sm:self-auto shrink-0 text-xs">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Role:</span>
+            <select id="prod-role-select" class="text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="Owner" ${r==="Owner"?"selected":""}>Owner</option>
+              <option value="Director" ${r==="Director"?"selected":""}>Director</option>
+              <option value="Assistant Director" ${r==="Assistant Director"?"selected":""}>Assistant Director</option>
+              <option value="Production" ${r==="Production"?"selected":""}>Production</option>
+              <option value="Department Member" ${r==="Department Member"?"selected":""}>Department Lead</option>
+              <option value="Viewer" ${r==="Viewer"?"selected":""}>Viewer</option>
+            </select>
           </div>
         </section>
 
         <!-- Source Version Staleness Warning Banner (Preserves Source Integrity) -->
-        <div id="source-version-alert" class="hidden bg-amber-50 border border-amber-200/90 rounded-2xl p-3.5 flex items-start justify-between gap-3 shadow-2xs">
-          <div class="flex items-start gap-2.5">
-            <span class="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">warning</span>
+        <div id="source-version-alert" class="hidden bg-amber-50 border border-amber-200/90 rounded-2xl p-3 flex items-start justify-between gap-3 shadow-2xs">
+          <div class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">warning</span>
             <div class="text-xs text-amber-900 leading-relaxed">
-              <span class="font-bold">Source Version Out of Sync:</span> The screenplay draft in the editor has been updated, but production records are currently pinned to <span class="font-semibold underline" id="alert-pinned-ver">Draft 4.2</span>. Approved call sheets, schedules, and breakdown data remain safely isolated until explicitly re-pinned.
+              <span class="font-bold">Source Version Out of Sync:</span> Screenplay draft updated. Production records remain pinned to <span class="font-semibold underline" id="alert-pinned-ver">Draft 4.2</span>.
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button id="btn-repin-source" class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-repin-source" class="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] transition-colors">
               Update Pin
             </button>
-            <button id="btn-dismiss-staleness" class="px-2 py-1 rounded-lg bg-white border border-amber-200 text-amber-800 text-xs font-medium hover:bg-amber-100/50">
+            <button id="btn-dismiss-staleness" class="px-2 py-1 rounded-lg bg-white border border-amber-200 text-amber-800 text-[11px] font-medium hover:bg-amber-100/50">
               Keep Pin
             </button>
           </div>
         </div>
 
-        <!-- 2. Essential Production Tools (Prominent Access) -->
-        <section class="flex flex-col gap-2.5">
+        <!-- 2. Essential Production Tools (Prominent Access, Clean Title without Competing Badge) -->
+        <section class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <h2 class="font-heading font-bold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[18px] text-blue-600">tune</span>
+            <h2 class="font-heading font-bold text-xs text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span>Essential Production Tools</span>
             </h2>
-            <span class="text-[11px] text-slate-500 font-medium">Draft 4.2 Approved Records</span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             
             <!-- Tool 1: Call Sheets -->
             <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
@@ -4506,101 +4499,103 @@ ${je?je+". ":""}${ge}
         <p class="mt-1">This module is integrated with the underlying Production Workspace data model, pinned source version, and collaborator permission rules.</p>
       </div>
     `)}function na(){const e=f.state.selectedScriptId||"chronicles-of-dust",t=f.state.scripts?.find(s=>s.id===e)||{title:"Chronicles of Dust",draft:"Draft 4.2"};return`
-    <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
+    <div class="fixed inset-0 bg-surface flex flex-col font-body text-slate-800 select-none overflow-hidden">
+      <!-- Standard Header (Fixed Top) -->
       ${Le("AI Chat","Universal Assistant")}
 
-      <main class="flex-1 w-full max-w-3xl mx-auto px-4 pt-16 pb-24 flex flex-col justify-between">
+      <!-- Main Conversation Screen: fills space between Header (56px) and Bottom Nav (56px) -->
+      <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-14 pb-14 overflow-hidden relative fade-in">
         
-        <!-- Context & Scope Header -->
-        <div class="py-2 border-b border-slate-200/60 mb-3 flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span class="font-semibold text-slate-700">Universal Assistant Ready</span>
-            <span class="text-slate-300">•</span>
-            <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium text-[11px]" id="chat-active-context-badge">
-              Context: ${t.title} (${t.draft})
-            </span>
+        <!-- Compact, Unobtrusive Context Indicator Bar -->
+        <div class="px-4 py-1.5 border-b border-slate-200/60 bg-surface/90 backdrop-blur-xs flex items-center justify-between text-xs shrink-0 z-10">
+          <div class="flex items-center gap-1.5 text-slate-500 text-[11px] min-w-0">
+            <span class="material-symbols-outlined text-[15px] text-blue-600 shrink-0">movie_creation</span>
+            <span class="truncate">Screenplay: <strong class="text-slate-800 font-semibold">${t.title}</strong> <span class="text-slate-400">(${t.draft})</span></span>
           </div>
-
-          <button id="btn-clear-chat" class="text-slate-400 hover:text-slate-700 text-[11px] font-medium transition-colors">
-            Clear Chat
+          <button id="btn-clear-chat" class="text-slate-400 hover:text-slate-600 text-[11px] shrink-0 font-medium transition-colors" title="Clear conversation history">
+            Clear
           </button>
         </div>
 
-        <!-- Chat Messages Area -->
-        <div id="chat-messages-container" class="flex-1 overflow-y-auto flex flex-col gap-3 py-2">
+        <!-- Chat Messages Scroll Area (Fills space, scrolls smoothly behind composer) -->
+        <div id="chat-messages-container" class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 overscroll-contain">
           
           <!-- Welcome Assistant Message -->
-          <div class="flex items-start gap-3 max-w-[90%]">
-            <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-              <span class="material-symbols-outlined text-[18px]">forum</span>
+          <div class="flex items-start gap-2.5 max-w-[88%]">
+            <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+              <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span>
             </div>
-            <div class="bg-white rounded-2xl rounded-tl-sm border border-slate-200/80 p-4 shadow-2xs flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed">
+            <div class="bg-white rounded-2xl rounded-tl-xs border border-slate-200/90 p-3.5 shadow-2xs flex flex-col gap-1 text-xs text-slate-700 leading-relaxed">
               <div class="flex items-center justify-between gap-4 font-semibold text-slate-900 text-[11px]">
                 <span>Scriptora Universal AI</span>
-                <span class="text-slate-400 font-normal">Now</span>
+                <span class="text-slate-400 font-normal text-[10px]">Now</span>
               </div>
               <p>
                 Hello Arun. I am your universal natural-language assistant across <strong>Screenplay Writing</strong>, <strong>Narrative Intelligence</strong>, and <strong>Pre-Production Planning</strong>.
               </p>
               <p class="text-slate-500 text-[11px]">
-                I can review scenes, generate story concepts, brainstorm storyboard setups, prepare call sheets, and answer screenplay formatting rules.
+                Ask me to review scenes, develop story beats, extract practical production elements, outline call sheets, or check screenplay formatting standards.
               </p>
             </div>
           </div>
 
         </div>
 
-        <!-- Quick Prompt Chips -->
-        <div class="py-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar" id="chat-prompt-chips">
-          <button class="chat-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 text-xs font-medium shrink-0 transition-colors shadow-2xs" data-prompt="Review Scene 18 pacing and dramatic tension.">
-            ⚡ Review Scene 18 Pacing
-          </button>
-          <button class="chat-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 text-xs font-medium shrink-0 transition-colors shadow-2xs" data-prompt="What are the essential practical elements required for Day 1 shoot?">
-            🎬 Day 1 Practical Elements
-          </button>
-          <button class="chat-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 text-xs font-medium shrink-0 transition-colors shadow-2xs" data-prompt="Prepare a Call Sheet summary for Gate 4 exterior.">
-            📋 Prepare Call Sheet Draft
-          </button>
-          <button class="chat-chip px-3 py-1.5 rounded-full bg-white border border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/50 text-xs font-medium shrink-0 transition-colors shadow-2xs" data-prompt="Suggest visual storyboard camera setups for the dry lakebed standoff.">
-            🎨 Storyboard Concept Ideas
-          </button>
-        </div>
+        <!-- Message Composer Section: Anchored at Bottom, immediately above bottom nav -->
+        <div class="shrink-0 px-3 pt-2 pb-2 bg-surface/95 backdrop-blur-md border-t border-slate-200/70 z-20 flex flex-col gap-1.5">
+          
+          <!-- Quick Prompt Chips -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="chat-prompt-chips">
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Review Scene 18 pacing and dramatic tension.">
+              Review Scene 18 Pacing
+            </button>
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="What are the essential practical elements required for Day 1 shoot?">
+              Day 1 Elements
+            </button>
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Prepare a Call Sheet draft for Gate 4 exterior shoot.">
+              Call Sheet Draft
+            </button>
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Suggest visual storyboard camera setups for the dry lakebed standoff.">
+              Storyboard Ideas
+            </button>
+          </div>
 
-        <!-- Input Bar (Fixed to bottom above navigation) -->
-        <div class="bg-white rounded-2xl border border-slate-200 p-2 pl-3 flex items-center gap-2 shadow-sm">
-          <span class="material-symbols-outlined text-[20px] text-blue-600">auto_awesome</span>
-          <input
-            id="chat-input"
-            type="text"
-            placeholder="Ask about your screenplay, production planning, or formatting..."
-            class="bg-transparent text-xs text-slate-900 placeholder:text-slate-400 w-full focus:outline-none"
-          />
-          <button
-            id="chat-send-btn"
-            class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all shadow-2xs shrink-0"
-            aria-label="Send message"
-          >
-            <span class="material-symbols-outlined text-[18px]">arrow_upward</span>
-          </button>
+          <!-- Multiline Input Box & Send Button -->
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs p-1 pl-3 flex items-end gap-2 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+            <textarea
+              id="chat-input"
+              rows="1"
+              placeholder="Ask about your screenplay, production planning, formatting..."
+              class="bg-transparent text-xs text-slate-900 placeholder:text-slate-400 w-full focus:outline-none resize-none max-h-24 py-1.5 leading-relaxed"
+            ></textarea>
+            <button
+              id="chat-send-btn"
+              class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 active:scale-95 transition-all shadow-2xs shrink-0 mb-0.5"
+              aria-label="Send message"
+            >
+              <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+            </button>
+          </div>
+
         </div>
 
       </main>
 
+      <!-- Standard Bottom Nav with AI Chat active (Fixed Bottom) -->
       ${Re("chat")}
     </div>
-  `}function aa(e){const t=document.getElementById("chat-input"),s=document.getElementById("chat-send-btn"),n=document.getElementById("chat-messages-container"),a=document.getElementById("btn-clear-chat"),o=document.querySelectorAll(".chat-chip"),i=f.state.selectedScriptId||"chronicles-of-dust",l=localStorage.getItem("scriptora_chat_history");if(l)try{JSON.parse(l).forEach(p=>c(p.role,p.text,!1))}catch{}function c(r,p,u=!0){if(!n)return;const x=r==="user",h=document.createElement("div");if(h.className=`flex items-start gap-3 max-w-[90%] ${x?"self-end flex-row-reverse":""}`,h.innerHTML=`
-      <div class="w-8 h-8 rounded-xl ${x?"bg-slate-800":"bg-blue-600"} text-white flex items-center justify-center shrink-0 shadow-2xs">
-        <span class="material-symbols-outlined text-[18px]">${x?"person":"forum"}</span>
+  `}function aa(e){const t=document.getElementById("chat-input"),s=document.getElementById("chat-send-btn"),n=document.getElementById("chat-messages-container"),a=document.getElementById("btn-clear-chat"),o=document.querySelectorAll(".chat-chip"),i=f.state.selectedScriptId||"chronicles-of-dust",l=localStorage.getItem("scriptora_chat_history");if(l)try{JSON.parse(l).forEach(p=>c(p.role,p.text,!1))}catch{}t&&t.addEventListener("input",()=>{t.style.height="auto",t.style.height=Math.min(t.scrollHeight,96)+"px"});function c(r,p,u=!0){if(!n)return;const x=r==="user",h=document.createElement("div");if(h.className=`flex items-start gap-2.5 max-w-[88%] ${x?"self-end flex-row-reverse":""}`,h.innerHTML=`
+      <div class="w-7 h-7 rounded-lg ${x?"bg-slate-800":"bg-blue-600"} text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+        <span class="material-symbols-outlined text-[15px]">${x?"person":"chat_bubble_outline"}</span>
       </div>
-      <div class="${x?"bg-blue-600 text-white rounded-tr-sm":"bg-white text-slate-700 border border-slate-200/80 rounded-tl-sm"} rounded-2xl p-4 shadow-2xs flex flex-col gap-1 text-xs leading-relaxed">
+      <div class="${x?"bg-blue-600 text-white rounded-2xl rounded-tr-xs":"bg-white text-slate-700 border border-slate-200/90 rounded-2xl rounded-tl-xs"} p-3.5 shadow-2xs flex flex-col gap-1 text-xs leading-relaxed">
         <div class="flex items-center justify-between gap-4 font-semibold ${x?"text-blue-100":"text-slate-900"} text-[11px]">
           <span>${x?"You":"Scriptora Universal AI"}</span>
-          <span class="${x?"text-blue-200":"text-slate-400"} font-normal">Now</span>
+          <span class="${x?"text-blue-200":"text-slate-400"} font-normal text-[10px]">Now</span>
         </div>
-        <p class="whitespace-pre-wrap">${p}</p>
+        <div class="whitespace-pre-wrap">${p}</div>
       </div>
-    `,n.appendChild(h),n.scrollTop=n.scrollHeight,u)try{const m=JSON.parse(localStorage.getItem("scriptora_chat_history")||"[]");m.push({role:r,text:p,timestamp:new Date().toISOString()}),localStorage.setItem("scriptora_chat_history",JSON.stringify(m.slice(-30)))}catch{}}async function d(){if(!t)return;const r=t.value.trim();if(!r)return;c("user",r,!0),t.value="";const p=document.createElement("div");p.className="flex items-center gap-2 text-xs text-slate-400 py-1 pl-11 italic",p.innerHTML=`
+    `,n.appendChild(h),n.scrollTop=n.scrollHeight,u)try{const m=JSON.parse(localStorage.getItem("scriptora_chat_history")||"[]");m.push({role:r,text:p,timestamp:new Date().toISOString()}),localStorage.setItem("scriptora_chat_history",JSON.stringify(m.slice(-30)))}catch{}}async function d(){if(!t)return;const r=t.value.trim();if(!r)return;c("user",r,!0),t.value="",t.style.height="auto";const p=document.createElement("div");p.className="flex items-center gap-2 text-xs text-slate-400 py-1 pl-9 italic",p.innerHTML=`
       <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
       <span>Reviewing screenplay context & production model...</span>
     `,n.appendChild(p),n.scrollTop=n.scrollHeight;try{const u=await Jt(r,i);p.remove();let x=u;r.toLowerCase().includes("call sheet")?x=`📋 **Call Sheet Preparation (Draft 4.2)**
@@ -4616,20 +4611,20 @@ For Day 1 (Scenes 1 & 2 at Gate 4 Exterior):
 • Shot 1: Ultra-wide 2.39:1 anamorphic establishing shot across cracked earth.
 • Shot 2: Low-angle tracking shot on Kevin as dust storm gathers.
 • Shot 3: Dutch angle close-up on the pressure gauge as manifold fails.
-*(Detailed shot canvas will be available in Storyboard Studio Prompt 3)*`),c("assistant",x,!0)}catch{p.remove(),c("assistant","I analyzed your request against the active screenplay context. Pacing and scene logistics align with Draft 4.2 standards.",!0)}}s&&(s.onclick=d),t&&(t.onkeydown=r=>{r.key==="Enter"&&(r.preventDefault(),d())}),o.forEach(r=>{r.onclick=()=>{const p=r.getAttribute("data-prompt");t&&(t.value=p,d())}}),a&&(a.onclick=()=>{localStorage.removeItem("scriptora_chat_history"),n.innerHTML=`
-        <div class="flex items-start gap-3 max-w-[90%]">
-          <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-            <span class="material-symbols-outlined text-[18px]">forum</span>
+*(Detailed shot canvas will be available in Storyboard Studio Prompt 3)*`),c("assistant",x,!0)}catch{p.remove(),c("assistant","I analyzed your request against the active screenplay context. Pacing and scene logistics align with Draft 4.2 standards.",!0)}}s&&(s.onclick=d),t&&(t.onkeydown=r=>{r.key==="Enter"&&!r.shiftKey&&(r.preventDefault(),d())}),o.forEach(r=>{r.onclick=()=>{const p=r.getAttribute("data-prompt");t&&(t.value=p,d())}}),a&&(a.onclick=()=>{localStorage.removeItem("scriptora_chat_history"),n.innerHTML=`
+        <div class="flex items-start gap-2.5 max-w-[88%]">
+          <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">
+            <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span>
           </div>
-          <div class="bg-white rounded-2xl rounded-tl-sm border border-slate-200/80 p-4 shadow-2xs flex flex-col gap-1.5 text-xs text-slate-700 leading-relaxed">
+          <div class="bg-white rounded-2xl rounded-tl-xs border border-slate-200/90 p-3.5 shadow-2xs flex flex-col gap-1 text-xs text-slate-700 leading-relaxed">
             <div class="flex items-center justify-between gap-4 font-semibold text-slate-900 text-[11px]">
               <span>Scriptora Universal AI</span>
-              <span class="text-slate-400 font-normal">Now</span>
+              <span class="text-slate-400 font-normal text-[10px]">Now</span>
             </div>
             <p>Chat history cleared. How can I assist with your screenplay or production plans today?</p>
           </div>
         </div>
-      `})}class oa{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(t="#app"){if(this.appEl=document.querySelector(t),!this.appEl){console.error(`Mount element ${t} not found.`);return}document.body.addEventListener("click",s=>{const n=s.target.closest("a");if(n&&n.href&&n.origin===window.location.origin&&!n.hasAttribute("download")&&n.getAttribute("target")!=="_blank"&&!n.getAttribute("rel")?.includes("external")){const a=new URL(n.href),o=a.pathname+a.search+a.hash;o.startsWith("/api")||(s.preventDefault(),this.navigate(o))}}),window.addEventListener("popstate",s=>{typeof window.__scriptoraEditorPopstate=="function"&&window.__scriptoraEditorPopstate(s)||this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(t,s=!1){this.currentPath&&f.pushHistory(this.currentPath);const n=this.getBasePath(),a=n&&t.toLowerCase().startsWith(n.toLowerCase())?t.slice(n.length)||"/":t,o=n&&!t.startsWith(n)?`${n}${a.startsWith("/")?"":"/"}${a}`:t;s?window.history.replaceState(null,"",o):window.history.pushState(null,"",o),this.resolve(a)}resolve(t){const[s,n]=t.split("?");let a=s.replace(/\/+$/,"")||"/";const o=this.getBasePath();o&&a.toLowerCase().startsWith(o.toLowerCase())&&(a=a.slice(o.length)||"/"),a.startsWith("/")||(a="/"+a);const i=new URLSearchParams(n||"");this.currentPath=t;const l=!!f.state.currentUser;if(!l&&!["/welcome","/auth"].includes(a)){this.navigate("/auth",!0);return}if(l&&a==="/auth"){this.navigate("/workspace",!0);return}if(a==="/"){l?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(a==="/welcome"){this.render(cn(),()=>dn(this.navigate.bind(this)));return}if(a==="/auth"){this.render(ln(),()=>rn(this.navigate.bind(this)));return}if(a==="/workspace"){this.render(pn(),()=>un(this.navigate.bind(this)));return}if(a==="/editor"){const d=f.state.selectedScriptId||"chronicles-of-dust",r=i.get("scene");this.navigate(`/editor/${d}${r?`?scene=${r}`:""}`,!0);return}if(a.startsWith("/editor/")){const d=a.split("/")[2],r=i.get("scene");f.setState({selectedScriptId:d}),this.render(fn(d,r),()=>bn(d,this.navigate.bind(this)));return}if(a==="/intelligence"||a==="/intelligence/select"){this.render(Ln(),()=>Rn(this.navigate.bind(this)));return}if(a==="/intelligence/context"){this.render(On(),()=>_n(this.navigate.bind(this)));return}if(a==="/intelligence/dashboard"||a==="/intelligence/overview"){this.render(Fn(),()=>Un(this.navigate.bind(this)));return}if(a==="/intelligence/analysis"||a==="/intelligence/analysis/select"){this.render(Hn(),()=>Vn(this.navigate.bind(this)));return}if(a.startsWith("/intelligence/analysis/")){const d=a.split("/")[3]||"pacing",r=i.get("from"),p=i.get("scriptId");this.render(zn(d,r,p),()=>Gn(d,this.navigate.bind(this),r,p));return}if(a==="/profile"){const d=i.get("from"),r=i.get("scriptId");this.render(Jn(d,r),()=>Kn(this.navigate.bind(this),d,r));return}if(a==="/profile/collaborators"){const d=i.get("from"),r=i.get("scriptId");this.render(Yn(d,r),()=>Xn(this.navigate.bind(this),d,r));return}if(a==="/notifications"){this.render(Zn(),()=>Qn(this.navigate.bind(this)));return}if(a==="/production"||a==="/pre-production"){const d=i.get("from"),r=i.get("scriptId");this.render(ea(d,r),()=>ta(this.navigate.bind(this),d,r));return}if(a==="/chat"||a==="/ai-chat"||a==="/writer-room"||a==="/ai-writer-room"){this.render(na(),()=>aa(this.navigate.bind(this)));return}this.renderNotFound(a)}render(t,s){if(this.appEl&&(this.appEl.innerHTML=t,window.scrollTo({top:0,behavior:"instant"}),typeof s=="function"))try{s()}catch(n){console.error("Error attaching screen events:",n)}}renderNotFound(t){this.appEl.innerHTML=`
+      `})}class oa{constructor(){this.appEl=null,this.currentPath=null}getBasePath(){return window.location.pathname.toLowerCase().startsWith("/scriptora")?"/Scriptora":""}getCurrentLocation(){return window.location.hash&&window.location.hash.startsWith("#/")?window.location.hash.slice(1):window.location.pathname+window.location.search}init(t="#app"){if(this.appEl=document.querySelector(t),!this.appEl){console.error(`Mount element ${t} not found.`);return}document.body.addEventListener("click",s=>{const n=s.target.closest("a");if(n&&n.href&&n.origin===window.location.origin&&!n.hasAttribute("download")&&n.getAttribute("target")!=="_blank"&&!n.getAttribute("rel")?.includes("external")){const a=new URL(n.href),o=a.pathname+a.search+a.hash;o.startsWith("/api")||(s.preventDefault(),this.navigate(o))}}),window.addEventListener("popstate",s=>{typeof window.__scriptoraEditorPopstate=="function"&&window.__scriptoraEditorPopstate(s)||this.resolve(this.getCurrentLocation())}),window.addEventListener("hashchange",()=>{this.resolve(this.getCurrentLocation())}),this.resolve(this.getCurrentLocation())}navigate(t,s=!1){this.currentPath&&f.pushHistory(this.currentPath);const n=this.getBasePath(),a=n&&t.toLowerCase().startsWith(n.toLowerCase())?t.slice(n.length)||"/":t,o=n&&!t.startsWith(n)?`${n}${a.startsWith("/")?"":"/"}${a}`:t;s?window.history.replaceState(null,"",o):window.history.pushState(null,"",o),this.resolve(a)}resolve(t){const[s,n]=t.split("?");let a=s.replace(/\/+$/,"")||"/";const o=this.getBasePath();o&&a.toLowerCase().startsWith(o.toLowerCase())&&(a=a.slice(o.length)||"/"),a.startsWith("/")||(a="/"+a);const i=new URLSearchParams(n||"");this.currentPath=t;const l=!!f.state.currentUser;if(!l&&!["/welcome","/auth"].includes(a)){this.navigate("/auth",!0);return}if(l&&a==="/auth"){this.navigate("/workspace",!0);return}if(a==="/"){l?this.navigate("/workspace",!0):this.navigate("/welcome",!0);return}if(a==="/welcome"){this.render(cn(),()=>dn(this.navigate.bind(this)));return}if(a==="/auth"){this.render(ln(),()=>rn(this.navigate.bind(this)));return}if(a==="/workspace"){this.render(pn(),()=>un(this.navigate.bind(this)));return}if(a==="/editor"){const d=f.state.selectedScriptId||"chronicles-of-dust",r=i.get("scene");this.navigate(`/editor/${d}${r?`?scene=${r}`:""}`,!0);return}if(a.startsWith("/editor/")){const d=a.split("/")[2],r=i.get("scene");f.setState({selectedScriptId:d}),this.render(fn(d,r),()=>bn(d,this.navigate.bind(this)));return}if(a==="/intelligence"||a==="/intelligence/select"){this.render(Ln(),()=>Rn(this.navigate.bind(this)));return}if(a==="/intelligence/context"){this.render(On(),()=>_n(this.navigate.bind(this)));return}if(a==="/intelligence/dashboard"||a==="/intelligence/overview"){this.render(Fn(),()=>Un(this.navigate.bind(this)));return}if(a==="/intelligence/analysis"||a==="/intelligence/analysis/select"){this.render(Hn(),()=>Vn(this.navigate.bind(this)));return}if(a.startsWith("/intelligence/analysis/")){const d=a.split("/")[3]||"pacing",r=i.get("from"),p=i.get("scriptId");this.render(zn(d,r,p),()=>Gn(d,this.navigate.bind(this),r,p));return}if(a==="/profile"){const d=i.get("from"),r=i.get("scriptId");this.render(Jn(d,r),()=>Kn(this.navigate.bind(this),d,r));return}if(a==="/profile/collaborators"){const d=i.get("from"),r=i.get("scriptId");this.render(Yn(d,r),()=>Xn(this.navigate.bind(this),d,r));return}if(a==="/notifications"){this.render(Zn(),()=>Qn(this.navigate.bind(this)));return}if(a==="/production"||a==="/pre-production"){const d=i.get("from"),r=i.get("scriptId");this.render(ea(d,r),()=>ta(this.navigate.bind(this),d,r));return}if(a==="/chat"||a==="/ai-chat"||a==="/writer-room"||a==="/ai-writer-room"){this.render(na(),()=>aa(this.navigate.bind(this)));return}this.renderNotFound(a)}render(t,s){if(this.appEl&&(this.appEl.innerHTML=t,window.scrollTo({top:0,behavior:"instant"}),this.appEl.classList.remove("fade-in"),this.appEl.offsetWidth,this.appEl.classList.add("fade-in"),typeof s=="function"))try{s()}catch(n){console.error("Error attaching screen events:",n)}}renderNotFound(t){this.appEl.innerHTML=`
       <div class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-surface">
         <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
           <span class="material-symbols-outlined text-[32px]">sentiment_dissatisfied</span>

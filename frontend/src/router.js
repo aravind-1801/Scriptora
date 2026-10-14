@@ -257,6 +257,9 @@ class Router {
     if (!this.appEl) return;
     this.appEl.innerHTML = html;
     window.scrollTo({ top: 0, behavior: 'instant' });
+    this.appEl.classList.remove('fade-in');
+    void this.appEl.offsetWidth; // Force reflow to trigger exact smooth fadeIn animation
+    this.appEl.classList.add('fade-in');
     if (typeof attachEventsFn === 'function') {
       try {
         attachEventsFn();

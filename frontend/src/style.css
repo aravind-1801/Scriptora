@@ -58,6 +58,12 @@
   animation: fadeIn 0.18s ease-out forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none !important;
+  }
+}
+
 /* Focus and active tap transitions */
 button, a {
   -webkit-tap-highlight-color: transparent;

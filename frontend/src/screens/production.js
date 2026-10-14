@@ -34,102 +34,96 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
       ${renderHeader('Pre-Production', 'Production Workspace & Tools')}
 
       <!-- Main Workspace Container -->
-      <main class="flex-1 w-full max-w-4xl mx-auto px-4 pt-16 pb-12 flex flex-col gap-4">
+      <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
         
-        <!-- Breadcrumb & Return Context Bar -->
-        <div class="flex items-center justify-between py-2 border-b border-slate-200/60 mt-1">
-          <div class="flex items-center gap-2">
-            <a href="${returnUrl}" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium" id="prod-back-nav">
-              <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-              <span>${isFromEditor ? 'Back to Screenplay Editor' : 'Back to Workspace'}</span>
+        <!-- Clean Unified Header Row (Back + Title + Mode Switch) -->
+        <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200/70">
+          <div class="flex items-center gap-2 min-w-0">
+            <a href="${returnUrl}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium shrink-0" id="prod-back-nav" title="${isFromEditor ? 'Back to Screenplay Editor' : 'Back to Workspace'}">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span class="truncate">${isFromEditor ? 'Editor' : 'Workspace'}</span>
             </a>
-            <span class="text-slate-300">/</span>
-            <span class="text-xs font-semibold text-slate-800">Production Studio</span>
+            <h1 class="font-heading font-bold text-sm text-slate-900 truncate">Production Studio</h1>
           </div>
 
           <!-- Mode Toggle: Simple vs Advanced (Preserves State) -->
-          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shadow-2xs">
-            <button id="toggle-mode-simple" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${!isAdvanced ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}">
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/80 shadow-2xs shrink-0">
+            <button id="toggle-mode-simple" class="px-2.5 py-0.5 text-xs font-medium rounded-lg transition-all ${!isAdvanced ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}">
               Simple
             </button>
-            <button id="toggle-mode-advanced" class="px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${isAdvanced ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}">
+            <button id="toggle-mode-advanced" class="px-2.5 py-0.5 text-xs font-medium rounded-lg transition-all ${isAdvanced ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}">
               Advanced
             </button>
           </div>
         </div>
 
-        <!-- 1. Screenplay & Source Version Selector Bar -->
-        <section class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-              <span class="material-symbols-outlined text-[24px]">movie</span>
+        <!-- 1. Screenplay & Source Version Selector Card (Clean, Uncluttered, No Redundant Project Panel) -->
+        <section class="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+              <span class="material-symbols-outlined text-[20px]">movie_creation</span>
             </div>
             <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <select id="prod-script-select" class="font-heading font-bold text-base text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer pr-1">
+              <div class="flex items-center gap-1.5">
+                <select id="prod-script-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer pr-1 truncate">
                   <option value="chronicles-of-dust" ${script.id === 'chronicles-of-dust' ? 'selected' : ''}>Chronicles of Dust (Feature)</option>
                   <option value="the-neon-horizon" ${script.id === 'the-neon-horizon' ? 'selected' : ''}>The Neon Horizon (Pilot)</option>
                 </select>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider">Project: Badlands Anthology</span>
               </div>
-              <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
-                <span class="flex items-center gap-1 text-emerald-600 font-semibold" id="prod-pinned-version-badge">
-                  <span class="material-symbols-outlined text-[14px]">lock</span>
-                  <span id="pinned-version-label">${script.draft || 'Draft 4.2'} (Pinned Source)</span>
+              <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
+                <span class="flex items-center gap-1 text-emerald-700 font-medium" id="prod-pinned-version-badge">
+                  <span class="material-symbols-outlined text-[13px]">lock</span>
+                  <span id="pinned-version-label">${script.draft || 'Draft 4.2'} (Pinned)</span>
                 </span>
                 <span>•</span>
                 <span>18 Scenes</span>
                 <span>•</span>
-                <span>78 Breakdown Elements</span>
+                <span>78 Elements</span>
               </div>
             </div>
           </div>
 
-          <!-- Role Concept Switcher (Owner, Director, AD, Production, Dept, Viewer) -->
-          <div class="flex items-center gap-2 self-start md:self-auto shrink-0">
-            <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Role:</span>
-            <div class="relative">
-              <select id="prod-role-select" class="text-xs font-semibold bg-blue-50/80 text-blue-700 border border-blue-200/80 rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer">
-                <option value="Owner" ${userRole === 'Owner' ? 'selected' : ''}>Owner (Arun Kumar)</option>
-                <option value="Director" ${userRole === 'Director' ? 'selected' : ''}>Director (Elena Rostova)</option>
-                <option value="Assistant Director" ${userRole === 'Assistant Director' ? 'selected' : ''}>Assistant Director (Marcus Vance)</option>
-                <option value="Production" ${userRole === 'Production' ? 'selected' : ''}>Production Manager</option>
-                <option value="Department Member" ${userRole === 'Department Member' ? 'selected' : ''}>Department Lead (Props/SFX)</option>
-                <option value="Viewer" ${userRole === 'Viewer' ? 'selected' : ''}>Viewer (Read Only)</option>
-              </select>
-            </div>
+          <!-- Functional Role Selector -->
+          <div class="flex items-center gap-1.5 self-start sm:self-auto shrink-0 text-xs">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Role:</span>
+            <select id="prod-role-select" class="text-xs font-semibold bg-slate-50 text-slate-700 border border-slate-200 rounded-lg px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="Owner" ${userRole === 'Owner' ? 'selected' : ''}>Owner</option>
+              <option value="Director" ${userRole === 'Director' ? 'selected' : ''}>Director</option>
+              <option value="Assistant Director" ${userRole === 'Assistant Director' ? 'selected' : ''}>Assistant Director</option>
+              <option value="Production" ${userRole === 'Production' ? 'selected' : ''}>Production</option>
+              <option value="Department Member" ${userRole === 'Department Member' ? 'selected' : ''}>Department Lead</option>
+              <option value="Viewer" ${userRole === 'Viewer' ? 'selected' : ''}>Viewer</option>
+            </select>
           </div>
         </section>
 
         <!-- Source Version Staleness Warning Banner (Preserves Source Integrity) -->
-        <div id="source-version-alert" class="hidden bg-amber-50 border border-amber-200/90 rounded-2xl p-3.5 flex items-start justify-between gap-3 shadow-2xs">
-          <div class="flex items-start gap-2.5">
-            <span class="material-symbols-outlined text-[20px] text-amber-600 shrink-0 mt-0.5">warning</span>
+        <div id="source-version-alert" class="hidden bg-amber-50 border border-amber-200/90 rounded-2xl p-3 flex items-start justify-between gap-3 shadow-2xs">
+          <div class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">warning</span>
             <div class="text-xs text-amber-900 leading-relaxed">
-              <span class="font-bold">Source Version Out of Sync:</span> The screenplay draft in the editor has been updated, but production records are currently pinned to <span class="font-semibold underline" id="alert-pinned-ver">Draft 4.2</span>. Approved call sheets, schedules, and breakdown data remain safely isolated until explicitly re-pinned.
+              <span class="font-bold">Source Version Out of Sync:</span> Screenplay draft updated. Production records remain pinned to <span class="font-semibold underline" id="alert-pinned-ver">Draft 4.2</span>.
             </div>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button id="btn-repin-source" class="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-repin-source" class="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-[11px] transition-colors">
               Update Pin
             </button>
-            <button id="btn-dismiss-staleness" class="px-2 py-1 rounded-lg bg-white border border-amber-200 text-amber-800 text-xs font-medium hover:bg-amber-100/50">
+            <button id="btn-dismiss-staleness" class="px-2 py-1 rounded-lg bg-white border border-amber-200 text-amber-800 text-[11px] font-medium hover:bg-amber-100/50">
               Keep Pin
             </button>
           </div>
         </div>
 
-        <!-- 2. Essential Production Tools (Prominent Access) -->
-        <section class="flex flex-col gap-2.5">
+        <!-- 2. Essential Production Tools (Prominent Access, Clean Title without Competing Badge) -->
+        <section class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <h2 class="font-heading font-bold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[18px] text-blue-600">tune</span>
+            <h2 class="font-heading font-bold text-xs text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
               <span>Essential Production Tools</span>
             </h2>
-            <span class="text-[11px] text-slate-500 font-medium">Draft 4.2 Approved Records</span>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
             
             <!-- Tool 1: Call Sheets -->
             <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
