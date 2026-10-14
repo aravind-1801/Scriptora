@@ -44,7 +44,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- STATIC TOP HEADER (FIXED: Never scrolls with screenplay)  -->
       <!-- ========================================================= -->
-      <header id="editor-fixed-header" class="fixed top-14 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
+      <header id="editor-fixed-header" class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
         
         <!-- ROW 1: TOP APP HEADER (Order: Back, Title & Save Status, Auto-Save, Save Icon, Collab) -->
         <div class="h-11 px-3 flex items-center justify-between max-w-5xl mx-auto">
@@ -1118,7 +1118,7 @@ export function updateEditorHeaderOffset() {
   }
   const height = headerEl.offsetHeight;
   if (height > 0) {
-    scrollEl.style.paddingTop = `${56 + height}px`;
+    scrollEl.style.paddingTop = `${height}px`;
     scrollEl.style.paddingBottom = '88px';
   }
 }
@@ -3493,7 +3493,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
       if (typeof window.setScriptoraFullScreen === 'function') {
         window.setScriptoraFullScreen(false);
       }
-      if (headerEl) headerEl.style.top = '3.5rem';
+      if (headerEl) headerEl.style.top = '0px';
     }
 
     if (collapsibleArea) collapsibleArea.style.display = focusModeActive ? 'none' : '';

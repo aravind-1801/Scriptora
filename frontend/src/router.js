@@ -219,7 +219,7 @@ class Router {
       this.render(
         renderEditorScreen(scriptId, targetScene),
         () => attachEditorEvents(scriptId, this.navigate.bind(this)),
-        { activeTab: 'workspace', sectionTitle: 'Editor', subtitle: currentScript.title || 'Screenplay Studio' }
+        { activeTab: 'workspace', sectionTitle: 'Editor', subtitle: currentScript.title || 'Screenplay Studio', hideHeader: true }
       );
       return;
     }
@@ -475,6 +475,7 @@ class Router {
     const navSlot = document.getElementById('scriptora-global-nav');
 
     const isPublic = !!options.isPublic;
+    const hideHeader = !!options.hideHeader;
     const activeTab = options.activeTab || 'workspace';
     const sectionTitle = options.sectionTitle || 'Scriptora';
     const subtitle = options.subtitle || '';
@@ -484,8 +485,13 @@ class Router {
       if (navSlot) navSlot.classList.add('hidden');
     } else {
       if (headerSlot && !this.isFullScreen) {
-        headerSlot.classList.remove('hidden');
-        headerSlot.innerHTML = renderHeader(sectionTitle, subtitle);
+        if (hideHeader) {
+          headerSlot.classList.add('hidden');
+          headerSlot.innerHTML = '';
+        } else {
+          headerSlot.classList.remove('hidden');
+          headerSlot.innerHTML = renderHeader(sectionTitle, subtitle);
+        }
       }
       if (navSlot && !this.isFullScreen) {
         navSlot.classList.remove('hidden');
