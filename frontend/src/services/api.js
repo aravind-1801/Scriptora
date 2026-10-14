@@ -262,6 +262,35 @@ export async function login(credentials) {
   }
 }
 
+export async function googleLogin(payload = {}) {
+  try {
+    const data = await request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ ...payload, provider: 'google' })
+    });
+    localStorage.setItem('scriptora_user', JSON.stringify(data.user));
+    return data.user;
+  } catch {
+    const resolvedName = payload.displayName || payload.name || (payload.email ? payload.email.split('@')[0] : "Google Filmmaker");
+    const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "GF";
+    const user = {
+      id: payload.sub || `google-${Date.now()}`,
+      name: resolvedName,
+      displayName: resolvedName,
+      email: payload.email || "arun.kumar@scriptora.studio",
+      headline: "Screenwriter & Film Director",
+      badge: "Member Pro",
+      initials,
+      avatar: payload.picture || payload.photoURL || null,
+      avatarUrl: payload.picture || payload.photoURL || null,
+      provider: "google",
+      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+    };
+    localStorage.setItem('scriptora_user', JSON.stringify(user));
+    return user;
+  }
+}
+
 export async function register(data) {
   try {
     const res = await request('/auth/register', {

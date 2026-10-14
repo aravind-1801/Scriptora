@@ -58,6 +58,19 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Validate Join Code:', join.status, join.body.valid ? 'PASS' : 'FAIL');
 
+    // 7. Google Auth Login
+    const googleLogin = await request('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        email: 'maya.lin@scriptora.studio',
+        name: 'Maya Lin',
+        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        provider: 'google'
+      }
+    });
+    console.log('✓ Google Auth Login:', googleLogin.status, googleLogin.body.user?.email === 'maya.lin@scriptora.studio' && googleLogin.body.user?.avatarUrl?.length > 0 ? 'PASS' : 'FAIL');
+
     console.log('\n[TEST] All backend integration tests PASSED successfully!');
     server.close();
     process.exit(0);

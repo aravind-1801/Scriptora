@@ -53,7 +53,7 @@ export const server = http.createServer(async (req, res) => {
     if (pathname === '/auth/me' && method === 'GET') {
       return sendJson(res, 200, { user: authService.getCurrentUser() });
     }
-    if (pathname === '/auth/login' && method === 'POST') {
+    if ((pathname === '/auth/login' || pathname === '/auth/google') && method === 'POST') {
       const body = await readBody(req);
       return sendJson(res, 200, { user: authService.login(body) });
     }

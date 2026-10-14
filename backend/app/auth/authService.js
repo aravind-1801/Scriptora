@@ -5,15 +5,23 @@ export function getCurrentUser() {
 }
 
 export function login(credentials) {
-  const { email, password, provider } = credentials || {};
+  const { email, password, provider, name, displayName, picture, photoURL, sub, token } = credentials || {};
+  const isGoogle = provider === 'google';
+  const resolvedName = displayName || name || (email ? email.split('@')[0] : "Arun Kumar");
+  const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "AK";
+
+  const avatarUrl = picture || photoURL || credentials.avatarUrl || null;
   const user = {
-    id: "user-1",
-    name: email ? email.split('@')[0] : "Arun Kumar",
-    displayName: email ? email.split('@')[0] : "Arun Kumar",
-    headline: "Screenwriter & Narrative Director",
+    id: sub || (isGoogle ? `google-${Date.now()}` : "user-1"),
+    name: resolvedName,
+    displayName: resolvedName,
+    headline: isGoogle ? "Screenwriter & Film Director" : "Screenwriter & Narrative Director",
     email: email || "arun.kumar@scriptora.studio",
     badge: "Member Pro",
-    initials: email ? email.slice(0, 2).toUpperCase() : "AK",
+    initials,
+    avatar: avatarUrl,
+    avatarUrl: avatarUrl,
+    provider: provider || "credentials",
     stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
   };
   db.currentUser = user;
