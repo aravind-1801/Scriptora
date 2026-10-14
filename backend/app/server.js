@@ -6,6 +6,7 @@ import * as scriptService from './services/scriptService.js';
 import * as screenplayService from './services/screenplayService.js';
 import * as collaborationService from './services/collaborationService.js';
 import * as intelligenceService from './services/intelligenceService.js';
+import * as productionService from './services/productionService.js';
 
 const PORT = process.env.PORT || 8000;
 
@@ -264,6 +265,70 @@ export const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const answer = intelligenceService.queryIntelligence(body.query, body.scriptId);
       return sendJson(res, 200, { answer });
+    }
+
+    // 10. PRE-PRODUCTION
+    const prodWsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)$/);
+    if (prodWsMatch) {
+      const scriptId = prodWsMatch[1];
+      if (method === 'GET') {
+        const ws = productionService.getProductionWorkspace(scriptId);
+        return sendJson(res, 200, { workspace: ws });
+      }
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const ws = productionService.updateProductionWorkspace(scriptId, body);
+        return sendJson(res, 200, { workspace: ws });
+      }
+    }
+
+    const prodPinMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/pin$/);
+    if (prodPinMatch && method === 'POST') {
+      const body = await readBody(req);
+      const ws = productionService.pinSourceVersion(prodPinMatch[1], body.version);
+      return sendJson(res, 200, { workspace: ws });
+    }
+
+    const prodResMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/resources$/);
+    if (prodResMatch && method === 'GET') {
+      const category = url.searchParams.get('category');
+      const resources = productionService.getProductionResources(prodResMatch[1], category);
+      return sendJson(res, 200, { resources });
+    }
+
+    const prodDocsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/documents$/);
+    if (prodDocsMatch && method === 'GET') {
+      const documents = productionService.getProductionDocuments(prodDocsMatch[1]);
+      return sendJson(res, 200, { documents });
+    }
+
+    const prodPropsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/proposals$/);
+    if (prodPropsMatch) {
+      const scriptId = prodPropsMatch[1];
+      if (method === 'GET') {
+        const proposals = productionService.getProductionProposals(scriptId);
+        return sendJson(res, 200, { proposals });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const newProposal = productionService.createProductionProposal(scriptId, body);
+        return sendJson(res, 201, { proposal: newProposal });
+      }
+    }
+
+    const prodPropReviewMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/proposals\/([a-zA-Z0-9_-]+)\/review$/);
+    if (prodPropReviewMatch && method === 'POST') {
+      const scriptId = prodPropReviewMatch[1];
+      const propId = prodPropReviewMatch[2];
+      const body = await readBody(req);
+      const updated = productionService.reviewProductionProposal(scriptId, propId, body.action, body.notes);
+      return sendJson(res, 200, { proposal: updated });
+    }
+
+    const prodAuditMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/audit$/);
+    if (prodAuditMatch && method === 'GET') {
+      const auditTrail = productionService.getProductionAuditTrail(prodAuditMatch[1]);
+      return sendJson(res, 200, { auditTrail });
     }
 
     // 404

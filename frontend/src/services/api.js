@@ -1052,3 +1052,441 @@ export async function queryIntelligence(query, scriptId) {
     return `Analysis: In this screenplay, scene tempo and dialogue density align with core narrative milestones. Characters express distinct agendas in each beat.`;
   }
 }
+
+// =========================================================================
+// 8. PRE-PRODUCTION FOUNDATIONAL DATA ARCHITECTURE & OPERATIONS
+// =========================================================================
+
+export async function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}`);
+    if (data?.workspace) {
+      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      return data.workspace;
+    }
+  } catch (e) {
+    // offline fallback
+  }
+
+  const cached = localStorage.getItem(`scriptora_prod_ws_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const script = await getScript(scriptId);
+  const defaultWs = {
+    id: `prod-ws-${scriptId}`,
+    projectId: "proj-1",
+    projectName: "Badlands Anthology",
+    scriptId: scriptId,
+    screenplayTitle: script?.title || "Chronicles of Dust",
+    pinnedSourceVersion: script?.draft || "Draft 4.2",
+    pinnedSourceVersionHash: "v4.2-snap-88f2",
+    pinnedTimestamp: "12m ago",
+    currentScriptDraft: script?.draft || "Draft 4.2",
+    isStale: false,
+    mode: localStorage.getItem('scriptora_prod_mode') || 'simple',
+    userRole: localStorage.getItem('scriptora_prod_role') || 'Owner',
+    roles: ["Owner", "Director", "Assistant Director", "Production", "Department Member", "Viewer"],
+    stats: {
+      totalScenes: 18,
+      breakdownElements: 78,
+      callSheetsCount: 2,
+      shootingDays: 14,
+      pendingProposals: 2,
+      completedApprovals: 6
+    },
+    updatedAt: new Date().toISOString()
+  };
+  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(defaultWs));
+  return defaultWs;
+}
+
+export async function updateProductionWorkspace(scriptId, updates) {
+  try {
+    const data = await request(`/production/${scriptId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (data?.workspace) {
+      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      return data.workspace;
+    }
+  } catch (e) {}
+
+  const current = await getProductionWorkspace(scriptId);
+  const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
+  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(updated));
+  return updated;
+}
+
+export async function pinProductionSourceVersion(scriptId, newVersion) {
+  try {
+    const data = await request(`/production/${scriptId}/pin`, {
+      method: 'POST',
+      body: JSON.stringify({ version: newVersion })
+    });
+    if (data?.workspace) {
+      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      return data.workspace;
+    }
+  } catch (e) {}
+
+  const current = await getProductionWorkspace(scriptId);
+  current.pinnedSourceVersion = newVersion;
+  current.pinnedTimestamp = "Just now";
+  current.isStale = false;
+  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(current));
+  return current;
+}
+
+export async function getProductionResources(scriptId = 'chronicles-of-dust', category = null) {
+  try {
+    const url = `/production/${scriptId}/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`;
+    const data = await request(url);
+    if (data?.resources) {
+      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(data.resources));
+      return data.resources;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_res_${scriptId}`);
+  if (cached) {
+    try {
+      const list = JSON.parse(cached);
+      if (category && category !== 'all') {
+        return list.filter(r => r.category.toLowerCase() === category.toLowerCase());
+      }
+      return list;
+    } catch (_) {}
+  }
+
+  // Seed default resources
+  const defaults = [
+    {
+      id: "res-1",
+      scriptId,
+      category: "Cast",
+      name: "Kevin (Lead)",
+      role: "Hydro-engineer",
+      scenes: ["Scene 1", "Scene 3", "Scene 18"],
+      department: "Casting",
+      status: "Confirmed",
+      contactRestricted: true,
+      contact: "agent@talentagency.com",
+      notes: "Requires desert dust protective gear and waterproof boots."
+    },
+    {
+      id: "res-2",
+      scriptId,
+      category: "Cast",
+      name: "Meera (Lead)",
+      role: "Field Operative",
+      scenes: ["Scene 2", "Scene 4", "Scene 18"],
+      department: "Casting",
+      status: "Confirmed",
+      contactRestricted: true,
+      contact: "management@creativeartists.com",
+      notes: "Tactical harness fitted for scene 18 valve climb."
+    },
+    {
+      id: "res-3",
+      scriptId,
+      category: "Location",
+      name: "Arid Outpost Gate 4",
+      scenes: ["Scene 1", "Scene 2"],
+      department: "Locations",
+      status: "Confirmed",
+      contactRestricted: false,
+      contact: "Mojave Perimeter Permit Office",
+      notes: "Day exterior only. High wind advisory after 16:00."
+    },
+    {
+      id: "res-4",
+      scriptId,
+      category: "Location",
+      name: "Pumping Station Chamber B",
+      scenes: ["Scene 18"],
+      department: "Locations",
+      status: "Confirmed",
+      contactRestricted: false,
+      contact: "Aqueduct District Coordinator",
+      notes: "Heavy echo; sound dampening blankets required."
+    },
+    {
+      id: "res-5",
+      scriptId,
+      category: "Props",
+      name: "Hydraulic Bypass Valve Kit",
+      scenes: ["Scene 18"],
+      department: "Props",
+      status: "Confirmed",
+      notes: "Hero prop with functional LED pressure gauge."
+    },
+    {
+      id: "res-6",
+      scriptId,
+      category: "Vehicles",
+      name: "Solar Patrol Rover (Modified)",
+      scenes: ["Scene 1", "Scene 4"],
+      department: "Picture Vehicles",
+      status: "Awaiting review",
+      notes: "Secondary dust filter installed on engine intake."
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(defaults));
+  if (category && category !== 'all') {
+    return defaults.filter(r => r.category.toLowerCase() === category.toLowerCase());
+  }
+  return defaults;
+}
+
+export async function getProductionDocuments(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/documents`);
+    if (data?.documents) {
+      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(data.documents));
+      return data.documents;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_docs_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    {
+      id: "doc-cs-1",
+      scriptId,
+      type: "Call Sheet",
+      title: "Call Sheet #01 — Gate 4 Day Exterior",
+      sourceVersion: "Draft 4.2",
+      shootDay: "Day 1 of 14",
+      date: "Oct 24, 2026",
+      callTime: "06:30 AM",
+      location: "Mojave Outpost Gate 4",
+      scenes: ["Scene 1", "Scene 2"],
+      status: "Confirmed",
+      published: true,
+      version: "v1.0"
+    },
+    {
+      id: "doc-cs-2",
+      scriptId,
+      type: "Call Sheet",
+      title: "Call Sheet #02 — Pumping Station Chamber",
+      sourceVersion: "Draft 4.2",
+      shootDay: "Day 2 of 14",
+      date: "Oct 25, 2026",
+      callTime: "07:00 AM",
+      location: "Chamber B Dry Tank",
+      scenes: ["Scene 18"],
+      status: "Draft",
+      published: false,
+      version: "v0.9"
+    },
+    {
+      id: "doc-ds-1",
+      scriptId,
+      type: "Dialogue Sheet",
+      title: "Actor Sides — Kevin & Meera (Scene 18)",
+      sourceVersion: "Draft 4.2",
+      scenes: ["Scene 18"],
+      characters: ["KEVIN", "MEERA"],
+      status: "Confirmed",
+      published: true,
+      version: "v1.2"
+    },
+    {
+      id: "doc-ss-1",
+      scriptId,
+      type: "Shooting Schedule",
+      title: "Master 14-Day Stripboard Schedule",
+      sourceVersion: "Draft 4.2",
+      status: "Confirmed",
+      published: true,
+      version: "v2.1",
+      daysCount: 14
+    },
+    {
+      id: "doc-sb-1",
+      scriptId,
+      type: "Script Breakdown",
+      title: "Full Production Breakdown Sheet",
+      sourceVersion: "Draft 4.2",
+      status: "Confirmed",
+      published: true,
+      version: "v1.4",
+      elementsCount: 78
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+
+export async function getProductionProposals(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/proposals`);
+    if (data?.proposals) {
+      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(data.proposals));
+      return data.proposals;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_props_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    {
+      id: "prop-1",
+      scriptId,
+      sourceVersion: "Draft 4.2",
+      title: "Add Water Truck Standby for Chamber B Scene 18",
+      description: "SFX coordinator requested a dedicated pressurized water truck for high-velocity valve release practical effect in Scene 18.",
+      category: "SFX / Logistics",
+      submittedBy: "Elena Rostova",
+      submitterRole: "Director",
+      status: "Awaiting review",
+      impact: "Requires 1 additional standby driver and $1,200 equipment allocation.",
+      createdAt: "2026-10-14T08:30:00Z"
+    },
+    {
+      id: "prop-2",
+      scriptId,
+      sourceVersion: "Draft 4.2",
+      title: "Swap Shoot Order for Day 3 and Day 4",
+      description: "Shift exterior lakebed shoot earlier by 24 hours due to predicted desert sand squall.",
+      category: "Schedule",
+      submittedBy: "Marcus Vance",
+      submitterRole: "Assistant Director",
+      status: "Awaiting review",
+      impact: "Affects talent travel call times for Kevin and background extras.",
+      createdAt: "2026-10-13T16:45:00Z"
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+
+export async function submitProductionProposal(scriptId, proposal) {
+  try {
+    const data = await request(`/production/${scriptId}/proposals`, {
+      method: 'POST',
+      body: JSON.stringify(proposal)
+    });
+    if (data?.proposal) {
+      const list = await getProductionProposals(scriptId);
+      list.unshift(data.proposal);
+      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+      return data.proposal;
+    }
+  } catch (e) {}
+
+  const list = await getProductionProposals(scriptId);
+  const newProp = {
+    id: `prop-${Date.now()}`,
+    scriptId,
+    sourceVersion: proposal.sourceVersion || "Draft 4.2",
+    title: proposal.title || "Production Schedule Change",
+    description: proposal.description || "",
+    category: proposal.category || "General",
+    submittedBy: proposal.submittedBy || "Collaborator",
+    submitterRole: proposal.submitterRole || "Director",
+    status: "Awaiting review",
+    impact: proposal.impact || "Requires schedule adjustment",
+    createdAt: new Date().toISOString()
+  };
+  list.unshift(newProp);
+  localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+  return newProp;
+}
+
+export async function reviewProductionProposal(scriptId, proposalId, action, reviewNotes = '') {
+  try {
+    const data = await request(`/production/${scriptId}/proposals/${proposalId}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ action, notes: reviewNotes })
+    });
+    if (data?.proposal) {
+      const list = await getProductionProposals(scriptId);
+      const idx = list.findIndex(p => p.id === proposalId);
+      if (idx !== -1) list[idx] = data.proposal;
+      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+      return data.proposal;
+    }
+  } catch (e) {}
+
+  const list = await getProductionProposals(scriptId);
+  const prop = list.find(p => p.id === proposalId);
+  if (prop) {
+    prop.status = action === 'accept' ? 'Accepted' : (action === 'reject' ? 'Rejected' : 'Conflict');
+    prop.resolvedAt = new Date().toISOString();
+    prop.resolutionNotes = reviewNotes || (action === 'accept' ? 'Accepted by Owner' : 'Declined during review');
+    localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+  }
+  return prop;
+}
+
+export async function getProductionAuditTrail(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/audit`);
+    if (data?.auditTrail) {
+      localStorage.setItem(`scriptora_prod_audit_${scriptId}`, JSON.stringify(data.auditTrail));
+      return data.auditTrail;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_audit_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    {
+      id: "audit-1",
+      scriptId,
+      action: "PIN_SOURCE_VERSION",
+      category: "VERSION_INTEGRITY",
+      details: "Pinned production source baseline to screenplay draft 'Draft 4.2' (Hash: 88f2)",
+      sourceVersion: "Draft 4.2",
+      actor: "Arun Kumar (Owner)",
+      timestamp: "12m ago"
+    },
+    {
+      id: "audit-2",
+      scriptId,
+      action: "CONFIRM_DOCUMENT",
+      category: "APPROVAL",
+      details: "Confirmed Call Sheet #01 for official release by Owner",
+      sourceVersion: "Draft 4.2",
+      actor: "Arun Kumar (Owner)",
+      timestamp: "2h ago"
+    },
+    {
+      id: "audit-3",
+      scriptId,
+      action: "SUBMIT_PROPOSAL",
+      category: "CHANGE_MANAGEMENT",
+      details: "Proposal 'Add Water Truck Standby for Chamber B' submitted by Director Elena Rostova",
+      sourceVersion: "Draft 4.2",
+      actor: "Elena Rostova",
+      timestamp: "3h ago"
+    },
+    {
+      id: "audit-4",
+      scriptId,
+      action: "EXTRACT_BREAKDOWN",
+      category: "PRODUCTION_TOOL",
+      details: "Automated element breakdown synchronized across 18 scenes from Draft 4.2",
+      sourceVersion: "Draft 4.2",
+      actor: "System Intelligence",
+      timestamp: "Yesterday"
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_audit_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+

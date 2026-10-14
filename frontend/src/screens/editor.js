@@ -3545,7 +3545,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   const openProductionFromEditor = () => {
     const targetScriptId = scriptId || store.state.selectedScriptId || 'chronicles-of-dust';
     sessionStorage.setItem('scriptora_prod_return', `/editor/${targetScriptId}`);
-    navigate(`/intelligence/analysis/production?from=editor&scriptId=${encodeURIComponent(targetScriptId)}`);
+    navigate(`/production?from=editor&scriptId=${encodeURIComponent(targetScriptId)}`);
   };
   if (prodBtn) prodBtn.onclick = openProductionFromEditor;
   if (menuProdBtn) {

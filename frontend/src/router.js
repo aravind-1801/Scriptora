@@ -11,6 +11,8 @@ import { renderIndividualAnalysisScreen, attachIndividualAnalysisEvents } from '
 import { renderProfileScreen, attachProfileEvents } from './screens/profile.js';
 import { renderCollaboratorsScreen, attachCollaboratorsEvents } from './screens/collaborators.js';
 import { renderNotificationsScreen, attachNotificationsEvents } from './screens/notifications.js';
+import { renderProductionScreen, attachProductionEvents } from './screens/production.js';
+import { renderAiChatScreen, attachAiChatEvents } from './screens/aiChat.js';
 
 class Router {
   constructor() {
@@ -224,6 +226,26 @@ class Router {
 
     if (path === '/notifications') {
       this.render(renderNotificationsScreen(), () => attachNotificationsEvents(this.navigate.bind(this)));
+      return;
+    }
+
+    // 4. PRE-PRODUCTION (Native Production Tools entry)
+    if (path === '/production' || path === '/pre-production') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderProductionScreen(fromParam, scriptParam),
+        () => attachProductionEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 3. AI CHAT (Universal Assistant)
+    if (path === '/chat' || path === '/ai-chat' || path === '/writer-room' || path === '/ai-writer-room') {
+      this.render(
+        renderAiChatScreen(),
+        () => attachAiChatEvents(this.navigate.bind(this))
+      );
       return;
     }
 
