@@ -9,13 +9,14 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Dialogue Sheets & Actor Sides')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Dialogue Sheets & Actor Sides', 'record_voice_over', '/production', `
+        ${renderProdSubNav('Dialogue Sheets & Actor Sides', 'record_voice_over', from || '/production', `
           <button id="btn-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
             <span class="material-symbols-outlined text-[16px]">print</span>
             <span>Export PDF</span>

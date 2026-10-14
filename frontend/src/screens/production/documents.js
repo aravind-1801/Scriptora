@@ -9,6 +9,8 @@ export function renderDocumentsScreen(fromParam = null, scriptParam = null, docI
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const docId = docIdParam || urlParams.get('docId');
+  const from = fromParam || urlParams.get('from');
+  const defaultBack = docId ? `/production/documents?scriptId=${scriptId}` : '/production';
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -18,7 +20,7 @@ export function renderDocumentsScreen(fromParam = null, scriptParam = null, docI
         ${renderProdSubNav(
           docId ? 'Document Viewer' : 'Documents Workspace',
           'description',
-          docId ? `/production/documents?scriptId=${scriptId}` : '/production',
+          from || defaultBack,
           docId ? `
             <button id="btn-export-doc-pdf" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
               <span class="material-symbols-outlined text-[16px]">print</span>

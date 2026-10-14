@@ -8,13 +8,14 @@ import { showToast } from '../../components/toast.js';
 export function renderChangesScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Production Change Proposals & Approvals')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Change Proposals & Approvals', 'rule', '/production', `
+        ${renderProdSubNav('Change Proposals & Approvals', 'rule', from || '/production', `
           <button id="btn-new-proposal" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
             <span class="material-symbols-outlined text-[16px]">add</span>
             <span>Submit Proposal</span>

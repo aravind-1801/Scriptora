@@ -48,9 +48,15 @@ class Store {
   }
 
   getPreviousRoute(fallback = '/workspace') {
-    if (this.state.historyStack.length > 1) {
-      this.state.historyStack.pop(); // remove current
-      return this.state.historyStack.pop(); // previous
+    if (this.state.historyStack.length > 0) {
+      return this.state.historyStack.pop();
+    }
+    return fallback;
+  }
+
+  peekPreviousRoute(fallback = '/workspace') {
+    if (this.state.historyStack.length > 0) {
+      return this.state.historyStack[this.state.historyStack.length - 1];
     }
     return fallback;
   }

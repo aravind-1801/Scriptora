@@ -1,16 +1,42 @@
 // Shared Pre-Production Navigation Bar for all Dedicated Tool Screens
 // Preserves context: selected screenplay, pinned source version (Draft 4.2), and user role.
 
-export function renderProdSubNav(title, icon = 'tune', backUrl = '/production', extraActionsHtml = '') {
+export function getBackLabelFromUrl(url) {
+  if (!url) return 'Studio';
+  const clean = url.split('?')[0].toLowerCase();
+  if (clean.includes('/schedule') || clean.includes('/stripboard')) return 'Schedule';
+  if (clean.includes('/scenes') || clean.includes('/scene-hub')) return 'Scenes';
+  if (clean.includes('/breakdown')) return 'Breakdown';
+  if (clean.includes('/call-sheets')) return 'Call Sheets';
+  if (clean.includes('/dialogue-sides') || clean.includes('/sides')) return 'Sides';
+  if (clean.includes('/directory') || clean.includes('/resources')) return 'Directory';
+  if (clean.includes('/documents')) return 'Documents';
+  if (clean.includes('/changes') || clean.includes('/proposals')) return 'Changes';
+  if (clean.includes('/history') || clean.includes('/timeline')) return 'History';
+  if (clean.includes('/readiness') || clean.includes('/validation')) return 'Readiness';
+  if (clean.includes('/storyboard')) return 'Storyboard';
+  if (clean.includes('/editor')) return 'Editor';
+  if (clean.includes('/workspace')) return 'Workspace';
+  if (clean.includes('/intelligence')) return 'Intelligence';
+  if (clean.includes('/production')) return 'Studio';
+  return 'Back';
+}
+
+export function renderProdSubNav(title, icon = 'tune', backUrl = null, extraActionsHtml = '', customBackLabel = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const fromParam = urlParams.get('from');
+  const resolvedBackUrl = backUrl || fromParam || '/production';
+  const resolvedBackLabel = customBackLabel || getBackLabelFromUrl(resolvedBackUrl);
+
   const currentRole = localStorage.getItem('scriptora_prod_role') || 'Owner';
   const currentMode = localStorage.getItem('scriptora_prod_mode') || 'simple';
 
   return `
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2 px-1 border-b border-slate-200/80 mb-3">
       <div class="flex items-center gap-2 min-w-0">
-        <a href="${backUrl}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0" title="Back to Production Studio">
+        <a href="${resolvedBackUrl}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0" title="Back to ${resolvedBackLabel}">
           <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-          <span>Studio</span>
+          <span>${resolvedBackLabel}</span>
         </a>
         <div class="flex items-center gap-2 min-w-0">
           <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">

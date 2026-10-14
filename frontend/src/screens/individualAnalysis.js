@@ -1348,6 +1348,20 @@ export function renderIndividualAnalysisScreen(type = 'pacing', from = null, ret
     currentCharData
   };
 
+  const fromParamClean = from || urlParams.get('from');
+  let backUrl = '/intelligence/analysis';
+  let backText = 'Back to Vectors';
+  if (isFromEditor) {
+    backUrl = editorReturnUrl;
+    backText = 'Back to Editor';
+  } else if (fromParamClean === 'dashboard' || fromParamClean === '/intelligence/dashboard' || fromParamClean?.includes('/intelligence/dashboard')) {
+    backUrl = '/intelligence/dashboard';
+    backText = 'Back to Dashboard';
+  } else if (fromParamClean && fromParamClean.startsWith('/')) {
+    backUrl = fromParamClean;
+    backText = 'Back';
+  }
+
   return `
     ${renderHeader(isFromEditor ? 'Editor' : 'Intelligence', detail.title)}
 
@@ -1356,17 +1370,10 @@ export function renderIndividualAnalysisScreen(type = 'pacing', from = null, ret
         
         <!-- 1. SUB-HEADER NAVIGATION ROW -->
         <div class="flex items-center justify-between">
-          ${isFromEditor ? `
-          <a href="${editorReturnUrl}" id="analysis-back-btn" class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
+          <a href="${backUrl}" id="analysis-back-btn" class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Back to Editor</span>
+            <span>${backText}</span>
           </a>
-          ` : `
-          <a href="/intelligence/analysis" id="analysis-back-btn" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Back to Vectors</span>
-          </a>
-          `}
           <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
             <span class="text-xs font-medium">${script.title} · ${script.draft || 'Draft 4.2'}</span>
@@ -1480,7 +1487,14 @@ export function attachIndividualAnalysisEvents(type, navigate, from = null, retu
         sessionStorage.removeItem('scriptora_prod_return');
         navigate(editorReturnUrl);
       } else {
-        navigate('/intelligence/analysis');
+        const fromParamClean = from || urlParams.get('from');
+        if (fromParamClean === 'dashboard' || fromParamClean === '/intelligence/dashboard' || fromParamClean?.includes('/intelligence/dashboard')) {
+          navigate('/intelligence/dashboard');
+        } else if (fromParamClean && fromParamClean.startsWith('/')) {
+          navigate(fromParamClean);
+        } else {
+          navigate('/intelligence/analysis');
+        }
       }
     };
   }

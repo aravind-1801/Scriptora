@@ -8,13 +8,14 @@ import { showToast } from '../../components/toast.js';
 export function renderReadinessScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Pre-Flight Readiness & Validation')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Readiness & Validation', 'fact_check', '/production', `
+        ${renderProdSubNav('Readiness & Validation', 'fact_check', from || '/production', `
           <button id="btn-revalidate" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
             <span class="material-symbols-outlined text-[16px]">refresh</span>
             <span>Run Pre-Flight</span>
@@ -135,7 +136,7 @@ export async function attachReadinessEvents(navigate, fromParam = null, scriptPa
 
           <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
             ${!isPass ? `
-              <a href="${item.targetRoute}?scriptId=${scriptId}" class="btn-jump-fix px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors flex items-center gap-1">
+              <a href="${item.targetRoute}?scriptId=${scriptId}&from=${encodeURIComponent(`/production/readiness?scriptId=${scriptId}`)}" class="btn-jump-fix px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors flex items-center gap-1">
                 <span>Fix Issue</span>
                 <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
               </a>

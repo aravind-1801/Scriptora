@@ -12,6 +12,8 @@ dist-ssr/
 .env
 .env*.local
 .env.production
+client_secret*.json
+scratch/
 
 # Logs
 npm-debug.log*

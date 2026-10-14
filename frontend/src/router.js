@@ -147,7 +147,9 @@ class Router {
   }
 
   resolve(fullPath) {
-    const [pathPart, queryPart] = fullPath.split('?');
+    const firstQ = fullPath.indexOf('?');
+    const pathPart = firstQ === -1 ? fullPath : fullPath.slice(0, firstQ);
+    const queryPart = firstQ === -1 ? '' : fullPath.slice(firstQ + 1);
     let path = pathPart.replace(/\/+$/, '') || '/';
     
     // Strip repository subpath if present (e.g. /Scriptora)

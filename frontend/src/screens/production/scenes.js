@@ -22,6 +22,11 @@ export function renderScenesScreen(fromParam = null, scriptParam = null, sceneId
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const sceneId = sceneIdParam || urlParams.get('sceneId');
+  const from = fromParam || urlParams.get('from');
+
+  const defaultBackUrl = sceneId ? `/production/scenes?scriptId=${scriptId}` : '/production';
+  const backUrl = from || defaultBackUrl;
+  const currentSceneLocation = `/production/scenes?scriptId=${scriptId}${sceneId ? '&sceneId=' + sceneId : ''}${from ? '&from=' + encodeURIComponent(from) : ''}`;
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -31,9 +36,9 @@ export function renderScenesScreen(fromParam = null, scriptParam = null, sceneId
         ${renderProdSubNav(
           sceneId ? `Scene Logistics` : 'Scene Hub (18 Scenes)',
           sceneId ? 'movie' : 'hub',
-          sceneId ? `/production/scenes?scriptId=${scriptId}` : '/production',
+          backUrl,
           sceneId ? `
-            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors">
+            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId}&from=${encodeURIComponent(currentSceneLocation)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors">
               <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
               <span>Actor Sides</span>
             </a>
@@ -195,7 +200,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
 
                   <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
                     <span class="text-slate-400 font-mono">Sc ${scene.sceneNumber}</span>
-                    <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-0.5">
+                    <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-0.5">
                       <span>Edit in Breakdown</span>
                       <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
                     </a>
@@ -229,9 +234,9 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
 
         <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
           <span class="text-slate-400 font-medium">Cast in scene:</span>
-          ${(scene.cast || []).map(c => `<span class="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 font-semibold">${c}</span>`).join('')}
+          ${(scene.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(currentSceneLocation)}" class="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition-colors" title="Inspect ${c} in Breakdown">${c}</a>`).join('')}
           <div class="ml-auto flex items-center gap-1.5">
-            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${scene.id}" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
+            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
               <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
               <span>Open Actor Sides for Scene ${scene.sceneNumber}</span>
             </a>
@@ -248,7 +253,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
               Confirmed Elements for Scene ${scene.sceneNumber} (${elements.length})
             </h3>
           </div>
-          <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+          <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
             <span>Manage Full Breakdown</span>
             <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
           </a>
@@ -271,7 +276,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
           <div class="p-6 text-center text-slate-400 text-xs bg-slate-50 rounded-xl">
             No production elements tagged for this scene yet.
             <div class="mt-2">
-              <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-blue-600 font-semibold hover:underline">
+              <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-blue-600 font-semibold hover:underline">
                 Add Elements in Breakdown Workspace →
               </a>
             </div>

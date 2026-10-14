@@ -14,8 +14,13 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
-  const isFromEditor = from === 'editor';
-  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_prod_return') || `/editor/${scriptId}`) : '/workspace';
+  const isFromEditor = from === 'editor' || (from && from.startsWith('/editor'));
+  const returnUrl = isFromEditor
+    ? (sessionStorage.getItem('scriptora_prod_return') || (from && from.startsWith('/editor') ? from : `/editor/${scriptId}`))
+    : (from && from.startsWith('/') ? from : '/workspace');
+  const returnLabel = isFromEditor
+    ? 'Editor'
+    : (from?.includes('/intelligence') ? 'Intelligence' : 'Workspace');
 
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.scripts?.[0] || {
     id: 'chronicles-of-dust',
@@ -39,9 +44,9 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
         <!-- Clean Unified Header Row (Back + Title + Mode Switch) -->
         <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200/70">
           <div class="flex items-center gap-2 min-w-0">
-            <a href="${returnUrl}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium shrink-0" id="prod-back-nav" title="${isFromEditor ? 'Back to Screenplay Editor' : 'Back to Workspace'}">
+            <a href="${returnUrl}" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors text-xs font-medium shrink-0" id="prod-back-nav" title="Back to ${returnLabel}">
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span class="truncate">${isFromEditor ? 'Editor' : 'Workspace'}</span>
+              <span class="truncate">${returnLabel}</span>
             </a>
             <h1 class="font-heading font-bold text-sm text-slate-900 truncate">Production Studio</h1>
           </div>
@@ -520,18 +525,19 @@ export async function attachProductionEvents(navigate, fromParam = null, scriptP
   document.querySelectorAll('.tool-card').forEach(card => {
     card.onclick = () => {
       const tool = card.getAttribute('data-tool');
+      const prodStudioOrigin = `/production?scriptId=${scriptId}`;
       const routeMap = {
-        'call-sheets': `/production/call-sheets?scriptId=${scriptId}`,
-        'dialogue-sheets': `/production/dialogue-sides?scriptId=${scriptId}`,
-        'shooting-schedule': `/production/schedule?scriptId=${scriptId}`,
-        'script-breakdown': `/production/breakdown?scriptId=${scriptId}`,
-        'storyboard-studio': `/production/storyboard?scriptId=${scriptId}`,
-        'scene-hub': `/production/scenes?scriptId=${scriptId}`,
-        'resource-directory': `/production/directory?scriptId=${scriptId}`,
-        'change-proposals': `/production/changes?scriptId=${scriptId}`,
-        'production-documents': `/production/documents?scriptId=${scriptId}`,
-        'production-history': `/production/history?scriptId=${scriptId}`,
-        'production-readiness': `/production/readiness?scriptId=${scriptId}`
+        'call-sheets': `/production/call-sheets?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'dialogue-sheets': `/production/dialogue-sides?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'shooting-schedule': `/production/schedule?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'script-breakdown': `/production/breakdown?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'storyboard-studio': `/production/storyboard?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'scene-hub': `/production/scenes?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'resource-directory': `/production/directory?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'change-proposals': `/production/changes?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'production-documents': `/production/documents?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'production-history': `/production/history?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
+        'production-readiness': `/production/readiness?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`
       };
       if (routeMap[tool]) {
         navigate(routeMap[tool]);

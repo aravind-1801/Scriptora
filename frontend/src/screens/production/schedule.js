@@ -8,13 +8,14 @@ import { showToast } from '../../components/toast.js';
 export function renderScheduleScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Master Shooting Schedule & Stripboard')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Shooting Schedule & Stripboard', 'calendar_view_week', '/production', `
+        ${renderProdSubNav('Shooting Schedule & Stripboard', 'calendar_view_week', from || '/production', `
           <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-all">
             <span class="material-symbols-outlined text-[16px]">lock</span>
             <span>Confirm Schedule</span>
@@ -149,8 +150,8 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
                   <div class="flex items-center gap-3 shrink-0 text-[11px]">
                     <span class="opacity-80">${s.pages} pgs</span>
-                    <span class="hidden md:inline opacity-90 truncate max-w-[120px]">Cast: ${(s.cast || []).join(', ')}</span>
-                    <a href="/production/scenes?scriptId=${scriptId}&sceneId=${s.id}" class="px-2 py-0.5 rounded-lg bg-black/15 hover:bg-black/25 text-[10px] font-semibold transition-colors" title="View Scene Logistics">
+                    <span class="hidden md:inline opacity-90 truncate max-w-[150px]">Cast: ${(s.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(`/production/schedule?scriptId=${scriptId}`)}" class="hover:underline font-semibold" title="Inspect ${c} in Breakdown">${c}</a>`).join(', ')}</span>
+                    <a href="/production/scenes?scriptId=${scriptId}&sceneId=${s.id}&from=${encodeURIComponent(`/production/schedule?scriptId=${scriptId}`)}" class="px-2 py-0.5 rounded-lg bg-black/15 hover:bg-black/25 text-[10px] font-semibold transition-colors" title="View Scene Logistics">
                       Inspect
                     </a>
                   </div>

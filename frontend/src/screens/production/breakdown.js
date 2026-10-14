@@ -57,13 +57,14 @@ const CATEGORY_CONFIG = {
 export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Script Breakdown Workspace')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Script Breakdown', 'dataset', '/production', `
+        ${renderProdSubNav('Script Breakdown', 'dataset', from || '/production', `
           <button id="btn-add-element" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">add</span>
             <span>Add Element</span>
@@ -241,15 +242,34 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
 
-  let currentCategory = 'all';
+  let currentCategory = urlParams.get('category') || 'all';
   let currentScene = urlParams.get('scene') || 'all';
-  let currentSearch = '';
+  let currentSearch = urlParams.get('character') || urlParams.get('search') || '';
   let activeEditingItemId = null;
 
   // Initialize scene select value from URL if provided
   const sceneSelectInit = document.getElementById('breakdown-scene-select');
   if (sceneSelectInit && currentScene !== 'all') {
     sceneSelectInit.value = currentScene.startsWith('scene-') ? currentScene : `scene-${currentScene}`;
+  }
+
+  // Initialize category buttons if provided in URL
+  if (currentCategory !== 'all') {
+    document.querySelectorAll('.cat-btn').forEach(b => {
+      if (b.getAttribute('data-cat') === currentCategory) {
+        b.classList.add('bg-blue-600', 'text-white', 'shadow-2xs');
+        b.classList.remove('bg-slate-100', 'text-slate-700');
+      } else {
+        b.classList.remove('bg-blue-600', 'text-white', 'shadow-2xs');
+        b.classList.add('bg-slate-100', 'text-slate-700');
+      }
+    });
+  }
+
+  // Initialize search input if provided in URL
+  const searchInputInit = document.getElementById('breakdown-search');
+  if (searchInputInit && currentSearch) {
+    searchInputInit.value = currentSearch;
   }
 
   const renderCategorySpecificCardContent = (item) => {

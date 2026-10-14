@@ -7,13 +7,14 @@ import { showToast } from '../../components/toast.js';
 export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Storyboard Studio')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Storyboard Studio', 'art_track', '/production', `
+        ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', `
           <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
             Prompt 3 Active Staging
           </span>
@@ -29,7 +30,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18" class="px-3.5 py-2 rounded-xl bg-white border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-50 transition-colors">
+            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3.5 py-2 rounded-xl bg-white border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-50 transition-colors">
               Inspect Scene 18 Setup
             </a>
           </div>

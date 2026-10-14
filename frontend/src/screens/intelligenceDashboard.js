@@ -153,27 +153,27 @@ export function renderIntelligenceDashboardScreen() {
           <!-- 10 Metric Category Scores -->
           <div class="flex flex-col divide-y divide-slate-100">
             ${[
-              { name: 'Pacing', score: scores.pacing, icon: 'speed' },
-              { name: 'Dialogue', score: scores.dialogue, icon: 'chat' },
-              { name: 'Emotion', score: scores.emotion, icon: 'favorite' },
-              { name: 'Character Arc', score: scores.characterArc, icon: 'alt_route' },
-              { name: 'Continuity', score: scores.continuity, icon: 'linear_scale' },
-              { name: 'Story Structure', score: scores.storyStructure, icon: 'account_tree' },
-              { name: 'Theme', score: scores.theme, icon: 'lightbulb' },
-              { name: 'Cinema', score: scores.cinema, icon: 'videocam' },
-              { name: 'Formatting', score: scores.formatting, icon: 'rule' },
-              { name: 'Production', score: scores.production, icon: 'movie_creation' }
+              { name: 'Pacing', key: 'pacing', score: scores.pacing, icon: 'speed' },
+              { name: 'Dialogue', key: 'dialogue', score: scores.dialogue, icon: 'chat' },
+              { name: 'Emotion', key: 'emotion', score: scores.emotion, icon: 'favorite' },
+              { name: 'Character Arc', key: 'character-arc', score: scores.characterArc, icon: 'alt_route' },
+              { name: 'Continuity', key: 'continuity', score: scores.continuity, icon: 'linear_scale' },
+              { name: 'Story Structure', key: 'story-structure', score: scores.storyStructure, icon: 'account_tree' },
+              { name: 'Theme', key: 'theme', score: scores.theme, icon: 'lightbulb' },
+              { name: 'Cinema', key: 'cinema', score: scores.cinema, icon: 'videocam' },
+              { name: 'Formatting', key: 'formatting', score: scores.formatting, icon: 'rule' },
+              { name: 'Production', key: 'production', score: scores.production, icon: 'movie_creation' }
             ].map(m => `
-              <div class="py-2.5 flex items-center justify-between gap-3">
+              <a href="/intelligence/analysis/${m.key}?from=/intelligence/dashboard" class="py-2.5 px-2 -mx-2 rounded-xl flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors no-underline group cursor-pointer">
                 <div class="flex items-center gap-2 w-36 shrink-0">
-                  <span class="material-symbols-outlined text-[17px] text-slate-400">${m.icon}</span>
-                  <span class="text-xs sm:text-sm font-medium text-slate-700 truncate">${m.name}</span>
+                  <span class="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-blue-600 transition-colors">${m.icon}</span>
+                  <span class="text-xs sm:text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors truncate">${m.name}</span>
                 </div>
                 <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                   <div class="h-full bg-blue-600 rounded-full" style="width: ${m.score}%;"></div>
                 </div>
                 <span class="text-xs sm:text-sm font-bold text-slate-900 w-8 text-right font-mono">${m.score}</span>
-              </div>
+              </a>
             `).join('')}
           </div>
 

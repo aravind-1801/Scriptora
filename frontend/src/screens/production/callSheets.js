@@ -10,6 +10,9 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
+  const from = fromParam || urlParams.get('from');
+  const defaultBack = csId || isNew ? `/production/call-sheets?scriptId=${scriptId}` : '/production';
+  const backUrl = from || defaultBack;
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -19,7 +22,7 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
         ${renderProdSubNav(
           csId ? 'Call Sheet Detail' : isNew ? 'New Call Sheet' : 'Call Sheets',
           'assignment',
-          csId || isNew ? `/production/call-sheets?scriptId=${scriptId}` : '/production',
+          backUrl,
           !csId && !isNew ? `
             <a href="/production/call-sheets?scriptId=${scriptId}&action=new" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
               <span class="material-symbols-outlined text-[16px]">add</span>
@@ -288,13 +291,13 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             </div>
             ${(cs.scenes || []).map(s => `
               <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors">
-                <span class="w-16 font-mono font-bold text-blue-700">Sc ${s.sceneNumber}</span>
+                <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-${s.sceneNumber}&from=${encodeURIComponent(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`)}" class="w-16 font-mono font-bold text-blue-700 hover:underline" title="Inspect Scene Logistics">Sc ${s.sceneNumber}</a>
                 <div class="flex-1 min-w-0 pr-2">
                   <div class="font-semibold text-slate-900 truncate">${s.heading}</div>
                   <div class="text-[11px] text-slate-500 truncate">${s.desc}</div>
                 </div>
                 <span class="w-20 text-center font-mono text-[11px]">${s.pages}</span>
-                <span class="w-32 text-right font-medium text-[11px] text-slate-700 truncate">${(s.cast || []).join(', ')}</span>
+                <span class="w-32 text-right font-medium text-[11px] text-slate-700 truncate">${(s.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`)}" class="hover:underline font-semibold" title="Inspect ${c} in Breakdown">${c}</a>`).join(', ')}</span>
               </div>
             `).join('')}
           </div>
@@ -313,7 +316,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             </div>
             ${(cs.castCalls || []).map(c => `
               <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors">
-                <span class="w-32 font-bold text-slate-900">${c.character}</span>
+                <a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c.character)}&from=${encodeURIComponent(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`)}" class="w-32 font-bold text-slate-900 hover:text-blue-700 hover:underline" title="Inspect ${c.character} in Breakdown">${c.character}</a>
                 <span class="flex-1 font-medium text-slate-700">${c.actor}</span>
                 <span class="w-20 text-center font-mono text-[11px] text-slate-600">${c.pickup}</span>
                 <span class="w-20 text-center font-mono text-[11px] text-slate-600">${c.hmuCall}</span>
