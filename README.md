@@ -36,14 +36,16 @@
 ### 🎥 Dedicated Pre-Production Workspaces & Production Workflows
 Every major production tool opens as a **dedicated screen** (no modal popups) with stable context tracking (`Chronicles of Dust • Draft 4.2 Pinned`), role-based permissions, and end-to-end persistence:
 
-1. **Script Breakdown Workspace (`/production/breakdown`)**:
-   - Granular screenplay element extraction across Cast, Props, Practical FX, Vehicles, Stunts, Locations, Wardrobe, Equipment, and Sound.
-   - Traceable script evidence for every extracted item.
-   - Status lifecycle (`Confirmed`, `Needs Review`, `Rejected`, `Changed`).
-   - Human review controls (Confirm, Edit, Reject, Re-review) and manual item addition.
-2. **Scene Hub & Logistics (`/production/scenes` & `/production/scenes/:sceneId`)**:
+1. **Category-Aware Script Breakdown Workspace (`/production/breakdown`)**:
+   - **Distinct Production Categories**: Tailored data models and dedicated visual presentation for Cast & Characters, Locations, Props, Costumes & Wardrobe, Practical FX, Stunts & Action, Vehicles & Equipment, Sound, and Hair & Makeup.
+   - **Screenplay Characters vs. Cast Members**: Strict separation between the screenplay-linked character entity and assigned real-world talent. Supports uncast open roles without forcing fake actor assignments, casting lifecycle statuses (`Confirmed Cast`, `Offer Out`, `Auditioning`, `Uncast / Open`), and actor availability schedules.
+   - **Full User Editability**: Every displayed field is editable by authorized users via dedicated inline expandable card editors — edit names, descriptions, categories, multi-scene associations, statuses, quantities, readiness, sourcing, safety planning, and continuity notes with real-time Save & Cancel persistence.
+   - **AI Suggestions vs. Production Decisions**: Immutable screenplay evidence quotations (`sourceSnippet`), original AI extraction tracking (`originalAiSuggestion`), and separate user correction audit logging (`userCorrection`) without altering source evidence.
+   - **Dynamic Modal & Multi-Scene Linking**: Add production elements manually with dynamic category-specific input fields and link items to single or multiple scenes simultaneously.
+2. **Category-Aware Scene Hub & Logistics (`/production/scenes` & `/production/scenes/:sceneId`)**:
    - Master 18-scene index with completion filters, day/night badges, and cast appearance lists.
-   - Dedicated Scene Detail inspector with linked confirmed breakdown elements, actor sides shortcuts, shooting day schedules, and separate editable Director & Continuity Notes.
+   - **Grouped Scene Summary**: Confirmed Scene Elements section organized by production category with category-specific count badges, tailored metadata (Actor & Casting status for Cast, Sourcing & Quantity for Props, Safety Mandates for FX, Rigging status for Stunts), and direct edit shortcuts to the Script Breakdown workspace.
+   - Dedicated Scene Detail inspector with actor sides shortcuts, shooting day schedules, and separate editable Director & Continuity Notes.
 3. **Call Sheets Workspace (`/production/call-sheets`)**:
    - Dual creation paths: schedule-linked generation from confirmed shooting days or standalone manual creation.
    - Call times, crew calls, talent call schedule, hospital/emergency contacts, weather advisories, parking instructions, and Director/Producer signatures.

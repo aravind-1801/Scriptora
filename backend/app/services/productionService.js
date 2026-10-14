@@ -191,19 +191,23 @@ export function logProductionAudit(scriptId, event) {
 
 // 1. SCENE HUB WORKFLOWS
 export function getProductionScenes(scriptId = 'chronicles-of-dust') {
-  return db.productionScenes.filter(s => s.scriptId === scriptId);
+  let scenes = db.productionScenes.filter(s => s.scriptId === scriptId);
+  if (!scenes.length) {
+    scenes = db.productionScenes.filter(s => s.scriptId === 'chronicles-of-dust');
+  }
+  return scenes;
 }
 
 export function getProductionScene(scriptId, sceneId) {
-  const scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  let scene = db.productionScenes.find(s => (s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust') && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
   if (!scene) return null;
   // Link elements and sides
-  const elements = db.productionBreakdown.filter(b => b.scriptId === scriptId && (b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber));
+  const elements = db.productionBreakdown.filter(b => (b.scriptId === scriptId || b.scriptId === 'chronicles-of-dust') && (b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber))));
   return { ...scene, elements };
 }
 
 export function updateProductionScene(scriptId, sceneId, updates) {
-  const scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  const scene = db.productionScenes.find(s => (s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust') && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
   if (!scene) throw new Error("Scene not found");
   Object.assign(scene, updates);
   logProductionAudit(scriptId, {
@@ -218,11 +222,15 @@ export function updateProductionScene(scriptId, sceneId, updates) {
 // 2. SCRIPT BREAKDOWN WORKFLOWS
 export function getProductionBreakdown(scriptId = 'chronicles-of-dust', category = null, sceneId = null) {
   let list = db.productionBreakdown.filter(b => b.scriptId === scriptId);
+  if (!list.length) {
+    list = db.productionBreakdown.filter(b => b.scriptId === 'chronicles-of-dust');
+  }
   if (category && category !== 'all') {
     list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
   }
   if (sceneId && sceneId !== 'all') {
-    list = list.filter(b => b.sceneId === sceneId || String(b.sceneNumber) === String(sceneId));
+    const sceneNum = Number(String(sceneId).replace('scene-', ''));
+    list = list.filter(b => b.sceneId === sceneId || String(b.sceneNumber) === String(sceneId) || (Array.isArray(b.scenes) && b.scenes.includes(sceneNum)) || b.sceneNumber === sceneNum);
   }
   return list;
 }
@@ -230,43 +238,97 @@ export function getProductionBreakdown(scriptId = 'chronicles-of-dust', category
 export function updateBreakdownItem(scriptId, itemId, updates) {
   const item = db.productionBreakdown.find(b => b.id === itemId && b.scriptId === scriptId);
   if (!item) throw new Error("Breakdown item not found");
+
+  // Track user correction if name, description, or category fields modified
+  if ((updates.name && updates.name !== item.name) || (updates.description && updates.description !== item.description)) {
+    item.userCorrection = {
+      previousName: item.name,
+      previousDesc: item.description,
+      correctedBy: db.currentUser.name + " (Owner)",
+      correctedAt: new Date().toISOString()
+    };
+  }
+
   Object.assign(item, updates);
   if (updates.status === 'Confirmed') {
     item.isHumanConfirmed = true;
     item.confirmedBy = db.currentUser.name + " (Owner)";
     item.confirmedAt = new Date().toISOString();
+  } else if (updates.status === 'Needs Review') {
+    item.isHumanConfirmed = false;
   }
   logProductionAudit(scriptId, {
-    action: "REVIEW_BREAKDOWN_ITEM",
+    action: "UPDATE_BREAKDOWN_ITEM",
     category: "BREAKDOWN",
-    details: `Marked "${item.name}" (${item.category}) in Scene ${item.sceneNumber} as ${item.status}`,
+    details: `Updated "${item.name}" (${item.category}) in Scene ${item.sceneNumber} [${item.status}]`,
     sourceVersion: "Draft 4.2"
   });
   return item;
 }
 
+export function deleteBreakdownItem(scriptId, itemId) {
+  const idx = db.productionBreakdown.findIndex(b => b.id === itemId && b.scriptId === scriptId);
+  if (idx === -1) throw new Error("Breakdown item not found");
+  const removed = db.productionBreakdown.splice(idx, 1)[0];
+  logProductionAudit(scriptId, {
+    action: "DELETE_BREAKDOWN_ITEM",
+    category: "BREAKDOWN",
+    details: `Removed "${removed.name}" (${removed.category}) from Scene ${removed.sceneNumber}`,
+    sourceVersion: "Draft 4.2"
+  });
+  return { success: true, removedId: itemId };
+}
+
 export function createBreakdownItem(scriptId, itemData) {
+  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 18));
   const newItem = {
     id: `elem-${Date.now()}`,
     scriptId,
-    sceneId: itemData.sceneId || "scene-18",
-    sceneNumber: Number(itemData.sceneNumber || 18),
+    sceneId: itemData.sceneId || `scene-${sceneNum}`,
+    sceneNumber: sceneNum,
+    scenes: itemData.scenes || [sceneNum],
     category: itemData.category || "Props",
     name: itemData.name,
     description: itemData.description || "",
     sourceSnippet: itemData.sourceSnippet || "User added manual item",
+    originalAiSuggestion: null,
     status: itemData.status || "Confirmed",
     isHumanConfirmed: true,
     confidence: 1.0,
     confirmedBy: db.currentUser.name + " (Owner)",
     confirmedAt: new Date().toISOString(),
-    notes: itemData.notes || ""
+    notes: itemData.notes || "",
+    // Category-specific attributes
+    assignedActor: itemData.assignedActor || "",
+    castingStatus: itemData.castingStatus || "Uncast / Open",
+    actorAvailability: itemData.actorAvailability || "",
+    characterRole: itemData.characterRole || itemData.description || "",
+    context: itemData.context || "INT.",
+    lighting: itemData.lighting || "DAY",
+    locationStatus: itemData.locationStatus || "Secured & Permitted",
+    accessDetails: itemData.accessDetails || "",
+    sourcingType: itemData.sourcingType || "Sourced",
+    quantity: itemData.quantity || "1",
+    readinessStatus: itemData.readinessStatus || "Ready in Art Dept",
+    continuityNotes: itemData.continuityNotes || "",
+    requiredResources: itemData.requiredResources || "",
+    technicalRequirements: itemData.technicalRequirements || "",
+    safetyNotes: itemData.safetyNotes || "",
+    coordinationRequirements: itemData.coordinationRequirements || "",
+    qualifiedPersonnel: itemData.qualifiedPersonnel || "",
+    safetyPlanningStatus: itemData.safetyPlanningStatus || "Awaiting Coordinator Review",
+    character: itemData.character || "",
+    wardrobeRequirements: itemData.wardrobeRequirements || "",
+    continuityChanges: itemData.continuityChanges || "",
+    prepStatus: itemData.prepStatus || "In Prep",
+    availability: itemData.availability || "",
+    operationalRequirements: itemData.operationalRequirements || ""
   };
   db.productionBreakdown.unshift(newItem);
   logProductionAudit(scriptId, {
     action: "ADD_MANUAL_BREAKDOWN_ITEM",
     category: "BREAKDOWN",
-    details: `Manually added "${newItem.name}" to Scene ${newItem.sceneNumber}`,
+    details: `Manually added "${newItem.name}" (${newItem.category}) to Scene ${newItem.sceneNumber}`,
     sourceVersion: "Draft 4.2"
   });
   return newItem;

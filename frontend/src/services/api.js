@@ -1564,7 +1564,7 @@ export async function getProductionScene(scriptId, sceneId) {
   const scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId));
   if (!scene) return null;
   const breakdown = await getProductionBreakdown(scriptId);
-  const elements = breakdown.filter(b => b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber);
+  const elements = breakdown.filter(b => b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber)));
   return { ...scene, elements };
 }
 
@@ -1613,10 +1613,17 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-18",
         sceneNumber: 18,
+        scenes: [1, 2, 4, 18],
         category: "Cast",
         name: "KEVIN",
+        characterRole: "Discredited hydro-engineer, 30s. Hero protagonist.",
         description: "Discredited hydro-engineer, 30s. Hero protagonist.",
+        assignedActor: "Dev Patel",
+        castingStatus: "Confirmed Cast",
+        actorAvailability: "Available Shoot Days 1-14",
+        appearancesCount: 4,
         sourceSnippet: "Kevin kneels over cracked hydro-sensor junction box, static hissing from the diagnostic speaker.",
+        originalAiSuggestion: "KEVIN — Discredited hydro-engineer, 30s. Hero protagonist.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 1.0,
@@ -1629,10 +1636,17 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-18",
         sceneNumber: 18,
+        scenes: [4, 16, 18],
         category: "Cast",
         name: "MEERA",
+        characterRole: "Field operative with tactical harness.",
         description: "Field operative with tactical harness.",
+        assignedActor: "Zoe Saldana",
+        castingStatus: "Confirmed Cast",
+        actorAvailability: "Available Shoot Days 4-18",
+        appearancesCount: 3,
         sourceSnippet: "Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below.",
+        originalAiSuggestion: "MEERA — Field operative with tactical harness.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 1.0,
@@ -1645,10 +1659,16 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-18",
         sceneNumber: 18,
+        scenes: [18],
         category: "Props",
         name: "Hydraulic Bypass Valve Kit",
         description: "Custom machined valve kit with functional digital LED pressure display.",
+        sourcingType: "Hero Prop Built",
+        quantity: "1 Hero + 2 Stunt Duplicates",
+        readinessStatus: "Ready in Art Dept",
+        continuityNotes: "Clean in Sc 1, weathered with grease in Sc 18",
         sourceSnippet: "Kevin clicks the bypass manifold into place. The gauge needles spike red.",
+        originalAiSuggestion: "Hydraulic Bypass Valve Kit — machined valve kit with LED display.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 0.95,
@@ -1661,10 +1681,16 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-18",
         sceneNumber: 18,
+        scenes: [18],
         category: "Practical FX",
         name: "High-Pressure Water Spray",
         description: "Controlled water burst simulating cracked pipe joint failure.",
+        requiredResources: "Dedicated 4000L Water Tanker, 120 PSI Pump Rig",
+        technicalRequirements: "Safe water containment basins, electrical shut-off triggers",
+        safetyNotes: "Non-slip decking mandatory; waterproof protective ponchos for camera crew",
+        prepStatus: "Rig Test Scheduled",
         sourceSnippet: "A burst of pressurized brine shoots from the seam, blinding the chamber.",
+        originalAiSuggestion: "High-Pressure Water Spray — Controlled water burst simulating cracked pipe failure.",
         status: "Needs Review",
         isHumanConfirmed: false,
         confidence: 0.88,
@@ -1677,10 +1703,15 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-18",
         sceneNumber: 18,
+        scenes: [18],
         category: "Stunts",
         name: "Valve Pylon Cable Rappel",
         description: "Meera swings 18 feet across open valve chasm to catch emergency release lever.",
+        coordinationRequirements: "18ft wire pendulum rig, decelerator line, safety crash matting",
+        qualifiedPersonnel: "Stunt Double: Tara Sen / Stunt Coordinator: Roy Hall",
+        safetyPlanningStatus: "Awaiting Coordinator Review",
         sourceSnippet: "Meera kicks off the catwalk, swinging into the spray as the iron cable groans.",
+        originalAiSuggestion: "Valve Pylon Cable Rappel — 18ft swing across chasm to catch lever.",
         status: "Needs Review",
         isHumanConfirmed: false,
         confidence: 0.92,
@@ -1689,30 +1720,65 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         notes: "Awaiting Stunt Coordinator risk assessment and harness certification."
       },
       {
-        id: "elem-6",
+        id: "elem-13",
         scriptId,
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        category: "Cast",
-        name: "KEVIN",
-        description: "Duster coat, respirator around neck.",
-        sourceSnippet: "KEVIN (30s), sun-scoured and weary, adjusts his solar filter.",
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        scenes: [18],
+        category: "Locations",
+        name: "Sub-Level Hydro-Chamber B",
+        description: "Industrial concrete pumping cavern with rusty iron catwalks.",
+        context: "INT.",
+        lighting: "NIGHT",
+        locationStatus: "Secured & Permitted",
+        accessDetails: "Permit #WTR-994, Access via Gate 4 Service Tunnel",
+        sourceSnippet: "INT. HYDRO-CHAMBER B - NIGHT. Rust-eaten steel catwalks suspend over deep abyss.",
+        originalAiSuggestion: "Sub-Level Hydro-Chamber B — Concrete pumping cavern with catwalks.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 1.0,
         confirmedBy: "Arun Kumar (Owner)",
         confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Costume fitting complete."
+        notes: "Acoustic echo requires directional shotgun mics; non-slip floor treatment applied."
+      },
+      {
+        id: "elem-6",
+        scriptId,
+        sceneId: "scene-1",
+        sceneNumber: 1,
+        scenes: [1],
+        category: "Costumes",
+        name: "Kevin — Weathered Dust Coat & Respirator",
+        character: "KEVIN",
+        description: "Heavy canvas duster coat, solar respirator around neck.",
+        wardrobeRequirements: "Duster coat with distressed seam stitching, respirator with worn elastic straps",
+        continuityChanges: "Costume Stage 1 (Desert Dust / Dry)",
+        prepStatus: "Fitted & Approved",
+        sourceSnippet: "KEVIN (30s), sun-scoured and weary, adjusts his solar filter.",
+        originalAiSuggestion: "Kevin — Duster coat, respirator around neck.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Costume fitting complete with wardrobe dept."
       },
       {
         id: "elem-7",
         scriptId,
         sceneId: "scene-1",
         sceneNumber: 1,
+        scenes: [1],
         category: "Cast",
         name: "MARCUS",
+        characterRole: "Border outpost security guard.",
         description: "Border outpost security guard.",
+        assignedActor: "Unassigned (Auditioning)",
+        castingStatus: "Auditioning",
+        actorAvailability: "Day 1 Shoot Only",
+        appearancesCount: 1,
         sourceSnippet: "MARCUS leans against the chain link, tapping an unlit cigarette against his wrist.",
+        originalAiSuggestion: "MARCUS — Border outpost security guard.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 0.98,
@@ -1725,10 +1791,16 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-1",
         sceneNumber: 1,
+        scenes: [1],
         category: "Props",
         name: "Solar Filter Dust Goggles",
         description: "Tinted goggles with worn leather straps.",
+        sourcingType: "Hero Wardrobe Prop",
+        quantity: "2 Pairs (A & B Camera)",
+        readinessStatus: "Ready in Art Dept",
+        continuityNotes: "Worn over eyes during wind gusts, rest on forehead indoors",
         sourceSnippet: "Kevin pulls the goggles over his eyes as a gust hits.",
+        originalAiSuggestion: "Solar Filter Dust Goggles — Tinted goggles with worn leather straps.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 1.0,
@@ -1741,10 +1813,15 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-1",
         sceneNumber: 1,
+        scenes: [1],
         category: "Vehicles",
         name: "Solar Patrol Rover (Modified)",
         description: "Lightweight dune rover fitted with dual photovoltaic roof panels.",
+        availability: "On Set Shoot Days 1 & 2",
+        operationalRequirements: "Charging station in Base Camp, Art Dept weathering wrap",
+        prepStatus: "Checked In & Inspected",
         sourceSnippet: "The rover sits idling beside Gate 4, suspension coated in red grit.",
+        originalAiSuggestion: "Solar Patrol Rover (Modified) — Dune rover with dual photovoltaic roof panels.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 0.96,
@@ -1757,10 +1834,16 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-4",
         sceneNumber: 4,
+        scenes: [4],
         category: "Props",
         name: "Night-Vision Monocular Scope",
         description: "Military grade digital thermal optics.",
+        sourcingType: "Rented",
+        quantity: "1 Unit",
+        readinessStatus: "Sourcing",
+        continuityNotes: "Handheld by Meera on perimeter wall",
         sourceSnippet: "Meera scans the wire with her thermal monocle. Three glowing silhouettes freeze.",
+        originalAiSuggestion: "Night-Vision Monocular Scope — Military grade digital thermal optics.",
         status: "Needs Review",
         isHumanConfirmed: false,
         confidence: 0.85,
@@ -1773,10 +1856,17 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-7",
         sceneNumber: 7,
+        scenes: [7],
         category: "Cast",
         name: "COMMANDER VANCE",
+        characterRole: "Antagonist, regional water syndicate director.",
         description: "Antagonist, regional water syndicate director.",
+        assignedActor: "Michael Shannon",
+        castingStatus: "Offer Out",
+        actorAvailability: "Hold Oct 20-24",
+        appearancesCount: 2,
         sourceSnippet: "COMMANDER VANCE (50s), tailored gray linen, stands over the telemetry terminal.",
+        originalAiSuggestion: "COMMANDER VANCE — Antagonist, regional water syndicate director.",
         status: "Confirmed",
         isHumanConfirmed: true,
         confidence: 1.0,
@@ -1789,10 +1879,16 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
         scriptId,
         sceneId: "scene-16",
         sceneNumber: 16,
+        scenes: [16],
         category: "Practical FX",
         name: "Catwalk Rain Towers",
         description: "Simulated industrial torrential flood conditions on exterior catwalk.",
+        requiredResources: "3 Overhead Rain Spars, 2 Fire Hydrant Ties",
+        technicalRequirements: "Runoff water deflection channeling away from electrical stage lines",
+        safetyNotes: "Safety harnesses mandatory on exterior catwalk scaffolding",
+        prepStatus: "Pending Proposal Approval",
         sourceSnippet: "Water cascades down the spillway faces like Niagara.",
+        originalAiSuggestion: "Catwalk Rain Towers — Simulated flood conditions on exterior catwalk.",
         status: "Needs Review",
         isHumanConfirmed: false,
         confidence: 0.9,
@@ -1808,7 +1904,8 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
     list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
   }
   if (scene && scene !== 'all') {
-    list = list.filter(b => b.sceneId === scene || String(b.sceneNumber) === String(scene));
+    const sceneNum = Number(String(scene).replace('scene-', ''));
+    list = list.filter(b => b.sceneId === scene || String(b.sceneNumber) === String(scene) || (Array.isArray(b.scenes) && b.scenes.includes(sceneNum)) || b.sceneNumber === sceneNum);
   }
   return list;
 }
@@ -1819,22 +1916,59 @@ export async function updateBreakdownItem(scriptId, itemId, updates) {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
-    if (data?.item) return data.item;
+    if (data?.item) {
+      const list = await getProductionBreakdown(scriptId);
+      const idx = list.findIndex(b => b.id === itemId);
+      if (idx !== -1) {
+        list[idx] = data.item;
+        localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+      }
+      return data.item;
+    }
   } catch (e) {}
 
   const list = await getProductionBreakdown(scriptId);
   const item = list.find(b => b.id === itemId);
   if (item) {
+    if ((updates.name && updates.name !== item.name) || (updates.description && updates.description !== item.description)) {
+      item.userCorrection = {
+        previousName: item.name,
+        previousDesc: item.description,
+        correctedBy: "Arun Kumar (Owner)",
+        correctedAt: new Date().toISOString()
+      };
+    }
     Object.assign(item, updates);
     if (updates.status === 'Confirmed') {
       item.isHumanConfirmed = true;
       item.confirmedBy = "Arun Kumar (Owner)";
       item.confirmedAt = new Date().toISOString();
+    } else if (updates.status === 'Needs Review') {
+      item.isHumanConfirmed = false;
     }
     localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
     return item;
   }
   return updates;
+}
+
+export async function deleteBreakdownItem(scriptId, itemId) {
+  try {
+    const data = await request(`/production/${scriptId}/breakdown/${itemId}`, {
+      method: 'DELETE'
+    });
+    if (data?.success) {
+      const list = await getProductionBreakdown(scriptId);
+      const filtered = list.filter(b => b.id !== itemId);
+      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(filtered));
+      return data;
+    }
+  } catch (e) {}
+
+  const list = await getProductionBreakdown(scriptId);
+  const filtered = list.filter(b => b.id !== itemId);
+  localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(filtered));
+  return { success: true, removedId: itemId };
 }
 
 export async function createBreakdownItem(scriptId, itemData) {
@@ -1843,25 +1977,57 @@ export async function createBreakdownItem(scriptId, itemData) {
       method: 'POST',
       body: JSON.stringify(itemData)
     });
-    if (data?.item) return data.item;
+    if (data?.item) {
+      const list = await getProductionBreakdown(scriptId);
+      list.unshift(data.item);
+      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+      return data.item;
+    }
   } catch (e) {}
 
   const list = await getProductionBreakdown(scriptId);
+  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 18));
   const newItem = {
     id: `elem-${Date.now()}`,
     scriptId,
-    sceneId: itemData.sceneId || "scene-18",
-    sceneNumber: Number(itemData.sceneNumber || 18),
+    sceneId: itemData.sceneId || `scene-${sceneNum}`,
+    sceneNumber: sceneNum,
+    scenes: itemData.scenes || [sceneNum],
     category: itemData.category || "Props",
     name: itemData.name,
     description: itemData.description || "",
     sourceSnippet: itemData.sourceSnippet || "User added manual item",
+    originalAiSuggestion: null,
     status: itemData.status || "Confirmed",
     isHumanConfirmed: true,
     confidence: 1.0,
     confirmedBy: "Arun Kumar (Owner)",
     confirmedAt: new Date().toISOString(),
-    notes: itemData.notes || ""
+    notes: itemData.notes || "",
+    assignedActor: itemData.assignedActor || "",
+    castingStatus: itemData.castingStatus || "Uncast / Open",
+    actorAvailability: itemData.actorAvailability || "",
+    characterRole: itemData.characterRole || itemData.description || "",
+    context: itemData.context || "INT.",
+    lighting: itemData.lighting || "DAY",
+    locationStatus: itemData.locationStatus || "Secured & Permitted",
+    accessDetails: itemData.accessDetails || "",
+    sourcingType: itemData.sourcingType || "Sourced",
+    quantity: itemData.quantity || "1",
+    readinessStatus: itemData.readinessStatus || "Ready in Art Dept",
+    continuityNotes: itemData.continuityNotes || "",
+    requiredResources: itemData.requiredResources || "",
+    technicalRequirements: itemData.technicalRequirements || "",
+    safetyNotes: itemData.safetyNotes || "",
+    coordinationRequirements: itemData.coordinationRequirements || "",
+    qualifiedPersonnel: itemData.qualifiedPersonnel || "",
+    safetyPlanningStatus: itemData.safetyPlanningStatus || "Awaiting Coordinator Review",
+    character: itemData.character || "",
+    wardrobeRequirements: itemData.wardrobeRequirements || "",
+    continuityChanges: itemData.continuityChanges || "",
+    prepStatus: itemData.prepStatus || "In Prep",
+    availability: itemData.availability || "",
+    operationalRequirements: itemData.operationalRequirements || ""
   };
   list.unshift(newItem);
   localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));

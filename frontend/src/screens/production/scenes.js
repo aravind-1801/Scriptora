@@ -5,6 +5,19 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 
+// Category grouping configuration
+const SCENE_CATEGORIES = [
+  { key: 'Cast', title: 'Cast & Characters', icon: 'person', badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200', borderAccent: 'border-l-indigo-500' },
+  { key: 'Locations', title: 'Locations & Environment', icon: 'location_on', badgeBg: 'bg-amber-50 text-amber-800 border-amber-200', borderAccent: 'border-l-amber-500' },
+  { key: 'Props', title: 'Props & Sourced Assets', icon: 'inventory_2', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200', borderAccent: 'border-l-emerald-500' },
+  { key: 'Practical FX', title: 'Practical FX & Special FX', icon: 'science', badgeBg: 'bg-purple-50 text-purple-700 border-purple-200', borderAccent: 'border-l-purple-500' },
+  { key: 'Stunts', title: 'Stunts & Action Rigging', icon: 'sports_kabaddi', badgeBg: 'bg-rose-50 text-rose-700 border-rose-200', borderAccent: 'border-l-rose-500' },
+  { key: 'Costumes', title: 'Costumes & Wardrobe', icon: 'checkroom', badgeBg: 'bg-teal-50 text-teal-700 border-teal-200', borderAccent: 'border-l-teal-500' },
+  { key: 'Vehicles', title: 'Vehicles & Heavy Equipment', icon: 'commute', badgeBg: 'bg-slate-100 text-slate-700 border-slate-300', borderAccent: 'border-l-slate-500' },
+  { key: 'Sound', title: 'Sound & Audio Requirements', icon: 'music_note', badgeBg: 'bg-violet-50 text-violet-700 border-violet-200', borderAccent: 'border-l-violet-500' },
+  { key: 'Hair & Makeup', title: 'Hair & Special Makeup', icon: 'face', badgeBg: 'bg-pink-50 text-pink-700 border-pink-200', borderAccent: 'border-l-pink-500' }
+];
+
 export function renderScenesScreen(fromParam = null, scriptParam = null, sceneIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
@@ -57,6 +70,144 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
 
     const elements = scene.elements || [];
 
+    // Group elements by category
+    const categorizedElements = {};
+    elements.forEach(elem => {
+      const cat = elem.category || 'Other';
+      if (!categorizedElements[cat]) categorizedElements[cat] = [];
+      categorizedElements[cat].push(elem);
+    });
+
+    // Counts summary pills
+    const categoryCountsHtml = SCENE_CATEGORIES.map(c => {
+      const count = (categorizedElements[c.key] || []).length;
+      if (count === 0) return '';
+      return `
+        <span class="px-2 py-0.5 rounded-lg border text-[11px] font-semibold flex items-center gap-1 ${c.badgeBg}">
+          <span class="material-symbols-outlined text-[13px]">${c.icon}</span>
+          <span>${c.key}: <strong>${count}</strong></span>
+        </span>
+      `;
+    }).filter(Boolean).join('');
+
+    // Category sections html
+    const categorySectionsHtml = SCENE_CATEGORIES.map(cfg => {
+      const catList = categorizedElements[cfg.key];
+      if (!catList || catList.length === 0) return '';
+
+      return `
+        <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 first:border-t-0 first:pt-0">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 font-heading font-bold text-xs text-slate-900">
+              <span class="p-1 rounded-lg ${cfg.badgeBg} flex items-center justify-center">
+                <span class="material-symbols-outlined text-[14px]">${cfg.icon}</span>
+              </span>
+              <span>${cfg.title}</span>
+              <span class="text-[10px] text-slate-400 font-normal">(${catList.length})</span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            ${catList.map(e => {
+              const isConfirmed = e.status === 'Confirmed';
+              const statusBadge = isConfirmed
+                ? `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">Confirmed</span>`
+                : `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">Needs Review</span>`;
+
+              // Category tailored fields
+              let customMeta = '';
+              if (cfg.key === 'Cast') {
+                const isUncast = !e.assignedActor || e.assignedActor.toLowerCase().includes('unassigned') || e.assignedActor.toLowerCase().includes('open');
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-col gap-1 text-[11px]">
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-400">Assigned Actor:</span>
+                      ${isUncast ? `<span class="text-amber-700 italic font-semibold">Unassigned / Open Role</span>` : `<span class="font-bold text-indigo-700">${e.assignedActor}</span>`}
+                    </div>
+                    ${e.castingStatus ? `
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Casting Status:</span>
+                        <span class="font-medium text-slate-700">${e.castingStatus}</span>
+                      </div>
+                    ` : ''}
+                    ${e.actorAvailability ? `
+                      <div class="text-[10px] text-slate-500 font-medium truncate">
+                        Schedule: ${e.actorAvailability}
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              } else if (cfg.key === 'Props') {
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-wrap gap-1.5 text-[10px]">
+                    <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold border border-emerald-100">${e.sourcingType || 'Hero Prop'}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">Qty: ${e.quantity || '1'}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-teal-50 text-teal-800 font-medium">${e.readinessStatus || 'Ready'}</span>
+                  </div>
+                  ${e.continuityNotes ? `<div class="text-[10px] text-slate-400 mt-1 italic truncate">Continuity: ${e.continuityNotes}</div>` : ''}
+                `;
+              } else if (cfg.key === 'Practical FX') {
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-col gap-1 text-[10px]">
+                    <div class="text-purple-900 font-medium truncate">Resources: ${e.requiredResources || 'Special FX kit'}</div>
+                    <div class="text-slate-600 font-medium">${e.prepStatus || 'Rigged & Tested'}</div>
+                    ${e.safetyNotes ? `
+                      <div class="p-1.5 bg-rose-50 border border-rose-100 rounded-lg text-rose-800 flex items-start gap-1 text-[10px] font-medium">
+                        <span class="material-symbols-outlined text-[13px] text-rose-600 shrink-0">warning</span>
+                        <span>Safety: ${e.safetyNotes}</span>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              } else if (cfg.key === 'Stunts') {
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex flex-col gap-1 text-[10px]">
+                    <div class="text-slate-700 font-medium">Personnel: <strong class="text-rose-900">${e.qualifiedPersonnel || 'Lead Stunt Performer'}</strong></div>
+                    <div class="text-slate-600">Planning: <span class="font-semibold text-amber-800">${e.safetyPlanningStatus || 'Review in Progress'}</span></div>
+                  </div>
+                `;
+              } else if (cfg.key === 'Locations') {
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="font-semibold text-amber-900">${e.context || 'INT.'} · ${e.lighting || 'DAY'}</span>
+                    <span class="font-medium text-emerald-700">${e.locationStatus || 'Permitted & Locked'}</span>
+                  </div>
+                `;
+              } else if (cfg.key === 'Costumes') {
+                customMeta = `
+                  <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-700 font-medium">${e.character || 'Cast member'}</span>
+                    <span class="font-semibold text-emerald-700">${e.prepStatus || 'Fitted'}</span>
+                  </div>
+                `;
+              }
+
+              return `
+                <div class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200/90 border-l-4 ${cfg.borderAccent} flex flex-col justify-between gap-1 shadow-2xs hover:border-blue-300 transition-all">
+                  <div>
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="font-heading font-bold text-xs text-slate-900 leading-snug">${e.name}</div>
+                      ${statusBadge}
+                    </div>
+                    <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">${e.description || e.characterRole || ''}</p>
+                    ${customMeta}
+                  </div>
+
+                  <div class="mt-2 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                    <span class="text-slate-400 font-mono">Sc ${scene.sceneNumber}</span>
+                    <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-0.5">
+                      <span>Edit in Breakdown</span>
+                      <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                    </a>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+    }).filter(Boolean).join('');
+
     container.innerHTML = `
       <!-- Scene Header Card -->
       <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col gap-2.5">
@@ -88,34 +239,44 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
         </div>
       </div>
 
-      <!-- Confirmed Breakdown Elements in Scene -->
-      <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col gap-2.5">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
-          <h3 class="font-heading font-bold text-sm text-slate-900 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[18px] text-blue-600">dataset</span>
-            <span>Confirmed Elements for Scene ${scene.sceneNumber} (${elements.length})</span>
-          </h3>
-          <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-xs font-semibold text-blue-600 hover:underline">
-            Manage Breakdown →
+      <!-- Category-Aware Confirmed Breakdown Elements in Scene -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col gap-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-[20px] text-blue-600">dataset</span>
+            <h3 class="font-heading font-bold text-sm text-slate-900">
+              Confirmed Elements for Scene ${scene.sceneNumber} (${elements.length})
+            </h3>
+          </div>
+          <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-xs font-semibold text-blue-600 hover:underline flex items-center gap-1">
+            <span>Manage Full Breakdown</span>
+            <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
           </a>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          ${elements.length > 0 ? elements.map(e => `
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start justify-between gap-2">
-              <div>
-                <span class="text-[10px] font-bold text-slate-500 uppercase">${e.category}</span>
-                <div class="font-heading font-bold text-xs text-slate-900">${e.name}</div>
-                <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">${e.description || e.sourceSnippet || ''}</p>
-              </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${e.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
-                ${e.status}
-              </span>
+        <!-- Category Counts Bar -->
+        ${categoryCountsHtml ? `
+          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+            <span class="text-slate-400 text-[10px] font-bold uppercase tracking-wider shrink-0">By Category:</span>
+            ${categoryCountsHtml}
+          </div>
+        ` : ''}
+
+        <!-- Grouped Category Sections -->
+        ${elements.length > 0 ? `
+          <div class="flex flex-col gap-4 mt-1">
+            ${categorySectionsHtml}
+          </div>
+        ` : `
+          <div class="p-6 text-center text-slate-400 text-xs bg-slate-50 rounded-xl">
+            No production elements tagged for this scene yet.
+            <div class="mt-2">
+              <a href="/production/breakdown?scriptId=${scriptId}&scene=${scene.id}" class="text-blue-600 font-semibold hover:underline">
+                Add Elements in Breakdown Workspace →
+              </a>
             </div>
-          `).join('') : `
-            <div class="col-span-2 text-center text-slate-400 py-3 text-xs">No elements tagged for this scene yet.</div>
-          `}
-        </div>
+          </div>
+        `}
       </div>
 
       <!-- Director & Production Notes Form -->
@@ -139,7 +300,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
           </div>
           <div class="flex items-center justify-between pt-2 border-t border-slate-100">
             <span class="text-[10px] text-slate-400">Edits persist to scene logistics record</span>
-            <button type="submit" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-2xs transition-all">
+            <button type="submit" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-2xs transition-all cursor-pointer">
               Save Scene Logistics
             </button>
           </div>
@@ -171,11 +332,11 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
       <!-- Scene Filter Bar -->
       <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs" id="scene-filter-btns">
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-semibold bg-blue-600 text-white shadow-2xs" data-filter="all">All (18)</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700" data-filter="INT">INT</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700" data-filter="EXT">EXT</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700" data-filter="DAY">DAY</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700" data-filter="NIGHT">NIGHT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-semibold bg-blue-600 text-white shadow-2xs cursor-pointer" data-filter="all">All (18)</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="INT">INT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="EXT">EXT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="DAY">DAY</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="NIGHT">NIGHT</button>
         </div>
         <div class="text-[11px] text-slate-500 font-medium self-end sm:self-auto">
           Aligned with <span class="font-semibold text-blue-700">Draft 4.2</span>

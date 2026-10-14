@@ -379,6 +379,12 @@ export const server = http.createServer(async (req, res) => {
       const item = productionService.updateBreakdownItem(scriptId, itemId, body);
       return sendJson(res, 200, { item });
     }
+    if (prodBreakdownItemMatch && method === 'DELETE') {
+      const scriptId = prodBreakdownItemMatch[1];
+      const itemId = prodBreakdownItemMatch[2];
+      const result = productionService.deleteBreakdownItem(scriptId, itemId);
+      return sendJson(res, 200, result);
+    }
 
     // 13. CALL SHEETS
     const prodCallSheetsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/call-sheets$/);
