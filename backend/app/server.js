@@ -331,6 +331,137 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { auditTrail });
     }
 
+    // 11. SCENES & SCENE DETAILS
+    const prodScenesMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/scenes$/);
+    if (prodScenesMatch && method === 'GET') {
+      const scenes = productionService.getProductionScenes(prodScenesMatch[1]);
+      return sendJson(res, 200, { scenes });
+    }
+
+    const prodSceneDetailMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/scenes\/([a-zA-Z0-9_-]+)$/);
+    if (prodSceneDetailMatch) {
+      const scriptId = prodSceneDetailMatch[1];
+      const sceneId = prodSceneDetailMatch[2];
+      if (method === 'GET') {
+        const scene = productionService.getProductionScene(scriptId, sceneId);
+        if (!scene) return sendJson(res, 404, { error: "Scene not found" });
+        return sendJson(res, 200, { scene });
+      }
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const scene = productionService.updateProductionScene(scriptId, sceneId, body);
+        return sendJson(res, 200, { scene });
+      }
+    }
+
+    // 12. SCRIPT BREAKDOWN
+    const prodBreakdownMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/breakdown$/);
+    if (prodBreakdownMatch) {
+      const scriptId = prodBreakdownMatch[1];
+      if (method === 'GET') {
+        const category = url.searchParams.get('category');
+        const scene = url.searchParams.get('scene');
+        const breakdown = productionService.getProductionBreakdown(scriptId, category, scene);
+        return sendJson(res, 200, { breakdown });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const item = productionService.createBreakdownItem(scriptId, body);
+        return sendJson(res, 201, { item });
+      }
+    }
+
+    const prodBreakdownItemMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/breakdown\/([a-zA-Z0-9_-]+)$/);
+    if (prodBreakdownItemMatch && method === 'PUT') {
+      const scriptId = prodBreakdownItemMatch[1];
+      const itemId = prodBreakdownItemMatch[2];
+      const body = await readBody(req);
+      const item = productionService.updateBreakdownItem(scriptId, itemId, body);
+      return sendJson(res, 200, { item });
+    }
+
+    // 13. CALL SHEETS
+    const prodCallSheetsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/call-sheets$/);
+    if (prodCallSheetsMatch) {
+      const scriptId = prodCallSheetsMatch[1];
+      if (method === 'GET') {
+        const callSheets = productionService.getProductionCallSheets(scriptId);
+        return sendJson(res, 200, { callSheets });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const callSheet = productionService.createProductionCallSheet(scriptId, body);
+        return sendJson(res, 201, { callSheet });
+      }
+    }
+
+    const prodCallSheetPublishMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/call-sheets\/([a-zA-Z0-9_-]+)\/publish$/);
+    if (prodCallSheetPublishMatch && method === 'POST') {
+      const scriptId = prodCallSheetPublishMatch[1];
+      const csId = prodCallSheetPublishMatch[2];
+      const callSheet = productionService.publishProductionCallSheet(scriptId, csId);
+      return sendJson(res, 200, { callSheet });
+    }
+
+    const prodCallSheetDetailMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/call-sheets\/([a-zA-Z0-9_-]+)$/);
+    if (prodCallSheetDetailMatch) {
+      const scriptId = prodCallSheetDetailMatch[1];
+      const csId = prodCallSheetDetailMatch[2];
+      if (method === 'GET') {
+        const callSheet = productionService.getProductionCallSheet(scriptId, csId);
+        if (!callSheet) return sendJson(res, 404, { error: "Call sheet not found" });
+        return sendJson(res, 200, { callSheet });
+      }
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const callSheet = productionService.updateProductionCallSheet(scriptId, csId, body);
+        return sendJson(res, 200, { callSheet });
+      }
+    }
+
+    // 14. SHOOTING SCHEDULE
+    const prodScheduleMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/schedule$/);
+    if (prodScheduleMatch && method === 'GET') {
+      const schedule = productionService.getProductionSchedule(prodScheduleMatch[1]);
+      return sendJson(res, 200, { schedule });
+    }
+
+    const prodScheduleConfirmMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/schedule\/confirm$/);
+    if (prodScheduleConfirmMatch && method === 'POST') {
+      const schedule = productionService.confirmProductionSchedule(prodScheduleConfirmMatch[1]);
+      return sendJson(res, 200, { schedule });
+    }
+
+    const prodScheduleDayMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/schedule\/day\/([0-9]+)$/);
+    if (prodScheduleDayMatch && method === 'PUT') {
+      const scriptId = prodScheduleDayMatch[1];
+      const dayNum = prodScheduleDayMatch[2];
+      const body = await readBody(req);
+      const day = productionService.updateProductionScheduleDay(scriptId, dayNum, body);
+      return sendJson(res, 200, { day });
+    }
+
+    // 15. READINESS CHECKS
+    const prodReadinessMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/readiness$/);
+    if (prodReadinessMatch && method === 'GET') {
+      const readiness = productionService.getProductionReadiness(prodReadinessMatch[1]);
+      return sendJson(res, 200, { readiness });
+    }
+
+    const prodReadinessResolveMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/readiness\/([a-zA-Z0-9_-]+)\/resolve$/);
+    if (prodReadinessResolveMatch && method === 'POST') {
+      const item = productionService.resolveProductionReadiness(prodReadinessResolveMatch[1], prodReadinessResolveMatch[2]);
+      return sendJson(res, 200, { readinessItem: item });
+    }
+
+    // 16. RESTORE SNAPSHOT
+    const prodRestoreMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/restore$/);
+    if (prodRestoreMatch && method === 'POST') {
+      const body = await readBody(req);
+      const ws = productionService.restoreProductionSnapshot(prodRestoreMatch[1], body.version);
+      return sendJson(res, 200, { workspace: ws });
+    }
+
     // 404
     return sendJson(res, 404, { error: `Endpoint not found: ${method} ${pathname}` });
   } catch (err) {

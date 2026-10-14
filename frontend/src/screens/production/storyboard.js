@@ -1,0 +1,92 @@
+import { renderHeader } from '../../components/header.js';
+import { renderBottomNav } from '../../components/bottomNav.js';
+import { renderProdSubNav } from './prodNav.js';
+import { store } from '../../state/store.js';
+import { showToast } from '../../components/toast.js';
+
+export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+
+  return `
+    <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
+      ${renderHeader('Pre-Production', 'Storyboard Studio')}
+
+      <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
+        ${renderProdSubNav('Storyboard Studio', 'art_track', '/production', `
+          <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
+            Prompt 3 Active Staging
+          </span>
+        `)}
+
+        <!-- Feature Intro Banner -->
+        <div class="bg-gradient-to-br from-rose-50 to-white rounded-2xl border border-rose-200/90 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold text-rose-600 uppercase tracking-widest font-mono">Creative Visual Planning</span>
+            <h2 class="font-heading font-extrabold text-base text-slate-900">Visual Shot Composition & Concept Frames</h2>
+            <p class="text-xs text-slate-600 max-w-lg leading-relaxed">
+              Storyboard Studio connects camera focal lengths, aspect ratios, character blocking, and AI concept frames directly to confirmed screenplay scenes. Full multi-frame generation activates in Prompt 3.
+            </p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18" class="px-3.5 py-2 rounded-xl bg-white border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-50 transition-colors">
+              Inspect Scene 18 Setup
+            </a>
+          </div>
+        </div>
+
+        <!-- Staged Concept Frames Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
+            <div class="aspect-video bg-slate-900 flex flex-col items-center justify-center text-slate-400 p-4 text-center relative overflow-hidden">
+              <span class="material-symbols-outlined text-[32px] text-rose-400">camera_roll</span>
+              <span class="text-[11px] font-mono mt-1 text-slate-300">SCENE 1 · SHOT 1A</span>
+              <span class="text-[10px] text-slate-500">Wide Establishing Drone (24mm, 2.39:1)</span>
+              <div class="absolute bottom-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-black/60 text-white font-mono">EXT. DAY</div>
+            </div>
+            <div class="p-3 text-xs">
+              <div class="font-heading font-bold text-slate-900">Perimeter Outpost Gate</div>
+              <p class="text-[11px] text-slate-500 mt-0.5">High altitude drone descending across dust devils toward Kevin's arrival.</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
+            <div class="aspect-video bg-slate-900 flex flex-col items-center justify-center text-slate-400 p-4 text-center relative overflow-hidden">
+              <span class="material-symbols-outlined text-[32px] text-blue-400">lens</span>
+              <span class="text-[11px] font-mono mt-1 text-slate-300">SCENE 2 · SHOT 2C</span>
+              <span class="text-[10px] text-slate-500">Medium Two-Shot (50mm, 2.39:1)</span>
+              <div class="absolute bottom-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-black/60 text-white font-mono">INT. DAY</div>
+            </div>
+            <div class="p-3 text-xs">
+              <div class="font-heading font-bold text-slate-900">Customs Shed Hologram</div>
+              <p class="text-[11px] text-slate-500 mt-0.5">Fluorescent tube flicker rim lighting Kevin and Meera over telemetry anomaly.</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
+            <div class="aspect-video bg-slate-900 flex flex-col items-center justify-center text-slate-400 p-4 text-center relative overflow-hidden">
+              <span class="material-symbols-outlined text-[32px] text-amber-400">blur_on</span>
+              <span class="text-[11px] font-mono mt-1 text-slate-300">SCENE 18 · SHOT 18F</span>
+              <span class="text-[10px] text-slate-500">Dutch Angle Close-Up (85mm, 2.39:1)</span>
+              <div class="absolute bottom-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-black/60 text-white font-mono">INT. NIGHT</div>
+            </div>
+            <div class="p-3 text-xs">
+              <div class="font-heading font-bold text-slate-900">Chamber B Valve Breach</div>
+              <p class="text-[11px] text-slate-500 mt-0.5">High-speed water mist bokeh as Kevin clamps the hydraulic bypass manifold.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 text-center text-xs text-slate-500 shadow-2xs">
+          Prompt 3 Implementation Ready: Canvas rendering, shot sequence drag-and-drop, and camera metadata export.
+        </div>
+      </main>
+
+      ${renderBottomNav('production')}
+    </div>
+  `;
+}
+
+export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
+  // Staged for Prompt 3
+}

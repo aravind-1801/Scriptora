@@ -188,3 +188,245 @@ export function logProductionAudit(scriptId, event) {
   db.productionAudit.unshift(logItem);
   return logItem;
 }
+
+// 1. SCENE HUB WORKFLOWS
+export function getProductionScenes(scriptId = 'chronicles-of-dust') {
+  return db.productionScenes.filter(s => s.scriptId === scriptId);
+}
+
+export function getProductionScene(scriptId, sceneId) {
+  const scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  if (!scene) return null;
+  // Link elements and sides
+  const elements = db.productionBreakdown.filter(b => b.scriptId === scriptId && (b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber));
+  return { ...scene, elements };
+}
+
+export function updateProductionScene(scriptId, sceneId, updates) {
+  const scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  if (!scene) throw new Error("Scene not found");
+  Object.assign(scene, updates);
+  logProductionAudit(scriptId, {
+    action: "UPDATE_SCENE_RECORD",
+    category: "SCENE_HUB",
+    details: `Updated production logistics for Scene ${scene.sceneNumber}`,
+    sourceVersion: "Draft 4.2"
+  });
+  return scene;
+}
+
+// 2. SCRIPT BREAKDOWN WORKFLOWS
+export function getProductionBreakdown(scriptId = 'chronicles-of-dust', category = null, sceneId = null) {
+  let list = db.productionBreakdown.filter(b => b.scriptId === scriptId);
+  if (category && category !== 'all') {
+    list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
+  }
+  if (sceneId && sceneId !== 'all') {
+    list = list.filter(b => b.sceneId === sceneId || String(b.sceneNumber) === String(sceneId));
+  }
+  return list;
+}
+
+export function updateBreakdownItem(scriptId, itemId, updates) {
+  const item = db.productionBreakdown.find(b => b.id === itemId && b.scriptId === scriptId);
+  if (!item) throw new Error("Breakdown item not found");
+  Object.assign(item, updates);
+  if (updates.status === 'Confirmed') {
+    item.isHumanConfirmed = true;
+    item.confirmedBy = db.currentUser.name + " (Owner)";
+    item.confirmedAt = new Date().toISOString();
+  }
+  logProductionAudit(scriptId, {
+    action: "REVIEW_BREAKDOWN_ITEM",
+    category: "BREAKDOWN",
+    details: `Marked "${item.name}" (${item.category}) in Scene ${item.sceneNumber} as ${item.status}`,
+    sourceVersion: "Draft 4.2"
+  });
+  return item;
+}
+
+export function createBreakdownItem(scriptId, itemData) {
+  const newItem = {
+    id: `elem-${Date.now()}`,
+    scriptId,
+    sceneId: itemData.sceneId || "scene-18",
+    sceneNumber: Number(itemData.sceneNumber || 18),
+    category: itemData.category || "Props",
+    name: itemData.name,
+    description: itemData.description || "",
+    sourceSnippet: itemData.sourceSnippet || "User added manual item",
+    status: itemData.status || "Confirmed",
+    isHumanConfirmed: true,
+    confidence: 1.0,
+    confirmedBy: db.currentUser.name + " (Owner)",
+    confirmedAt: new Date().toISOString(),
+    notes: itemData.notes || ""
+  };
+  db.productionBreakdown.unshift(newItem);
+  logProductionAudit(scriptId, {
+    action: "ADD_MANUAL_BREAKDOWN_ITEM",
+    category: "BREAKDOWN",
+    details: `Manually added "${newItem.name}" to Scene ${newItem.sceneNumber}`,
+    sourceVersion: "Draft 4.2"
+  });
+  return newItem;
+}
+
+// 3. CALL SHEETS WORKFLOWS
+export function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
+  return db.productionCallSheets.filter(cs => cs.scriptId === scriptId);
+}
+
+export function getProductionCallSheet(scriptId, callSheetId) {
+  return db.productionCallSheets.find(cs => cs.scriptId === scriptId && cs.id === callSheetId);
+}
+
+export function createProductionCallSheet(scriptId, data) {
+  const newCs = {
+    id: `cs-${Date.now()}`,
+    scriptId,
+    callSheetNumber: String(db.productionCallSheets.length + 1).padStart(2, '0'),
+    shootDay: data.shootDay || "Day 3 of 14",
+    shootDate: data.shootDate || "Monday, Oct 26, 2026",
+    generalCrewCall: data.generalCrewCall || "06:00 AM",
+    shootingCall: data.shootingCall || "06:30 AM",
+    breakfastTime: data.breakfastTime || "05:15 AM",
+    estimatedWrap: data.estimatedWrap || "06:30 PM",
+    status: "Draft",
+    isPublished: false,
+    version: "v0.9",
+    locationName: data.locationName || "Location TBD",
+    locationAddress: data.locationAddress || "TBD",
+    parkingNotes: data.parkingNotes || "Crew parking guidelines to be verified.",
+    nearestHospital: data.nearestHospital || "Desert Care Network Regional, 1150 N Indian Canyon Dr, Palm Springs, CA",
+    weatherSummary: data.weatherSummary || "Clear skies, mild temperature forecast.",
+    scenes: data.scenes || [{ sceneNumber: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", pages: "5 0/8", cast: ["KEVIN", "MEERA"], desc: "Perimeter fence patrol." }],
+    castCalls: data.castCalls || [
+      { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Draft" },
+      { character: "MEERA", actor: "Priya Sharma", pickup: "05:15 AM", hmuCall: "05:45 AM", onSet: "06:30 AM", status: "Draft" }
+    ],
+    specialInstructions: data.specialInstructions || "Standard safety and PPE required.",
+    approvedBy: null,
+    publishedAt: null
+  };
+  db.productionCallSheets.push(newCs);
+  logProductionAudit(scriptId, {
+    action: "CREATE_CALL_SHEET_DRAFT",
+    category: "CALL_SHEET",
+    details: `Created Draft Call Sheet #${newCs.callSheetNumber} (${newCs.shootDay})`,
+    sourceVersion: "Draft 4.2"
+  });
+  return newCs;
+}
+
+export function updateProductionCallSheet(scriptId, callSheetId, updates) {
+  const cs = db.productionCallSheets.find(c => c.scriptId === scriptId && c.id === callSheetId);
+  if (!cs) throw new Error("Call sheet not found");
+  Object.assign(cs, updates);
+  logProductionAudit(scriptId, {
+    action: "UPDATE_CALL_SHEET",
+    category: "CALL_SHEET",
+    details: `Updated details for Call Sheet #${cs.callSheetNumber}`,
+    sourceVersion: "Draft 4.2"
+  });
+  return cs;
+}
+
+export function publishProductionCallSheet(scriptId, callSheetId) {
+  const cs = db.productionCallSheets.find(c => c.scriptId === scriptId && c.id === callSheetId);
+  if (!cs) throw new Error("Call sheet not found");
+  cs.status = "Confirmed";
+  cs.isPublished = true;
+  cs.version = "v1.0 (Snapshot)";
+  cs.approvedBy = db.currentUser.name + " (Owner)";
+  cs.publishedAt = new Date().toISOString();
+
+  // Create immutable document entry as snapshot
+  db.productionDocuments.unshift({
+    id: `doc-cs-${Date.now()}`,
+    scriptId,
+    type: "Call Sheet",
+    title: `Call Sheet #${cs.callSheetNumber} — ${cs.locationName}`,
+    sourceVersion: "Draft 4.2",
+    shootDay: cs.shootDay,
+    date: cs.shootDate,
+    callTime: cs.shootingCall,
+    location: cs.locationName,
+    scenes: cs.scenes.map(s => `Scene ${s.sceneNumber}`),
+    status: "Confirmed",
+    published: true,
+    version: cs.version
+  });
+
+  logProductionAudit(scriptId, {
+    action: "PUBLISH_CALL_SHEET_SNAPSHOT",
+    category: "APPROVAL",
+    details: `Call Sheet #${cs.callSheetNumber} officially approved and published by Owner`,
+    sourceVersion: "Draft 4.2"
+  });
+  return cs;
+}
+
+// 4. SHOOTING SCHEDULE WORKFLOWS
+export function getProductionSchedule(scriptId = 'chronicles-of-dust') {
+  return db.productionSchedule;
+}
+
+export function updateProductionScheduleDay(scriptId, dayNumber, updates) {
+  const day = db.productionSchedule.find(d => d.dayNumber === Number(dayNumber));
+  if (!day) throw new Error("Shoot day not found");
+  Object.assign(day, updates);
+  logProductionAudit(scriptId, {
+    action: "UPDATE_STRIPBOARD_DAY",
+    category: "SCHEDULE",
+    details: `Updated Day ${day.dayNumber} stripboard order and scene assignments`,
+    sourceVersion: "Draft 4.2"
+  });
+  return day;
+}
+
+export function confirmProductionSchedule(scriptId) {
+  db.productionSchedule.forEach(day => {
+    day.status = "Confirmed";
+    day.isLocked = true;
+  });
+  logProductionAudit(scriptId, {
+    action: "CONFIRM_MASTER_SCHEDULE",
+    category: "APPROVAL",
+    details: "Owner locked and confirmed 14-day master stripboard schedule",
+    sourceVersion: "Draft 4.2"
+  });
+  return db.productionSchedule;
+}
+
+// 5. READINESS CHECKS
+export function getProductionReadiness(scriptId = 'chronicles-of-dust') {
+  return db.productionReadiness.filter(r => r.scriptId === scriptId);
+}
+
+export function resolveProductionReadiness(scriptId, readinessId) {
+  const item = db.productionReadiness.find(r => r.scriptId === scriptId && r.id === readinessId);
+  if (item) {
+    item.status = "resolved";
+    item.severity = "ready";
+  }
+  return item;
+}
+
+// 6. RESTORE SNAPSHOT
+export function restoreProductionSnapshot(scriptId, versionTag) {
+  const ws = getProductionWorkspace(scriptId);
+  const oldVer = ws.pinnedSourceVersion;
+  ws.pinnedSourceVersion = versionTag;
+  ws.pinnedTimestamp = "Just now (Restored)";
+  ws.isStale = false;
+
+  logProductionAudit(scriptId, {
+    action: "RESTORE_VERSION_BASELINE",
+    category: "VERSION_INTEGRITY",
+    details: `Restored production baseline to ${versionTag} as new version (Preserved audit trail)`,
+    sourceVersion: versionTag
+  });
+  return ws;
+}
+

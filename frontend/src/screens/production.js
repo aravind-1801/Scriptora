@@ -118,7 +118,8 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
         <!-- 2. Essential Production Tools (Prominent Access, Clean Title without Competing Badge) -->
         <section class="flex flex-col gap-2">
           <div class="flex items-center justify-between">
-            <h2 class="font-heading font-bold text-xs text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+            <h2 class="font-heading font-bold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px] text-slate-600">tune</span>
               <span>Essential Production Tools</span>
             </h2>
           </div>
@@ -209,7 +210,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
             </h2>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             
             <!-- Secondary 1: Storyboard Studio -->
             <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="storyboard-studio">
@@ -275,6 +276,40 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
               </div>
               <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-amber-600">
                 <span id="pending-proposals-count">2 Pending Review</span>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+              </div>
+            </div>
+
+            <!-- Secondary 5: Production Documents Workspace -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-documents">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">description</span>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-heading font-bold text-sm text-slate-900">Production Documents</h3>
+                  <p class="text-[11px] text-slate-500">Categorized catalog, exports & sharing links</p>
+                </div>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Document Catalog</span>
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+              </div>
+            </div>
+
+            <!-- Secondary 6: Pre-Flight Readiness & Validation -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-readiness">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">fact_check</span>
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-heading font-bold text-sm text-slate-900">Readiness & Validation</h3>
+                  <p class="text-[11px] text-slate-500">Actionable pre-shoot blocker checks</p>
+                </div>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-emerald-600">
+                <span>Pre-Flight Gates</span>
                 <span class="material-symbols-outlined text-[16px]">chevron_right</span>
               </div>
             </div>
@@ -481,11 +516,28 @@ export async function attachProductionEvents(navigate, fromParam = null, scriptP
     };
   }
 
-  // 8. Tool Cards Click Handlers (Inspectors / Workflows)
+  // 8. Tool Cards Click Handlers (Dedicated Navigable Workspaces - No Popups)
   document.querySelectorAll('.tool-card').forEach(card => {
     card.onclick = () => {
       const tool = card.getAttribute('data-tool');
-      openToolModal(tool, scriptId, ws, navigate);
+      const routeMap = {
+        'call-sheets': `/production/call-sheets?scriptId=${scriptId}`,
+        'dialogue-sheets': `/production/dialogue-sides?scriptId=${scriptId}`,
+        'shooting-schedule': `/production/schedule?scriptId=${scriptId}`,
+        'script-breakdown': `/production/breakdown?scriptId=${scriptId}`,
+        'storyboard-studio': `/production/storyboard?scriptId=${scriptId}`,
+        'scene-hub': `/production/scenes?scriptId=${scriptId}`,
+        'resource-directory': `/production/directory?scriptId=${scriptId}`,
+        'change-proposals': `/production/changes?scriptId=${scriptId}`,
+        'production-documents': `/production/documents?scriptId=${scriptId}`,
+        'production-history': `/production/history?scriptId=${scriptId}`,
+        'production-readiness': `/production/readiness?scriptId=${scriptId}`
+      };
+      if (routeMap[tool]) {
+        navigate(routeMap[tool]);
+      } else {
+        openToolModal(tool, scriptId, ws, navigate);
+      }
     };
   });
 

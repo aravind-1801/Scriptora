@@ -13,6 +13,18 @@ import { renderCollaboratorsScreen, attachCollaboratorsEvents } from './screens/
 import { renderNotificationsScreen, attachNotificationsEvents } from './screens/notifications.js';
 import { renderProductionScreen, attachProductionEvents } from './screens/production.js';
 import { renderAiChatScreen, attachAiChatEvents } from './screens/aiChat.js';
+import { renderBreakdownScreen, attachBreakdownEvents } from './screens/production/breakdown.js';
+import { renderScenesScreen, attachScenesEvents } from './screens/production/scenes.js';
+import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/production/callSheets.js';
+import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
+import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
+import { renderDirectoryScreen, attachDirectoryEvents } from './screens/production/directory.js';
+import { renderDocumentsScreen, attachDocumentsEvents } from './screens/production/documents.js';
+import { renderChangesScreen, attachChangesEvents } from './screens/production/changes.js';
+import { renderHistoryScreen, attachHistoryEvents } from './screens/production/history.js';
+import { renderReadinessScreen, attachReadinessEvents } from './screens/production/readiness.js';
+import { renderStoryboardScreen, attachStoryboardEvents } from './screens/production/storyboard.js';
+
 
 class Router {
   constructor() {
@@ -229,13 +241,140 @@ class Router {
       return;
     }
 
-    // 4. PRE-PRODUCTION (Native Production Tools entry)
+    // 4. PRE-PRODUCTION (Native Production Tools entry & Dedicated Screens)
     if (path === '/production' || path === '/pre-production') {
       const fromParam = query.get('from');
       const scriptParam = query.get('scriptId');
       this.render(
         renderProductionScreen(fromParam, scriptParam),
         () => attachProductionEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.1 Script Breakdown Dedicated Screen
+    if (path === '/production/breakdown') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderBreakdownScreen(fromParam, scriptParam),
+        () => attachBreakdownEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.2 Scene Hub & Scene Details Dedicated Screen
+    const sceneMatch = path.match(/^\/production\/scenes(?:\/([a-zA-Z0-9_-]+))?$/);
+    if (sceneMatch) {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      const sceneId = sceneMatch[1] || query.get('sceneId');
+      this.render(
+        renderScenesScreen(fromParam, scriptParam, sceneId),
+        () => attachScenesEvents(this.navigate.bind(this), fromParam, scriptParam, sceneId)
+      );
+      return;
+    }
+
+    // 4.3 Call Sheets Dedicated Screen
+    const callSheetMatch = path.match(/^\/production\/call-sheets(?:\/([a-zA-Z0-9_-]+))?$/);
+    if (callSheetMatch) {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      const csId = callSheetMatch[1] || query.get('csId');
+      this.render(
+        renderCallSheetsScreen(fromParam, scriptParam, csId),
+        () => attachCallSheetsEvents(this.navigate.bind(this), fromParam, scriptParam, csId)
+      );
+      return;
+    }
+
+    // 4.4 Dialogue Sheets & Actor Sides Dedicated Screen
+    if (path === '/production/dialogue-sides' || path === '/production/dialogue-sheets' || path === '/production/sides') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderDialogueSidesScreen(fromParam, scriptParam),
+        () => attachDialogueSidesEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.5 Shooting Schedule & Stripboard Dedicated Screen
+    if (path === '/production/schedule' || path === '/production/stripboard') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderScheduleScreen(fromParam, scriptParam),
+        () => attachScheduleEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.6 Production Directory Dedicated Screen
+    if (path === '/production/directory' || path === '/production/resources') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderDirectoryScreen(fromParam, scriptParam),
+        () => attachDirectoryEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.7 Documents Dedicated Screen
+    const docMatch = path.match(/^\/production\/documents(?:\/([a-zA-Z0-9_-]+))?$/);
+    if (docMatch) {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      const docId = docMatch[1] || query.get('docId');
+      this.render(
+        renderDocumentsScreen(fromParam, scriptParam, docId),
+        () => attachDocumentsEvents(this.navigate.bind(this), fromParam, scriptParam, docId)
+      );
+      return;
+    }
+
+    // 4.8 Production Changes & Approvals Dedicated Screen
+    if (path === '/production/changes' || path === '/production/proposals') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderChangesScreen(fromParam, scriptParam),
+        () => attachChangesEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.9 Unified History & Audit Dedicated Screen
+    if (path === '/production/history' || path === '/production/timeline') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderHistoryScreen(fromParam, scriptParam),
+        () => attachHistoryEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.10 Guided Readiness & Validation Dedicated Screen
+    if (path === '/production/readiness' || path === '/production/validation') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderReadinessScreen(fromParam, scriptParam),
+        () => attachReadinessEvents(this.navigate.bind(this), fromParam, scriptParam)
+      );
+      return;
+    }
+
+    // 4.11 Storyboard Studio (Discovery / Prompt 3 Staged)
+    if (path === '/production/storyboard' || path === '/production/storyboards') {
+      const fromParam = query.get('from');
+      const scriptParam = query.get('scriptId');
+      this.render(
+        renderStoryboardScreen(fromParam, scriptParam),
+        () => attachStoryboardEvents(this.navigate.bind(this), fromParam, scriptParam)
       );
       return;
     }

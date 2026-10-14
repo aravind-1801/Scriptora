@@ -1490,3 +1490,747 @@ export async function getProductionAuditTrail(scriptId = 'chronicles-of-dust') {
   return defaults;
 }
 
+// =========================================================================
+// 9. CORE PRE-PRODUCTION WORKFLOWS API CLIENT METHODS
+// =========================================================================
+
+export async function getProductionScenes(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/scenes`);
+    if (data?.scenes) {
+      localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(data.scenes));
+      return data.scenes;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_scenes_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  // Fallback defaults for 18 scenes
+  const scenes = [];
+  const sceneHeadings = [
+    { num: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", intExt: "EXT", dayNight: "DAY", p: "4 1/8", comp: "Moderate", day: "Day 1 of 14", cast: ["KEVIN", "MARCUS"], desc: "Wind whips dust across perimeter chain link. Kevin arrives at customs gate." },
+    { num: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", intExt: "INT", dayNight: "DAY", p: "3 4/8", comp: "Simple", day: "Day 1 of 14", cast: ["KEVIN", "MEERA"], desc: "Meera analyzes telemetry console indicating illegal pressure drop." },
+    { num: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", intExt: "EXT", dayNight: "DUSK", p: "7 2/8", comp: "Complex", day: "Day 2 of 14", cast: ["KEVIN"], desc: "Concrete conduit pipeline across cracked alkali flats during sunset." },
+    { num: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "5 0/8", comp: "Complex", day: "Day 3 of 14", cast: ["KEVIN", "MEERA"], desc: "Perimeter night patrol with solar rover and surveillance drones." },
+    { num: 5, heading: "INT. HYDRAULIC VALVE TUNNEL - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "5 4/8", comp: "Moderate", day: "Day 3 of 14", cast: ["KEVIN"], desc: "Rusty underground valves with echoing industrial turbine vibration." },
+    { num: 6, heading: "EXT. DESERT SERVICE ROAD - DAY", intExt: "EXT", dayNight: "DAY", p: "5 2/8", comp: "Simple", day: "Day 4 of 14", cast: ["KEVIN"], desc: "Kevin tracks tanker tire treads along decommissioned asphalt." },
+    { num: 7, heading: "INT. SYNDICATE PUMPING CONTROL - DAY", intExt: "INT", dayNight: "DAY", p: "6 3/8", comp: "Moderate", day: "Day 5 of 14", cast: ["COMMANDER VANCE", "KEVIN"], desc: "Vance oversees regional water diversion bank from glass observatory." },
+    { num: 8, heading: "EXT. RESERVOIR INTAKE BASIN - DAY", intExt: "EXT", dayNight: "DAY", p: "5 5/8", comp: "Complex", day: "Day 6 of 14", cast: ["MEERA"], desc: "Rappelling 60-foot descent down drained concrete spillway." },
+    { num: 9, heading: "INT. DRAINAGE VAULT - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 1/8", comp: "Moderate", day: "Day 7 of 14", cast: ["KEVIN", "MEERA"], desc: "Subterranean acoustic surveillance using directional hydrophones." },
+    { num: 10, heading: "EXT. PIPELINE COMPRESSOR STATION - DUSK", intExt: "EXT", dayNight: "DUSK", p: "5 3/8", comp: "Moderate", day: "Day 8 of 14", cast: ["KEVIN", "MARCUS"], desc: "Diesel compressor manifolds blowing atmospheric smoke into dusk sky." },
+    { num: 11, heading: "INT. CUSTOMS ARCHIVE STORAGE - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 4/8", comp: "Simple", day: "Day 9 of 14", cast: ["KEVIN"], desc: "Investigation of legacy river compact water rights deeds on microfiche." },
+    { num: 12, heading: "EXT. DRY WASH VALLEY - DAY", intExt: "EXT", dayNight: "DAY", p: "5 6/8", comp: "Complex", day: "Day 10 of 14", cast: ["KEVIN", "MEERA"], desc: "High-speed pursuit through sandstone canyons with heavy convoy." },
+    { num: 13, heading: "INT. EMERGENCY SLUICE GATEWAY - DAY", intExt: "INT", dayNight: "DAY", p: "4 3/8", comp: "Moderate", day: "Day 11 of 14", cast: ["KEVIN"], desc: "Manual mechanical winch operation on frozen cast-iron sluice gates." },
+    { num: 14, heading: "EXT. SOUTHWEST PRESSURE TOWER - DUSK", intExt: "EXT", dayNight: "DUSK", p: "4 6/8", comp: "Moderate", day: "Day 12 of 14", cast: ["MEERA"], desc: "Exterior ladder ascent under sweeping perimeter searchlights." },
+    { num: 15, heading: "INT. GENERATOR ROOM - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 2/8", comp: "Simple", day: "Day 12 of 14", cast: ["KEVIN", "COMMANDER VANCE"], desc: "Stand-off over turbine killswitch with pulsing crimson warning beacon." },
+    { num: 16, heading: "EXT. RESERVOIR SPILLWAY - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "4 7/8", comp: "Complex", day: "Day 13 of 14", cast: ["KEVIN", "MEERA"], desc: "Flash flood breach through spillway catwalk with torrential rain." },
+    { num: 17, heading: "INT. CONTROL GANTRY - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "3 4/8", comp: "Complex", day: "Day 14 of 14", cast: ["KEVIN", "MEERA", "COMMANDER VANCE"], desc: "High gantry physical climax suspended above subterranean drainage." },
+    { num: 18, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "2 6/8", comp: "Complex", day: "Day 2 of 14", cast: ["KEVIN", "MEERA"], desc: "Kevin anchors hydraulic bypass valve kit as high pressure brine seals." }
+  ];
+
+  for (const s of sceneHeadings) {
+    scenes.push({
+      id: `scene-${s.num}`,
+      sceneNumber: s.num,
+      scriptId,
+      heading: s.heading,
+      intExt: s.intExt,
+      dayNight: s.dayNight,
+      pages: s.p,
+      complexity: s.comp,
+      shootDay: s.day,
+      status: s.num === 4 ? "Needs Review" : "Scheduled",
+      snippet: s.desc,
+      directorNotes: `Director visual notes for ${s.heading}. Maintain high contrast lighting.`,
+      continuityNotes: `Continuity reference logged against Draft 4.2.`,
+      cast: s.cast,
+      sidesReady: true
+    });
+  }
+  localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(scenes));
+  return scenes;
+}
+
+export async function getProductionScene(scriptId, sceneId) {
+  try {
+    const data = await request(`/production/${scriptId}/scenes/${sceneId}`);
+    if (data?.scene) return data.scene;
+  } catch (e) {}
+
+  const scenes = await getProductionScenes(scriptId);
+  const scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId));
+  if (!scene) return null;
+  const breakdown = await getProductionBreakdown(scriptId);
+  const elements = breakdown.filter(b => b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber);
+  return { ...scene, elements };
+}
+
+export async function updateProductionScene(scriptId, sceneId, updates) {
+  try {
+    const data = await request(`/production/${scriptId}/scenes/${sceneId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (data?.scene) return data.scene;
+  } catch (e) {}
+
+  const scenes = await getProductionScenes(scriptId);
+  const scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId));
+  if (scene) {
+    Object.assign(scene, updates);
+    localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(scenes));
+    return scene;
+  }
+  return updates;
+}
+
+export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', category = null, scene = null) {
+  try {
+    const query = new URLSearchParams();
+    if (category) query.set('category', category);
+    if (scene) query.set('scene', scene);
+    const qs = query.toString() ? `?${query.toString()}` : '';
+    const data = await request(`/production/${scriptId}/breakdown${qs}`);
+    if (data?.breakdown) {
+      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(data.breakdown));
+      return data.breakdown;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_breakdown_${scriptId}`);
+  let list = [];
+  if (cached) {
+    try { list = JSON.parse(cached); } catch (_) {}
+  }
+
+  if (!list.length) {
+    list = [
+      {
+        id: "elem-1",
+        scriptId,
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        category: "Cast",
+        name: "KEVIN",
+        description: "Discredited hydro-engineer, 30s. Hero protagonist.",
+        sourceSnippet: "Kevin kneels over cracked hydro-sensor junction box, static hissing from the diagnostic speaker.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Requires desert dust protective gear and waterproof boots."
+      },
+      {
+        id: "elem-2",
+        scriptId,
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        category: "Cast",
+        name: "MEERA",
+        description: "Field operative with tactical harness.",
+        sourceSnippet: "Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Tactical harness fitted for scene 18 valve climb."
+      },
+      {
+        id: "elem-3",
+        scriptId,
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        category: "Props",
+        name: "Hydraulic Bypass Valve Kit",
+        description: "Custom machined valve kit with functional digital LED pressure display.",
+        sourceSnippet: "Kevin clicks the bypass manifold into place. The gauge needles spike red.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 0.95,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Hero prop constructed by art department; 2 stunt duplicates on standby."
+      },
+      {
+        id: "elem-4",
+        scriptId,
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        category: "Practical FX",
+        name: "High-Pressure Water Spray",
+        description: "Controlled water burst simulating cracked pipe joint failure.",
+        sourceSnippet: "A burst of pressurized brine shoots from the seam, blinding the chamber.",
+        status: "Needs Review",
+        isHumanConfirmed: false,
+        confidence: 0.88,
+        confirmedBy: null,
+        confirmedAt: null,
+        notes: "SFX coordinator requested dedicated water truck standby via Proposal #prop-1."
+      },
+      {
+        id: "elem-5",
+        scriptId,
+        sceneId: "scene-18",
+        sceneNumber: 18,
+        category: "Stunts",
+        name: "Valve Pylon Cable Rappel",
+        description: "Meera swings 18 feet across open valve chasm to catch emergency release lever.",
+        sourceSnippet: "Meera kicks off the catwalk, swinging into the spray as the iron cable groans.",
+        status: "Needs Review",
+        isHumanConfirmed: false,
+        confidence: 0.92,
+        confirmedBy: null,
+        confirmedAt: null,
+        notes: "Awaiting Stunt Coordinator risk assessment and harness certification."
+      },
+      {
+        id: "elem-6",
+        scriptId,
+        sceneId: "scene-1",
+        sceneNumber: 1,
+        category: "Cast",
+        name: "KEVIN",
+        description: "Duster coat, respirator around neck.",
+        sourceSnippet: "KEVIN (30s), sun-scoured and weary, adjusts his solar filter.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Costume fitting complete."
+      },
+      {
+        id: "elem-7",
+        scriptId,
+        sceneId: "scene-1",
+        sceneNumber: 1,
+        category: "Cast",
+        name: "MARCUS",
+        description: "Border outpost security guard.",
+        sourceSnippet: "MARCUS leans against the chain link, tapping an unlit cigarette against his wrist.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 0.98,
+        confirmedBy: "Elena Rostova",
+        confirmedAt: "2026-10-13T16:00:00Z",
+        notes: "Supporting role. Day 1 shoot only."
+      },
+      {
+        id: "elem-8",
+        scriptId,
+        sceneId: "scene-1",
+        sceneNumber: 1,
+        category: "Props",
+        name: "Solar Filter Dust Goggles",
+        description: "Tinted goggles with worn leather straps.",
+        sourceSnippet: "Kevin pulls the goggles over his eyes as a gust hits.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Hero wardrobe prop."
+      },
+      {
+        id: "elem-9",
+        scriptId,
+        sceneId: "scene-1",
+        sceneNumber: 1,
+        category: "Vehicles",
+        name: "Solar Patrol Rover (Modified)",
+        description: "Lightweight dune rover fitted with dual photovoltaic roof panels.",
+        sourceSnippet: "The rover sits idling beside Gate 4, suspension coated in red grit.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 0.96,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Picture vehicle running on electric battery. Backup battery pack required."
+      },
+      {
+        id: "elem-10",
+        scriptId,
+        sceneId: "scene-4",
+        sceneNumber: 4,
+        category: "Props",
+        name: "Night-Vision Monocular Scope",
+        description: "Military grade digital thermal optics.",
+        sourceSnippet: "Meera scans the wire with her thermal monocle. Three glowing silhouettes freeze.",
+        status: "Needs Review",
+        isHumanConfirmed: false,
+        confidence: 0.85,
+        confirmedBy: null,
+        confirmedAt: null,
+        notes: "Rental request pending vendor confirmation."
+      },
+      {
+        id: "elem-11",
+        scriptId,
+        sceneId: "scene-7",
+        sceneNumber: 7,
+        category: "Cast",
+        name: "COMMANDER VANCE",
+        description: "Antagonist, regional water syndicate director.",
+        sourceSnippet: "COMMANDER VANCE (50s), tailored gray linen, stands over the telemetry terminal.",
+        status: "Confirmed",
+        isHumanConfirmed: true,
+        confidence: 1.0,
+        confirmedBy: "Arun Kumar (Owner)",
+        confirmedAt: "2026-10-14T08:00:00Z",
+        notes: "Cast confirmed. Costume fitting scheduled Oct 20."
+      },
+      {
+        id: "elem-12",
+        scriptId,
+        sceneId: "scene-16",
+        sceneNumber: 16,
+        category: "Practical FX",
+        name: "Catwalk Rain Towers",
+        description: "Simulated industrial torrential flood conditions on exterior catwalk.",
+        sourceSnippet: "Water cascades down the spillway faces like Niagara.",
+        status: "Needs Review",
+        isHumanConfirmed: false,
+        confidence: 0.9,
+        confirmedBy: null,
+        confirmedAt: null,
+        notes: "Requires environmental containment permits."
+      }
+    ];
+    localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+  }
+
+  if (category && category !== 'all') {
+    list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
+  }
+  if (scene && scene !== 'all') {
+    list = list.filter(b => b.sceneId === scene || String(b.sceneNumber) === String(scene));
+  }
+  return list;
+}
+
+export async function updateBreakdownItem(scriptId, itemId, updates) {
+  try {
+    const data = await request(`/production/${scriptId}/breakdown/${itemId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (data?.item) return data.item;
+  } catch (e) {}
+
+  const list = await getProductionBreakdown(scriptId);
+  const item = list.find(b => b.id === itemId);
+  if (item) {
+    Object.assign(item, updates);
+    if (updates.status === 'Confirmed') {
+      item.isHumanConfirmed = true;
+      item.confirmedBy = "Arun Kumar (Owner)";
+      item.confirmedAt = new Date().toISOString();
+    }
+    localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+    return item;
+  }
+  return updates;
+}
+
+export async function createBreakdownItem(scriptId, itemData) {
+  try {
+    const data = await request(`/production/${scriptId}/breakdown`, {
+      method: 'POST',
+      body: JSON.stringify(itemData)
+    });
+    if (data?.item) return data.item;
+  } catch (e) {}
+
+  const list = await getProductionBreakdown(scriptId);
+  const newItem = {
+    id: `elem-${Date.now()}`,
+    scriptId,
+    sceneId: itemData.sceneId || "scene-18",
+    sceneNumber: Number(itemData.sceneNumber || 18),
+    category: itemData.category || "Props",
+    name: itemData.name,
+    description: itemData.description || "",
+    sourceSnippet: itemData.sourceSnippet || "User added manual item",
+    status: itemData.status || "Confirmed",
+    isHumanConfirmed: true,
+    confidence: 1.0,
+    confirmedBy: "Arun Kumar (Owner)",
+    confirmedAt: new Date().toISOString(),
+    notes: itemData.notes || ""
+  };
+  list.unshift(newItem);
+  localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+  return newItem;
+}
+
+export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/call-sheets`);
+    if (data?.callSheets) {
+      localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(data.callSheets));
+      return data.callSheets;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_callsheets_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    {
+      id: "cs-1",
+      scriptId,
+      callSheetNumber: "01",
+      shootDay: "Day 1 of 14",
+      shootDate: "Saturday, Oct 24, 2026",
+      generalCrewCall: "06:00 AM",
+      shootingCall: "06:30 AM",
+      breakfastTime: "05:15 AM",
+      estimatedWrap: "06:30 PM",
+      status: "Confirmed",
+      isPublished: true,
+      version: "v1.0",
+      locationName: "Mojave Outpost Gate 4",
+      locationAddress: "Perimeter Road 9, Cantil, CA 93519",
+      parkingNotes: "Crew parking at Basecamp Lot B (1/4 mile west of gate). Shuttle runs every 10 mins.",
+      nearestHospital: "Kern Valley Healthcare District, 6412 Laurel Ave, Lake Isabella, CA (Ph: 760-379-2681)",
+      weatherSummary: "Sunny, 74°F high, 48°F low. Winds WNW 10-15 mph. Dust advisory after 4:00 PM.",
+      scenes: [
+        { sceneNumber: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", pages: "4 1/8", cast: ["KEVIN", "MARCUS"], desc: "Kevin arrives at border gate, inspection with Marcus." },
+        { sceneNumber: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", pages: "3 4/8", cast: ["KEVIN", "MEERA"], desc: "Kevin discovers pressure loss on telemetry terminal." }
+      ],
+      castCalls: [
+        { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Confirmed" },
+        { character: "MARCUS", actor: "David Chen", pickup: "05:15 AM", hmuCall: "05:45 AM", onSet: "06:30 AM", status: "Confirmed" },
+        { character: "MEERA", actor: "Priya Sharma", pickup: "08:30 AM", hmuCall: "09:00 AM", onSet: "10:30 AM", status: "Confirmed" }
+      ],
+      specialInstructions: "Eye protection mandatory for all crew on exterior perimeter due to afternoon dust squall.",
+      approvedBy: "Arun Kumar (Owner)",
+      publishedAt: "2026-10-14T08:00:00Z"
+    },
+    {
+      id: "cs-2",
+      scriptId,
+      callSheetNumber: "02",
+      shootDay: "Day 2 of 14",
+      shootDate: "Sunday, Oct 25, 2026",
+      generalCrewCall: "06:30 AM",
+      shootingCall: "07:00 AM",
+      breakfastTime: "05:45 AM",
+      estimatedWrap: "07:00 PM",
+      status: "Draft",
+      isPublished: false,
+      version: "v0.9",
+      locationName: "Pumping Station Chamber B",
+      locationAddress: "Aqueduct District Facility 4, Mojave, CA 93501",
+      parkingNotes: "Basecamp parking inside Gate 2 secure compound. Security clearance badge required.",
+      nearestHospital: "Antelope Valley Medical Center, 1600 W Ave J, Lancaster, CA (Ph: 661-949-5000)",
+      weatherSummary: "Interior stage / sheltered facility. Ambient temp 68°F. Hearing protection mandatory.",
+      scenes: [
+        { sceneNumber: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", pages: "7 2/8", cast: ["KEVIN"], desc: "Kevin examines exterior tap line." },
+        { sceneNumber: 18, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", pages: "2 6/8", cast: ["KEVIN", "MEERA"], desc: "High water pressure valve breach and cable clamp." }
+      ],
+      castCalls: [
+        { character: "KEVIN", actor: "Arun Kumar", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" },
+        { character: "MEERA", actor: "Priya Sharma", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" }
+      ],
+      specialInstructions: "Wet set protocols in effect for Scene 18. Waterproof camera housing and electrical GFI circuits required.",
+      approvedBy: null,
+      publishedAt: null
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+
+export async function getProductionCallSheet(scriptId, callSheetId) {
+  try {
+    const data = await request(`/production/${scriptId}/call-sheets/${callSheetId}`);
+    if (data?.callSheet) return data.callSheet;
+  } catch (e) {}
+
+  const sheets = await getProductionCallSheets(scriptId);
+  return sheets.find(cs => cs.id === callSheetId) || null;
+}
+
+export async function createProductionCallSheet(scriptId, data) {
+  try {
+    const res = await request(`/production/${scriptId}/call-sheets`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    if (res?.callSheet) return res.callSheet;
+  } catch (e) {}
+
+  const sheets = await getProductionCallSheets(scriptId);
+  const newCs = {
+    id: `cs-${Date.now()}`,
+    scriptId,
+    callSheetNumber: String(sheets.length + 1).padStart(2, '0'),
+    shootDay: data.shootDay || `Day ${sheets.length + 1} of 14`,
+    shootDate: data.shootDate || "Monday, Oct 26, 2026",
+    generalCrewCall: data.generalCrewCall || "06:00 AM",
+    shootingCall: data.shootingCall || "06:30 AM",
+    breakfastTime: data.breakfastTime || "05:15 AM",
+    estimatedWrap: data.estimatedWrap || "06:30 PM",
+    status: "Draft",
+    isPublished: false,
+    version: "v0.9",
+    locationName: data.locationName || "Location TBD",
+    locationAddress: data.locationAddress || "TBD",
+    parkingNotes: data.parkingNotes || "Crew parking guidelines.",
+    nearestHospital: data.nearestHospital || "Desert Care Network Regional, Palm Springs, CA",
+    weatherSummary: data.weatherSummary || "Forecast pending.",
+    scenes: data.scenes || [{ sceneNumber: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", pages: "5 0/8", cast: ["KEVIN", "MEERA"], desc: "Perimeter fence inspection." }],
+    castCalls: data.castCalls || [
+      { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Draft" }
+    ],
+    specialInstructions: data.specialInstructions || "Standard safety directives.",
+    approvedBy: null,
+    publishedAt: null
+  };
+  sheets.push(newCs);
+  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+  return newCs;
+}
+
+export async function updateProductionCallSheet(scriptId, callSheetId, updates) {
+  try {
+    const res = await request(`/production/${scriptId}/call-sheets/${callSheetId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (res?.callSheet) return res.callSheet;
+  } catch (e) {}
+
+  const sheets = await getProductionCallSheets(scriptId);
+  const cs = sheets.find(c => c.id === callSheetId);
+  if (cs) {
+    Object.assign(cs, updates);
+    localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+    return cs;
+  }
+  return updates;
+}
+
+export async function publishProductionCallSheet(scriptId, callSheetId) {
+  try {
+    const res = await request(`/production/${scriptId}/call-sheets/${callSheetId}/publish`, {
+      method: 'POST'
+    });
+    if (res?.callSheet) return res.callSheet;
+  } catch (e) {}
+
+  const sheets = await getProductionCallSheets(scriptId);
+  const cs = sheets.find(c => c.id === callSheetId);
+  if (cs) {
+    cs.status = "Confirmed";
+    cs.isPublished = true;
+    cs.version = "v1.0 (Snapshot)";
+    cs.approvedBy = "Arun Kumar (Owner)";
+    cs.publishedAt = new Date().toISOString();
+    localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+    return cs;
+  }
+  return null;
+}
+
+export async function getProductionSchedule(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/schedule`);
+    if (data?.schedule) {
+      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(data.schedule));
+      return data.schedule;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_schedule_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    { dayNumber: 1, date: "Oct 24, 2026", title: "Outpost Perimeter & Shed", location: "Mojave Gate 4", sceneNumbers: [1, 2], totalPages: "7 5/8", estHours: 10.5, companyMoves: 0, isLocked: true, status: "Confirmed" },
+    { dayNumber: 2, date: "Oct 25, 2026", title: "Lakebed Conduit & Chamber B", location: "Chamber B Dry Tank", sceneNumbers: [3, 18], totalPages: "10 0/8", estHours: 11.0, companyMoves: 1, isLocked: false, status: "Draft" },
+    { dayNumber: 3, date: "Oct 26, 2026", title: "Perimeter Fence & Valve Tunnel", location: "Perimeter Sector 9", sceneNumbers: [4, 5], totalPages: "10 4/8", estHours: 11.5, companyMoves: 1, isLocked: false, status: "Draft" },
+    { dayNumber: 4, date: "Oct 27, 2026", title: "Service Road Pursuit", location: "Route 66 Cutoff", sceneNumbers: [6], totalPages: "5 2/8", estHours: 8.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 5, date: "Oct 28, 2026", title: "Syndicate Regional Control", location: "Syndicate Regional HQ", sceneNumbers: [7], totalPages: "6 3/8", estHours: 9.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 6, date: "Oct 29, 2026", title: "Reservoir Intake Rappel", location: "Lake Mead Dry Spillway", sceneNumbers: [8], totalPages: "5 5/8", estHours: 10.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 7, date: "Oct 30, 2026", title: "Drainage Sub-vaults", location: "Vault Sub-structure 3", sceneNumbers: [9], totalPages: "4 1/8", estHours: 8.5, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 8, date: "Oct 31, 2026", title: "Compressor Smoke Run", location: "Compressor Station 12", sceneNumbers: [10], totalPages: "5 3/8", estHours: 9.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 9, date: "Nov 01, 2026", title: "Customs Archives", location: "Outpost Archives", sceneNumbers: [11], totalPages: "4 4/8", estHours: 7.5, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 10, date: "Nov 02, 2026", title: "Dry Wash Canyon Chase", location: "Red Rock Wash", sceneNumbers: [12], totalPages: "5 6/8", estHours: 11.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 11, date: "Nov 03, 2026", title: "Emergency Sluice Gears", location: "Sluice Mechanism House", sceneNumbers: [13], totalPages: "4 3/8", estHours: 8.0, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 12, date: "Nov 04, 2026", title: "Tower Scaffolding & Generator", location: "Tower 7 / Sub-basement", sceneNumbers: [14, 15], totalPages: "9 0/8", estHours: 10.5, companyMoves: 1, isLocked: false, status: "Draft" },
+    { dayNumber: 13, date: "Nov 05, 2026", title: "Spillway Torrential Catwalk", location: "Spillway Catwalk", sceneNumbers: [16], totalPages: "4 7/8", estHours: 11.5, companyMoves: 0, isLocked: false, status: "Draft" },
+    { dayNumber: 14, date: "Nov 06, 2026", title: "High Gantry Climax & Wrap", location: "High Gantry Bay 4", sceneNumbers: [17], totalPages: "3 4/8", estHours: 9.5, companyMoves: 0, isLocked: false, status: "Draft" }
+  ];
+  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+
+export async function updateProductionScheduleDay(scriptId, dayNumber, updates) {
+  try {
+    const res = await request(`/production/${scriptId}/schedule/day/${dayNumber}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (res?.day) return res.day;
+  } catch (e) {}
+
+  const schedule = await getProductionSchedule(scriptId);
+  const day = schedule.find(d => d.dayNumber === Number(dayNumber));
+  if (day) {
+    Object.assign(day, updates);
+    localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(schedule));
+    return day;
+  }
+  return updates;
+}
+
+export async function confirmProductionSchedule(scriptId) {
+  try {
+    const res = await request(`/production/${scriptId}/schedule/confirm`, {
+      method: 'POST'
+    });
+    if (res?.schedule) return res.schedule;
+  } catch (e) {}
+
+  const schedule = await getProductionSchedule(scriptId);
+  schedule.forEach(day => {
+    day.status = "Confirmed";
+    day.isLocked = true;
+  });
+  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(schedule));
+  return schedule;
+}
+
+export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
+  try {
+    const data = await request(`/production/${scriptId}/readiness`);
+    if (data?.readiness) {
+      localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(data.readiness));
+      return data.readiness;
+    }
+  } catch (e) {}
+
+  const cached = localStorage.getItem(`scriptora_prod_readiness_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+
+  const defaults = [
+    {
+      id: "ready-1",
+      scriptId,
+      title: "Confirm Water Truck Safety Crew for Scene 18",
+      category: "Safety / SFX",
+      severity: "critical",
+      status: "action_needed",
+      description: "High-pressure brine valve burst in Scene 18 requires Stunt Coordinator sign-off and standby water tanker.",
+      targetRoute: "/production/changes",
+      targetEntity: "prop-1"
+    },
+    {
+      id: "ready-2",
+      scriptId,
+      title: "Review 3 Unconfirmed Breakdown Items",
+      category: "Breakdown",
+      severity: "warning",
+      status: "action_needed",
+      description: "Scene 4 Night-Vision optics and Scene 18 cable rappel are currently in Needs Review status.",
+      targetRoute: "/production/breakdown",
+      targetEntity: "scene-18"
+    },
+    {
+      id: "ready-3",
+      scriptId,
+      title: "Owner Approval Required for Call Sheet #02",
+      category: "Call Sheets",
+      severity: "critical",
+      status: "action_needed",
+      description: "Call Sheet #02 (Day 2 of 14) is currently in Draft status. Must be approved and published before crew distribution.",
+      targetRoute: "/production/call-sheets",
+      targetEntity: "cs-2"
+    },
+    {
+      id: "ready-4",
+      scriptId,
+      title: "All 18 Scenes Stripboard Scheduled",
+      category: "Schedule",
+      severity: "ready",
+      status: "resolved",
+      description: "Every scene from Draft 4.2 has been allocated across the 14-day master shooting calendar.",
+      targetRoute: "/production/schedule",
+      targetEntity: null
+    },
+    {
+      id: "ready-5",
+      scriptId,
+      title: "Call Sheet #01 Published & Locked",
+      category: "Call Sheets",
+      severity: "ready",
+      status: "resolved",
+      description: "Call Sheet #01 confirmed by Owner with emergency medical routes and parking directives.",
+      targetRoute: "/production/call-sheets",
+      targetEntity: "cs-1"
+    },
+    {
+      id: "ready-6",
+      scriptId,
+      title: "Lead Talent Wardrobe Fittings Verified",
+      category: "Cast",
+      severity: "ready",
+      status: "resolved",
+      description: "Costume specs and protective goggles fitted for Kevin, Meera, and Commander Vance.",
+      targetRoute: "/production/directory",
+      targetEntity: "res-1"
+    }
+  ];
+  localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(defaults));
+  return defaults;
+}
+
+export async function resolveProductionReadiness(scriptId, readinessId) {
+  try {
+    const res = await request(`/production/${scriptId}/readiness/${readinessId}/resolve`, {
+      method: 'POST'
+    });
+    if (res?.readinessItem) return res.readinessItem;
+  } catch (e) {}
+
+  const list = await getProductionReadiness(scriptId);
+  const item = list.find(r => r.id === readinessId);
+  if (item) {
+    item.status = "resolved";
+    item.severity = "ready";
+    localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(list));
+    return item;
+  }
+  return null;
+}
+
+export async function restoreProductionSnapshot(scriptId, versionTag) {
+  try {
+    const res = await request(`/production/${scriptId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ version: versionTag })
+    });
+    if (res?.workspace) return res.workspace;
+  } catch (e) {}
+
+  const ws = await getProductionWorkspace(scriptId);
+  ws.pinnedSourceVersion = versionTag;
+  ws.pinnedTimestamp = "Just now (Restored)";
+  ws.isStale = false;
+  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(ws));
+  return ws;
+}
+
+
