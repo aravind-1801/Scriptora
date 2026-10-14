@@ -1,4 +1,6 @@
 import { store } from './state/store.js';
+import { renderHeader } from './components/header.js';
+import { renderBottomNav } from './components/bottomNav.js';
 import { renderAuthScreen, attachAuthEvents } from './screens/auth.js';
 import { renderWelcomeScreen, attachWelcomeEvents } from './screens/welcome.js';
 import { renderWorkspaceScreen, attachWorkspaceEvents } from './screens/workspace.js';
@@ -30,6 +32,7 @@ class Router {
   constructor() {
     this.appEl = null;
     this.currentPath = null;
+    this.isFullScreen = false;
   }
 
   getBasePath() {
@@ -47,12 +50,43 @@ class Router {
     return window.location.pathname + window.location.search;
   }
 
+  ensureShell() {
+    if (!this.appEl) return;
+    let shell = document.getElementById('scriptora-app-shell');
+    if (!shell) {
+      this.appEl.innerHTML = `
+        <div id="scriptora-app-shell" class="flex flex-col min-h-screen w-full relative bg-surface select-text">
+          <!-- Persistent Global Header Container -->
+          <div id="scriptora-global-header" class="fixed top-0 left-0 right-0 z-40 transition-all duration-200"></div>
+
+          <!-- Dynamic Screen Content Area -->
+          <main id="scriptora-global-content" class="flex-1 w-full min-h-screen flex flex-col relative transition-opacity duration-200"></main>
+
+          <!-- Persistent Global Bottom Navigation Container -->
+          <div id="scriptora-global-nav" class="fixed bottom-0 left-0 right-0 z-40 transition-all duration-200 overflow-visible"></div>
+        </div>
+      `;
+    }
+  }
+
   init(mountSelector = '#app') {
     this.appEl = document.querySelector(mountSelector);
     if (!this.appEl) {
       console.error(`Mount element ${mountSelector} not found.`);
       return;
     }
+
+    // Ensure application shell is ready
+    this.ensureShell();
+
+    // Global fullscreen handler for focused writing modes (e.g. Focus Mode)
+    window.setScriptoraFullScreen = (isFull) => {
+      this.isFullScreen = !!isFull;
+      const headerSlot = document.getElementById('scriptora-global-header');
+      const navSlot = document.getElementById('scriptora-global-nav');
+      if (headerSlot) headerSlot.classList.toggle('hidden', !!isFull);
+      if (navSlot) navSlot.classList.toggle('hidden', !!isFull);
+    };
 
     // Intercept clicks on local links
     document.body.addEventListener('click', (e) => {
@@ -152,17 +186,21 @@ class Router {
     }
 
     if (path === '/welcome') {
-      this.render(renderWelcomeScreen(), () => attachWelcomeEvents(this.navigate.bind(this)));
+      this.render(renderWelcomeScreen(), () => attachWelcomeEvents(this.navigate.bind(this)), { isPublic: true });
       return;
     }
 
     if (path === '/auth') {
-      this.render(renderAuthScreen(), () => attachAuthEvents(this.navigate.bind(this)));
+      this.render(renderAuthScreen(), () => attachAuthEvents(this.navigate.bind(this)), { isPublic: true });
       return;
     }
 
     if (path === '/workspace') {
-      this.render(renderWorkspaceScreen(), () => attachWorkspaceEvents(this.navigate.bind(this)));
+      this.render(
+        renderWorkspaceScreen(),
+        () => attachWorkspaceEvents(this.navigate.bind(this)),
+        { activeTab: 'workspace', sectionTitle: 'Workspace', subtitle: 'Your writing space.' }
+      );
       return;
     }
 
@@ -177,31 +215,49 @@ class Router {
       const scriptId = path.split('/')[2];
       const targetScene = query.get('scene');
       store.setState({ selectedScriptId: scriptId });
+      const currentScript = store.state.scripts?.find(s => s.id === scriptId) || { title: 'Untitled Screenplay' };
       this.render(
         renderEditorScreen(scriptId, targetScene),
-        () => attachEditorEvents(scriptId, this.navigate.bind(this))
+        () => attachEditorEvents(scriptId, this.navigate.bind(this)),
+        { activeTab: 'workspace', sectionTitle: 'Editor', subtitle: currentScript.title || 'Screenplay Studio' }
       );
       return;
     }
 
     // Strict Intelligence flow: /intelligence ALWAYS enters at Script Selector
     if (path === '/intelligence' || path === '/intelligence/select') {
-      this.render(renderIntelligenceSelectorScreen(), () => attachIntelligenceSelectorEvents(this.navigate.bind(this)));
+      this.render(
+        renderIntelligenceSelectorScreen(),
+        () => attachIntelligenceSelectorEvents(this.navigate.bind(this)),
+        { activeTab: 'intelligence', sectionTitle: 'Intelligence', subtitle: 'Script Selector' }
+      );
       return;
     }
 
     if (path === '/intelligence/context') {
-      this.render(renderIntelligenceContextScreen(), () => attachIntelligenceContextEvents(this.navigate.bind(this)));
+      this.render(
+        renderIntelligenceContextScreen(),
+        () => attachIntelligenceContextEvents(this.navigate.bind(this)),
+        { activeTab: 'intelligence', sectionTitle: 'Intelligence', subtitle: 'Context Calibration' }
+      );
       return;
     }
 
     if (path === '/intelligence/dashboard' || path === '/intelligence/overview') {
-      this.render(renderIntelligenceDashboardScreen(), () => attachIntelligenceDashboardEvents(this.navigate.bind(this)));
+      this.render(
+        renderIntelligenceDashboardScreen(),
+        () => attachIntelligenceDashboardEvents(this.navigate.bind(this)),
+        { activeTab: 'intelligence', sectionTitle: 'Intelligence', subtitle: 'Script Analysis' }
+      );
       return;
     }
 
     if (path === '/intelligence/analysis' || path === '/intelligence/analysis/select') {
-      this.render(renderIndividualAnalysisSelectorScreen(), () => attachIndividualAnalysisSelectorEvents(this.navigate.bind(this)));
+      this.render(
+        renderIndividualAnalysisSelectorScreen(),
+        () => attachIndividualAnalysisSelectorEvents(this.navigate.bind(this)),
+        { activeTab: 'intelligence', sectionTitle: 'Intelligence', subtitle: 'Analyse Individually' }
+      );
       return;
     }
 
@@ -211,7 +267,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderIndividualAnalysisScreen(type, fromParam, scriptParam),
-        () => attachIndividualAnalysisEvents(type, this.navigate.bind(this), fromParam, scriptParam)
+        () => attachIndividualAnalysisEvents(type, this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'intelligence', sectionTitle: 'Intelligence', subtitle: 'Vector Analysis' }
       );
       return;
     }
@@ -221,7 +278,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderProfileScreen(fromParam, scriptParam),
-        () => attachProfileEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachProfileEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'profile', sectionTitle: 'Profile', subtitle: 'Account & preferences.' }
       );
       return;
     }
@@ -231,13 +289,18 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderCollaboratorsScreen(fromParam, scriptParam),
-        () => attachCollaboratorsEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachCollaboratorsEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'profile', sectionTitle: 'Profile', subtitle: 'Collaborators' }
       );
       return;
     }
 
     if (path === '/notifications') {
-      this.render(renderNotificationsScreen(), () => attachNotificationsEvents(this.navigate.bind(this)));
+      this.render(
+        renderNotificationsScreen(),
+        () => attachNotificationsEvents(this.navigate.bind(this)),
+        { activeTab: 'workspace', sectionTitle: 'Notifications', subtitle: 'Activity Stream' }
+      );
       return;
     }
 
@@ -247,7 +310,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderProductionScreen(fromParam, scriptParam),
-        () => attachProductionEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachProductionEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Workspace & Tools' }
       );
       return;
     }
@@ -258,7 +322,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderBreakdownScreen(fromParam, scriptParam),
-        () => attachBreakdownEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachBreakdownEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Script Breakdown Workspace' }
       );
       return;
     }
@@ -271,7 +336,8 @@ class Router {
       const sceneId = sceneMatch[1] || query.get('sceneId');
       this.render(
         renderScenesScreen(fromParam, scriptParam, sceneId),
-        () => attachScenesEvents(this.navigate.bind(this), fromParam, scriptParam, sceneId)
+        () => attachScenesEvents(this.navigate.bind(this), fromParam, scriptParam, sceneId),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: sceneId ? 'Scene Details & Logistics' : 'Scene Hub & Logistics' }
       );
       return;
     }
@@ -284,7 +350,8 @@ class Router {
       const csId = callSheetMatch[1] || query.get('csId');
       this.render(
         renderCallSheetsScreen(fromParam, scriptParam, csId),
-        () => attachCallSheetsEvents(this.navigate.bind(this), fromParam, scriptParam, csId)
+        () => attachCallSheetsEvents(this.navigate.bind(this), fromParam, scriptParam, csId),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: csId ? 'Call Sheet Inspector' : 'Call Sheets Workspace' }
       );
       return;
     }
@@ -295,7 +362,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderDialogueSidesScreen(fromParam, scriptParam),
-        () => attachDialogueSidesEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachDialogueSidesEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Dialogue Sheets & Actor Sides' }
       );
       return;
     }
@@ -306,7 +374,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderScheduleScreen(fromParam, scriptParam),
-        () => attachScheduleEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachScheduleEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Master Shooting Schedule & Stripboard' }
       );
       return;
     }
@@ -317,7 +386,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderDirectoryScreen(fromParam, scriptParam),
-        () => attachDirectoryEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachDirectoryEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Resource Directory' }
       );
       return;
     }
@@ -330,7 +400,8 @@ class Router {
       const docId = docMatch[1] || query.get('docId');
       this.render(
         renderDocumentsScreen(fromParam, scriptParam, docId),
-        () => attachDocumentsEvents(this.navigate.bind(this), fromParam, scriptParam, docId)
+        () => attachDocumentsEvents(this.navigate.bind(this), fromParam, scriptParam, docId),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: docId ? 'Production Document Viewer' : 'Production Documents Workspace' }
       );
       return;
     }
@@ -341,7 +412,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderChangesScreen(fromParam, scriptParam),
-        () => attachChangesEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachChangesEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Change Proposals & Approvals' }
       );
       return;
     }
@@ -352,7 +424,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderHistoryScreen(fromParam, scriptParam),
-        () => attachHistoryEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachHistoryEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Version History & Audit Trail' }
       );
       return;
     }
@@ -363,7 +436,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderReadinessScreen(fromParam, scriptParam),
-        () => attachReadinessEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachReadinessEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Pre-Flight Readiness & Validation' }
       );
       return;
     }
@@ -374,7 +448,8 @@ class Router {
       const scriptParam = query.get('scriptId');
       this.render(
         renderStoryboardScreen(fromParam, scriptParam),
-        () => attachStoryboardEvents(this.navigate.bind(this), fromParam, scriptParam)
+        () => attachStoryboardEvents(this.navigate.bind(this), fromParam, scriptParam),
+        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Storyboard Studio' }
       );
       return;
     }
@@ -383,7 +458,8 @@ class Router {
     if (path === '/chat' || path === '/ai-chat' || path === '/writer-room' || path === '/ai-writer-room') {
       this.render(
         renderAiChatScreen(),
-        () => attachAiChatEvents(this.navigate.bind(this))
+        () => attachAiChatEvents(this.navigate.bind(this)),
+        { activeTab: 'chat', sectionTitle: 'AI Chat', subtitle: 'Universal Assistant' }
       );
       return;
     }
@@ -392,26 +468,62 @@ class Router {
     this.renderNotFound(path);
   }
 
-  render(html, attachEventsFn) {
-    if (!this.appEl) return;
-    this.appEl.innerHTML = html;
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    this.appEl.classList.remove('fade-in');
-    void this.appEl.offsetWidth; // Force reflow to trigger exact smooth fadeIn animation
-    this.appEl.classList.add('fade-in');
-    if (typeof attachEventsFn === 'function') {
-      try {
-        attachEventsFn();
-      } catch (err) {
-        console.error("Error attaching screen events:", err);
+  render(html, attachEventsFn, options = {}) {
+    this.ensureShell();
+    const headerSlot = document.getElementById('scriptora-global-header');
+    const contentSlot = document.getElementById('scriptora-global-content');
+    const navSlot = document.getElementById('scriptora-global-nav');
+
+    const isPublic = !!options.isPublic;
+    const activeTab = options.activeTab || 'workspace';
+    const sectionTitle = options.sectionTitle || 'Scriptora';
+    const subtitle = options.subtitle || '';
+
+    if (isPublic) {
+      if (headerSlot) headerSlot.classList.add('hidden');
+      if (navSlot) navSlot.classList.add('hidden');
+    } else {
+      if (headerSlot && !this.isFullScreen) {
+        headerSlot.classList.remove('hidden');
+        headerSlot.innerHTML = renderHeader(sectionTitle, subtitle);
+      }
+      if (navSlot && !this.isFullScreen) {
+        navSlot.classList.remove('hidden');
+        navSlot.innerHTML = renderBottomNav(activeTab);
+      }
+    }
+
+    if (contentSlot) {
+      // Remove any duplicate header or bottom navigation tags from screen template
+      let cleanHtml = html || '';
+      cleanHtml = cleanHtml.replace(/<header[^>]*data-global-header="true"[^>]*>[\s\S]*?<\/header>/gi, '');
+      cleanHtml = cleanHtml.replace(/<header\s+class="fixed\s+top-0\s+w-full\s+z-40\s+pt-safe\s+bg-surface[^>]*>[\s\S]*?<\/header>/gi, '');
+      cleanHtml = cleanHtml.replace(/<nav[^>]*data-global-bottom-nav="true"[^>]*>[\s\S]*?<\/nav>/gi, '');
+      cleanHtml = cleanHtml.replace(/<nav\s+class="fixed\s+bottom-0\s+w-full\s+z-40\s+pb-safe\s+bg-surface[^>]*>[\s\S]*?<\/nav>/gi, '');
+
+      contentSlot.innerHTML = cleanHtml;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      // Trigger smooth inward transition
+      contentSlot.classList.remove('fade-in');
+      void contentSlot.offsetWidth; // Force reflow
+      contentSlot.classList.add('fade-in');
+
+      if (typeof attachEventsFn === 'function') {
+        try {
+          attachEventsFn();
+        } catch (err) {
+          console.error("Error attaching screen events:", err);
+        }
       }
     }
   }
 
   renderNotFound(path) {
-    this.appEl.innerHTML = `
-      <div class="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-surface">
-        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+    this.render(
+      `
+      <div class="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center bg-surface pt-16 pb-24">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4 border border-blue-100">
           <span class="material-symbols-outlined text-[32px]">sentiment_dissatisfied</span>
         </div>
         <h1 class="font-heading font-bold text-xl text-slate-900 mb-1">Page Not Found</h1>
@@ -420,9 +532,13 @@ class Router {
           Return to Workspace
         </button>
       </div>
-    `;
-    const btn = document.getElementById('notfound-home');
-    if (btn) btn.onclick = () => this.navigate('/workspace');
+      `,
+      () => {
+        const btn = document.getElementById('notfound-home');
+        if (btn) btn.onclick = () => this.navigate('/workspace');
+      },
+      { activeTab: 'workspace', sectionTitle: 'Page Not Found', subtitle: '404' }
+    );
   }
 }
 

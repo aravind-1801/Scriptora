@@ -44,19 +44,19 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- STATIC TOP HEADER (FIXED: Never scrolls with screenplay)  -->
       <!-- ========================================================= -->
-      <header id="editor-fixed-header" class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
+      <header id="editor-fixed-header" class="fixed top-14 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
         
-        <!-- ROW 1: TOP APP HEADER (Order: Back, Logo, Title, Auto-Save, Save Icon, Collab, Avatar) -->
-        <div class="h-12 px-3 flex items-center justify-between max-w-5xl mx-auto">
+        <!-- ROW 1: TOP APP HEADER (Order: Back, Title & Save Status, Auto-Save, Save Icon, Collab) -->
+        <div class="h-11 px-3 flex items-center justify-between max-w-5xl mx-auto">
           <div class="flex items-center gap-2 min-w-0">
             <!-- Back to Workspace button -->
-            <button aria-label="Back to Workspace" id="editor-back-btn" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 active:scale-95 transition-all">
-              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
+            <button aria-label="Back to Workspace" id="editor-back-btn" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all text-xs font-semibold shrink-0" title="Back to Workspace">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+              <span class="hidden sm:inline">Workspace</span>
             </button>
             
-            <!-- Logo & Script Title -->
+            <!-- Script Title & Save status -->
             <div class="flex items-center gap-2 select-none min-w-0">
-              <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/logo-BG9jZ7UG.png';" alt="Scriptora" class="w-7 h-7 object-contain shrink-0" />
               <div class="flex flex-col min-w-0 leading-tight">
                 <span class="font-heading font-bold text-xs sm:text-sm text-slate-900 truncate" id="editor-script-title">${script.title}</span>
                 <span class="text-[10px] text-slate-500 truncate font-mono" id="editor-save-status">Saved</span>
@@ -64,10 +64,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </div>
           </div>
 
-          <!-- Right Controls: Unified Save + Auto-Save Pill, Collaborate, Avatar -->
+          <!-- Right Controls: Unified Save + Auto-Save Pill, Collaborate, Settings Toggle -->
           <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             
-            <!-- Combined Save & Auto-Save Control (Light pill like Export button: blue symbol and normal text) -->
+            <!-- Combined Save & Auto-Save Control -->
             <div class="inline-flex items-center rounded-full bg-white text-slate-700 font-caption text-xs border border-slate-200 hover:border-slate-300 shadow-2xs transition-all overflow-hidden h-7">
               <button id="editor-save-btn" class="flex items-center justify-center pl-2 pr-1.5 h-full text-blue-600 hover:text-blue-700 hover:bg-slate-50 active:scale-95 transition-all" title="Save screenplay now (Ctrl+S)" aria-label="Save Screenplay">
                 <span class="material-symbols-outlined text-[16px] text-blue-600" id="editor-save-icon">save</span>
@@ -79,7 +79,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </button>
             </div>
 
-            <!-- Master Toolbar Visibility Toggle [⋮] (Section 2: Master visibility control for secondary toolbars) -->
+            <!-- Master Toolbar Visibility Toggle [⋮] -->
             <button id="btn-toggle-editor-toolbar" class="w-7 h-7 flex items-center justify-center ${editorToolbarExpanded ? 'text-blue-600 bg-blue-50 border-blue-200/90' : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200 hover:bg-slate-50'} rounded-lg border active:scale-95 transition-all shadow-2xs shrink-0" title="${editorToolbarExpanded ? 'Collapse Editor Toolbars (Writing Mode)' : 'Expand Editor Toolbars (Tools & Formatting)'}" aria-label="Toggle Editor Toolbars">
               <span class="material-symbols-outlined text-[18px]">more_vert</span>
             </button>
@@ -87,11 +87,6 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <!-- Collaborate Link -->
             <a href="/profile/collaborators?from=editor&scriptId=${scriptId}" id="editor-collab-btn" aria-label="Collaborators" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors no-underline" title="Collaborators">
               <span class="material-symbols-outlined text-[19px]">group</span>
-            </a>
-
-            <!-- User Avatar -->
-            <a href="/profile?from=editor&scriptId=${scriptId}" id="editor-profile-btn" aria-label="User profile" class="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center shadow-xs no-underline hover:ring-2 hover:ring-blue-400 transition-all">
-              ${userInitials}
             </a>
           </div>
         </div>
@@ -1117,12 +1112,14 @@ export function updateEditorHeaderOffset() {
   const scrollEl = document.getElementById('editor-main-scroll');
   if (!headerEl || !scrollEl) return;
   if (focusModeActive) {
-    scrollEl.style.paddingTop = '56px';
+    scrollEl.style.paddingTop = `${headerEl.offsetHeight || 56}px`;
+    scrollEl.style.paddingBottom = '32px';
     return;
   }
   const height = headerEl.offsetHeight;
   if (height > 0) {
-    scrollEl.style.paddingTop = `${height}px`;
+    scrollEl.style.paddingTop = `${56 + height}px`;
+    scrollEl.style.paddingBottom = '88px';
   }
 }
 
@@ -3485,6 +3482,20 @@ function setupToolbarAndMenu(scriptId, navigate) {
     if (menuFocusState) menuFocusState.textContent = focusModeActive ? 'Active' : 'Off';
     const collapsibleArea = document.getElementById('editor-collapsible-toolbars');
     const tabs = document.getElementById('editor-document-tabs');
+    const headerEl = document.getElementById('editor-fixed-header');
+
+    if (focusModeActive) {
+      if (typeof window.setScriptoraFullScreen === 'function') {
+        window.setScriptoraFullScreen(true);
+      }
+      if (headerEl) headerEl.style.top = '0px';
+    } else {
+      if (typeof window.setScriptoraFullScreen === 'function') {
+        window.setScriptoraFullScreen(false);
+      }
+      if (headerEl) headerEl.style.top = '3.5rem';
+    }
+
     if (collapsibleArea) collapsibleArea.style.display = focusModeActive ? 'none' : '';
     if (tabs) tabs.style.display = focusModeActive ? 'none' : 'flex';
     updateEditorHeaderOffset();

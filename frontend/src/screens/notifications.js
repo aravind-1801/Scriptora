@@ -8,37 +8,25 @@ export function renderNotificationsScreen() {
 
   return `
     <div class="flex flex-col min-h-screen bg-surface w-full relative">
-      <!-- Fixed Header with Back Button and Mark Read Action -->
-      <header class="fixed top-0 w-full z-50 pt-safe bg-surface/90 backdrop-blur-xl border-b border-slate-100 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-        <div class="px-4 py-2.5 flex items-center justify-between max-w-2xl mx-auto">
-          <div class="flex items-center gap-2">
-            <button aria-label="Go back" id="btn-back-notif" class="w-9 h-9 -ml-1 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-full hover:bg-slate-100 transition-colors">
-              <span class="material-symbols-outlined text-[20px]">arrow_back</span>
-            </button>
+      <!-- Main Notifications Stream with contextual subnav bar -->
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
+        <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-1 space-y-4 fade-in">
+          
+          <!-- Contextual Sub-bar: Back Navigation and Mark All Read Action -->
+          <div class="flex items-center justify-between pb-2 border-b border-slate-200/70">
             <div class="flex items-center gap-2">
-              <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-6 h-6 object-contain shrink-0" />
-              <div class="flex flex-col">
-                <span class="font-heading text-sm font-bold text-slate-900 leading-tight">Scriptora</span>
-                <span class="text-[11px] text-slate-500 font-medium leading-none">Notifications</span>
-              </div>
+              <button aria-label="Go back" id="btn-back-notif" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0">
+                <span class="material-symbols-outlined text-[17px]">arrow_back</span>
+                <span>Back</span>
+              </button>
+              <span class="font-heading font-bold text-sm text-slate-800">Notifications Activity</span>
             </div>
-          </div>
 
-          <div class="flex items-center gap-2">
             <button id="btn-mark-all-read" class="px-2.5 py-1 text-xs text-blue-600 font-semibold hover:bg-blue-50 rounded-lg active:scale-95 transition-all flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px]">done_all</span>
               <span>Mark all read</span>
             </button>
-            <a href="/profile" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs no-underline">
-              ${userInitials}
-            </a>
           </div>
-        </div>
-      </header>
-
-      <!-- Main Notifications Stream -->
-      <main class="flex-1 flex flex-col relative w-full pt-16 pb-12 bg-surface">
-        <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 space-y-4 fade-in">
           
           <!-- Top Meta Bar: Filter Tabs & State Simulator -->
           <div class="flex items-center justify-between">

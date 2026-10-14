@@ -6,7 +6,7 @@ export function renderHeader(sectionTitle = 'Workspace', subtitle = 'Your writin
   const userInitials = store.state.currentUser?.initials || 'JD';
 
   return `
-    <header class="fixed top-0 w-full z-40 pt-safe bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60">
+    <header class="fixed top-0 left-0 right-0 w-full z-40 pt-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60 select-none" data-global-header="true">
       <div class="h-14 px-4 flex items-center justify-between max-w-2xl mx-auto">
         <a href="/workspace" class="flex items-center gap-2.5 min-w-0 no-underline text-inherit cursor-pointer active:opacity-80 transition-opacity">
           <img src="${LOGO_URL}" onerror="this.onerror=null; this.src='./assets/scriptora-logo.png';" alt="Scriptora" class="w-8 h-8 object-contain shrink-0" />
