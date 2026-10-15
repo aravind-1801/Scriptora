@@ -70,23 +70,11 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
               <span class="text-[11px] text-slate-400">Avg 6.8 pgs / day</span>
             </div>
             <div class="p-2 sm:px-3">
-              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Rest Conflicts</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-amber-600 mt-0.5">1 Advisory</div>
-              <span class="text-[11px] text-slate-400">Turnaround check on D5</span>
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Primary Locations</span>
+              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">3 Areas</div>
+              <span class="text-[11px] text-slate-400">Mojave & Soundstage</span>
             </div>
           </div>
-        </div>
-
-        <!-- Semantic Conflict Notice (Shown only for genuine turnaround advisory) -->
-        <div id="schedule-conflict-banner" class="bg-amber-50/70 border border-amber-200 rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 text-xs text-amber-900">
-          <span class="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">warning</span>
-          <div class="flex-1 min-w-0">
-            <span class="font-semibold text-amber-900">Turnaround Advisory: Day 4 &rarr; Day 5</span>
-            <p class="text-amber-800 text-[11px] mt-0.5">Day 4 wrap is estimated at 01:30 AM (Night shoot). Call time on Day 5 is set for 11:30 AM, providing 10.0 hrs turnaround (SAG minimum is 12 hrs).</p>
-          </div>
-          <button id="btn-resolve-conflict" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-medium text-[11px] transition-colors shrink-0">
-            Adjust Call Time
-          </button>
         </div>
 
         <!-- Master Calendar Container -->
@@ -376,14 +364,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     };
   }
 
-  const resolveConflictBtn = document.getElementById('btn-resolve-conflict');
-  if (resolveConflictBtn) {
-    resolveConflictBtn.onclick = () => {
-      showToast('Call time for Day 5 pushed to 01:30 PM (12.0h turnaround satisfied)');
-      const banner = document.getElementById('schedule-conflict-banner');
-      if (banner) banner.style.display = 'none';
-    };
-  }
+
 
   // Initial Render
   renderCalendar();
