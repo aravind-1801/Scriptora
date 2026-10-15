@@ -168,14 +168,6 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
           { title: "Call Sheet #01 — Gate 4 Day Exterior", type: "Call Sheet", status: "Confirmed", ver: "v1.0", id: "doc-cs-1" },
           { title: "Call Sheet #02 — Pumping Station Chamber", type: "Call Sheet", status: "Draft", ver: "v0.9", id: "doc-cs-2" }
         ]
-      },
-      {
-        name: "Management & Pre-Flight",
-        desc: "Resource directories, emergency contacts, and readiness checks.",
-        items: [
-          { title: "Cast & Crew Emergency Contact Directory", type: "Directory", status: "Confirmed", ver: "v1.0", id: "doc-dir-1" },
-          { title: "Pre-Production Readiness Audit Report", type: "Readiness Report", status: "Confirmed", ver: "v1.0", id: "doc-read-1" }
-        ]
       }
     ];
 

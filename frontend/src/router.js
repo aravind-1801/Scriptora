@@ -20,11 +20,7 @@ import { renderScenesScreen, attachScenesEvents } from './screens/production/sce
 import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/production/callSheets.js';
 import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
 import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
-import { renderDirectoryScreen, attachDirectoryEvents } from './screens/production/directory.js';
 import { renderDocumentsScreen, attachDocumentsEvents } from './screens/production/documents.js';
-import { renderChangesScreen, attachChangesEvents } from './screens/production/changes.js';
-import { renderHistoryScreen, attachHistoryEvents } from './screens/production/history.js';
-import { renderReadinessScreen, attachReadinessEvents } from './screens/production/readiness.js';
 import { renderStoryboardScreen, attachStoryboardEvents } from './screens/production/storyboard.js';
 
 
@@ -382,19 +378,7 @@ class Router {
       return;
     }
 
-    // 4.6 Production Directory Dedicated Screen
-    if (path === '/production/directory' || path === '/production/resources') {
-      const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
-      this.render(
-        renderDirectoryScreen(fromParam, scriptParam),
-        () => attachDirectoryEvents(this.navigate.bind(this), fromParam, scriptParam),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Resource Directory' }
-      );
-      return;
-    }
-
-    // 4.7 Documents Dedicated Screen
+    // 4.6 Documents Dedicated Screen
     const docMatch = path.match(/^\/production\/documents(?:\/([a-zA-Z0-9_-]+))?$/);
     if (docMatch) {
       const fromParam = query.get('from');
@@ -408,43 +392,7 @@ class Router {
       return;
     }
 
-    // 4.8 Production Changes & Approvals Dedicated Screen
-    if (path === '/production/changes' || path === '/production/proposals') {
-      const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
-      this.render(
-        renderChangesScreen(fromParam, scriptParam),
-        () => attachChangesEvents(this.navigate.bind(this), fromParam, scriptParam),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Change Proposals & Approvals' }
-      );
-      return;
-    }
-
-    // 4.9 Unified History & Audit Dedicated Screen
-    if (path === '/production/history' || path === '/production/timeline') {
-      const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
-      this.render(
-        renderHistoryScreen(fromParam, scriptParam),
-        () => attachHistoryEvents(this.navigate.bind(this), fromParam, scriptParam),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Production Version History & Audit Trail' }
-      );
-      return;
-    }
-
-    // 4.10 Guided Readiness & Validation Dedicated Screen
-    if (path === '/production/readiness' || path === '/production/validation') {
-      const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
-      this.render(
-        renderReadinessScreen(fromParam, scriptParam),
-        () => attachReadinessEvents(this.navigate.bind(this), fromParam, scriptParam),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: 'Pre-Flight Readiness & Validation' }
-      );
-      return;
-    }
-
-    // 4.11 Storyboard Studio (Discovery / Prompt 3 Staged)
+    // 4.7 Storyboard Studio (Visual Planning)
     if (path === '/production/storyboard' || path === '/production/storyboards') {
       const fromParam = query.get('from');
       const scriptParam = query.get('scriptId');
