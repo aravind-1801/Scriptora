@@ -20,7 +20,6 @@ import { renderScenesScreen, attachScenesEvents } from './screens/production/sce
 import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/production/callSheets.js';
 import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
 import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
-import { renderDocumentsScreen, attachDocumentsEvents } from './screens/production/documents.js';
 import { renderStoryboardScreen, attachStoryboardEvents } from './screens/production/storyboard.js';
 
 
@@ -378,21 +377,7 @@ class Router {
       return;
     }
 
-    // 4.6 Documents Dedicated Screen
-    const docMatch = path.match(/^\/production\/documents(?:\/([a-zA-Z0-9_-]+))?$/);
-    if (docMatch) {
-      const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
-      const docId = docMatch[1] || query.get('docId');
-      this.render(
-        renderDocumentsScreen(fromParam, scriptParam, docId),
-        () => attachDocumentsEvents(this.navigate.bind(this), fromParam, scriptParam, docId),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: docId ? 'Production Document Viewer' : 'Production Documents Workspace' }
-      );
-      return;
-    }
-
-    // 4.7 Storyboard Studio (Visual Planning)
+    // 4.6 Storyboard Studio (Visual Planning)
     if (path === '/production/storyboard' || path === '/production/storyboards') {
       const fromParam = query.get('from');
       const scriptParam = query.get('scriptId');

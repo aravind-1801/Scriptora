@@ -198,23 +198,6 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
               </div>
             </div>
 
-            <!-- Tool 7: Production Documents -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-documents">
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">description</span>
-                  </div>
-                </div>
-                <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Production Documents</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Official production records, packets, and PDF export.</p>
-              </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Documents</span>
-                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
-              </div>
-            </div>
-
           </div>
         </section>
 
@@ -269,8 +252,7 @@ export async function attachProductionEvents(navigate, fromParam = null, scriptP
     'shooting-schedule': `/production/schedule?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
     'call-sheets': `/production/call-sheets?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
     'dialogue-sheets': `/production/dialogue-sides?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
-    'storyboard-studio': `/production/storyboard?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
-    'production-documents': `/production/documents?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`
+    'storyboard-studio': `/production/storyboard?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`
   };
 
   document.querySelectorAll('.tool-card').forEach(card => {
