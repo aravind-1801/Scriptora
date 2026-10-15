@@ -360,19 +360,19 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
 
     container.innerHTML = `
       <!-- Top Action Banner -->
-      <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl ${isPublished ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} flex items-center justify-center shrink-0 border">
-            <span class="material-symbols-outlined text-[20px]">${isPublished ? 'verified' : 'pending'}</span>
+          <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+            #${cs.callSheetNumber}
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="font-heading font-bold text-base text-slate-900">Call Sheet #${cs.callSheetNumber}</h2>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
+              <h2 class="font-heading font-semibold text-sm text-slate-900">Call Sheet #${cs.callSheetNumber}</h2>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-medium border ${isPublished ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
                 ${isPublished ? 'Published Snapshot' : 'Draft — Pending Owner Approval'}
               </span>
             </div>
-            <p class="text-xs text-slate-500">${cs.shootDay} · ${cs.shootDate}</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">${cs.shootDay} · ${cs.shootDate}</p>
           </div>
         </div>
 
@@ -386,7 +386,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             <span>Print / PDF</span>
           </button>
           ${!isPublished && isOwner ? `
-            <button id="btn-publish-callsheet" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-publish-callsheet" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">check_circle</span>
               <span>Approve & Publish</span>
             </button>
@@ -395,7 +395,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
       </div>
 
       <!-- Printable Call Sheet Container -->
-      <div id="printable-callsheet" class="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs flex flex-col gap-5 text-xs text-slate-800">
+      <div id="printable-callsheet" class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col gap-5 text-xs text-slate-800">
         <!-- Call Sheet Masthead -->
         <div class="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
@@ -431,7 +431,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
 
         <!-- Location & Hospital Directives -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div class="p-3.5 rounded-xl border border-slate-200 flex flex-col gap-1">
+          <div class="p-3.5 rounded-xl border border-slate-200/80 flex flex-col gap-1">
             <span class="text-[10px] font-bold text-slate-400 uppercase flex items-center gap-1">
               <span class="material-symbols-outlined text-[14px] text-blue-600">location_on</span>
               <span>Set Location & Parking</span>
@@ -440,13 +440,13 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             <p class="text-slate-600 text-[11px]">${cs.locationAddress}</p>
             <p class="text-slate-500 text-[11px] mt-1 italic">${cs.parkingNotes}</p>
           </div>
-          <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/30 flex flex-col gap-1">
-            <span class="text-[10px] font-bold text-rose-700 uppercase flex items-center gap-1">
-              <span class="material-symbols-outlined text-[14px]">local_hospital</span>
+          <div class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 flex flex-col gap-1">
+            <span class="text-[10px] font-bold text-slate-500 uppercase flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px] text-rose-600">local_hospital</span>
               <span>Nearest Emergency Hospital</span>
             </span>
             <p class="text-slate-800 text-[11px] font-medium leading-relaxed">${cs.nearestHospital}</p>
-            <div class="text-[10px] text-slate-500 mt-1">Weather: ${cs.weatherSummary}</div>
+            <div class="text-[10px] text-slate-400 mt-1">Weather: ${cs.weatherSummary}</div>
           </div>
         </div>
 
@@ -546,16 +546,15 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             <div class="cs-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group" data-id="${cs.id}">
               <div>
                 <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <div class="w-10 h-10 rounded-xl ${isPub ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} flex items-center justify-center font-mono font-bold text-sm">
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-mono font-bold text-xs shrink-0">
                       #${cs.callSheetNumber}
                     </div>
                     <div>
-                      <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">${cs.shootDay}</h3>
+                      <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">${cs.shootDay}</h3>
                       <p class="text-[11px] text-slate-500">${cs.shootDate}</p>
                     </div>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPub ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-medium ${isPub ? 'bg-slate-100 text-slate-700' : 'bg-amber-50/80 border border-amber-200 text-amber-800'}">
                     ${isPub ? 'Published' : 'Draft'}
                   </span>
                 </div>

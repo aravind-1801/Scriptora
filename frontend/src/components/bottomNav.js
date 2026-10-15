@@ -23,21 +23,12 @@ export function renderBottomNav(activeTab = 'workspace') {
           ${isIntelligence ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
-        <!-- 3. Floating Center AI Chat Button (Raised rounded-square, symbol-only, SCRIPTORA light-blue palette) -->
-        <div class="flex items-center justify-center relative h-full overflow-visible">
-          <a
-            href="/chat"
-            class="group relative flex items-center justify-center w-12 h-12 rounded-[16px] -translate-y-3.5 transition-all duration-200 select-none ${isChat
-              ? 'bg-blue-600 text-white ring-4 ring-blue-100/90 border border-blue-500 shadow-[0_6px_16px_rgba(37,99,235,0.35)] scale-105'
-              : 'bg-white text-blue-600 ring-4 ring-surface/95 border border-blue-200/90 shadow-[0_4px_12px_rgba(33,81,218,0.14),0_1px_3px_rgba(0,0,0,0.04)] hover:bg-blue-50/80 hover:border-blue-300 hover:shadow-[0_6px_16px_rgba(33,81,218,0.20)] hover:-translate-y-4 active:scale-95 active:bg-blue-100'
-            } focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
-            id="nav-tab-chat"
-            aria-label="AI Chat"
-            title="AI Chat — Universal Assistant"
-          >
-            <span class="material-symbols-outlined text-[23px] transition-transform group-hover:scale-105" ${isChat ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>chat_bubble</span>
-          </a>
-        </div>
+        <!-- 3. AI Chat Tab (Uniform navigation slot dimensions) -->
+        <a href="/chat" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isChat ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-chat" aria-label="AI Chat" title="AI Chat">
+          <span class="material-symbols-outlined text-[22px]" ${isChat ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>chat_bubble</span>
+          <span class="text-[10.5px] font-medium mt-0.5 leading-none">AI Chat</span>
+          ${isChat ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
+        </a>
 
         <!-- 4. Pre-Production Tab (4th position) -->
         <a href="/production" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isProduction ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">

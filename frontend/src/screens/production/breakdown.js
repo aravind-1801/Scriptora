@@ -5,53 +5,17 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 
-// Category color and icon schemes
+// Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const CATEGORY_CONFIG = {
-  'Cast': {
-    icon: 'person',
-    badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    accentBorder: 'border-l-indigo-500'
-  },
-  'Locations': {
-    icon: 'location_on',
-    badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
-    accentBorder: 'border-l-amber-500'
-  },
-  'Props': {
-    icon: 'inventory_2',
-    badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    accentBorder: 'border-l-emerald-500'
-  },
-  'Practical FX': {
-    icon: 'science',
-    badgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
-    accentBorder: 'border-l-purple-500'
-  },
-  'Stunts': {
-    icon: 'sports_kabaddi',
-    badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
-    accentBorder: 'border-l-rose-500'
-  },
-  'Costumes': {
-    icon: 'checkroom',
-    badgeBg: 'bg-teal-50 text-teal-700 border-teal-200',
-    accentBorder: 'border-l-teal-500'
-  },
-  'Vehicles': {
-    icon: 'commute',
-    badgeBg: 'bg-slate-100 text-slate-700 border-slate-300',
-    accentBorder: 'border-l-slate-500'
-  },
-  'Sound': {
-    icon: 'music_note',
-    badgeBg: 'bg-violet-50 text-violet-700 border-violet-200',
-    accentBorder: 'border-l-violet-500'
-  },
-  'Hair & Makeup': {
-    icon: 'face',
-    badgeBg: 'bg-pink-50 text-pink-700 border-pink-200',
-    accentBorder: 'border-l-pink-500'
-  }
+  'Cast': { icon: 'person' },
+  'Locations': { icon: 'location_on' },
+  'Props': { icon: 'inventory_2' },
+  'Practical FX': { icon: 'science' },
+  'Stunts': { icon: 'sports_kabaddi' },
+  'Costumes': { icon: 'checkroom' },
+  'Vehicles': { icon: 'commute' },
+  'Sound': { icon: 'music_note' },
+  'Hair & Makeup': { icon: 'face' }
 };
 
 export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
@@ -71,27 +35,29 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
           </button>
         `)}
 
-        <!-- Summary KPI Row -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="breakdown-kpis">
-          <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs">
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Elements</span>
-            <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-total">--</div>
-            <span class="text-[11px] text-slate-500">Across 18 Scenes</span>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs">
-            <span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Confirmed</span>
-            <div class="font-heading font-bold text-lg text-emerald-600 mt-0.5" id="kpi-confirmed">--</div>
-            <span class="text-[11px] text-slate-500">Human approved</span>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs">
-            <span class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Needs Review</span>
-            <div class="font-heading font-bold text-lg text-amber-600 mt-0.5" id="kpi-review">--</div>
-            <span class="text-[11px] text-slate-500">AI inferences pending</span>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs">
-            <span class="text-[10px] font-bold text-rose-500 uppercase tracking-wider">Rejected</span>
-            <div class="font-heading font-bold text-lg text-slate-700 mt-0.5" id="kpi-rejected">--</div>
-            <span class="text-[11px] text-slate-500">Excluded from shoot</span>
+        <!-- Breakdown Status Summary -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">
+          <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+            <div class="p-2 sm:px-3 first:pl-1">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Total Elements</span>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-total">--</div>
+              <span class="text-[11px] text-slate-400">Across 18 Scenes</span>
+            </div>
+            <div class="p-2 sm:px-3">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Confirmed</span>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-confirmed">--</div>
+              <span class="text-[11px] text-slate-400">Locked for shoot</span>
+            </div>
+            <div class="p-2 sm:px-3">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">In Review</span>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-review">--</div>
+              <span class="text-[11px] text-slate-400">Pending sign-off</span>
+            </div>
+            <div class="p-2 sm:px-3">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Excluded</span>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-rejected">--</div>
+              <span class="text-[11px] text-slate-400">Out of schedule</span>
+            </div>
           </div>
         </div>
 
@@ -122,35 +88,35 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
 
           <!-- Bottom Row: Category Tabs -->
           <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs shrink-0 border-t border-slate-100 pt-2" id="cat-filters">
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-semibold bg-blue-600 text-white shadow-2xs flex items-center gap-1" data-cat="all">
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-semibold bg-blue-600 text-white shadow-xs flex items-center gap-1 cursor-pointer" data-cat="all">
               <span>All Categories</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Cast">
-              <span class="material-symbols-outlined text-[14px] text-indigo-600">person</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Cast">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">person</span>
               <span>Cast & Characters</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Locations">
-              <span class="material-symbols-outlined text-[14px] text-amber-600">location_on</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Locations">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
               <span>Locations</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Props">
-              <span class="material-symbols-outlined text-[14px] text-emerald-600">inventory_2</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Props">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">inventory_2</span>
               <span>Props</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Practical FX">
-              <span class="material-symbols-outlined text-[14px] text-purple-600">science</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Practical FX">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">science</span>
               <span>Practical FX</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Stunts">
-              <span class="material-symbols-outlined text-[14px] text-rose-600">sports_kabaddi</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Stunts">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">sports_kabaddi</span>
               <span>Stunts & Action</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Costumes">
-              <span class="material-symbols-outlined text-[14px] text-teal-600">checkroom</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Costumes">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">checkroom</span>
               <span>Costumes</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1" data-cat="Vehicles">
-              <span class="material-symbols-outlined text-[14px] text-slate-600">commute</span>
+            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Vehicles">
+              <span class="material-symbols-outlined text-[14px] text-slate-400">commute</span>
               <span>Vehicles</span>
             </button>
           </div>
@@ -662,34 +628,30 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
       const isRejected = item.status === 'Rejected';
       const isEditing = activeEditingItemId === item.id;
 
-      const catCfg = CATEGORY_CONFIG[item.category] || {
-        icon: 'label',
-        badgeBg: 'bg-slate-100 text-slate-700 border-slate-200',
-        accentBorder: 'border-l-slate-400'
-      };
+      const catCfg = CATEGORY_CONFIG[item.category] || { icon: 'label' };
 
       const statusBadge = isConfirmed
-        ? `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">verified</span>Confirmed</span>`
+        ? `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200 text-[10px] font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[11px] text-emerald-600">check</span>Confirmed</span>`
         : isReview
-        ? `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">help</span>Needs Review</span>`
-        : `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">block</span>Rejected</span>`;
+        ? `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-medium flex items-center gap-1">Needs Review</span>`
+        : `<span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-medium flex items-center gap-1">Excluded</span>`;
 
       // Multi-scene pills
       const scenesArr = Array.isArray(item.scenes) && item.scenes.length > 0 ? item.scenes : [item.sceneNumber];
       const scenesDisplay = scenesArr.map(s => `Sc ${s}`).join(', ');
 
       return `
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 transition-all border-l-4 ${catCfg.accentBorder} flex flex-col gap-2.5" data-id="${item.id}">
+        <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 transition-colors flex flex-col gap-2.5" data-id="${item.id}">
           <!-- Top Row: Element Name on Left, then Scene Tag, Category Tag, Status, Action Buttons -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
             <div class="flex items-center gap-2 flex-wrap min-w-0">
               <h3 class="font-heading font-bold text-base text-slate-900 tracking-tight shrink-0 mr-1">${item.name}</h3>
-              <span class="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs shrink-0 flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px]">movie</span>
+              <span class="px-2 py-0.5 rounded-md bg-blue-50/70 text-blue-700 border border-blue-100 font-semibold text-xs shrink-0 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">movie</span>
                 <span>${scenesDisplay}</span>
               </span>
-              <span class="px-2.5 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 ${catCfg.badgeBg} shrink-0">
-                <span class="material-symbols-outlined text-[13px]">${catCfg.icon}</span>
+              <span class="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-700 flex items-center gap-1 shrink-0">
+                <span class="material-symbols-outlined text-[13px] text-slate-400">${catCfg.icon}</span>
                 <span>${item.category}</span>
               </span>
               ${statusBadge}

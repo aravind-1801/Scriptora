@@ -137,7 +137,7 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
     // -------------------------------------------------------------------------
     const categories = [
       {
-        name: "1. Script Preparation",
+        name: "Script Preparation",
         desc: "Breakdown sheets, appearance lists, and department master lists.",
         items: [
           { title: "Full Script Breakdown Sheet", type: "Script Breakdown", status: "Confirmed", ver: "v1.4", id: "doc-sb-1" },
@@ -146,7 +146,7 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
         ]
       },
       {
-        name: "2. Actors and Rehearsal",
+        name: "Actors and Rehearsal",
         desc: "Actor sides, character speech cues, and rehearsal extracts.",
         items: [
           { title: "Actor Sides — Kevin & Meera (Scene 18)", type: "Actor Sides", status: "Confirmed", ver: "v1.2", id: "doc-ds-1" },
@@ -154,7 +154,7 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
         ]
       },
       {
-        name: "3. Scheduling",
+        name: "Scheduling",
         desc: "Master stripboards, daily scene allocations, and DOOD reports.",
         items: [
           { title: "Master 14-Day Stripboard Schedule", type: "Shooting Schedule", status: "Confirmed", ver: "v2.1", id: "doc-ss-1" },
@@ -162,7 +162,7 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
         ]
       },
       {
-        name: "4. On-Set Production",
+        name: "On-Set Production",
         desc: "Daily call sheets, camera shot lists, and daily logs.",
         items: [
           { title: "Call Sheet #01 — Gate 4 Day Exterior", type: "Call Sheet", status: "Confirmed", ver: "v1.0", id: "doc-cs-1" },
@@ -170,7 +170,7 @@ export async function attachDocumentsEvents(navigate, fromParam = null, scriptPa
         ]
       },
       {
-        name: "5. Management & Pre-Flight",
+        name: "Management & Pre-Flight",
         desc: "Resource directories, emergency contacts, and readiness checks.",
         items: [
           { title: "Cast & Crew Emergency Contact Directory", type: "Directory", status: "Confirmed", ver: "v1.0", id: "doc-dir-1" },

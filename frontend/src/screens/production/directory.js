@@ -155,14 +155,14 @@ export async function attachDirectoryEvents(navigate, fromParam = null, scriptPa
       return `
         <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-start gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100 font-bold text-xs mt-0.5">
+            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 font-mono font-bold text-xs mt-0.5">
               ${r.category.slice(0, 3).toUpperCase()}
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="font-heading font-bold text-sm text-slate-900">${r.name}</h3>
-                <span class="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-semibold">${r.department || r.category}</span>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${r.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">
+                <h3 class="font-heading font-semibold text-sm text-slate-900">${r.name}</h3>
+                <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">${r.department || r.category}</span>
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-medium ${r.status === 'Confirmed' ? 'bg-slate-100 text-slate-700' : 'bg-amber-50/80 border border-amber-200 text-amber-800'}">
                   ${r.status || 'Active'}
                 </span>
               </div>

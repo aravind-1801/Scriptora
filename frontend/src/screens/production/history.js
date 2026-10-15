@@ -116,16 +116,16 @@ export async function attachHistoryEvents(navigate, fromParam = null, scriptPara
         : 'dataset';
 
       const iconColor = isApproval
-        ? 'text-emerald-600 bg-emerald-50'
+        ? 'text-emerald-600 bg-emerald-50/60'
         : isVersion
-        ? 'text-blue-600 bg-blue-50'
+        ? 'text-blue-600 bg-blue-50/60'
         : isProposal
-        ? 'text-amber-600 bg-amber-50'
-        : 'text-purple-600 bg-purple-50';
+        ? 'text-amber-600 bg-amber-50/60'
+        : 'text-slate-600 bg-slate-100';
 
       return `
         <div class="flex items-start gap-3 text-xs group">
-          <div class="w-8 h-8 rounded-xl ${iconColor} flex items-center justify-center shrink-0 border border-slate-100 shadow-2xs mt-0.5">
+          <div class="w-8 h-8 rounded-lg ${iconColor} flex items-center justify-center shrink-0 border border-slate-200/80 shadow-2xs mt-0.5">
             <span class="material-symbols-outlined text-[16px]">${icon}</span>
           </div>
 

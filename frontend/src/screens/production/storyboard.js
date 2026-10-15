@@ -14,23 +14,18 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
       ${renderHeader('Pre-Production', 'Storyboard Studio')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', `
-          <span class="px-2.5 py-1 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold border border-rose-200">
-            Prompt 3 Active Staging
-          </span>
-        `)}
+        ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', '')}
 
         <!-- Feature Intro Banner -->
-        <div class="bg-gradient-to-br from-rose-50 to-white rounded-2xl border border-rose-200/90 p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="space-y-1">
-            <span class="text-[10px] font-bold text-rose-600 uppercase tracking-widest font-mono">Creative Visual Planning</span>
-            <h2 class="font-heading font-extrabold text-base text-slate-900">Visual Shot Composition & Concept Frames</h2>
-            <p class="text-xs text-slate-600 max-w-lg leading-relaxed">
-              Storyboard Studio connects camera focal lengths, aspect ratios, character blocking, and AI concept frames directly to confirmed screenplay scenes. Full multi-frame generation activates in Prompt 3.
+            <h2 class="font-heading font-semibold text-sm text-slate-900">Visual Shot Composition & Concept Frames</h2>
+            <p class="text-xs text-slate-500 max-w-lg leading-relaxed">
+              Storyboard Studio connects camera focal lengths, aspect ratios, character blocking, and concept frames directly to confirmed screenplay scenes.
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3.5 py-2 rounded-xl bg-white border border-rose-200 text-rose-800 text-xs font-semibold hover:bg-rose-50 transition-colors">
+            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors">
               Inspect Scene 18 Setup
             </a>
           </div>
@@ -76,10 +71,6 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <p class="text-[11px] text-slate-500 mt-0.5">High-speed water mist bokeh as Kevin clamps the hydraulic bypass manifold.</p>
             </div>
           </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 text-center text-xs text-slate-500 shadow-2xs">
-          Prompt 3 Implementation Ready: Canvas rendering, shot sequence drag-and-drop, and camera metadata export.
         </div>
       </main>
 

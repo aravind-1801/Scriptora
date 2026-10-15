@@ -26,11 +26,11 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
         <!-- Mode Switcher Tabs (2 distinct modes) -->
         <div class="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <div class="flex items-center bg-slate-100 p-1 rounded-xl max-w-xs">
-            <button id="tab-mode-dialogue" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${initialMode === 'dialogue' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
-              1. Dialogue Sheets
+            <button id="tab-mode-dialogue" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${initialMode === 'dialogue' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
+              Dialogue Sheets
             </button>
-            <button id="tab-mode-sides" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${initialMode === 'sides' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
-              2. Actor Sides
+            <button id="tab-mode-sides" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${initialMode === 'sides' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
+              Actor Sides
             </button>
           </div>
 
@@ -288,16 +288,16 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   if (tabDialogue && tabSides) {
     tabDialogue.onclick = () => {
       activeMode = 'dialogue';
-      tabDialogue.classList.add('bg-white', 'text-blue-700', 'shadow-2xs');
-      tabSides.classList.remove('bg-white', 'text-blue-700', 'shadow-2xs');
+      tabDialogue.classList.add('bg-white', 'text-blue-600', 'shadow-2xs');
+      tabSides.classList.remove('bg-white', 'text-blue-600', 'shadow-2xs');
       renderFilters();
       renderContent();
     };
 
     tabSides.onclick = () => {
       activeMode = 'sides';
-      tabSides.classList.add('bg-white', 'text-blue-700', 'shadow-2xs');
-      tabDialogue.classList.remove('bg-white', 'text-blue-700', 'shadow-2xs');
+      tabSides.classList.add('bg-white', 'text-blue-600', 'shadow-2xs');
+      tabDialogue.classList.remove('bg-white', 'text-blue-600', 'shadow-2xs');
       renderFilters();
       renderContent();
     };

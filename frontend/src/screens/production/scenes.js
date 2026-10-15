@@ -5,17 +5,17 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 
-// Category grouping configuration
+// Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const SCENE_CATEGORIES = [
-  { key: 'Cast', title: 'Cast & Characters', icon: 'person', badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200', borderAccent: 'border-l-indigo-500' },
-  { key: 'Locations', title: 'Locations & Environment', icon: 'location_on', badgeBg: 'bg-amber-50 text-amber-800 border-amber-200', borderAccent: 'border-l-amber-500' },
-  { key: 'Props', title: 'Props & Sourced Assets', icon: 'inventory_2', badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200', borderAccent: 'border-l-emerald-500' },
-  { key: 'Practical FX', title: 'Practical FX & Special FX', icon: 'science', badgeBg: 'bg-purple-50 text-purple-700 border-purple-200', borderAccent: 'border-l-purple-500' },
-  { key: 'Stunts', title: 'Stunts & Action Rigging', icon: 'sports_kabaddi', badgeBg: 'bg-rose-50 text-rose-700 border-rose-200', borderAccent: 'border-l-rose-500' },
-  { key: 'Costumes', title: 'Costumes & Wardrobe', icon: 'checkroom', badgeBg: 'bg-teal-50 text-teal-700 border-teal-200', borderAccent: 'border-l-teal-500' },
-  { key: 'Vehicles', title: 'Vehicles & Heavy Equipment', icon: 'commute', badgeBg: 'bg-slate-100 text-slate-700 border-slate-300', borderAccent: 'border-l-slate-500' },
-  { key: 'Sound', title: 'Sound & Audio Requirements', icon: 'music_note', badgeBg: 'bg-violet-50 text-violet-700 border-violet-200', borderAccent: 'border-l-violet-500' },
-  { key: 'Hair & Makeup', title: 'Hair & Special Makeup', icon: 'face', badgeBg: 'bg-pink-50 text-pink-700 border-pink-200', borderAccent: 'border-l-pink-500' }
+  { key: 'Cast', title: 'Cast & Characters', icon: 'person' },
+  { key: 'Locations', title: 'Locations & Environment', icon: 'location_on' },
+  { key: 'Props', title: 'Props & Sourced Assets', icon: 'inventory_2' },
+  { key: 'Practical FX', title: 'Practical FX & Special FX', icon: 'science' },
+  { key: 'Stunts', title: 'Stunts & Action Rigging', icon: 'sports_kabaddi' },
+  { key: 'Costumes', title: 'Costumes & Wardrobe', icon: 'checkroom' },
+  { key: 'Vehicles', title: 'Vehicles & Heavy Equipment', icon: 'commute' },
+  { key: 'Sound', title: 'Sound & Audio Requirements', icon: 'music_note' },
+  { key: 'Hair & Makeup', title: 'Hair & Special Makeup', icon: 'face' }
 ];
 
 export function renderScenesScreen(fromParam = null, scriptParam = null, sceneIdParam = null) {
@@ -38,7 +38,7 @@ export function renderScenesScreen(fromParam = null, scriptParam = null, sceneId
           sceneId ? 'movie' : 'hub',
           backUrl,
           sceneId ? `
-            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId}&from=${encodeURIComponent(currentSceneLocation)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition-colors">
+            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId}&from=${encodeURIComponent(currentSceneLocation)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
               <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
               <span>Actor Sides</span>
             </a>
@@ -88,8 +88,8 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
       const count = (categorizedElements[c.key] || []).length;
       if (count === 0) return '';
       return `
-        <span class="px-2 py-0.5 rounded-lg border text-[11px] font-semibold flex items-center gap-1 ${c.badgeBg}">
-          <span class="material-symbols-outlined text-[13px]">${c.icon}</span>
+        <span class="px-2 py-0.5 rounded-md border border-slate-200 bg-slate-50 text-[11px] font-medium text-slate-700 flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px] text-slate-400">${c.icon}</span>
           <span>${c.key}: <strong>${count}</strong></span>
         </span>
       `;
@@ -103,10 +103,8 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
       return `
         <div class="flex flex-col gap-2 pt-2 border-t border-slate-100 first:border-t-0 first:pt-0">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5 font-heading font-bold text-xs text-slate-900">
-              <span class="p-1 rounded-lg ${cfg.badgeBg} flex items-center justify-center">
-                <span class="material-symbols-outlined text-[14px]">${cfg.icon}</span>
-              </span>
+            <div class="flex items-center gap-1.5 font-heading font-semibold text-xs text-slate-800">
+              <span class="material-symbols-outlined text-[15px] text-slate-400">${cfg.icon}</span>
               <span>${cfg.title}</span>
               <span class="text-[10px] text-slate-400 font-normal">(${catList.length})</span>
             </div>
@@ -116,8 +114,8 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
             ${catList.map(e => {
               const isConfirmed = e.status === 'Confirmed';
               const statusBadge = isConfirmed
-                ? `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">Confirmed</span>`
-                : `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">Needs Review</span>`;
+                ? `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 text-[10px] font-medium border border-slate-200 flex items-center gap-1"><span class="material-symbols-outlined text-[11px] text-emerald-600">check</span>Confirmed</span>`
+                : `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">Needs Review</span>`;
 
               // Category tailored fields
               let customMeta = '';
@@ -188,7 +186,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
               }
 
               return `
-                <div class="p-3 rounded-2xl bg-slate-50/80 border border-slate-200/90 border-l-4 ${cfg.borderAccent} flex flex-col justify-between gap-1 shadow-2xs hover:border-blue-300 transition-all">
+                <div class="p-3.5 rounded-xl bg-white border border-slate-200/80 flex flex-col justify-between gap-1 shadow-xs hover:border-slate-300 transition-colors">
                   <div>
                     <div class="flex items-start justify-between gap-2">
                       <div class="font-heading font-bold text-xs text-slate-900 leading-snug">${e.name}</div>
@@ -219,8 +217,8 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-700 font-bold text-xs">SCENE ${scene.sceneNumber}</span>
-              <span class="text-xs font-semibold px-2 py-0.5 rounded-lg ${scene.intExt === 'INT' ? 'bg-amber-50 text-amber-800' : 'bg-sky-50 text-sky-800'}">${scene.intExt} · ${scene.dayNight}</span>
+              <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-800 font-mono font-bold text-xs">SCENE ${scene.sceneNumber}</span>
+              <span class="text-xs font-medium px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 font-mono">${scene.intExt} · ${scene.dayNight}</span>
               <span class="text-xs text-slate-500 font-medium">${scene.pages} Pages</span>
             </div>
             <h2 class="font-heading font-bold text-base text-slate-900 mt-2">${scene.heading}</h2>
@@ -228,15 +226,15 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
           </div>
           <div class="text-right shrink-0">
             <span class="px-2 py-1 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs">${scene.shootDay}</span>
-            <div class="text-[10px] text-emerald-600 font-medium mt-1">Complexity: ${scene.complexity}</div>
+            <div class="text-[10px] text-slate-500 font-medium mt-1">Complexity: ${scene.complexity}</div>
           </div>
         </div>
 
         <div class="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap text-xs">
           <span class="text-slate-400 font-medium">Cast in scene:</span>
-          ${(scene.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(currentSceneLocation)}" class="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition-colors" title="Inspect ${c} in Breakdown">${c}</a>`).join('')}
+          ${(scene.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(currentSceneLocation)}" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors" title="Inspect ${c} in Breakdown">${c}</a>`).join('')}
           <div class="ml-auto flex items-center gap-1.5">
-            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-indigo-600 hover:underline font-semibold flex items-center gap-1">
+            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${scene.id}&from=${encodeURIComponent(currentSceneLocation)}" class="text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
               <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
               <span>Open Actor Sides for Scene ${scene.sceneNumber}</span>
             </a>
@@ -288,7 +286,7 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
       <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col gap-3">
         <div class="border-b border-slate-100 pb-2">
           <h3 class="font-heading font-bold text-sm text-slate-900 flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[18px] text-teal-600">edit_note</span>
+            <span class="material-symbols-outlined text-[18px] text-blue-600">edit_note</span>
             <span>Production Notes (Independent from Screenplay Text)</span>
           </h3>
           <p class="text-[11px] text-slate-500">Director framing directives, lens requirements, and continuity safeguards.</p>
@@ -335,48 +333,45 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
 
     container.innerHTML = `
       <!-- Scene Filter Bar -->
-      <div class="bg-white rounded-2xl border border-slate-200/90 p-3 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
         <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs" id="scene-filter-btns">
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-semibold bg-blue-600 text-white shadow-2xs cursor-pointer" data-filter="all">All (18)</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="INT">INT</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="EXT">EXT</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="DAY">DAY</button>
-          <button class="scene-filter-btn px-2.5 py-1 rounded-xl font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="NIGHT">NIGHT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-lg font-semibold bg-blue-600 text-white shadow-xs cursor-pointer" data-filter="all">All (18)</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="INT">INT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="EXT">EXT</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="DAY">DAY</button>
+          <button class="scene-filter-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer" data-filter="NIGHT">NIGHT</button>
         </div>
-        <div class="text-[11px] text-slate-500 font-medium self-end sm:self-auto">
-          Aligned with <span class="font-semibold text-blue-700">Draft 4.2</span>
+        <div class="text-[11px] text-slate-400 font-medium self-end sm:self-auto">
+          Aligned with <span class="font-semibold text-slate-600">Draft 4.2</span>
         </div>
       </div>
 
       <!-- Scenes Grid -->
-      <div class="grid grid-cols-1 gap-2.5" id="scenes-list-grid">
+      <div class="grid grid-cols-1 gap-2" id="scenes-list-grid">
         ${scenes.map(s => `
-          <div class="scene-row-card bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-2xs hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 group" data-scene="${s.id}" data-int="${s.intExt}" data-dn="${s.dayNight}">
-            <div class="flex items-start gap-3 min-w-0">
-              <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex flex-col items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                <span class="text-[10px] uppercase font-bold leading-none">SCN</span>
-                <span class="font-heading font-bold text-base leading-tight">${s.sceneNumber}</span>
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">${s.heading}</h3>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold">${s.pages} pgs</span>
-                  <span class="text-[10px] px-1.5 py-0.5 rounded ${s.intExt === 'INT' ? 'bg-amber-50 text-amber-700' : 'bg-sky-50 text-sky-700'} font-semibold">${s.intExt} · ${s.dayNight}</span>
-                </div>
-                <p class="text-xs text-slate-500 line-clamp-1 mt-1 font-mono italic">"${s.snippet}"</p>
-                <div class="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                  <span class="font-medium text-slate-600">${s.shootDay}</span>
+          <div class="scene-row-card bg-white rounded-xl border border-slate-200/80 px-3.5 py-3 shadow-xs hover:border-slate-300 hover:bg-slate-50/50 transition-colors cursor-pointer flex items-center justify-between gap-3 group" data-scene="${s.id}" data-int="${s.intExt}" data-dn="${s.dayNight}">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-mono font-bold text-xs flex items-center justify-center shrink-0">#${s.sceneNumber}</span>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-heading font-semibold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">${s.heading}</h3>
+                <div class="flex items-center gap-2 text-[11px] text-slate-500 truncate mt-0.5">
+                  <span class="font-medium text-slate-700">${s.shootDay}</span>
                   <span>•</span>
-                  <span>Cast: ${(s.cast || []).join(', ')}</span>
+                  <span>${s.pages} pgs</span>
+                  <span>•</span>
+                  <span>${s.intExt} · ${s.dayNight}</span>
+                  <span>•</span>
+                  <span class="truncate">Cast: ${(s.cast || []).join(', ')}</span>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${s.status === 'Needs Review' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">
-                ${s.status}
-              </span>
-              <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-transform">
+            <div class="flex items-center gap-3 shrink-0">
+              ${s.status === 'Needs Review'
+                ? `<span class="text-[11px] font-medium text-amber-700">Needs Review</span>`
+                : `<span class="text-[11px] font-medium text-slate-500">Scheduled</span>`
+              }
+              <span class="material-symbols-outlined text-[16px] text-slate-300 group-hover:text-blue-600 transition-colors">
                 chevron_right
               </span>
             </div>
