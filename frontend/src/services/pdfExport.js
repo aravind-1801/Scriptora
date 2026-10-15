@@ -3,11 +3,25 @@
 // Genuine, typeset PDF documents with selectable text, standard Type 1 fonts,
 // vector borders, tables, headers, footers, and page numbers.
 // NO raster screenshots, NO canvas screen-grabs, NO application chrome.
+// Exact byte-level offset encoding ensuring universal PDF reader compatibility.
 // =============================================================================
 
 function escapePdfText(str) {
   if (!str) return '';
   return String(str)
+    // Replace Unicode typography with clean, universal ASCII equivalents
+    .replace(/\u2014/g, ' -- ')        // em-dash
+    .replace(/\u2013/g, '-')           // en-dash
+    .replace(/\u2026/g, '...')         // ellipsis
+    .replace(/[\u201C\u201D]/g, '"')   // curly double quotes
+    .replace(/[\u2018\u2019]/g, "'")   // curly single quotes
+    .replace(/\u00B7/g, ' - ')         // middle dot
+    .replace(/\u2022/g, '* ')          // bullet
+    .replace(/\u2192/g, '->')          // right arrow
+    .replace(/\u2190/g, '<-')          // left arrow
+    // Replace any remaining non-ASCII character to avoid multi-byte font encoding issues
+    .replace(/[^\x20-\x7E]/g, ' ')
+    // Escape standard PDF syntax characters
     .replace(/\\/g, '\\\\')
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
@@ -16,7 +30,7 @@ function escapePdfText(str) {
 
 function wrapPdfText(text, maxChars) {
   if (!text) return [];
-  const words = String(text).split(' ');
+  const words = String(text).split(/\s+/);
   const lines = [];
   let current = '';
 
@@ -35,19 +49,29 @@ function wrapPdfText(text, maxChars) {
 }
 
 export function downloadPdfBlob(blob, filename) {
+  if (!blob || !(blob instanceof Blob)) {
+    throw new Error('Invalid PDF blob received for download');
+  }
+
+  // Create temporary URL and trigger browser download
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  if (a.style) a.style.display = 'none';
   a.href = url;
-  a.download = filename;
+  a.download = filename || 'document.pdf';
   document.body.appendChild(a);
   a.click();
+
+  // Safely clean up DOM element and revoke object URL
   setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 1500);
+    try {
+      if (a.parentNode) a.parentNode.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (_) {}
+  }, 4000);
 }
 
-// Low-level builder that compiles vector draw instructions into PDF 1.4 binary
+// Low-level builder that compiles vector draw instructions into compliant PDF 1.4 binary
 export function compilePdfDocument(pages, options = {}) {
   // Page size: Standard US Letter (612 x 792 pt)
   const pageWidth = options.pageWidth || 612;
@@ -66,7 +90,7 @@ export function compilePdfDocument(pages, options = {}) {
     pageObjectIds.push(nextId());
   }
 
-  // Pre-allocate Font Objects
+  // Pre-allocate Font Objects with WinAnsiEncoding
   // F1: Helvetica, F2: Helvetica-Bold, F3: Courier, F4: Courier-Bold, F5: Courier-Oblique, F6: Helvetica-Oblique
   const fontIds = {
     F1: nextId(),
@@ -85,20 +109,22 @@ export function compilePdfDocument(pages, options = {}) {
   allObjects[catalogId] = `<< /Type /Catalog /Pages ${pagesRootId} 0 R >>`;
   allObjects[pagesRootId] = `<< /Type /Pages /Kids [${pageObjectIds.map(id => `${id} 0 R`).join(' ')}] /Count ${totalPages} >>`;
 
-  allObjects[fontIds.F1] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`;
-  allObjects[fontIds.F2] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>`;
-  allObjects[fontIds.F3] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>`;
-  allObjects[fontIds.F4] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>`;
-  allObjects[fontIds.F5] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Oblique >>`;
-  allObjects[fontIds.F6] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique >>`;
+  allObjects[fontIds.F1] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`;
+  allObjects[fontIds.F2] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`;
+  allObjects[fontIds.F3] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>`;
+  allObjects[fontIds.F4] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold /Encoding /WinAnsiEncoding >>`;
+  allObjects[fontIds.F5] = `<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Oblique /Encoding /WinAnsiEncoding >>`;
+  allObjects[fontIds.F6] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>`;
 
   const fontResourceDict = `<< /F1 ${fontIds.F1} 0 R /F2 ${fontIds.F2} 0 R /F3 ${fontIds.F3} 0 R /F4 ${fontIds.F4} 0 R /F5 ${fontIds.F5} 0 R /F6 ${fontIds.F6} 0 R >>`;
+
+  const encoder = new TextEncoder();
 
   for (let i = 0; i < totalPages; i++) {
     allObjects[pageObjectIds[i]] = `<< /Type /Page /Parent ${pagesRootId} 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Contents ${contentStreamIds[i]} 0 R /Resources << /Font ${fontResourceDict} >> >>`;
 
     // Construct stream for this page
-    const pageData = pages[i];
+    const pageData = pages[i] || {};
     let stream = '';
 
     // Draw lines, rects, and text
@@ -108,18 +134,18 @@ export function compilePdfDocument(pages, options = {}) {
         if (v.type === 'rect') {
           // Fill
           if (v.fill) {
-            stream += `${v.fill[0]} ${v.fill[1]} ${v.fill[2]} rg\n`;
+            stream += `${v.fill[0].toFixed(3)} ${v.fill[1].toFixed(3)} ${v.fill[2].toFixed(3)} rg\n`;
             stream += `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)} re\nf\n`;
           }
           // Stroke
           if (v.stroke) {
-            stream += `${v.stroke[0]} ${v.stroke[1]} ${v.stroke[2]} RG\n`;
-            stream += `${v.lineWidth || 1} w\n`;
+            stream += `${v.stroke[0].toFixed(3)} ${v.stroke[1].toFixed(3)} ${v.stroke[2].toFixed(3)} RG\n`;
+            stream += `${(v.lineWidth || 1).toFixed(2)} w\n`;
             stream += `${v.x.toFixed(2)} ${v.y.toFixed(2)} ${v.w.toFixed(2)} ${v.h.toFixed(2)} re\nS\n`;
           }
         } else if (v.type === 'line') {
-          stream += `${v.stroke[0]} ${v.stroke[1]} ${v.stroke[2]} RG\n`;
-          stream += `${v.lineWidth || 1} w\n`;
+          stream += `${(v.stroke || [0, 0, 0])[0].toFixed(3)} ${(v.stroke || [0, 0, 0])[1].toFixed(3)} ${(v.stroke || [0, 0, 0])[2].toFixed(3)} RG\n`;
+          stream += `${(v.lineWidth || 1).toFixed(2)} w\n`;
           stream += `${v.x1.toFixed(2)} ${v.y1.toFixed(2)} m ${v.x2.toFixed(2)} ${v.y2.toFixed(2)} l S\n`;
         }
       }
@@ -135,39 +161,49 @@ export function compilePdfDocument(pages, options = {}) {
 
         stream += `BT\n`;
         stream += `/${font} ${size} Tf\n`;
-        stream += `${color[0]} ${color[1]} ${color[2]} rg\n`;
+        stream += `${color[0].toFixed(3)} ${color[1].toFixed(3)} ${color[2].toFixed(3)} rg\n`;
         stream += `1 0 0 1 ${t.x.toFixed(2)} ${t.y.toFixed(2)} Tm\n`;
         stream += `(${safe}) Tj\n`;
         stream += `ET\n`;
       }
     }
 
-    allObjects[contentStreamIds[i]] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    const streamBytes = encoder.encode(stream);
+    allObjects[contentStreamIds[i]] = `<< /Length ${streamBytes.length} >>\nstream\n${stream}endstream`;
   }
 
-  // Assemble PDF document binary
-  let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+  // Assemble PDF document binary with byte-exact offset calculation
+  const header = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+  const headerBytes = encoder.encode(header);
+  let totalBytes = headerBytes.length;
+
   const offsets = [];
+  const objectBuffers = [];
 
   for (let i = 1; i <= currentId; i++) {
-    offsets[i] = pdf.length;
-    pdf += `${i} 0 obj\n${allObjects[i]}\nendobj\n`;
+    offsets[i] = totalBytes;
+    const objStr = `${i} 0 obj\n${allObjects[i]}\nendobj\n`;
+    const objBytes = encoder.encode(objStr);
+    objectBuffers.push(objBytes);
+    totalBytes += objBytes.length;
   }
 
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${currentId + 1}\n0000000000 65535 f \n`;
+  const xrefOffset = totalBytes;
+  let xrefStr = `xref\n0 ${currentId + 1}\n0000000000 65535 f \n`;
   for (let i = 1; i <= currentId; i++) {
-    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    xrefStr += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
   }
 
-  pdf += `trailer\n<< /Size ${currentId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-  return new Blob([pdf], { type: 'application/pdf' });
+  xrefStr += `trailer\n<< /Size ${currentId + 1} /Root ${catalogId} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  const xrefBytes = encoder.encode(xrefStr);
+
+  return new Blob([headerBytes, ...objectBuffers, xrefBytes], { type: 'application/pdf' });
 }
 
 // =============================================================================
 // 1. CALL SHEET PDF EXPORT
 // =============================================================================
-export function exportCallSheetPdf(cs, scriptInfo = {}) {
+export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
   const title = scriptInfo.title || 'Chronicles of Dust';
   const draft = scriptInfo.draft || 'Draft 4.2 (Pinned)';
   const pages = [];
@@ -178,8 +214,8 @@ export function exportCallSheetPdf(cs, scriptInfo = {}) {
 
   // Masthead Header Box
   p1Vectors.push({ type: 'rect', x: 36, y: 730, w: 540, h: 36, fill: [0.08, 0.12, 0.20] }); // Slate-900 banner
-  p1Texts.push({ text: 'SCRIPTORA · OFFICIAL PRODUCTION CALL SHEET', x: 46, y: 752, font: 'F2', size: 10, color: [0.9, 0.9, 0.9] });
-  p1Texts.push({ text: `${title.toUpperCase()} — ${draft}`, x: 46, y: 738, font: 'F1', size: 9, color: [0.7, 0.8, 1.0] });
+  p1Texts.push({ text: 'SCRIPTORA -- OFFICIAL PRODUCTION CALL SHEET', x: 46, y: 752, font: 'F2', size: 10, color: [0.9, 0.9, 0.9] });
+  p1Texts.push({ text: `${title.toUpperCase()} -- ${draft}`, x: 46, y: 738, font: 'F1', size: 9, color: [0.7, 0.8, 1.0] });
   p1Texts.push({ text: `DAY ${cs.callSheetNumber || '01'} OF 14`, x: 495, y: 746, font: 'F2', size: 12, color: [1.0, 1.0, 1.0] });
 
   // Call Times Summary Box
@@ -205,7 +241,7 @@ export function exportCallSheetPdf(cs, scriptInfo = {}) {
   // Location & Medical Notice Box
   p1Vectors.push({ type: 'rect', x: 36, y: 605, w: 540, h: 55, fill: [1.0, 1.0, 1.0], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
   p1Texts.push({ text: 'PRIMARY SET LOCATION & BASECAMP:', x: 46, y: 647, font: 'F2', size: 8, color: [0.2, 0.25, 0.3] });
-  p1Texts.push({ text: `${cs.locationName || 'Mojave Outpost Gate 4'} — ${cs.locationAddress || 'Perimeter Road 9, Cantil, CA'}`, x: 46, y: 635, font: 'F1', size: 9, color: [0.1, 0.1, 0.1] });
+  p1Texts.push({ text: `${cs.locationName || 'Mojave Outpost Gate 4'} -- ${cs.locationAddress || 'Perimeter Road 9, Cantil, CA'}`, x: 46, y: 635, font: 'F1', size: 9, color: [0.1, 0.1, 0.1] });
   p1Texts.push({ text: `Parking: ${cs.parkingNotes || 'Basecamp Lot B. Crew shuttle runs every 10 mins.'}`, x: 46, y: 624, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
   p1Texts.push({ text: `Emergency Medical: ${cs.nearestHospital || 'Desert Care Regional Medical Center (Ph: 760-379-2681)'}`, x: 46, y: 613, font: 'F1', size: 8, color: [0.8, 0.2, 0.2] });
 
@@ -263,11 +299,11 @@ export function exportCallSheetPdf(cs, scriptInfo = {}) {
 
   for (const c of castCalls) {
     p1Vectors.push({ type: 'rect', x: 36, y: tableY, w: 540, h: 20, fill: [1.0, 1.0, 1.0], stroke: [0.88, 0.90, 0.93], lineWidth: 0.5 });
-    p1Texts.push({ text: c.character, x: 42, y: tableY + 6, font: 'F2', size: 8.5, color: [0.1, 0.1, 0.1] });
-    p1Texts.push({ text: c.actor, x: 160, y: tableY + 6, font: 'F1', size: 8.5, color: [0.2, 0.2, 0.2] });
-    p1Texts.push({ text: c.pickup, x: 300, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: c.hmuCall, x: 370, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: c.onSet, x: 450, y: tableY + 6, font: 'F4', size: 8.5, color: [0.1, 0.3, 0.8] });
+    p1Texts.push({ text: c.character || 'CHARACTER', x: 42, y: tableY + 6, font: 'F2', size: 8.5, color: [0.1, 0.1, 0.1] });
+    p1Texts.push({ text: c.actor || '', x: 160, y: tableY + 6, font: 'F1', size: 8.5, color: [0.2, 0.2, 0.2] });
+    p1Texts.push({ text: c.pickup || '-', x: 300, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
+    p1Texts.push({ text: c.hmuCall || '-', x: 370, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
+    p1Texts.push({ text: c.onSet || '-', x: 450, y: tableY + 6, font: 'F4', size: 8.5, color: [0.1, 0.3, 0.8] });
     p1Texts.push({ text: c.status || 'Confirmed', x: 520, y: tableY + 6, font: 'F1', size: 7.5, color: [0.2, 0.6, 0.3] });
     tableY -= 20;
   }
@@ -278,14 +314,15 @@ export function exportCallSheetPdf(cs, scriptInfo = {}) {
   p1Texts.push({ text: 'SAFETY DIRECTIVES & PRODUCTION INSTRUCTIONS:', x: 46, y: tableY - 5, font: 'F2', size: 8, color: [0.6, 0.4, 0.1] });
   const noteLines = wrapPdfText(cs.specialInstructions || 'Eye protection mandatory for all perimeter crew during afternoon dust squalls. Hearing protection active in generator bays.', 105);
   p1Texts.push({ text: noteLines[0] || '', x: 46, y: tableY - 17, font: 'F1', size: 7.5, color: [0.3, 0.25, 0.1] });
-  if (noteLines[1]) p1Texts.push({ text: noteLines[1], x: 46, y: tableY - 27, font: 'F1', size: 7.5, color: [0.3, 0.25, 0.1] });
+  p1Texts.push({ text: noteLines[1] || '', x: 46, y: tableY - 28, font: 'F1', size: 7.5, color: [0.3, 0.25, 0.1] });
 
-  // Official Footer
-  p1Vectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-  p1Texts.push({ text: 'APPROVED & PUBLISHED BY OWNER · SCRIPTORA PRODUCTION ARCHITECTURE', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
-  p1Texts.push({ text: `Version: ${cs.version || 'v1.0 (Snapshot)'} • Page 1 of 1`, x: 440, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
+  // Footer Rule
+  p1Vectors.push({ type: 'line', x1: 36, y1: 45, x2: 576, y2: 45, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
+  p1Texts.push({ text: 'CONFIDENTIAL -- SCRIPTORA PRODUCTION STUDIO -- NOT FOR PUBLIC DISTRIBUTION', x: 36, y: 32, font: 'F1', size: 7.5, color: [0.5, 0.5, 0.5] });
+  p1Texts.push({ text: 'Page 1 of 1', x: 525, y: 32, font: 'F1', size: 7.5, color: [0.5, 0.5, 0.5] });
 
   pages.push({ vectors: p1Vectors, texts: p1Texts });
+
   const blob = compilePdfDocument(pages);
   const filename = `CallSheet_Day${cs.callSheetNumber || '01'}_${title.replace(/\s+/g, '_')}.pdf`;
   downloadPdfBlob(blob, filename);
@@ -295,7 +332,7 @@ export function exportCallSheetPdf(cs, scriptInfo = {}) {
 // =============================================================================
 // 2. DIALOGUE SHEET PDF EXPORT (Character-focused Screenplay Monospaced)
 // =============================================================================
-export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo = {}) {
+export function exportDialogueSheetPdf(characterName = 'CHARACTER', dialogueLines = [], scriptInfo = {}) {
   const title = scriptInfo.title || 'Chronicles of Dust';
   const draft = scriptInfo.draft || 'Draft 4.2';
   const pages = [];
@@ -307,7 +344,8 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
   let lineCount = 0;
 
   for (const item of dialogueLines) {
-    const speechLines = wrapPdfText(item.dialogue, 46);
+    const diaText = item.dialogue || item.text || '';
+    const speechLines = wrapPdfText(diaText, 46);
     const itemWeight = 4 + speechLines.length; // scene + char + parenthetical + dialogue + spacing
     if (lineCount + itemWeight > linesPerPage && currentChunk.length > 0) {
       chunks.push(currentChunk);
@@ -327,16 +365,18 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
 
     // Screenplay Header
     pVectors.push({ type: 'line', x1: 54, y1: 746, x2: 558, y2: 746, stroke: [0.2, 0.2, 0.2], lineWidth: 1.2 });
-    pTexts.push({ text: 'SCRIPTORA · CHARACTER DIALOGUE SHEET', x: 54, y: 755, font: 'F4', size: 9, color: [0.3, 0.3, 0.3] });
+    pTexts.push({ text: 'SCRIPTORA -- CHARACTER DIALOGUE SHEET', x: 54, y: 755, font: 'F4', size: 9, color: [0.3, 0.3, 0.3] });
     pTexts.push({ text: `PAGE ${pageIdx + 1} OF ${chunks.length}`, x: 490, y: 755, font: 'F4', size: 9, color: [0.3, 0.3, 0.3] });
 
-    pTexts.push({ text: `${characterName.toUpperCase()} — ALL DIALOGUE CUES`, x: 54, y: 730, font: 'F4', size: 12, color: [0.0, 0.0, 0.0] });
-    pTexts.push({ text: `Screenplay: ${title} (${draft}) • Pinned Baseline`, x: 54, y: 716, font: 'F3', size: 9, color: [0.4, 0.4, 0.4] });
+    pTexts.push({ text: `${characterName.toUpperCase()} -- ALL DIALOGUE CUES`, x: 54, y: 730, font: 'F4', size: 12, color: [0.0, 0.0, 0.0] });
+    pTexts.push({ text: `Screenplay: ${title} (${draft}) -- Pinned Baseline`, x: 54, y: 716, font: 'F3', size: 9, color: [0.4, 0.4, 0.4] });
 
     let curY = 680;
     for (const cue of chunk) {
       // Scene Heading
-      pTexts.push({ text: `SCENE ${cue.sceneNum} — ${cue.heading}`, x: 54, y: curY, font: 'F4', size: 9, color: [0.1, 0.3, 0.7] });
+      const scNum = cue.sceneNum || cue.sceneNumber || 1;
+      const heading = cue.heading || `SCENE ${scNum}`;
+      pTexts.push({ text: `SCENE ${scNum} -- ${heading}`, x: 54, y: curY, font: 'F4', size: 9, color: [0.1, 0.3, 0.7] });
       curY -= 14;
 
       // Optional action context
@@ -349,8 +389,9 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
       }
 
       // Character Cue Name (Centered around X=306)
-      const charWidth = cue.character.length * 6.5;
-      pTexts.push({ text: cue.character, x: Math.max(160, 306 - (charWidth / 2)), y: curY, font: 'F4', size: 10, color: [0.0, 0.0, 0.0] });
+      const cueChar = cue.character || characterName || 'CHARACTER';
+      const charWidth = cueChar.length * 6.5;
+      pTexts.push({ text: cueChar, x: Math.max(160, 306 - (charWidth / 2)), y: curY, font: 'F4', size: 10, color: [0.0, 0.0, 0.0] });
       curY -= 12;
 
       // Parenthetical
@@ -361,7 +402,8 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
       }
 
       // Dialogue Lines (Standard screenplay margin indent: X=170, max width 280 pt)
-      for (const line of cue.speechLines) {
+      const speech = cue.speechLines || wrapPdfText(cue.dialogue || cue.text || '', 46);
+      for (const line of speech) {
         pTexts.push({ text: line, x: 170, y: curY, font: 'F3', size: 10, color: [0.0, 0.0, 0.0] });
         curY -= 13;
       }
@@ -371,7 +413,7 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
 
     // Screenplay Footer
     pVectors.push({ type: 'line', x1: 54, y1: 50, x2: 558, y2: 50, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-    pTexts.push({ text: `SCRIPTORA SCREENPLAY ARCHITECTURE · ${characterName.toUpperCase()} · DRAFT 4.2`, x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
+    pTexts.push({ text: `SCRIPTORA SCREENPLAY ARCHITECTURE -- ${characterName.toUpperCase()} -- DRAFT 4.2`, x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
     pTexts.push({ text: `Page ${pageIdx + 1} of ${chunks.length}`, x: 495, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
 
     pages.push({ vectors: pVectors, texts: pTexts });
@@ -386,10 +428,14 @@ export function exportDialogueSheetPdf(characterName, dialogueLines, scriptInfo 
 // =============================================================================
 // 3. ACTOR SIDES PDF EXPORT (Rehearsal & On-Set Sides for Scene)
 // =============================================================================
-export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scriptInfo = {}) {
+export function exportActorSidesPdf(sceneNumber = 1, sceneLines = [], sceneInfo = {}, scriptInfo = {}) {
+  // Support flexible argument order
+  if (sceneInfo && sceneInfo.title && !scriptInfo.title) {
+    scriptInfo = sceneInfo;
+  }
   const title = scriptInfo.title || 'Chronicles of Dust';
   const draft = scriptInfo.draft || 'Draft 4.2';
-  const heading = sceneInfo.heading || `SCENE ${sceneNumber} - DAY`;
+  const heading = sceneInfo.heading || (sceneLines[0]?.heading) || `SCENE ${sceneNumber} - DAY`;
   const pages = [];
 
   const pVectors = [];
@@ -397,11 +443,11 @@ export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scr
 
   // Masthead
   pVectors.push({ type: 'rect', x: 54, y: 730, w: 504, h: 32, fill: [0.1, 0.1, 0.1] });
-  pTexts.push({ text: 'SCRIPTORA · REHEARSAL & ON-SET SIDES', x: 64, y: 748, font: 'F4', size: 9, color: [0.8, 0.8, 0.8] });
+  pTexts.push({ text: 'SCRIPTORA -- REHEARSAL & ON-SET SIDES', x: 64, y: 748, font: 'F4', size: 9, color: [0.8, 0.8, 0.8] });
   pTexts.push({ text: `SCENE ${sceneNumber} SIDES`, x: 460, y: 748, font: 'F4', size: 10, color: [1.0, 1.0, 1.0] });
 
-  pTexts.push({ text: `${title.toUpperCase()} — SCENE ${sceneNumber}`, x: 54, y: 712, font: 'F4', size: 13, color: [0.0, 0.0, 0.0] });
-  pTexts.push({ text: `${heading} · ${draft}`, x: 54, y: 698, font: 'F3', size: 9, color: [0.4, 0.4, 0.4] });
+  pTexts.push({ text: `${title.toUpperCase()} -- SCENE ${sceneNumber}`, x: 54, y: 712, font: 'F4', size: 13, color: [0.0, 0.0, 0.0] });
+  pTexts.push({ text: `${heading} -- ${draft}`, x: 54, y: 698, font: 'F3', size: 9, color: [0.4, 0.4, 0.4] });
 
   pVectors.push({ type: 'line', x1: 54, y1: 686, x2: 558, y2: 686, stroke: [0.2, 0.2, 0.2], lineWidth: 1.0 });
 
@@ -420,10 +466,11 @@ export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scr
       curY -= 4;
     }
 
-    // Character Cue
-    const charWidth = line.character.length * 6.5;
-    pTexts.push({ text: line.character, x: Math.max(160, 306 - (charWidth / 2)), y: curY, font: 'F4', size: 10, color: [0.0, 0.0, 0.0] });
-    curY -= 13;
+    if (line.character) {
+      const charWidth = line.character.length * 6.5;
+      pTexts.push({ text: line.character, x: Math.max(160, 306 - (charWidth / 2)), y: curY, font: 'F4', size: 10, color: [0.0, 0.0, 0.0] });
+      curY -= 13;
+    }
 
     if (line.parenthetical) {
       const pWidth = line.parenthetical.length * 5.5;
@@ -431,10 +478,13 @@ export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scr
       curY -= 12;
     }
 
-    const diaLines = wrapPdfText(line.dialogue, 46);
-    for (const dl of diaLines) {
-      pTexts.push({ text: dl, x: 170, y: curY, font: 'F3', size: 10, color: [0.0, 0.0, 0.0] });
-      curY -= 13;
+    const diaText = line.dialogue || line.text || '';
+    if (diaText) {
+      const diaLines = wrapPdfText(diaText, 46);
+      for (const dl of diaLines) {
+        pTexts.push({ text: dl, x: 170, y: curY, font: 'F3', size: 10, color: [0.0, 0.0, 0.0] });
+        curY -= 13;
+      }
     }
 
     curY -= 10;
@@ -442,11 +492,11 @@ export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scr
 
   // End of Scene Stamp
   pVectors.push({ type: 'rect', x: 180, y: curY - 15, w: 252, h: 20, fill: [0.95, 0.95, 0.95], stroke: [0.7, 0.7, 0.7], lineWidth: 0.8 });
-  pTexts.push({ text: `END OF SCENE ${sceneNumber} SIDES · STAMPED DRAFT 4.2`, x: 195, y: curY - 3, font: 'F4', size: 7.5, color: [0.3, 0.3, 0.3] });
+  pTexts.push({ text: `END OF SCENE ${sceneNumber} SIDES -- STAMPED DRAFT 4.2`, x: 195, y: curY - 3, font: 'F4', size: 7.5, color: [0.3, 0.3, 0.3] });
 
   // Footer
   pVectors.push({ type: 'line', x1: 54, y1: 50, x2: 558, y2: 50, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-  pTexts.push({ text: 'SCRIPTORA REHEARSAL COPY · OFFICIAL PRODUCTION SIDES', x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
+  pTexts.push({ text: 'SCRIPTORA REHEARSAL COPY -- OFFICIAL PRODUCTION SIDES', x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
   pTexts.push({ text: 'Page 1 of 1', x: 505, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
 
   pages.push({ vectors: pVectors, texts: pTexts });
@@ -459,7 +509,7 @@ export function exportActorSidesPdf(sceneNumber, sceneLines, sceneInfo = {}, scr
 // =============================================================================
 // 4. SCRIPT BREAKDOWN REPORT PDF EXPORT
 // =============================================================================
-export function exportBreakdownPdf(breakdownItems, scriptInfo = {}) {
+export function exportBreakdownPdf(breakdownItems = [], scriptInfo = {}) {
   const title = scriptInfo.title || 'Chronicles of Dust';
   const draft = scriptInfo.draft || 'Draft 4.2';
   const pages = [];
@@ -475,8 +525,8 @@ export function exportBreakdownPdf(breakdownItems, scriptInfo = {}) {
 
     // Header
     pVectors.push({ type: 'rect', x: 36, y: 735, w: 540, h: 32, fill: [0.08, 0.12, 0.20] });
-    pTexts.push({ text: 'SCRIPTORA · SCRIPT BREAKDOWN MASTER REPORT', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
-    pTexts.push({ text: `${title.toUpperCase()} (${draft}) · 18 SCENES`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
+    pTexts.push({ text: 'SCRIPTORA -- SCRIPT BREAKDOWN MASTER REPORT', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
+    pTexts.push({ text: `${title.toUpperCase()} (${draft}) -- ${totalItems} ELEMENTS TAGGED`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
     pTexts.push({ text: `PAGE ${pageIdx + 1} OF ${totalPages}`, x: 505, y: 747, font: 'F2', size: 9, color: [1.0, 1.0, 1.0] });
 
     // Table Header
@@ -504,7 +554,7 @@ export function exportBreakdownPdf(breakdownItems, scriptInfo = {}) {
 
     // Footer
     pVectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-    pTexts.push({ text: 'SCRIPTORA MASTER PRODUCTION BREAKDOWN · IMMUTABLE SNAPSHOT', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
+    pTexts.push({ text: 'SCRIPTORA MASTER PRODUCTION BREAKDOWN -- IMMUTABLE SNAPSHOT', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
     pTexts.push({ text: `Page ${pageIdx + 1} of ${totalPages}`, x: 510, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
 
     pages.push({ vectors: pVectors, texts: pTexts });
@@ -519,19 +569,18 @@ export function exportBreakdownPdf(breakdownItems, scriptInfo = {}) {
 // =============================================================================
 // 5. SHOOTING SCHEDULE MASTER PDF EXPORT
 // =============================================================================
-export function exportSchedulePdf(scheduleDays, scenes = [], scriptInfo = {}) {
+export function exportSchedulePdf(scheduleDays = [], scenes = [], scriptInfo = {}) {
   const title = scriptInfo.title || 'Chronicles of Dust';
   const draft = scriptInfo.draft || 'Draft 4.2';
   const pages = [];
-  const daysPerPage = 14;
 
   const pVectors = [];
   const pTexts = [];
 
   // Masthead
   pVectors.push({ type: 'rect', x: 36, y: 735, w: 540, h: 32, fill: [0.08, 0.12, 0.20] });
-  pTexts.push({ text: 'SCRIPTORA · MASTER SHOOTING SCHEDULE', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
-  pTexts.push({ text: `${title.toUpperCase()} (${draft}) · 14 SHOOT DAYS · 18 SCENES`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
+  pTexts.push({ text: 'SCRIPTORA -- MASTER SHOOTING SCHEDULE', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
+  pTexts.push({ text: `${title.toUpperCase()} (${draft}) -- ${scheduleDays.length} SHOOT DAYS`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
   pTexts.push({ text: 'PAGE 1 OF 1', x: 515, y: 747, font: 'F2', size: 9, color: [1.0, 1.0, 1.0] });
 
   // Table Header
@@ -564,12 +613,102 @@ export function exportSchedulePdf(scheduleDays, scenes = [], scriptInfo = {}) {
 
   // Footer
   pVectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-  pTexts.push({ text: 'SCRIPTORA MASTER STRIPBOARD SCHEDULE · OWNER CONFIRMED BASELINE', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
+  pTexts.push({ text: 'SCRIPTORA MASTER STRIPBOARD SCHEDULE -- OWNER CONFIRMED BASELINE', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
   pTexts.push({ text: 'Page 1 of 1', x: 525, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
 
   pages.push({ vectors: pVectors, texts: pTexts });
   const blob = compilePdfDocument(pages);
   const filename = `ShootingSchedule_${title.replace(/\s+/g, '_')}.pdf`;
+  downloadPdfBlob(blob, filename);
+  return blob;
+}
+
+// =============================================================================
+// 6. STORYBOARD STUDIO PDF EXPORT
+// =============================================================================
+export function exportStoryboardPdf(frames = [], scriptInfo = {}) {
+  const title = scriptInfo.title || 'Chronicles of Dust';
+  const draft = scriptInfo.draft || 'Draft 4.2';
+  const pages = [];
+
+  const defaultFrames = [
+    {
+      sceneNum: 1,
+      shotNum: '1A',
+      title: 'Perimeter Outpost Gate',
+      lens: 'Wide Establishing Drone (24mm, 2.39:1)',
+      intExt: 'EXT',
+      dayNight: 'DAY',
+      description: "High altitude drone descending across dust devils toward Kevin's arrival."
+    },
+    {
+      sceneNum: 2,
+      shotNum: '2C',
+      title: 'Customs Shed Hologram',
+      lens: 'Medium Two-Shot (50mm, 2.39:1)',
+      intExt: 'INT',
+      dayNight: 'DAY',
+      description: 'Fluorescent tube flicker rim lighting Kevin and Meera over telemetry anomaly.'
+    },
+    {
+      sceneNum: 18,
+      shotNum: '18D',
+      title: 'High Pressure Bypass Tank',
+      lens: 'Close Tracking Dolly (35mm Anamorphic)',
+      intExt: 'INT',
+      dayNight: 'NIGHT',
+      description: 'Wrench slips in Kevin hand under spurting brine vapor with pulsing red siren strobe.'
+    }
+  ];
+
+  const actualFrames = (frames && frames.length > 0) ? frames : defaultFrames;
+  const pVectors = [];
+  const pTexts = [];
+
+  // Masthead
+  pVectors.push({ type: 'rect', x: 36, y: 735, w: 540, h: 32, fill: [0.08, 0.12, 0.20] });
+  pTexts.push({ text: 'SCRIPTORA -- STORYBOARD STUDIO SHOT COMPOSITION', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
+  pTexts.push({ text: `${title.toUpperCase()} (${draft}) -- VISUAL SHOT BOARDS`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
+  pTexts.push({ text: 'PAGE 1 OF 1', x: 515, y: 747, font: 'F2', size: 9, color: [1.0, 1.0, 1.0] });
+
+  let cardY = 575;
+  for (const f of actualFrames) {
+    // Shot Frame Outer Card
+    pVectors.push({ type: 'rect', x: 36, y: cardY, w: 540, h: 140, fill: [1.0, 1.0, 1.0], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
+
+    // Simulated Concept Framing Box (2.39:1 widescreen simulation)
+    pVectors.push({ type: 'rect', x: 46, y: cardY + 15, w: 200, h: 110, fill: [0.08, 0.10, 0.15], stroke: [0.3, 0.35, 0.4], lineWidth: 1.0 });
+    // Camera crosshairs
+    pVectors.push({ type: 'line', x1: 141, y1: cardY + 70, x2: 151, y2: cardY + 70, stroke: [0.5, 0.6, 0.7], lineWidth: 0.6 });
+    pVectors.push({ type: 'line', x1: 146, y1: cardY + 65, x2: 146, y2: cardY + 75, stroke: [0.5, 0.6, 0.7], lineWidth: 0.6 });
+
+    // Badge inside camera frame
+    pTexts.push({ text: `${f.intExt || 'EXT'}. ${f.dayNight || 'DAY'}`, x: 52, y: cardY + 23, font: 'F3', size: 7.5, color: [0.8, 0.8, 0.8] });
+
+    // Shot Metadata Details on Right
+    pTexts.push({ text: `SCENE ${f.sceneNum || 1} -- SHOT ${f.shotNum || '1A'}`, x: 260, y: cardY + 110, font: 'F2', size: 10, color: [0.1, 0.3, 0.8] });
+    pTexts.push({ text: f.title || 'Shot Concept', x: 260, y: cardY + 95, font: 'F2', size: 11, color: [0.1, 0.1, 0.1] });
+    pTexts.push({ text: `Camera Setup: ${f.lens || '50mm Prime (2.39:1)'}`, x: 260, y: cardY + 78, font: 'F3', size: 8.5, color: [0.4, 0.45, 0.5] });
+    
+    // Description paragraph
+    const descLines = wrapPdfText(f.description || '', 48);
+    let descY = cardY + 60;
+    for (const dLine of descLines) {
+      pTexts.push({ text: dLine, x: 260, y: descY, font: 'F1', size: 8, color: [0.2, 0.25, 0.3] });
+      descY -= 12;
+    }
+
+    cardY -= 150;
+  }
+
+  // Footer
+  pVectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
+  pTexts.push({ text: 'SCRIPTORA STORYBOARD STUDIO -- CAMERA & CONCEPT ARCHITECTURE', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
+  pTexts.push({ text: 'Page 1 of 1', x: 525, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
+
+  pages.push({ vectors: pVectors, texts: pTexts });
+  const blob = compilePdfDocument(pages);
+  const filename = `Storyboard_${title.replace(/\s+/g, '_')}.pdf`;
   downloadPdfBlob(blob, filename);
   return blob;
 }

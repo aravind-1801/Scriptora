@@ -3,6 +3,7 @@ import { renderBottomNav } from '../../components/bottomNav.js';
 import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import { showToast } from '../../components/toast.js';
+import { exportStoryboardPdf } from '../../services/pdfExport.js';
 
 export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -14,7 +15,12 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
       ${renderHeader('Pre-Production', 'Storyboard Studio')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
-        ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', '')}
+        ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', `
+          <button id="btn-export-storyboard-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export genuine Storyboard Studio PDF">
+            <span class="material-symbols-outlined text-[16px]">download</span>
+            <span>Export PDF</span>
+          </button>
+        `)}
 
         <!-- Feature Intro Banner -->
         <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -80,5 +86,49 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
 }
 
 export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
-  // Staged for Prompt 3
+  const exportBtn = document.getElementById('btn-export-storyboard-pdf');
+  if (exportBtn) {
+    exportBtn.onclick = () => {
+      try {
+        const frames = [
+          {
+            sceneNum: 1,
+            shotNum: '1A',
+            title: 'Perimeter Outpost Gate',
+            lens: 'Wide Establishing Drone (24mm, 2.39:1)',
+            intExt: 'EXT',
+            dayNight: 'DAY',
+            description: "High altitude drone descending across dust devils toward Kevin's arrival."
+          },
+          {
+            sceneNum: 2,
+            shotNum: '2C',
+            title: 'Customs Shed Hologram',
+            lens: 'Medium Two-Shot (50mm, 2.39:1)',
+            intExt: 'INT',
+            dayNight: 'DAY',
+            description: 'Fluorescent tube flicker rim lighting Kevin and Meera over telemetry anomaly.'
+          },
+          {
+            sceneNum: 18,
+            shotNum: '18D',
+            title: 'High Pressure Bypass Tank',
+            lens: 'Close Tracking Dolly (35mm Anamorphic)',
+            intExt: 'INT',
+            dayNight: 'NIGHT',
+            description: 'Wrench slips in Kevin hand under spurting brine vapor with pulsing red siren strobe.'
+          }
+        ];
+
+        exportStoryboardPdf(frames, {
+          title: 'Chronicles of Dust',
+          draft: 'Draft 4.2'
+        });
+        showToast('Exported Storyboard Studio PDF');
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to export Storyboard PDF');
+      }
+    };
+  }
 }

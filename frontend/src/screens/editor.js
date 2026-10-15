@@ -4632,23 +4632,37 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       streamOps.push(`BT /${font} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td (${safe}) Tj ET`);
     }
     const stream = streamOps.join('\n');
-    allObjects[cId] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    const encoder = new TextEncoder();
+    const streamBytes = encoder.encode(stream);
+    allObjects[cId] = `<< /Length ${streamBytes.length} >>\nstream\n${stream}\nendstream`;
   }
 
-  let pdf = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+  const encoder = new TextEncoder();
+  const header = '%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';
+  const headerBytes = encoder.encode(header);
+  let totalBytes = headerBytes.length;
+
   const offsets = [];
-  for (let i = 1; i <= currentId; i++) {
-    offsets[i] = pdf.length;
-    pdf += `${i} 0 obj\n${allObjects[i]}\nendobj\n`;
-  }
-  const xrefOffset = pdf.length;
-  pdf += `xref\n0 ${currentId + 1}\n0000000000 65535 f \n`;
-  for (let i = 1; i <= currentId; i++) {
-    pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
-  }
-  pdf += `trailer\n<< /Size ${currentId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  const objectBuffers = [];
 
-  return new Blob([pdf], { type: 'application/pdf' });
+  for (let i = 1; i <= currentId; i++) {
+    offsets[i] = totalBytes;
+    const objStr = `${i} 0 obj\n${allObjects[i]}\nendobj\n`;
+    const objBytes = encoder.encode(objStr);
+    objectBuffers.push(objBytes);
+    totalBytes += objBytes.length;
+  }
+
+  const xrefOffset = totalBytes;
+  let xrefStr = `xref\n0 ${currentId + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= currentId; i++) {
+    xrefStr += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+
+  xrefStr += `trailer\n<< /Size ${currentId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+  const xrefBytes = encoder.encode(xrefStr);
+
+  return new Blob([headerBytes, ...objectBuffers, xrefBytes], { type: 'application/pdf' });
 }
 
   // 3. Export Modal
