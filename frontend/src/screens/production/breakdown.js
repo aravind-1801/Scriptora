@@ -4,6 +4,7 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { exportBreakdownPdf } from '../../services/pdfExport.js';
 
 // Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const CATEGORY_CONFIG = {
@@ -29,10 +30,16 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
         ${renderProdSubNav('Script Breakdown', 'dataset', from || '/production', `
-          <button id="btn-add-element" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer">
-            <span class="material-symbols-outlined text-[16px]">add</span>
-            <span>Add Element</span>
-          </button>
+          <div class="flex items-center gap-2">
+            <button id="btn-export-breakdown-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export genuine Script Breakdown Report PDF">
+              <span class="material-symbols-outlined text-[16px]">download</span>
+              <span class="hidden sm:inline">Export PDF</span>
+            </button>
+            <button id="btn-add-element" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              <span>Add Element</span>
+            </button>
+          </div>
         `)}
 
         <!-- Breakdown Status Summary -->
@@ -1015,6 +1022,23 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
   if (btnOpenAdd) btnOpenAdd.onclick = openModal;
   if (btnCloseAdd) btnCloseAdd.onclick = closeModal;
   if (btnCancelAdd) btnCancelAdd.onclick = closeModal;
+
+  const exportBreakdownBtn = document.getElementById('btn-export-breakdown-pdf');
+  if (exportBreakdownBtn) {
+    exportBreakdownBtn.onclick = async () => {
+      try {
+        const list = await api.getProductionBreakdown(scriptId, currentCategory, currentScene);
+        exportBreakdownPdf(list, {
+          title: 'Chronicles of Dust',
+          draft: 'Draft 4.2'
+        });
+        showToast(`Exported Breakdown Report (${list.length} elements) PDF`);
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to export breakdown PDF');
+      }
+    };
+  }
 
   if (addForm) {
     addForm.onsubmit = async (e) => {

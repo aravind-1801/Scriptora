@@ -4,6 +4,7 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { exportBreakdownPdf } from '../../services/pdfExport.js';
 
 // Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const SCENE_CATEGORIES = [
@@ -38,10 +39,16 @@ export function renderScenesScreen(fromParam = null, scriptParam = null, sceneId
           sceneId ? 'movie' : 'hub',
           backUrl,
           sceneId ? `
-            <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId}&from=${encodeURIComponent(currentSceneLocation)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
-              <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
-              <span>Actor Sides</span>
-            </a>
+            <div class="flex items-center gap-2">
+              <button id="btn-export-scene-pdf" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export Scene Logistics & Breakdown PDF">
+                <span class="material-symbols-outlined text-[15px]">download</span>
+                <span>Export PDF</span>
+              </button>
+              <a href="/production/dialogue-sides?scriptId=${scriptId}&scene=${sceneId.replace(/[^0-9]/g, '')}&from=${encodeURIComponent(currentSceneLocation)}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors">
+                <span class="material-symbols-outlined text-[15px]">record_voice_over</span>
+                <span>Actor Sides</span>
+              </a>
+            </div>
           ` : ''
         )}
 
@@ -322,6 +329,22 @@ export async function attachScenesEvents(navigate, fromParam = null, scriptParam
           continuityNotes: contNotes
         });
         showToast(`Saved logistics notes for Scene ${scene.sceneNumber}`);
+      };
+    }
+
+    const exportScenePdfBtn = document.getElementById('btn-export-scene-pdf');
+    if (exportScenePdfBtn) {
+      exportScenePdfBtn.onclick = () => {
+        try {
+          exportBreakdownPdf(scene.elements || [], {
+            title: `Chronicles of Dust — Scene ${scene.sceneNumber} (${scene.heading})`,
+            draft: 'Draft 4.2'
+          });
+          showToast(`Exported Scene ${scene.sceneNumber} Logistics PDF`);
+        } catch (err) {
+          console.error(err);
+          showToast('Failed to export scene PDF');
+        }
       };
     }
 

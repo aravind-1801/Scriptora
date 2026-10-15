@@ -290,16 +290,55 @@ export const server = http.createServer(async (req, res) => {
     }
 
     const prodResMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/resources$/);
-    if (prodResMatch && method === 'GET') {
-      const category = url.searchParams.get('category');
-      const resources = productionService.getProductionResources(prodResMatch[1], category);
-      return sendJson(res, 200, { resources });
+    if (prodResMatch) {
+      const scriptId = prodResMatch[1];
+      if (method === 'GET') {
+        const category = url.searchParams.get('category');
+        const resources = productionService.getProductionResources(scriptId, category);
+        return sendJson(res, 200, { resources });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const resource = productionService.createProductionResource(scriptId, body);
+        return sendJson(res, 201, { resource });
+      }
+    }
+
+    const prodResDetailMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/resources\/([a-zA-Z0-9_-]+)$/);
+    if (prodResDetailMatch) {
+      const scriptId = prodResDetailMatch[1];
+      const resId = prodResDetailMatch[2];
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const resource = productionService.updateProductionResource(scriptId, resId, body);
+        return sendJson(res, 200, { resource });
+      }
+      if (method === 'DELETE') {
+        const result = productionService.deleteProductionResource(scriptId, resId);
+        return sendJson(res, 200, result);
+      }
     }
 
     const prodDocsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/documents$/);
-    if (prodDocsMatch && method === 'GET') {
-      const documents = productionService.getProductionDocuments(prodDocsMatch[1]);
-      return sendJson(res, 200, { documents });
+    if (prodDocsMatch) {
+      const scriptId = prodDocsMatch[1];
+      if (method === 'GET') {
+        const documents = productionService.getProductionDocuments(scriptId);
+        return sendJson(res, 200, { documents });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const document = productionService.createProductionDocument(scriptId, body);
+        return sendJson(res, 201, { document });
+      }
+    }
+
+    const prodDocsDetailMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/documents\/([a-zA-Z0-9_-]+)$/);
+    if (prodDocsDetailMatch && method === 'DELETE') {
+      const scriptId = prodDocsDetailMatch[1];
+      const docId = prodDocsDetailMatch[2];
+      const result = productionService.deleteProductionDocument(scriptId, docId);
+      return sendJson(res, 200, result);
     }
 
     const prodPropsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/proposals$/);
@@ -423,6 +462,10 @@ export const server = http.createServer(async (req, res) => {
         const callSheet = productionService.updateProductionCallSheet(scriptId, csId, body);
         return sendJson(res, 200, { callSheet });
       }
+      if (method === 'DELETE') {
+        const result = productionService.deleteProductionCallSheet(scriptId, csId);
+        return sendJson(res, 200, result);
+      }
     }
 
     // 14. SHOOTING SCHEDULE
@@ -438,13 +481,27 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { schedule });
     }
 
+    const prodScheduleDayPostMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/schedule\/day$/);
+    if (prodScheduleDayPostMatch && method === 'POST') {
+      const scriptId = prodScheduleDayPostMatch[1];
+      const body = await readBody(req);
+      const day = productionService.addProductionScheduleDay(scriptId, body);
+      return sendJson(res, 201, { day });
+    }
+
     const prodScheduleDayMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/schedule\/day\/([0-9]+)$/);
-    if (prodScheduleDayMatch && method === 'PUT') {
+    if (prodScheduleDayMatch) {
       const scriptId = prodScheduleDayMatch[1];
       const dayNum = prodScheduleDayMatch[2];
-      const body = await readBody(req);
-      const day = productionService.updateProductionScheduleDay(scriptId, dayNum, body);
-      return sendJson(res, 200, { day });
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const day = productionService.updateProductionScheduleDay(scriptId, dayNum, body);
+        return sendJson(res, 200, { day });
+      }
+      if (method === 'DELETE') {
+        const result = productionService.deleteProductionScheduleDay(scriptId, dayNum);
+        return sendJson(res, 200, result);
+      }
     }
 
     // 15. READINESS CHECKS

@@ -502,3 +502,150 @@ export function restoreProductionSnapshot(scriptId, versionTag) {
   return ws;
 }
 
+// 7. CALL SHEET DELETE / ARCHIVE
+export function deleteProductionCallSheet(scriptId, callSheetId) {
+  const idx = db.productionCallSheets.findIndex(c => c.scriptId === scriptId && c.id === callSheetId);
+  if (idx === -1) throw new Error("Call sheet not found");
+  const cs = db.productionCallSheets[idx];
+  db.productionCallSheets.splice(idx, 1);
+  logProductionAudit(scriptId, {
+    action: "DELETE_CALL_SHEET",
+    category: "CALL_SHEET",
+    details: `Removed Call Sheet #${cs.callSheetNumber} (${cs.shootDay})`,
+    sourceVersion: "Draft 4.2"
+  });
+  return { success: true, removedId: callSheetId };
+}
+
+// 8. SCHEDULE DAYS CRUD
+export function addProductionScheduleDay(scriptId, dayData) {
+  const nextNum = db.productionSchedule.length > 0 
+    ? Math.max(...db.productionSchedule.map(d => d.dayNumber)) + 1 
+    : 1;
+  const newDay = {
+    dayNumber: dayData.dayNumber || nextNum,
+    date: dayData.date || `Nov ${String(nextNum).padStart(2, '0')}, 2026`,
+    title: dayData.title || `Shoot Day ${nextNum}`,
+    location: dayData.location || "Location TBD",
+    sceneNumbers: dayData.sceneNumbers || [],
+    totalPages: dayData.totalPages || "0 0/8",
+    estHours: dayData.estHours || 8.0,
+    companyMoves: dayData.companyMoves || 0,
+    isLocked: false,
+    status: "Draft"
+  };
+  db.productionSchedule.push(newDay);
+  logProductionAudit(scriptId, {
+    action: "ADD_SHOOT_DAY",
+    category: "SCHEDULE",
+    details: `Added Day ${newDay.dayNumber} (${newDay.title}) to master schedule`,
+    sourceVersion: "Draft 4.2"
+  });
+  return newDay;
+}
+
+export function deleteProductionScheduleDay(scriptId, dayNumber) {
+  const num = Number(dayNumber);
+  const idx = db.productionSchedule.findIndex(d => d.dayNumber === num);
+  if (idx === -1) throw new Error("Shoot day not found");
+  const removed = db.productionSchedule.splice(idx, 1)[0];
+  logProductionAudit(scriptId, {
+    action: "DELETE_SHOOT_DAY",
+    category: "SCHEDULE",
+    details: `Deleted Day ${removed.dayNumber} (${removed.title}) from master schedule`,
+    sourceVersion: "Draft 4.2"
+  });
+  return { success: true, removedDayNumber: num };
+}
+
+// 9. RESOURCES / DIRECTORY CRUD
+export function createProductionResource(scriptId, resData) {
+  const newRes = {
+    id: `res-${Date.now()}`,
+    scriptId,
+    category: resData.category || "Crew",
+    name: resData.name,
+    role: resData.role || "",
+    department: resData.department || resData.category || "Production",
+    scenes: resData.scenes || [],
+    status: resData.status || "Confirmed",
+    contactRestricted: resData.contactRestricted || false,
+    contact: resData.contact || "",
+    notes: resData.notes || ""
+  };
+  db.productionResources.push(newRes);
+  logProductionAudit(scriptId, {
+    action: "ADD_RESOURCE",
+    category: "DIRECTORY",
+    details: `Added ${newRes.name} (${newRes.category} • ${newRes.role}) to production directory`,
+    sourceVersion: "Draft 4.2"
+  });
+  return newRes;
+}
+
+export function updateProductionResource(scriptId, resId, updates) {
+  const res = db.productionResources.find(r => r.scriptId === scriptId && r.id === resId);
+  if (!res) throw new Error("Resource not found");
+  Object.assign(res, updates);
+  logProductionAudit(scriptId, {
+    action: "UPDATE_RESOURCE",
+    category: "DIRECTORY",
+    details: `Updated ${res.name} (${res.category}) details`,
+    sourceVersion: "Draft 4.2"
+  });
+  return res;
+}
+
+export function deleteProductionResource(scriptId, resId) {
+  const idx = db.productionResources.findIndex(r => r.scriptId === scriptId && r.id === resId);
+  if (idx === -1) throw new Error("Resource not found");
+  const removed = db.productionResources.splice(idx, 1)[0];
+  logProductionAudit(scriptId, {
+    action: "DELETE_RESOURCE",
+    category: "DIRECTORY",
+    details: `Removed ${removed.name} (${removed.category}) from directory`,
+    sourceVersion: "Draft 4.2"
+  });
+  return { success: true, removedId: resId };
+}
+
+// 10. DOCUMENTS CRUD
+export function createProductionDocument(scriptId, docData) {
+  const newDoc = {
+    id: `doc-${Date.now()}`,
+    scriptId,
+    type: docData.type || "Production Report",
+    title: docData.title || "New Production Document",
+    sourceVersion: docData.sourceVersion || "Draft 4.2",
+    shootDay: docData.shootDay || "General",
+    date: docData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    location: docData.location || "Production Basecamp",
+    scenes: docData.scenes || [],
+    status: docData.status || "Draft",
+    published: docData.published || false,
+    version: docData.version || "v0.9"
+  };
+  db.productionDocuments.unshift(newDoc);
+  logProductionAudit(scriptId, {
+    action: "CREATE_DOCUMENT",
+    category: "DOCUMENTS",
+    details: `Created new document "${newDoc.title}" (${newDoc.type})`,
+    sourceVersion: "Draft 4.2"
+  });
+  return newDoc;
+}
+
+export function deleteProductionDocument(scriptId, docId) {
+  const idx = db.productionDocuments.findIndex(d => d.scriptId === scriptId && d.id === docId);
+  if (idx === -1) throw new Error("Document not found");
+  const removed = db.productionDocuments.splice(idx, 1)[0];
+  logProductionAudit(scriptId, {
+    action: "DELETE_DOCUMENT",
+    category: "DOCUMENTS",
+    details: `Removed document "${removed.title}"`,
+    sourceVersion: "Draft 4.2"
+  });
+  return { success: true, removedId: docId };
+}
+
+

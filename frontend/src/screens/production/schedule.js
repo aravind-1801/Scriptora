@@ -4,6 +4,7 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { exportSchedulePdf } from '../../services/pdfExport.js';
 
 export function renderScheduleScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -18,11 +19,15 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
         <!-- SubNav with Title, Project Context & Primary Actions -->
         ${renderProdSubNav('Shooting Schedule', 'calendar_month', from || '/production', `
           <div class="flex items-center gap-2">
-            <button id="btn-plan-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all" title="Analyze schedule against production constraints">
-              <span class="material-symbols-outlined text-[16px] text-blue-600">auto_fix_high</span>
-              <span class="hidden sm:inline">Plan Schedule</span>
+            <button id="btn-export-schedule-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export genuine Master Shooting Schedule PDF">
+              <span class="material-symbols-outlined text-[16px]">download</span>
+              <span class="hidden sm:inline">Export PDF</span>
             </button>
-            <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all" title="Confirm and lock master shooting schedule">
+            <button id="btn-add-shoot-day" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Add a new shoot day to schedule">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              <span class="hidden sm:inline">Add Day</span>
+            </button>
+            <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Confirm and lock master shooting schedule">
               <span class="material-symbols-outlined text-[16px]">check_circle</span>
               <span>Confirm</span>
             </button>
@@ -104,11 +109,17 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
             </div>
 
             <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-              <button id="modal-day-lock-toggle" class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[15px]">lock</span>
-                <span id="modal-day-lock-label">Lock Day</span>
-              </button>
-              <button id="modal-day-done" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors">
+              <div class="flex items-center gap-2">
+                <button id="modal-day-lock-toggle" class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs flex items-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined text-[15px]">lock</span>
+                  <span id="modal-day-lock-label">Lock Day</span>
+                </button>
+                <button id="modal-day-delete" class="px-2.5 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 font-medium text-xs flex items-center gap-1 cursor-pointer" title="Delete this shoot day">
+                  <span class="material-symbols-outlined text-[15px]">delete</span>
+                  <span>Delete Day</span>
+                </button>
+              </div>
+              <button id="modal-day-done" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer">
                 Done
               </button>
             </div>
@@ -327,6 +338,22 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
           }
         };
       });
+      // Wire Delete Day inside modal
+      const deleteDayBtn = document.getElementById('modal-day-delete');
+      if (deleteDayBtn) {
+        deleteDayBtn.onclick = async () => {
+          if (!confirm(`Are you sure you want to remove Shoot Day ${day.dayNumber}? Any scenes should be moved first.`)) return;
+          const res = await api.deleteProductionScheduleDay(scriptId, day.dayNumber);
+          if (res.success) {
+            showToast(`Shoot Day ${day.dayNumber} deleted`);
+            closeDayModal();
+            days = await api.getProductionSchedule(scriptId);
+            renderCalendar();
+          } else {
+            showToast(res.message || 'Failed to delete day');
+          }
+        };
+      }
     }
 
     dayModal.classList.remove('hidden');
@@ -345,26 +372,55 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   }
 
   // ---------------------------------------------------------------------------
-  // PRIMARY ACTION BUTTONS: PLAN SCHEDULE & CONFIRM SCHEDULE
+  // PRIMARY ACTION BUTTONS: EXPORT PDF, ADD DAY & CONFIRM SCHEDULE
   // ---------------------------------------------------------------------------
-  const planBtn = document.getElementById('btn-plan-schedule');
-  if (planBtn) {
-    planBtn.onclick = () => {
-      showToast('Schedule analyzed against location clustering & actor rest constraints');
+  const exportPdfBtn = document.getElementById('btn-export-schedule-pdf');
+  if (exportPdfBtn) {
+    exportPdfBtn.onclick = () => {
+      try {
+        exportSchedulePdf(days, scenes, {
+          title: 'Chronicles of Dust',
+          draft: 'Draft 4.2'
+        });
+        showToast('Exported Master Shooting Schedule PDF');
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to export schedule PDF');
+      }
+    };
+  }
+
+  const addDayBtn = document.getElementById('btn-add-shoot-day');
+  if (addDayBtn) {
+    addDayBtn.onclick = async () => {
+      const nextDayNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
+      const title = prompt(`Enter title/focus for Shoot Day ${nextDayNum}:`, `Day ${nextDayNum} — Secondary Unit & Pickups`);
+      if (!title) return;
+      const location = prompt('Enter shoot location for this day:', 'Mojave Desert Facility');
+      if (!location) return;
+      await api.addProductionScheduleDay(scriptId, {
+        dayNumber: nextDayNum,
+        title,
+        date: `Shoot Day ${nextDayNum}`,
+        location,
+        estHours: 10,
+        sceneNumbers: []
+      });
+      days = await api.getProductionSchedule(scriptId);
+      showToast(`Added Shoot Day ${nextDayNum}`);
+      renderCalendar();
     };
   }
 
   const confirmBtn = document.getElementById('btn-confirm-schedule');
   if (confirmBtn) {
     confirmBtn.onclick = async () => {
-      if (!confirm('Confirm and lock the 14-day master shooting calendar for Chronicles of Dust?')) return;
+      if (!confirm('Confirm and lock the master shooting calendar for Chronicles of Dust?')) return;
       days = await api.confirmProductionSchedule(scriptId);
-      showToast('14-day shooting schedule confirmed and locked by Owner');
+      showToast('Master shooting schedule confirmed and locked by Owner');
       renderCalendar();
     };
   }
-
-
 
   // Initial Render
   renderCalendar();

@@ -2448,4 +2448,205 @@ export async function restoreProductionSnapshot(scriptId, versionTag) {
   return ws;
 }
 
+export async function deleteProductionCallSheet(scriptId, csId) {
+  try {
+    const res = await request(`/production/${scriptId}/call-sheets/${csId}`, { method: 'DELETE' });
+    if (res?.success) {
+      const sheets = await getProductionCallSheets(scriptId);
+      const filtered = sheets.filter(c => c.id !== csId);
+      localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (e) {}
+
+  const sheets = await getProductionCallSheets(scriptId);
+  const filtered = sheets.filter(c => c.id !== csId);
+  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(filtered));
+  return { success: true, removedId: csId };
+}
+
+export async function addProductionScheduleDay(scriptId, dayData) {
+  try {
+    const res = await request(`/production/${scriptId}/schedule/day`, {
+      method: 'POST',
+      body: JSON.stringify(dayData)
+    });
+    if (res?.day) {
+      const days = await getProductionSchedule(scriptId);
+      days.push(res.day);
+      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(days));
+      return res.day;
+    }
+  } catch (e) {}
+
+  const days = await getProductionSchedule(scriptId);
+  const nextNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
+  const newDay = {
+    dayNumber: dayData.dayNumber || nextNum,
+    date: dayData.date || `Nov ${String(nextNum).padStart(2, '0')}, 2026`,
+    title: dayData.title || `Shoot Day ${nextNum}`,
+    location: dayData.location || "Location TBD",
+    sceneNumbers: dayData.sceneNumbers || [],
+    totalPages: dayData.totalPages || "0 0/8",
+    estHours: dayData.estHours || 8.0,
+    companyMoves: dayData.companyMoves || 0,
+    isLocked: false,
+    status: "Draft"
+  };
+  days.push(newDay);
+  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(days));
+  return newDay;
+}
+
+export async function deleteProductionScheduleDay(scriptId, dayNumber) {
+  const num = Number(dayNumber);
+  try {
+    const res = await request(`/production/${scriptId}/schedule/day/${num}`, { method: 'DELETE' });
+    if (res?.success) {
+      const days = await getProductionSchedule(scriptId);
+      const filtered = days.filter(d => d.dayNumber !== num);
+      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (e) {}
+
+  const days = await getProductionSchedule(scriptId);
+  const filtered = days.filter(d => d.dayNumber !== num);
+  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(filtered));
+  return { success: true, removedDayNumber: num };
+}
+
+export async function createProductionResource(scriptId, resData) {
+  try {
+    const res = await request(`/production/${scriptId}/resources`, {
+      method: 'POST',
+      body: JSON.stringify(resData)
+    });
+    if (res?.resource) {
+      const list = await getProductionResources(scriptId);
+      list.push(res.resource);
+      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+      return res.resource;
+    }
+  } catch (e) {}
+
+  const list = await getProductionResources(scriptId);
+  const newRes = {
+    id: `res-${Date.now()}`,
+    scriptId,
+    category: resData.category || "Crew",
+    name: resData.name,
+    role: resData.role || "",
+    department: resData.department || resData.category || "Production",
+    scenes: resData.scenes || [],
+    status: resData.status || "Confirmed",
+    contactRestricted: resData.contactRestricted || false,
+    contact: resData.contact || "",
+    notes: resData.notes || ""
+  };
+  list.push(newRes);
+  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
+  localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+  return newRes;
+}
+
+export async function updateProductionResource(scriptId, resId, updates) {
+  try {
+    const res = await request(`/production/${scriptId}/resources/${resId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+    if (res?.resource) {
+      const list = await getProductionResources(scriptId);
+      const idx = list.findIndex(r => r.id === resId);
+      if (idx !== -1) list[idx] = res.resource;
+      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+      return res.resource;
+    }
+  } catch (e) {}
+
+  const list = await getProductionResources(scriptId);
+  const item = list.find(r => r.id === resId);
+  if (item) {
+    Object.assign(item, updates);
+    localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
+    localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+    return item;
+  }
+  return updates;
+}
+
+export async function deleteProductionResource(scriptId, resId) {
+  try {
+    const res = await request(`/production/${scriptId}/resources/${resId}`, { method: 'DELETE' });
+    if (res?.success) {
+      const list = await getProductionResources(scriptId);
+      const filtered = list.filter(r => r.id !== resId);
+      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (e) {}
+
+  const list = await getProductionResources(scriptId);
+  const filtered = list.filter(r => r.id !== resId);
+  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(filtered));
+  return { success: true, removedId: resId };
+}
+
+export async function createProductionDocument(scriptId, docData) {
+  try {
+    const res = await request(`/production/${scriptId}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(docData)
+    });
+    if (res?.document) {
+      const docs = await getProductionDocuments(scriptId);
+      docs.unshift(res.document);
+      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(docs));
+      return res.document;
+    }
+  } catch (e) {}
+
+  const docs = await getProductionDocuments(scriptId);
+  const newDoc = {
+    id: `doc-${Date.now()}`,
+    scriptId,
+    type: docData.type || "Production Report",
+    title: docData.title || "New Production Document",
+    sourceVersion: docData.sourceVersion || "Draft 4.2",
+    shootDay: docData.shootDay || "General",
+    date: docData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    location: docData.location || "Production Basecamp",
+    scenes: docData.scenes || [],
+    status: docData.status || "Draft",
+    published: docData.published || false,
+    version: docData.version || "v0.9"
+  };
+  docs.unshift(newDoc);
+  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(docs));
+  return newDoc;
+}
+
+export async function deleteProductionDocument(scriptId, docId) {
+  try {
+    const res = await request(`/production/${scriptId}/documents/${docId}`, { method: 'DELETE' });
+    if (res?.success) {
+      const docs = await getProductionDocuments(scriptId);
+      const filtered = docs.filter(d => d.id !== docId);
+      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (e) {}
+
+  const docs = await getProductionDocuments(scriptId);
+  const filtered = docs.filter(d => d.id !== docId);
+  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(filtered));
+  return { success: true, removedId: docId };
+}
+
+
 

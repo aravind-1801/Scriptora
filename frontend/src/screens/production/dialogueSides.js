@@ -4,6 +4,7 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { exportDialogueSheetPdf, exportActorSidesPdf } from '../../services/pdfExport.js';
 
 export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -303,12 +304,35 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
     };
   }
 
-  // Export PDF button
+  // Authentic Vector PDF export
   const exportBtn = document.getElementById('btn-export-pdf');
   if (exportBtn) {
     exportBtn.onclick = () => {
-      window.print();
-      showToast(`Exported ${activeMode === 'dialogue' ? `${selectedChar} Dialogue Sheet` : `Scene ${selectedScene} Actor Sides`} PDF`);
+      try {
+        if (activeMode === 'dialogue') {
+          const charLines = scriptDialogue.filter(d => d.character === selectedChar);
+          exportDialogueSheetPdf(selectedChar, charLines, {
+            title: 'Chronicles of Dust',
+            draft: 'Draft 4.2'
+          });
+          showToast(`Exported ${selectedChar} Dialogue Sheet PDF`);
+        } else {
+          const scNum = Number(selectedScene);
+          const sceneLines = scriptDialogue.filter(d => d.sceneNum === scNum);
+          const firstLine = sceneLines[0] || { heading: `SCENE ${scNum}` };
+          exportActorSidesPdf(selectedScene, sceneLines, {
+            heading: firstLine.heading,
+            pages: '2 1/8'
+          }, {
+            title: 'Chronicles of Dust',
+            draft: 'Draft 4.2'
+          });
+          showToast(`Exported Scene ${selectedScene} Actor Sides PDF`);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Failed to generate PDF document');
+      }
     };
   }
 

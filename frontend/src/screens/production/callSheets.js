@@ -4,6 +4,7 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { exportCallSheetPdf } from '../../services/pdfExport.js';
 
 export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -381,11 +382,15 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             <span class="material-symbols-outlined text-[16px]">edit</span>
             <span>Edit</span>
           </a>
-          <button id="btn-print-callsheet" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
-            <span class="material-symbols-outlined text-[16px]">print</span>
-            <span>Print / PDF</span>
+          <button id="btn-print-callsheet" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer" title="Export genuine vector Call Sheet PDF">
+            <span class="material-symbols-outlined text-[16px]">download</span>
+            <span>Export PDF</span>
           </button>
           ${!isPublished && isOwner ? `
+            <button id="btn-delete-callsheet" class="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer" title="Delete draft call sheet">
+              <span class="material-symbols-outlined text-[16px]">delete</span>
+              <span>Delete Draft</span>
+            </button>
             <button id="btn-publish-callsheet" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">check_circle</span>
               <span>Approve & Publish</span>
@@ -505,12 +510,36 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
       </div>
     `;
 
-    // Print / PDF Snapshot Trigger
+    // Vector PDF Export Trigger
     const printBtn = document.getElementById('btn-print-callsheet');
     if (printBtn) {
       printBtn.onclick = () => {
-        window.print();
-        showToast('Print dialog launched');
+        try {
+          exportCallSheetPdf(cs, {
+            title: 'Chronicles of Dust',
+            company: 'Badlands Anthology LLC',
+            draft: 'Draft 4.2'
+          });
+          showToast(`Exported Call Sheet #${cs.callSheetNumber} PDF`);
+        } catch (err) {
+          console.error(err);
+          showToast('Failed to generate Call Sheet PDF');
+        }
+      };
+    }
+
+    // Delete Draft Trigger
+    const deleteBtn = document.getElementById('btn-delete-callsheet');
+    if (deleteBtn) {
+      deleteBtn.onclick = async () => {
+        if (!confirm(`Are you sure you want to delete draft Call Sheet #${cs.callSheetNumber}? This cannot be undone.`)) return;
+        const res = await api.deleteProductionCallSheet(scriptId, cs.id);
+        if (res.success) {
+          showToast(`Call Sheet #${cs.callSheetNumber} deleted`);
+          navigate(`/production/call-sheets?scriptId=${scriptId}`);
+        } else {
+          showToast(res.message || 'Failed to delete call sheet');
+        }
       };
     }
 
@@ -573,8 +602,20 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
               </div>
 
               <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>View & Print Call Sheet</span>
-                <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+                <span class="flex items-center gap-1">
+                  <span>View Details</span>
+                  <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+                </span>
+                <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+                  <button class="btn-card-export p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors" data-id="${cs.id}" title="Direct Export PDF">
+                    <span class="material-symbols-outlined text-[16px]">download</span>
+                  </button>
+                  ${!isPub && isOwner ? `
+                    <button class="btn-card-delete p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors" data-id="${cs.id}" data-num="${cs.callSheetNumber}" title="Delete Draft">
+                      <span class="material-symbols-outlined text-[16px]">delete</span>
+                    </button>
+                  ` : ''}
+                </div>
               </div>
             </div>
           `;
@@ -586,6 +627,38 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
       card.onclick = () => {
         const id = card.getAttribute('data-id');
         navigate(`/production/call-sheets?scriptId=${scriptId}&csId=${id}`);
+      };
+    });
+
+    container.querySelectorAll('.btn-card-export').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const sheet = sheets.find(s => s.id === id);
+        if (sheet) {
+          exportCallSheetPdf(sheet, {
+            title: 'Chronicles of Dust',
+            company: 'Badlands Anthology LLC',
+            draft: 'Draft 4.2'
+          });
+          showToast(`Exported Call Sheet #${sheet.callSheetNumber} PDF`);
+        }
+      };
+    });
+
+    container.querySelectorAll('.btn-card-delete').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const num = btn.getAttribute('data-num');
+        if (!confirm(`Delete draft Call Sheet #${num}?`)) return;
+        const res = await api.deleteProductionCallSheet(scriptId, id);
+        if (res.success) {
+          showToast(`Call Sheet #${num} deleted`);
+          attachCallSheetsEvents(navigate, fromParam, scriptParam);
+        } else {
+          showToast(res.message || 'Failed to delete');
+        }
       };
     });
   }
