@@ -9,7 +9,6 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const from = fromParam || urlParams.get('from');
-  const activeView = urlParams.get('view') || 'stripboard'; // 'stripboard' | 'list' | 'calendar'
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -17,24 +16,24 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-4 fade-in">
         <!-- SubNav with Title, Project Context & Primary Actions -->
-        ${renderProdSubNav('Shooting Schedule', 'calendar_view_week', from || '/production', `
+        ${renderProdSubNav('Shooting Schedule', 'calendar_month', from || '/production', `
           <div class="flex items-center gap-2">
-            <button id="btn-plan-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all" title="Run rule-based schedule optimization">
+            <button id="btn-plan-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all" title="Analyze schedule against production constraints">
               <span class="material-symbols-outlined text-[16px] text-blue-600">auto_fix_high</span>
               <span class="hidden sm:inline">Plan Schedule</span>
             </button>
-            <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all" title="Confirm and publish shooting schedule">
+            <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all" title="Confirm and lock master shooting schedule">
               <span class="material-symbols-outlined text-[16px]">check_circle</span>
               <span>Confirm</span>
             </button>
           </div>
         `)}
 
-        <!-- Top Context Header Bar: Project, Pinned Version & View Switcher -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <!-- Top Context Header Bar: Project & Pinned Screenplay -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
             <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined text-lg">movie</span>
+              <span class="material-symbols-outlined text-lg">calendar_month</span>
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2">
@@ -43,34 +42,16 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
                   Draft 4.2 (Pinned)
                 </span>
               </div>
-              <p class="text-[11px] text-slate-500 truncate mt-0.5">Master production schedule • 14 Shoot Days • Mojave & Soundstage</p>
+              <p class="text-[11px] text-slate-500 truncate mt-0.5">Master shooting calendar • 14 Shoot Days • October 24 – November 06, 2026</p>
             </div>
           </div>
-
-          <!-- View Selection Segmented Control -->
-          <div class="inline-flex items-center p-1 bg-slate-100 rounded-xl self-start sm:self-auto border border-slate-200/60 text-xs">
-            <button class="view-tab-btn px-3 py-1 rounded-lg transition-all ${activeView === 'stripboard' ? 'bg-white text-blue-600 font-semibold shadow-2xs' : 'text-slate-600 hover:text-slate-900'}" data-view="stripboard">
-              <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[15px]">view_timeline</span>
-                <span>Stripboard</span>
-              </span>
-            </button>
-            <button class="view-tab-btn px-3 py-1 rounded-lg transition-all ${activeView === 'list' ? 'bg-white text-blue-600 font-semibold shadow-2xs' : 'text-slate-600 hover:text-slate-900'}" data-view="list">
-              <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[15px]">format_list_bulleted</span>
-                <span>List</span>
-              </span>
-            </button>
-            <button class="view-tab-btn px-3 py-1 rounded-lg transition-all ${activeView === 'calendar' ? 'bg-white text-blue-600 font-semibold shadow-2xs' : 'text-slate-600 hover:text-slate-900'}" data-view="calendar">
-              <span class="flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-[15px]">calendar_month</span>
-                <span>Calendar</span>
-              </span>
-            </button>
+          <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>100% Scenes Scheduled</span>
           </div>
         </div>
 
-        <!-- Schedule Metrics Summary -->
+        <!-- Schedule Metrics Summary Bar -->
         <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs">
           <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
             <div class="p-2 sm:px-3 first:pl-1">
@@ -96,7 +77,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           </div>
         </div>
 
-        <!-- Semantic Conflict Notice (Shown only for real constraint advisories) -->
+        <!-- Semantic Conflict Notice (Shown only for genuine turnaround advisory) -->
         <div id="schedule-conflict-banner" class="bg-amber-50/70 border border-amber-200 rounded-2xl p-3 sm:p-3.5 flex items-start gap-3 text-xs text-amber-900">
           <span class="material-symbols-outlined text-amber-600 text-lg shrink-0 mt-0.5">warning</span>
           <div class="flex-1 min-w-0">
@@ -108,12 +89,12 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           </button>
         </div>
 
-        <!-- Dynamic View Content Container -->
-        <div id="schedule-view-container" class="flex flex-col gap-3 min-h-[300px]">
-          <div class="p-12 text-center text-slate-400 text-xs">Loading production schedule...</div>
+        <!-- Master Calendar Container -->
+        <div id="schedule-calendar-container" class="flex flex-col gap-3 min-h-[300px]">
+          <div class="p-12 text-center text-slate-400 text-xs">Loading shooting calendar...</div>
         </div>
 
-        <!-- Day Details Modal (Opens when user inspects or manages a shoot day) -->
+        <!-- Day Details Modal (Opens when user clicks any calendar day) -->
         <div id="day-detail-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-4 max-h-[90vh] overflow-hidden">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -156,186 +137,19 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
 export async function attachScheduleEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
-  let activeView = urlParams.get('view') || 'stripboard';
 
-  const viewContainer = document.getElementById('schedule-view-container');
+  const calendarContainer = document.getElementById('schedule-calendar-container');
   const dayModal = document.getElementById('day-detail-modal');
-  if (!viewContainer) return;
+  if (!calendarContainer) return;
 
   let days = await api.getProductionSchedule(scriptId);
   let scenes = await api.getProductionScenes(scriptId);
 
   // ---------------------------------------------------------------------------
-  // 1. STRIPBOARD VIEW RENDERER
+  // CALENDAR VIEW RENDERER (Clean, readable chronological matrix)
   // ---------------------------------------------------------------------------
-  function renderStripboardView() {
-    viewContainer.innerHTML = days.map(d => {
-      const isLocked = d.isLocked;
-      const isConfirmed = d.status === 'Confirmed';
-      const dayScenes = (d.sceneNumbers || [])
-        .map(num => scenes.find(s => s.sceneNumber === num))
-        .filter(Boolean);
-
-      return `
-        <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-xs flex flex-col gap-3" data-day="${d.dayNumber}">
-          <!-- Day Strip Header -->
-          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-heading font-bold text-xs shrink-0">
-                D${d.dayNumber}
-              </div>
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <h3 class="font-heading font-semibold text-xs sm:text-sm text-slate-900 truncate">Day ${d.dayNumber} — ${d.title}</h3>
-                  <span class="px-2 py-0.5 rounded-md text-[10px] font-medium border ${isConfirmed ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-200'}">
-                    ${isConfirmed ? 'Confirmed' : 'Draft'}
-                  </span>
-                </div>
-                <div class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-                  <span class="font-medium text-slate-700">${d.date}</span>
-                  <span>•</span>
-                  <span>${d.location}</span>
-                  <span>•</span>
-                  <span>${d.totalPages} pgs · ${d.estHours} hrs</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Day Actions: Lock Toggle & Manage Day -->
-            <div class="flex items-center gap-1.5 shrink-0">
-              <button class="btn-toggle-lock px-2 py-1 rounded-lg border border-slate-200 ${isLocked ? 'bg-slate-100 text-slate-700 font-semibold' : 'bg-white hover:bg-slate-50 text-slate-500'} text-xs flex items-center gap-1 transition-colors" data-day="${d.dayNumber}" title="${isLocked ? 'Day locked against auto-reorder' : 'Lock day'}">
-                <span class="material-symbols-outlined text-[15px]">${isLocked ? 'lock' : 'lock_open'}</span>
-                <span class="hidden sm:inline">${isLocked ? 'Locked' : 'Lock'}</span>
-              </button>
-              <button class="btn-manage-day px-2.5 py-1 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-medium transition-colors" data-day="${d.dayNumber}">
-                Manage Day
-              </button>
-            </div>
-          </div>
-
-          <!-- Scenes in this Day (Clean Neutral Strips) -->
-          <div class="flex flex-col gap-1.5">
-            ${dayScenes.length > 0 ? dayScenes.map((s, idx) => `
-              <div class="strip-card rounded-xl border border-slate-200/80 bg-white hover:bg-slate-50/60 p-2.5 flex items-center justify-between gap-2.5 text-xs shadow-2xs transition-colors" data-scene="${s.sceneNumber}">
-                <div class="flex items-center gap-2.5 min-w-0 flex-1">
-                  <!-- Drag / Reorder handle and scene number -->
-                  <div class="flex items-center gap-1 shrink-0">
-                    <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 font-mono font-bold text-xs flex items-center justify-center shrink-0">#${s.sceneNumber}</span>
-                  </div>
-
-                  <span class="font-bold text-[10px] uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 shrink-0 font-mono tracking-tight">${s.intExt} · ${s.dayNight}</span>
-                  <span class="font-medium text-slate-800 truncate">${s.heading}</span>
-                </div>
-
-                <div class="flex items-center gap-2.5 shrink-0 text-[11px]">
-                  <span class="text-slate-400 font-medium">${s.pages} pgs</span>
-                  <span class="hidden md:inline text-slate-500 truncate max-w-[130px]">Cast: ${(s.cast || []).map(c => `<a href="/production/breakdown?scriptId=${scriptId}&category=Cast&character=${encodeURIComponent(c)}&from=${encodeURIComponent(`/production/schedule?scriptId=${scriptId}&view=stripboard`)}" class="hover:underline hover:text-blue-600 font-medium">${c}</a>`).join(', ')}</span>
-
-                  <!-- Quick reorder actions within day -->
-                  <div class="flex items-center gap-0.5 border-l border-slate-200 pl-2">
-                    <button class="btn-move-strip-up p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none" data-day="${d.dayNumber}" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
-                      <span class="material-symbols-outlined text-[15px]">arrow_upward</span>
-                    </button>
-                    <button class="btn-move-strip-down p-1 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none" data-day="${d.dayNumber}" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
-                      <span class="material-symbols-outlined text-[15px]">arrow_downward</span>
-                    </button>
-                  </div>
-
-                  <!-- Move to another day dropdown -->
-                  <div class="relative shrink-0">
-                    <select class="select-move-scene text-[11px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-600 hover:bg-slate-100 cursor-pointer" data-from-day="${d.dayNumber}" data-scene="${s.sceneNumber}" title="Move scene to another day">
-                      <option value="" disabled selected>Move Day...</option>
-                      ${days.map(targetD => `
-                        <option value="${targetD.dayNumber}" ${targetD.dayNumber === d.dayNumber ? 'disabled' : ''}>
-                          Day ${targetD.dayNumber} (${targetD.date})
-                        </option>
-                      `).join('')}
-                    </select>
-                  </div>
-
-                  <a href="/production/scenes?scriptId=${scriptId}&sceneId=${s.id}&from=${encodeURIComponent(`/production/schedule?scriptId=${scriptId}&view=stripboard`)}" class="text-blue-600 hover:text-blue-800 font-semibold text-[11px] transition-colors ml-1" title="View Scene in Scene Hub">
-                    Inspect
-                  </a>
-                </div>
-              </div>
-            `).join('') : `
-              <div class="text-center py-3 text-slate-400 text-xs italic">No scenes assigned to this day.</div>
-            `}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    attachStripboardInteractions();
-  }
-
-  // ---------------------------------------------------------------------------
-  // 2. LIST VIEW RENDERER
-  // ---------------------------------------------------------------------------
-  function renderListView() {
-    viewContainer.innerHTML = `
-      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs divide-y divide-slate-100">
-        ${days.map(d => {
-          const isConfirmed = d.status === 'Confirmed';
-          const dayScenes = (d.sceneNumbers || [])
-            .map(num => scenes.find(s => s.sceneNumber === num))
-            .filter(Boolean);
-
-          return `
-            <div class="p-3.5 sm:p-4 hover:bg-slate-50/50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-day="${d.dayNumber}">
-              <div class="flex items-start gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex flex-col items-center justify-center font-heading font-bold text-xs shrink-0">
-                  <span>D${d.dayNumber}</span>
-                </div>
-                <div class="min-w-0">
-                  <div class="flex items-center gap-2">
-                    <h3 class="font-heading font-semibold text-sm text-slate-900 truncate">Day ${d.dayNumber}: ${d.title}</h3>
-                    <span class="px-2 py-0.5 rounded-md text-[10px] font-medium border ${isConfirmed ? 'bg-slate-50 text-slate-600 border-slate-200' : 'bg-blue-50 text-blue-700 border-blue-200'}">
-                      ${d.status}
-                    </span>
-                    ${d.isLocked ? `<span class="material-symbols-outlined text-slate-400 text-[14px]" title="Locked">lock</span>` : ''}
-                  </div>
-                  <div class="flex flex-wrap items-center gap-y-1 gap-x-2.5 text-[11px] text-slate-500 mt-1">
-                    <span class="font-medium text-slate-700">${d.date}</span>
-                    <span>•</span>
-                    <span>Call: 07:00 AM</span>
-                    <span>•</span>
-                    <span>${d.location}</span>
-                    <span>•</span>
-                    <span>${d.totalPages} pages</span>
-                    <span>•</span>
-                    <span>${dayScenes.length} scenes</span>
-                  </div>
-                  <!-- Scenes summary badges -->
-                  <div class="flex flex-wrap items-center gap-1.5 mt-2">
-                    ${dayScenes.map(s => `
-                      <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold">
-                        #${s.sceneNumber} ${s.intExt}
-                      </span>
-                    `).join('')}
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
-                <button class="btn-manage-day px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition-colors" data-day="${d.dayNumber}">
-                  Manage Day
-                </button>
-              </div>
-            </div>
-          `;
-        }).join('')}
-      </div>
-    `;
-
-    attachListInteractions();
-  }
-
-  // ---------------------------------------------------------------------------
-  // 3. CALENDAR VIEW RENDERER
-  // ---------------------------------------------------------------------------
-  function renderCalendarView() {
-    viewContainer.innerHTML = `
+  function renderCalendar() {
+    calendarContainer.innerHTML = `
       <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col gap-3">
         <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-2">
@@ -352,13 +166,16 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
               .filter(Boolean);
 
             return `
-              <div class="calendar-day-card rounded-xl border border-slate-200/90 p-3 hover:border-blue-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-2 bg-slate-50/40" data-day="${d.dayNumber}">
+              <div class="calendar-day-card rounded-xl border border-slate-200/90 p-3 hover:border-blue-400 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between gap-2.5 bg-slate-50/40" data-day="${d.dayNumber}">
                 <div>
                   <div class="flex items-center justify-between">
-                    <span class="font-heading font-bold text-xs text-slate-900">Day ${d.dayNumber}</span>
-                    <span class="text-[11px] font-mono text-slate-500">${d.date.split(',')[0]}</span>
+                    <div class="flex items-center gap-1.5">
+                      <span class="font-heading font-bold text-xs text-slate-900">Day ${d.dayNumber}</span>
+                      ${d.isLocked ? `<span class="material-symbols-outlined text-slate-400 text-[13px]" title="Day locked">lock</span>` : ''}
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-500 font-medium">${d.date.split(',')[0]}</span>
                   </div>
-                  <div class="text-[11px] text-slate-600 font-medium mt-1 truncate">${d.location}</div>
+                  <div class="text-[11px] text-slate-700 font-medium mt-1 truncate">${d.location}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">${d.totalPages} pgs • ${d.estHours} hrs</div>
                 </div>
 
@@ -369,7 +186,9 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                     `).join('')}
                     ${dayScenes.length > 3 ? `<span class="text-[10px] text-slate-400">+${dayScenes.length - 3}</span>` : ''}
                   </div>
-                  <span class="text-blue-600 font-semibold text-[10px]">Open &rarr;</span>
+                  <span class="text-blue-600 font-semibold text-[10px] flex items-center gap-0.5">
+                    Open &rarr;
+                  </span>
                 </div>
               </div>
             `;
@@ -378,11 +197,17 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       </div>
     `;
 
-    attachCalendarInteractions();
+    // Attach click events on day cards to open Day Details modal
+    calendarContainer.querySelectorAll('.calendar-day-card').forEach(el => {
+      el.onclick = () => {
+        const dayNum = el.getAttribute('data-day');
+        if (dayNum) openDayModal(dayNum);
+      };
+    });
   }
 
   // ---------------------------------------------------------------------------
-  // 4. DAY DETAILS MODAL LOGIC
+  // DAY DETAILS MODAL LOGIC (Inspect scenes, shooting order, move scene, lock)
   // ---------------------------------------------------------------------------
   function openDayModal(dayNumber) {
     const day = days.find(d => d.dayNumber === Number(dayNumber));
@@ -406,7 +231,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         await api.updateProductionScheduleDay(scriptId, day.dayNumber, { isLocked: day.isLocked });
         showToast(`Day ${day.dayNumber} ${day.isLocked ? 'locked' : 'unlocked'}`);
         if (lockLabel) lockLabel.textContent = day.isLocked ? 'Unlock Day' : 'Lock Day';
-        renderCurrentView();
+        renderCalendar();
       };
     }
 
@@ -418,12 +243,12 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       modalContent.innerHTML = `
         <div class="flex items-center justify-between pb-1">
           <span class="font-semibold text-slate-700 text-xs">Scenes in Shooting Order (${dayScenes.length})</span>
-          <span class="text-[11px] text-slate-400">Use arrows to adjust call order</span>
+          <span class="text-[11px] text-slate-400">Use arrows to adjust shooting order</span>
         </div>
         <div class="flex flex-col gap-2">
           ${dayScenes.length > 0 ? dayScenes.map((s, idx) => `
             <div class="rounded-xl border border-slate-200 p-2.5 bg-slate-50 flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex items-center gap-2.5 min-w-0">
                 <span class="w-6 h-6 rounded bg-white border border-slate-200 font-mono font-bold text-xs flex items-center justify-center text-slate-800 shrink-0">#${s.sceneNumber}</span>
                 <div class="min-w-0">
                   <div class="font-medium text-slate-800 text-xs truncate">${s.heading}</div>
@@ -432,15 +257,18 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
               </div>
 
               <div class="flex items-center gap-1.5 shrink-0">
-                <button class="btn-modal-up p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier">
+                <button class="btn-modal-up p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
                   <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
                 </button>
-                <button class="btn-modal-down p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later">
+                <button class="btn-modal-down p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
                   <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
                 </button>
                 <button class="btn-modal-move-out px-2 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-700" data-scene="${s.sceneNumber}" title="Move scene to another day">
                   Move Day
                 </button>
+                <a href="/production/scenes?scriptId=${scriptId}&sceneId=${s.id}&from=${encodeURIComponent(`/production/schedule?scriptId=${scriptId}`)}" class="text-blue-600 hover:text-blue-800 font-semibold text-[10px] ml-1">
+                  Inspect
+                </a>
               </div>
             </div>
           `).join('') : `
@@ -470,7 +298,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             await api.reorderSceneWithinDay(scriptId, day.dayNumber, arr);
             showToast('Scene shooting order updated');
             openDayModal(day.dayNumber);
-            renderCurrentView();
+            renderCalendar();
           }
         };
       });
@@ -488,7 +316,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             await api.reorderSceneWithinDay(scriptId, day.dayNumber, arr);
             showToast('Scene shooting order updated');
             openDayModal(day.dayNumber);
-            renderCurrentView();
+            renderCalendar();
           }
         };
       });
@@ -505,7 +333,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             days = await api.getProductionSchedule(scriptId);
             showToast(`Scene ${scNum} moved to Day ${targetNum}`);
             openDayModal(day.dayNumber);
-            renderCurrentView();
+            renderCalendar();
           } else {
             alert('Please enter a valid day number between 1 and 14.');
           }
@@ -529,143 +357,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   }
 
   // ---------------------------------------------------------------------------
-  // 5. ATTACH INTERACTIONS & STRIP REORDERING
-  // ---------------------------------------------------------------------------
-  function attachStripboardInteractions() {
-    // Open Day Details Modal
-    document.querySelectorAll('.btn-manage-day').forEach(el => {
-      el.onclick = (e) => {
-        if (e.target.closest('button') && !e.target.classList.contains('btn-manage-day')) return;
-        const dayNum = el.getAttribute('data-day');
-        if (dayNum) openDayModal(dayNum);
-      };
-    });
-
-    // Lock toggle button
-    document.querySelectorAll('.btn-toggle-lock').forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        const dayNum = btn.getAttribute('data-day');
-        const day = days.find(d => d.dayNumber === Number(dayNum));
-        if (day) {
-          day.isLocked = !day.isLocked;
-          await api.updateProductionScheduleDay(scriptId, dayNum, { isLocked: day.isLocked });
-          showToast(`Day ${dayNum} ${day.isLocked ? 'locked' : 'unlocked'}`);
-          renderCurrentView();
-        }
-      };
-    });
-
-    // Move Scene Up
-    document.querySelectorAll('.btn-move-strip-up').forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        const dayNum = btn.getAttribute('data-day');
-        const scNum = Number(btn.getAttribute('data-scene'));
-        const day = days.find(d => d.dayNumber === Number(dayNum));
-        if (!day) return;
-        const idx = day.sceneNumbers.indexOf(scNum);
-        if (idx > 0) {
-          const arr = [...day.sceneNumbers];
-          const temp = arr[idx];
-          arr[idx] = arr[idx - 1];
-          arr[idx - 1] = temp;
-          day.sceneNumbers = arr;
-          await api.reorderSceneWithinDay(scriptId, dayNum, arr);
-          showToast(`Scene ${scNum} moved earlier in shooting order`);
-          renderCurrentView();
-        }
-      };
-    });
-
-    // Move Scene Down
-    document.querySelectorAll('.btn-move-strip-down').forEach(btn => {
-      btn.onclick = async (e) => {
-        e.stopPropagation();
-        const dayNum = btn.getAttribute('data-day');
-        const scNum = Number(btn.getAttribute('data-scene'));
-        const day = days.find(d => d.dayNumber === Number(dayNum));
-        if (!day) return;
-        const idx = day.sceneNumbers.indexOf(scNum);
-        if (idx < day.sceneNumbers.length - 1) {
-          const arr = [...day.sceneNumbers];
-          const temp = arr[idx];
-          arr[idx] = arr[idx + 1];
-          arr[idx + 1] = temp;
-          day.sceneNumbers = arr;
-          await api.reorderSceneWithinDay(scriptId, dayNum, arr);
-          showToast(`Scene ${scNum} moved later in shooting order`);
-          renderCurrentView();
-        }
-      };
-    });
-
-    // Move Scene to Another Day Dropdown
-    document.querySelectorAll('.select-move-scene').forEach(sel => {
-      sel.onchange = async (e) => {
-        e.stopPropagation();
-        const fromDayNum = sel.getAttribute('data-from-day');
-        const scNum = sel.getAttribute('data-scene');
-        const toDayNum = sel.value;
-        if (!toDayNum) return;
-        await api.moveSceneBetweenDays(scriptId, scNum, fromDayNum, toDayNum);
-        days = await api.getProductionSchedule(scriptId);
-        showToast(`Scene ${scNum} moved from Day ${fromDayNum} to Day ${toDayNum}`);
-        renderCurrentView();
-      };
-    });
-  }
-
-  function attachListInteractions() {
-    document.querySelectorAll('.btn-manage-day').forEach(el => {
-      el.onclick = () => {
-        const dayNum = el.getAttribute('data-day');
-        if (dayNum) openDayModal(dayNum);
-      };
-    });
-  }
-
-  function attachCalendarInteractions() {
-    document.querySelectorAll('.calendar-day-card').forEach(el => {
-      el.onclick = () => {
-        const dayNum = el.getAttribute('data-day');
-        if (dayNum) openDayModal(dayNum);
-      };
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // 6. VIEW SELECTION SWITCHER
-  // ---------------------------------------------------------------------------
-  function renderCurrentView() {
-    if (activeView === 'list') {
-      renderListView();
-    } else if (activeView === 'calendar') {
-      renderCalendarView();
-    } else {
-      renderStripboardView();
-    }
-  }
-
-  document.querySelectorAll('.view-tab-btn').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.view-tab-btn').forEach(b => {
-        b.classList.remove('bg-white', 'text-blue-600', 'shadow-2xs', 'font-semibold');
-        b.classList.add('text-slate-600');
-      });
-      btn.classList.add('bg-white', 'text-blue-600', 'shadow-2xs', 'font-semibold');
-      btn.classList.remove('text-slate-600');
-
-      activeView = btn.getAttribute('data-view') || 'stripboard';
-      const url = new URL(window.location.href);
-      url.searchParams.set('view', activeView);
-      window.history.replaceState(null, '', url.pathname + url.search);
-      renderCurrentView();
-    };
-  });
-
-  // ---------------------------------------------------------------------------
-  // 7. PRIMARY ACTION BUTTONS: PLAN SCHEDULE & CONFIRM SCHEDULE
+  // PRIMARY ACTION BUTTONS: PLAN SCHEDULE & CONFIRM SCHEDULE
   // ---------------------------------------------------------------------------
   const planBtn = document.getElementById('btn-plan-schedule');
   if (planBtn) {
@@ -677,10 +369,10 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   const confirmBtn = document.getElementById('btn-confirm-schedule');
   if (confirmBtn) {
     confirmBtn.onclick = async () => {
-      if (!confirm('Confirm and lock the 14-day master stripboard schedule for Chronicles of Dust?')) return;
+      if (!confirm('Confirm and lock the 14-day master shooting calendar for Chronicles of Dust?')) return;
       days = await api.confirmProductionSchedule(scriptId);
       showToast('14-day shooting schedule confirmed and locked by Owner');
-      renderCurrentView();
+      renderCalendar();
     };
   }
 
@@ -694,5 +386,5 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   }
 
   // Initial Render
-  renderCurrentView();
+  renderCalendar();
 }
