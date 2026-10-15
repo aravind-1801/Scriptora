@@ -543,18 +543,19 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         ${sheets.map(cs => {
           const isPub = cs.status === 'Confirmed' || cs.isPublished;
           return `
-            <div class="cs-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group" data-id="${cs.id}">
+            <div class="cs-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 hover:shadow-xs transition-all cursor-pointer flex flex-col justify-between group" data-id="${cs.id}">
               <div>
                 <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2.5 min-w-0">
                     <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center font-mono font-bold text-xs shrink-0">
                       #${cs.callSheetNumber}
                     </div>
-                    <div>
-                      <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">${cs.shootDay}</h3>
-                      <p class="text-[11px] text-slate-500">${cs.shootDate}</p>
+                    <div class="min-w-0">
+                      <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">${cs.shootDay}</h3>
+                      <p class="text-[11px] text-slate-500 truncate">${cs.shootDate}</p>
                     </div>
                   </div>
-                  <span class="px-2 py-0.5 rounded-md text-[10px] font-medium ${isPub ? 'bg-slate-100 text-slate-700' : 'bg-amber-50/80 border border-amber-200 text-amber-800'}">
+                  <span class="px-2 py-0.5 rounded-md text-[10px] font-medium shrink-0 ${isPub ? 'bg-slate-100 text-slate-700' : 'bg-amber-50/80 border border-amber-200 text-amber-800'}">
                     ${isPub ? 'Published' : 'Draft'}
                   </span>
                 </div>

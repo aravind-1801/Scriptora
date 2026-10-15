@@ -1,60 +1,57 @@
-// SCRIPTORA Bottom Navigation — Single-Line, Instagram-Style Selection
-// All 5 destinations sit neatly on the exact same horizontal line.
-// Zero protrusion, zero overlapping, smooth sliding selection indicator.
-
-export const NAV_ITEMS = [
-  { id: 'workspace', label: 'Workspace', icon: 'description', path: '/workspace' },
-  { id: 'intelligence', label: 'Intelligence', icon: 'insights', path: '/intelligence' },
-  { id: 'chat', label: 'AI Chat', icon: 'chat_bubble', path: '/chat' },
-  { id: 'production', label: 'Production', icon: 'movie_creation', path: '/production' },
-  { id: 'profile', label: 'Profile', icon: 'account_circle', path: '/profile' }
-];
-
-export function getActiveNavIndex(activeTab = 'workspace') {
-  if (activeTab === 'workspace') return 0;
-  if (activeTab === 'intelligence') return 1;
-  if (activeTab === 'chat' || activeTab === 'ai-chat') return 2;
-  if (activeTab === 'production' || activeTab === 'pre-production') return 3;
-  if (activeTab === 'profile') return 4;
-  return -1;
-}
-
 export function renderBottomNav(activeTab = 'workspace') {
-  const activeIndex = getActiveNavIndex(activeTab);
+  const isWorkspace = activeTab === 'workspace';
+  const isIntelligence = activeTab === 'intelligence';
+  const isChat = activeTab === 'chat' || activeTab === 'ai-chat';
+  const isProduction = activeTab === 'production' || activeTab === 'pre-production';
+  const isProfile = activeTab === 'profile';
 
   return `
-    <nav class="fixed bottom-0 left-0 right-0 w-full z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/80 shadow-[0_-1px_6px_rgba(0,0,0,0.03)] select-none" style="padding-bottom: env(safe-area-inset-bottom, 0px);" data-global-bottom-nav="true" id="scriptora-bottom-nav">
-      <div class="h-14 sm:h-16 max-w-md mx-auto relative px-1">
+    <nav class="fixed bottom-0 left-0 right-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-xl shadow-[0_-1px_8px_rgba(0,0,0,0.04)] border-t border-surface-container-high/60 overflow-visible select-none" data-global-bottom-nav="true" id="scriptora-bottom-nav">
+      <div class="h-14 px-1 sm:px-3 grid grid-cols-5 items-center max-w-lg mx-auto relative overflow-visible">
         
-        <!-- Instagram-style Sliding Selection Indicator -->
-        <div class="absolute bottom-1 left-1 right-1 grid grid-cols-5 pointer-events-none" aria-hidden="true">
-          <div id="nav-sliding-track" class="col-span-1 flex justify-center transition-transform duration-200 ease-out" style="transform: translateX(${Math.max(0, activeIndex) * 100}%);">
-            <span class="w-1 h-1 rounded-full bg-blue-600"></span>
-          </div>
+        <!-- 1. Workspace Tab -->
+        <a href="/workspace" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isWorkspace ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-workspace" aria-label="Workspace" title="Workspace">
+          <span class="material-symbols-outlined text-[22px]" ${isWorkspace ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>description</span>
+          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Workspace</span>
+          ${isWorkspace ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
+        </a>
+
+        <!-- 2. Intelligence Tab -->
+        <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isIntelligence ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-intelligence" aria-label="Intelligence" title="Intelligence">
+          <span class="material-symbols-outlined text-[22px]" ${isIntelligence ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>insights</span>
+          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Intelligence</span>
+          ${isIntelligence ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
+        </a>
+
+        <!-- 3. Floating Center AI Chat Button (Raised rounded-square, symbol-only, SCRIPTORA light-blue palette) -->
+        <div class="flex items-center justify-center relative h-full overflow-visible">
+          <a
+            href="/chat"
+            class="group relative flex items-center justify-center w-12 h-12 rounded-[16px] -translate-y-3.5 transition-all duration-200 select-none ${isChat
+              ? 'bg-blue-600 text-white ring-4 ring-blue-100/90 border border-blue-500 shadow-[0_6px_16px_rgba(37,99,235,0.35)] scale-105'
+              : 'bg-white text-blue-600 ring-4 ring-surface/95 border border-blue-200/90 shadow-[0_4px_12px_rgba(33,81,218,0.14),0_1px_3px_rgba(0,0,0,0.04)] hover:bg-blue-50/80 hover:border-blue-300 hover:shadow-[0_6px_16px_rgba(33,81,218,0.20)] hover:-translate-y-4 active:scale-95 active:bg-blue-100'
+            } focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400"
+            id="nav-tab-chat"
+            aria-label="AI Chat"
+            title="AI Chat — Universal Assistant"
+          >
+            <span class="material-symbols-outlined text-[23px] transition-transform group-hover:scale-105" ${isChat ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>chat_bubble</span>
+          </a>
         </div>
 
-        <!-- 5 Single-Line Equal Touch Targets -->
-        <div class="grid grid-cols-5 h-full items-center relative z-10" id="nav-tabs-container">
-          ${NAV_ITEMS.map((item, idx) => {
-            const isActive = idx === activeIndex;
-            return `
-              <a href="${item.path}" 
-                 class="nav-tab-item flex flex-col items-center justify-center h-full min-h-[48px] py-1 px-0.5 text-center transition-colors duration-150 select-none min-w-0 ${isActive ? 'text-blue-600 font-semibold' : 'text-slate-400 hover:text-slate-700 font-medium'}" 
-                 id="nav-tab-${item.id}" 
-                 data-tab-id="${item.id}"
-                 data-tab-index="${idx}"
-                 aria-label="${item.label}" 
-                 title="${item.label}">
-                <span class="material-symbols-outlined text-[22px] leading-none transition-all duration-150 shrink-0" ${isActive ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>
-                  ${item.icon}
-                </span>
-                <span class="text-[10px] sm:text-[10.5px] leading-tight font-medium tracking-tight mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis max-w-full block select-none">
-                  ${item.label}
-                </span>
-              </a>
-            `;
-          }).join('')}
-        </div>
+        <!-- 4. Pre-Production Tab (4th position) -->
+        <a href="/production" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isProduction ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">
+          <span class="material-symbols-outlined text-[22px]" ${isProduction ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>movie_creation</span>
+          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Production</span>
+          ${isProduction ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
+        </a>
+
+        <!-- 5. Profile Tab -->
+        <a href="/profile" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isProfile ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-profile" aria-label="Profile" title="Profile">
+          <span class="material-symbols-outlined text-[22px]" ${isProfile ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>account_circle</span>
+          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Profile</span>
+          ${isProfile ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
+        </a>
 
       </div>
     </nav>
@@ -64,29 +61,6 @@ export function renderBottomNav(activeTab = 'workspace') {
 export function updateBottomNav(activeTab = 'workspace') {
   const navEl = document.getElementById('scriptora-bottom-nav');
   if (!navEl) return false;
-
-  const activeIndex = getActiveNavIndex(activeTab);
-  const track = document.getElementById('nav-sliding-track');
-  if (track && activeIndex >= 0) {
-    track.style.transform = `translateX(${activeIndex * 100}%)`;
-  }
-
-  NAV_ITEMS.forEach((item, idx) => {
-    const tabEl = document.getElementById(`nav-tab-${item.id}`);
-    if (!tabEl) return;
-    const isActive = idx === activeIndex;
-    const iconEl = tabEl.querySelector('.material-symbols-outlined');
-
-    if (isActive) {
-      tabEl.classList.remove('text-slate-400', 'hover:text-slate-700', 'font-medium');
-      tabEl.classList.add('text-blue-600', 'font-semibold');
-      if (iconEl) iconEl.style.fontVariationSettings = "'FILL' 1";
-    } else {
-      tabEl.classList.remove('text-blue-600', 'font-semibold');
-      tabEl.classList.add('text-slate-400', 'hover:text-slate-700', 'font-medium');
-      if (iconEl) iconEl.style.fontVariationSettings = "";
-    }
-  });
-
+  navEl.outerHTML = renderBottomNav(activeTab);
   return true;
 }
