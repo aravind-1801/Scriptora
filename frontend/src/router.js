@@ -221,7 +221,7 @@ class Router {
       this.render(
         renderEditorScreen(scriptId, targetScene),
         () => attachEditorEvents(scriptId, this.navigate.bind(this)),
-        { activeTab: 'workspace', sectionTitle: 'Editor', subtitle: currentScript.title || 'Screenplay Studio', hideHeader: true }
+        { activeTab: 'workspace', sectionTitle: 'Editor', subtitle: currentScript.title || 'Screenplay Studio', hideHeader: true, hideNav: true }
       );
       return;
     }
@@ -478,6 +478,7 @@ class Router {
 
     const isPublic = !!options.isPublic;
     const hideHeader = !!options.hideHeader;
+    const hideNav = !!options.hideNav;
     const activeTab = options.activeTab || 'workspace';
     const sectionTitle = options.sectionTitle || 'Scriptora';
     const subtitle = options.subtitle || '';
@@ -496,8 +497,13 @@ class Router {
         }
       }
       if (navSlot && !this.isFullScreen) {
-        navSlot.classList.remove('hidden');
-        navSlot.innerHTML = renderBottomNav(activeTab);
+        if (hideNav) {
+          navSlot.classList.add('hidden');
+          navSlot.innerHTML = '';
+        } else {
+          navSlot.classList.remove('hidden');
+          navSlot.innerHTML = renderBottomNav(activeTab);
+        }
       }
     }
 

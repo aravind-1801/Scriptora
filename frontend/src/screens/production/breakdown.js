@@ -680,18 +680,18 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
 
       return `
         <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:border-blue-300 transition-all border-l-4 ${catCfg.accentBorder} flex flex-col gap-2.5" data-id="${item.id}">
-          <!-- Top Row: Scene Tag, Category Tag, Name, Status, Action Buttons -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs shrink-0 flex items-center gap-1">
+          <!-- Top Row: Element Name on Left, then Scene Tag, Category Tag, Status, Action Buttons -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-2 flex-wrap min-w-0">
+              <h3 class="font-heading font-bold text-base text-slate-900 tracking-tight shrink-0 mr-1">${item.name}</h3>
+              <span class="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 font-bold text-xs shrink-0 flex items-center gap-1">
                 <span class="material-symbols-outlined text-[14px]">movie</span>
                 <span>${scenesDisplay}</span>
               </span>
-              <span class="px-2.5 py-0.5 rounded-xl border text-[11px] font-bold flex items-center gap-1 ${catCfg.badgeBg}">
+              <span class="px-2.5 py-0.5 rounded-lg border text-[11px] font-bold flex items-center gap-1 ${catCfg.badgeBg} shrink-0">
                 <span class="material-symbols-outlined text-[13px]">${catCfg.icon}</span>
                 <span>${item.category}</span>
               </span>
-              <h3 class="font-heading font-bold text-sm text-slate-900">${item.name}</h3>
               ${statusBadge}
             </div>
 

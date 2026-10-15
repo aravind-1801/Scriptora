@@ -10,20 +10,23 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
+  const isEdit = urlParams.get('action') === 'edit';
   const from = fromParam || urlParams.get('from');
-  const defaultBack = csId || isNew ? `/production/call-sheets?scriptId=${scriptId}` : '/production';
+  const defaultBack = isEdit
+    ? `/production/call-sheets?scriptId=${scriptId}&csId=${csId}`
+    : (csId || isNew ? `/production/call-sheets?scriptId=${scriptId}` : '/production');
   const backUrl = from || defaultBack;
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
-      ${renderHeader('Pre-Production', csId ? 'Call Sheet Inspector' : isNew ? 'Create New Call Sheet' : 'Call Sheets Workspace')}
+      ${renderHeader('Pre-Production', isEdit ? 'Edit Call Sheet' : csId ? 'Call Sheet Inspector' : isNew ? 'Create New Call Sheet' : 'Call Sheets Workspace')}
 
       <main class="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3 fade-in">
         ${renderProdSubNav(
-          csId ? 'Call Sheet Detail' : isNew ? 'New Call Sheet' : 'Call Sheets',
-          'assignment',
+          isEdit ? 'Edit Call Sheet' : csId ? 'Call Sheet Detail' : isNew ? 'New Call Sheet' : 'Call Sheets',
+          isEdit ? 'edit_note' : 'assignment',
           backUrl,
-          !csId && !isNew ? `
+          !csId && !isNew && !isEdit ? `
             <a href="/production/call-sheets?scriptId=${scriptId}&action=new" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all">
               <span class="material-symbols-outlined text-[16px]">add</span>
               <span>New Call Sheet</span>
@@ -46,6 +49,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
+  const isEdit = urlParams.get('action') === 'edit';
 
   const container = document.getElementById('callsheet-view-container');
   if (!container) return;
@@ -53,7 +57,170 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
   const userRole = localStorage.getItem('scriptora_prod_role') || 'Owner';
   const isOwner = userRole === 'Owner';
 
-  if (isNew) {
+  if (isEdit && csId) {
+    // -------------------------------------------------------------------------
+    // DEDICATED CALL SHEET EDIT SCREEN & REVISION WORKFLOW
+    // -------------------------------------------------------------------------
+    const cs = await api.getProductionCallSheet(scriptId, csId);
+    if (!cs) {
+      container.innerHTML = `<div class="p-8 text-center text-rose-500 text-xs">Call sheet not found.</div>`;
+      return;
+    }
+
+    const isPublished = cs.status === 'Confirmed' || cs.isPublished;
+
+    container.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col gap-4">
+        <!-- Edit Masthead & Revision Notice -->
+        <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="font-heading font-bold text-base text-slate-900">Edit Call Sheet #${cs.callSheetNumber}</h2>
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isPublished ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}">
+                ${isPublished ? 'Branch New Revision Draft' : 'Editing Draft'}
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">${cs.shootDay} · Baseline: Draft 4.2 (Pinned)</p>
+          </div>
+          <div class="text-[11px] text-slate-400 font-mono">
+            Source: Shooting Schedule Day ${cs.shootDay.replace(/[^0-9]/g, '').slice(0, 2) || '1'}
+          </div>
+        </div>
+
+        ${isPublished ? `
+          <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">info</span>
+            <div class="leading-relaxed">
+              <span class="font-bold">Published Snapshot Protection:</span> This call sheet is an official published snapshot. Saving your edits will automatically create a new revised draft (<span class="font-semibold underline">Revision 2</span>) for approval without altering the locked historical snapshot.
+            </div>
+          </div>
+        ` : ''}
+
+        <form id="form-edit-callsheet" class="flex flex-col gap-4 text-xs">
+          <!-- Day & Date -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-700 block mb-1">Shooting Day Label</label>
+              <input type="text" id="edit-cs-day" value="${cs.shootDay}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600 font-medium">
+            </div>
+            <div>
+              <label class="font-semibold text-slate-700 block mb-1">Shooting Date</label>
+              <input type="text" id="edit-cs-date" value="${cs.shootDate}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600 font-medium">
+            </div>
+          </div>
+
+          <!-- Calls Schedule Grid -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-2">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Call Times & Wrap Estimates</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div>
+                <label class="font-semibold text-slate-700 block mb-1 text-[11px]">General Crew Call</label>
+                <input type="text" id="edit-cs-crewcall" value="${cs.generalCrewCall}" required class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-blue-600">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-700 block mb-1 text-[11px]">Shooting Call</label>
+                <input type="text" id="edit-cs-shootcall" value="${cs.shootingCall}" required class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-blue-600 text-blue-700 font-bold">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-700 block mb-1 text-[11px]">Breakfast Time</label>
+                <input type="text" id="edit-cs-breakfast" value="${cs.breakfastTime}" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-blue-600">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-700 block mb-1 text-[11px]">Estimated Wrap</label>
+                <input type="text" id="edit-cs-wrap" value="${cs.estimatedWrap}" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-blue-600">
+              </div>
+            </div>
+          </div>
+
+          <!-- Location & Basecamp -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-700 block mb-1">Set Location & Facility</label>
+              <input type="text" id="edit-cs-locname" value="${cs.locationName}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
+            </div>
+            <div>
+              <label class="font-semibold text-slate-700 block mb-1">Physical Address / Map GPS</label>
+              <input type="text" id="edit-cs-address" value="${cs.locationAddress}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
+            </div>
+          </div>
+
+          <!-- Parking & Basecamp Notes -->
+          <div>
+            <label class="font-semibold text-slate-700 block mb-1">Parking & Crew Logistics Instructions</label>
+            <textarea id="edit-cs-parking" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600 resize-none">${cs.parkingNotes}</textarea>
+          </div>
+
+          <!-- Nearest Hospital & Weather -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-rose-700 block mb-1">Nearest Emergency Hospital</label>
+              <input type="text" id="edit-cs-hospital" value="${cs.nearestHospital}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
+            </div>
+            <div>
+              <label class="font-semibold text-slate-700 block mb-1">Weather Forecast & Conditions</label>
+              <input type="text" id="edit-cs-weather" value="${cs.weatherSummary}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
+            </div>
+          </div>
+
+          <!-- Special Requirements & Directives -->
+          <div>
+            <label class="font-semibold text-slate-700 block mb-1">Special Requirements & Department Directives</label>
+            <textarea id="edit-cs-instructions" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600 resize-none">${cs.specialInstructions || 'Standard safety and PPE required.'}</textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+            <a href="/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-medium">Cancel</a>
+            <div class="flex items-center gap-2">
+              <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">save</span>
+                <span>${isPublished ? 'Save Revision Draft' : 'Save Changes'}</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    `;
+
+    const formEdit = document.getElementById('form-edit-callsheet');
+    if (formEdit) {
+      formEdit.onsubmit = async (e) => {
+        e.preventDefault();
+        const shootDay = document.getElementById('edit-cs-day')?.value || cs.shootDay;
+        const shootDate = document.getElementById('edit-cs-date')?.value || cs.shootDate;
+        const generalCrewCall = document.getElementById('edit-cs-crewcall')?.value || cs.generalCrewCall;
+        const shootingCall = document.getElementById('edit-cs-shootcall')?.value || cs.shootingCall;
+        const breakfastTime = document.getElementById('edit-cs-breakfast')?.value || cs.breakfastTime;
+        const estimatedWrap = document.getElementById('edit-cs-wrap')?.value || cs.estimatedWrap;
+        const locationName = document.getElementById('edit-cs-locname')?.value || cs.locationName;
+        const locationAddress = document.getElementById('edit-cs-address')?.value || cs.locationAddress;
+        const parkingNotes = document.getElementById('edit-cs-parking')?.value || cs.parkingNotes;
+        const nearestHospital = document.getElementById('edit-cs-hospital')?.value || cs.nearestHospital;
+        const weatherSummary = document.getElementById('edit-cs-weather')?.value || cs.weatherSummary;
+        const specialInstructions = document.getElementById('edit-cs-instructions')?.value || cs.specialInstructions;
+
+        await api.updateProductionCallSheet(scriptId, cs.id, {
+          shootDay,
+          shootDate,
+          generalCrewCall,
+          shootingCall,
+          breakfastTime,
+          estimatedWrap,
+          locationName,
+          locationAddress,
+          parkingNotes,
+          nearestHospital,
+          weatherSummary,
+          specialInstructions,
+          isDraftRevision: isPublished
+        });
+
+        showToast(isPublished ? 'Saved as new revision draft' : 'Call Sheet updated successfully');
+        navigate(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`);
+      };
+    }
+
+  } else if (isNew) {
     // -------------------------------------------------------------------------
     // 1. CREATE NEW CALL SHEET (SCHEDULE-LINKED VS MANUAL)
     // -------------------------------------------------------------------------
@@ -210,12 +377,16 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-          <button id="btn-print-callsheet" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+          <a href="/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}&action=edit" id="btn-edit-callsheet" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer" title="Edit Call Sheet fields and create revision">
+            <span class="material-symbols-outlined text-[16px]">edit</span>
+            <span>Edit</span>
+          </a>
+          <button id="btn-print-callsheet" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
             <span class="material-symbols-outlined text-[16px]">print</span>
             <span>Print / PDF</span>
           </button>
           ${!isPublished && isOwner ? `
-            <button id="btn-publish-callsheet" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-all flex items-center gap-1.5">
+            <button id="btn-publish-callsheet" class="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">check_circle</span>
               <span>Approve & Publish</span>
             </button>

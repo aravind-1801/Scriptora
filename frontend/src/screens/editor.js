@@ -2902,33 +2902,29 @@ function setupAutocomplete() {
     }
   });
 
-  const scrollEl = document.getElementById('editor-main-scroll');
-  if (scrollEl && !scrollEl.__hasAcPositionListener) {
-    scrollEl.__hasAcPositionListener = true;
-    scrollEl.addEventListener('scroll', () => {
-      const dropdown = document.getElementById('editor-autocomplete-dropdown');
-      if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
-        const activeEl = document.getElementById(activeBlockId);
-        if (activeEl) {
-          const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
-          positionAutocomplete(dropdown, ed);
-        }
+  const updateAcPos = () => {
+    const dropdown = document.getElementById('editor-autocomplete-dropdown');
+    if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
+      const activeEl = document.getElementById(activeBlockId);
+      if (activeEl) {
+        const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
+        positionAutocomplete(dropdown, ed);
       }
-    }, { passive: true });
-  }
+    }
+  };
 
-  if (window.visualViewport && !window.visualViewport.__hasAcPositionListener) {
-    window.visualViewport.__hasAcPositionListener = true;
-    window.visualViewport.addEventListener('resize', () => {
-      const dropdown = document.getElementById('editor-autocomplete-dropdown');
-      if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
-        const activeEl = document.getElementById(activeBlockId);
-        if (activeEl) {
-          const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
-          positionAutocomplete(dropdown, ed);
-        }
-      }
-    });
+  // Capture scrolling across any scroll container in the window or document
+  window.addEventListener('scroll', updateAcPos, { capture: true, passive: true });
+  document.addEventListener('selectionchange', () => {
+    const dropdown = document.getElementById('editor-autocomplete-dropdown');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      updateAcPos();
+    }
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateAcPos);
+    window.visualViewport.addEventListener('scroll', updateAcPos);
   }
 }
 
@@ -2937,40 +2933,116 @@ function hideAutocomplete() {
   if (dropdown) dropdown.classList.add('hidden');
 }
 
+function getActiveCaretOrBlockRect(editableEl) {
+  if (!editableEl) return null;
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    try {
+      const range = sel.getRangeAt(0);
+      if (editableEl.contains(range.startContainer) || editableEl === range.startContainer) {
+        const clientRects = range.getClientRects();
+        if (clientRects && clientRects.length > 0) {
+          const cr = clientRects[clientRects.length - 1];
+          if (cr && cr.height > 0 && cr.top > 0) {
+            return {
+              top: cr.top,
+              bottom: cr.bottom,
+              left: cr.left,
+              right: cr.right,
+              width: cr.width,
+              height: cr.height
+            };
+          }
+        }
+        const b = range.getBoundingClientRect();
+        if (b && b.height > 0 && b.top > 0) {
+          return {
+            top: b.top,
+            bottom: b.bottom,
+            left: b.left,
+            right: b.right,
+            width: b.width,
+            height: b.height
+          };
+        }
+      }
+    } catch (_) {}
+  }
+  const elRect = editableEl.getBoundingClientRect();
+  return {
+    top: elRect.top,
+    bottom: elRect.bottom,
+    left: elRect.left,
+    right: elRect.right,
+    width: elRect.width,
+    height: elRect.height
+  };
+}
+
 function positionAutocomplete(dropdown, editableEl) {
   if (!dropdown || !editableEl) return;
-  const rect = editableEl.getBoundingClientRect();
-  const viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  const dropdownHeight = Math.min(220, dropdown.scrollHeight || 190);
+
+  // Ensure dropdown is attached to document.body for reliable viewport-absolute fixed coordinates
+  if (dropdown.parentElement !== document.body) {
+    document.body.appendChild(dropdown);
+  }
+
+  const anchorRect = getActiveCaretOrBlockRect(editableEl);
+  if (!anchorRect) return;
+
+  // Viewport metrics
+  const vv = window.visualViewport;
+  const viewportHeight = vv ? vv.height : window.innerHeight;
+  const viewportWidth = vv ? vv.width : window.innerWidth;
+
+  // Top editor navigation toolbar bounding check
+  const topToolbar = document.getElementById('editor-header-nav');
+  const toolbarBottom = topToolbar ? topToolbar.getBoundingClientRect().bottom : 136;
+
+  // If the active line has been scrolled offscreen, hide the dropdown
+  if (anchorRect.bottom < toolbarBottom + 5 || anchorRect.top > viewportHeight - 20) {
+    hideAutocomplete();
+    return;
+  }
+
   const dropdownWidth = Math.min(270, viewportWidth - 24);
-
   dropdown.style.width = `${dropdownWidth}px`;
+  const dropdownHeight = Math.min(220, dropdown.scrollHeight || 180);
 
-  // Determine vertical position:
-  // If space below is tight (e.g. virtual keyboard open), position above the line
-  const spaceBelow = viewportHeight - rect.bottom;
-  const spaceAbove = rect.top;
+  // Vertical placement: Below cursor by default, flip above if constrained
+  const spaceBelow = viewportHeight - anchorRect.bottom;
+  const spaceAbove = anchorRect.top - toolbarBottom;
 
-  if (spaceBelow < dropdownHeight + 10 && spaceAbove > dropdownHeight + 10) {
-    // Position above the line
-    const topPos = Math.max(8, rect.top - dropdownHeight - 6);
-    dropdown.style.top = `${topPos}px`;
+  let topPos;
+  if (spaceBelow < dropdownHeight + 12 && spaceAbove > dropdownHeight + 12) {
+    // Flip above
+    topPos = anchorRect.top - dropdownHeight - 6;
   } else {
-    // Position below the line
-    const topPos = Math.min(viewportHeight - dropdownHeight - 8, rect.bottom + 6);
-    dropdown.style.top = `${topPos}px`;
+    // Place below
+    topPos = anchorRect.bottom + 6;
   }
 
-  // Determine horizontal position:
-  // Align towards right side of the editable or screen
-  let leftPos = rect.right - dropdownWidth;
-  if (leftPos + dropdownWidth > viewportWidth - 12) {
-    leftPos = viewportWidth - dropdownWidth - 12;
+  // Constrain within safe viewport boundaries
+  topPos = Math.max(toolbarBottom + 6, Math.min(viewportHeight - dropdownHeight - 8, topPos));
+
+  // Horizontal placement: Align beside active caret or line
+  const blockEl = editableEl.closest('.screenplay-block');
+  const type = blockEl ? blockEl.getAttribute('data-block-type') : null;
+  let leftPos;
+
+  if (type === 'transition') {
+    leftPos = Math.max(12, anchorRect.right - dropdownWidth);
+  } else {
+    leftPos = anchorRect.left;
+    if (leftPos + dropdownWidth > viewportWidth - 12) {
+      leftPos = viewportWidth - dropdownWidth - 12;
+    }
+    if (leftPos < 12) {
+      leftPos = 12;
+    }
   }
-  if (leftPos < 12) {
-    leftPos = 12;
-  }
+
+  dropdown.style.top = `${topPos}px`;
   dropdown.style.left = `${leftPos}px`;
 }
 

@@ -22,54 +22,39 @@ export function renderReadinessScreen(fromParam = null, scriptParam = null) {
           </button>
         `)}
 
-        <!-- Status Summary Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div class="bg-white rounded-2xl border border-rose-200/90 p-4 shadow-2xs flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm shrink-0">
-              <span class="material-symbols-outlined text-[20px]">error</span>
+        <!-- Production Verification Status Summary -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs">
+          <div class="grid grid-cols-3 divide-x divide-slate-100">
+            <div class="px-3 first:pl-1">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Sign-off Required</div>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-critical">0 Issues</div>
+              <p class="text-[11px] text-slate-400 mt-0.5">Owner review</p>
             </div>
-            <div>
-              <div class="text-[10px] font-bold text-rose-600 uppercase tracking-wider">Critical Blockers</div>
-              <div class="font-heading font-bold text-base text-slate-900 mt-0.5" id="kpi-critical">2 Issues</div>
-              <p class="text-[11px] text-slate-500">Requires Owner sign-off</p>
+            <div class="px-3">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">In Review</div>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-warnings">0 Pending</div>
+              <p class="text-[11px] text-slate-400 mt-0.5">Department follow-up</p>
             </div>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-amber-200/90 p-4 shadow-2xs flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm shrink-0">
-              <span class="material-symbols-outlined text-[20px]">warning</span>
-            </div>
-            <div>
-              <div class="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Warnings & Pending</div>
-              <div class="font-heading font-bold text-base text-slate-900 mt-0.5" id="kpi-warnings">1 Pending</div>
-              <p class="text-[11px] text-slate-500">Action recommended</p>
-            </div>
-          </div>
-
-          <div class="bg-white rounded-2xl border border-emerald-200/90 p-4 shadow-2xs flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
-              <span class="material-symbols-outlined text-[20px]">verified</span>
-            </div>
-            <div>
-              <div class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Verified Gates</div>
-              <div class="font-heading font-bold text-base text-slate-900 mt-0.5" id="kpi-verified">3 Passed</div>
-              <p class="text-[11px] text-slate-500">Shoot-day ready</p>
+            <div class="px-3">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Confirmed</div>
+              <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-verified">0 Passed</div>
+              <p class="text-[11px] text-slate-400 mt-0.5">Production locked</p>
             </div>
           </div>
         </div>
 
-        <!-- Actionable Pre-Flight Gates List -->
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-2xs flex flex-col gap-3">
+        <!-- Pre-Production Verification Gates -->
+        <div class="bg-white rounded-2xl border border-slate-200/90 p-4 sm:p-5 shadow-2xs flex flex-col gap-3">
           <div class="border-b border-slate-100 pb-2.5 flex items-center justify-between">
             <h3 class="font-heading font-bold text-sm text-slate-900 flex items-center gap-2">
               <span class="material-symbols-outlined text-[18px] text-blue-600">checklist</span>
-              <span>Pre-Production Validation Gates</span>
+              <span>Pre-Production Verification Gates</span>
             </h3>
-            <span class="text-[11px] text-slate-400 font-mono">Real Validation Checks</span>
+            <span class="text-[11px] text-slate-400 font-mono">Draft 4.2 Baseline</span>
           </div>
 
           <div id="readiness-items-stream" class="flex flex-col gap-2.5 pt-1">
-            <div class="text-center py-6 text-slate-400 text-xs">Evaluating production readiness rules...</div>
+            <div class="text-center py-6 text-slate-400 text-xs">Evaluating production verification rules...</div>
           </div>
         </div>
 
@@ -106,23 +91,17 @@ export async function attachReadinessEvents(navigate, fromParam = null, scriptPa
       const isWarn = item.severity === 'warning' && item.status !== 'resolved';
       const isPass = item.status === 'resolved' || item.severity === 'ready';
 
-      const borderClass = isCrit
-        ? 'border-rose-200 bg-rose-50/20'
-        : isWarn
-        ? 'border-amber-200 bg-amber-50/20'
-        : 'border-slate-200 bg-white';
-
       const badge = isCrit
-        ? `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-bold">CRITICAL BLOCKER</span>`
+        ? `<span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">Sign-off Required</span>`
         : isWarn
-        ? `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">WARNING</span>`
-        : `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check</span>PASSED</span>`;
+        ? `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">Pending Review</span>`
+        : `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 text-[10px] font-semibold border border-slate-200 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check</span>Verified</span>`;
 
       return `
-        <div class="rounded-xl border p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${borderClass}">
+        <div class="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-slate-300 transition-colors">
           <div class="flex items-start gap-3 min-w-0">
-            <div class="w-8 h-8 rounded-lg ${isCrit ? 'bg-rose-100 text-rose-700' : isWarn ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'} flex items-center justify-center shrink-0 mt-0.5">
-              <span class="material-symbols-outlined text-[17px]">${isCrit ? 'priority_high' : isWarn ? 'warning' : 'check'}</span>
+            <div class="w-7 h-7 rounded-lg ${isCrit ? 'bg-rose-50 text-rose-600' : isWarn ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'} flex items-center justify-center shrink-0 mt-0.5 border border-slate-100">
+              <span class="material-symbols-outlined text-[16px]">${isCrit ? 'priority_high' : isWarn ? 'warning' : 'check'}</span>
             </div>
             <div class="min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
@@ -144,8 +123,8 @@ export async function attachReadinessEvents(navigate, fromParam = null, scriptPa
                 Resolve
               </button>
             ` : `
-              <span class="text-xs font-semibold text-emerald-700 flex items-center gap-1">
-                <span class="material-symbols-outlined text-[16px]">verified</span>
+              <span class="text-xs font-semibold text-slate-500 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
                 <span>Verified</span>
               </span>
             `}

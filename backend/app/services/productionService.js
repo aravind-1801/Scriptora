@@ -384,11 +384,21 @@ export function createProductionCallSheet(scriptId, data) {
 export function updateProductionCallSheet(scriptId, callSheetId, updates) {
   const cs = db.productionCallSheets.find(c => c.scriptId === scriptId && c.id === callSheetId);
   if (!cs) throw new Error("Call sheet not found");
+
+  // If editing an already published snapshot, branch into a revision draft
+  if ((cs.isPublished || cs.status === 'Confirmed') && updates.isDraftRevision) {
+    cs.isPublished = false;
+    cs.status = "Draft (Revision)";
+    const revNum = (cs.revisionCount || 1) + 1;
+    cs.revisionCount = revNum;
+    cs.version = `v1.${revNum} (Draft Rev ${revNum})`;
+  }
+
   Object.assign(cs, updates);
   logProductionAudit(scriptId, {
     action: "UPDATE_CALL_SHEET",
     category: "CALL_SHEET",
-    details: `Updated details for Call Sheet #${cs.callSheetNumber}`,
+    details: `Updated details for Call Sheet #${cs.callSheetNumber} (${cs.version || 'Draft'})`,
     sourceVersion: "Draft 4.2"
   });
   return cs;

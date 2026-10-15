@@ -120,202 +120,221 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
           </div>
         </div>
 
-        <!-- 2. Essential Production Tools (Prominent Access, Clean Title without Competing Badge) -->
-        <section class="flex flex-col gap-2">
+        <!-- 2. Essential Production Tools (Prominent 2-Column Mobile Grid, Consistent Professional Cards) -->
+        <section class="flex flex-col gap-2.5">
           <div class="flex items-center justify-between">
             <h2 class="font-heading font-bold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[18px] text-slate-600">tune</span>
+              <span class="material-symbols-outlined text-[18px] text-blue-600">tune</span>
               <span>Essential Production Tools</span>
             </h2>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             
             <!-- Tool 1: Call Sheets -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">assignment</span>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">assignment</span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">2 Active</span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">2 Active</span>
                 </div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Call Sheets</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Daily production call times, scene lists, hospital info, crew arrival, and weather.</p>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Call Sheets</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Prepare and manage daily shooting call sheets.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Open Call Sheets</span>
-                <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Call Sheets</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
             <!-- Tool 2: Dialogue Sheets & Actor Sides -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="dialogue-sheets">
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="dialogue-sheets">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">record_voice_over</span>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">record_voice_over</span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">Scene 18 Ready</span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">Sc 18 Ready</span>
                 </div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">Dialogue Sheets & Sides</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Actor-specific sides extracted by scene, character speech cues, and rehearsal notes.</p>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Dialogue Sheets & Sides</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Create character-wise dialogue sheets and actor sides.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-indigo-600">
-                <span>View Actor Sides</span>
-                <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Actor Sides</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
             <!-- Tool 3: Shooting Schedule -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="shooting-schedule">
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="shooting-schedule">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">calendar_view_week</span>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">calendar_view_week</span>
                   </div>
                   <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">14 Days</span>
                 </div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-amber-600 transition-colors">Shooting Schedule</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Master stripboard scheduling, day/night scene order, company moves, and wrap dates.</p>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Shooting Schedule</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Plan scenes across shooting days.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-amber-600">
-                <span>Manage Stripboard</span>
-                <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Stripboard</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
             <!-- Tool 4: Script Breakdown -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="script-breakdown">
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="script-breakdown">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[20px]">dataset</span>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">dataset</span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[10px] font-bold">78 Items</span>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">78 Items</span>
                 </div>
-                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-purple-600 transition-colors">Script Breakdown</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Cross-department extraction: Cast, Props, Vehicles, Wardrobe, Stunts, and Practical FX.</p>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Script Breakdown</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Review and organise production requirements by scene.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-purple-600">
-                <span>Inspect Elements</span>
-                <span class="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Breakdown</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
           </div>
         </section>
 
-        <!-- 3. Discoverable Secondary Production Tools (On Same Screen) -->
+        <!-- 3. Production Modules & Creative Planning (2-Column Grid on Mobile, Restrained Neutral Surfaces) -->
         <section class="flex flex-col gap-2.5">
           <div class="flex items-center justify-between">
             <h2 class="font-heading font-bold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[18px] text-slate-600">dashboard_customize</span>
+              <span class="material-symbols-outlined text-[18px] text-blue-600">dashboard_customize</span>
               <span>Production Modules & Creative Planning</span>
             </h2>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             
             <!-- Secondary 1: Storyboard Studio -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="storyboard-studio">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">art_track</span>
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="storyboard-studio">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">art_track</span>
+                  </div>
                 </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Storyboard Studio</h3>
-                  <p class="text-[11px] text-slate-500">Visual shot composition & AI concept frames</p>
-                </div>
-              </div>
-              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-rose-600">
-                <span>Shot Board</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Secondary 2: Scene Hub & Practical Logistics -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="scene-hub">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">hub</span>
-                </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Scene Hub</h3>
-                  <p class="text-[11px] text-slate-500">Scene-by-scene logistics & complexity index</p>
-                </div>
-              </div>
-              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-teal-600">
-                <span>View 18 Scenes</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Secondary 3: Resource Directory -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="resource-directory">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">contact_phone</span>
-                </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Resource Directory</h3>
-                  <p class="text-[11px] text-slate-500">Cast, crew, vendors & contact permissions</p>
-                </div>
-              </div>
-              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-sky-600">
-                <span>Directory</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Secondary 4: Change Proposals & Approvals -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="change-proposals">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">rule</span>
-                </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Change Proposals</h3>
-                  <p class="text-[11px] text-slate-500">Collaborator proposal review & approvals</p>
-                </div>
-              </div>
-              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-amber-600">
-                <span id="pending-proposals-count">2 Pending Review</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
-              </div>
-            </div>
-
-            <!-- Secondary 5: Production Documents Workspace -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-documents">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">description</span>
-                </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Production Documents</h3>
-                  <p class="text-[11px] text-slate-500">Categorized catalog, exports & sharing links</p>
-                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Storyboard Studio</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Create and organise visual shot sequences.</p>
               </div>
               <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Document Catalog</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                <span>Shot Board</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
-            <!-- Secondary 6: Pre-Flight Readiness & Validation -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-readiness">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined text-[20px]">fact_check</span>
+            <!-- Secondary 2: Scene Hub -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="scene-hub">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">hub</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">18 Scenes</span>
                 </div>
-                <div class="min-w-0">
-                  <h3 class="font-heading font-bold text-sm text-slate-900">Readiness & Validation</h3>
-                  <p class="text-[11px] text-slate-500">Actionable pre-shoot blocker checks</p>
-                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Scene Hub</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Track scene requirements and shooting complexity.</p>
               </div>
-              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-emerald-600">
-                <span>Pre-Flight Gates</span>
-                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>18 Scenes</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+
+            <!-- Secondary 3: Production Documents Workspace -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-documents">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">description</span>
+                  </div>
+                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Documents</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Generate and manage production documents.</p>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Documents</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+
+            <!-- Secondary 4: Production Changes -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="change-proposals">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">rule</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold" id="pending-proposals-count">2 Pending</span>
+                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Production Changes</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Review proposed production changes.</p>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Review Changes</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+
+            <!-- Secondary 5: Readiness & Validation -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-readiness">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">fact_check</span>
+                  </div>
+                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Readiness Checklist</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Verify departmental sign-offs and shoot readiness.</p>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Readiness</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+
+            <!-- Secondary 6: History & Version Timeline -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="production-history">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">history</span>
+                  </div>
+                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">History</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Track edits, approvals and version changes.</p>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Timeline</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+
+            <!-- Secondary 7: Resource Directory -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/90 p-3.5 sm:p-4 shadow-2xs hover:shadow-xs hover:border-blue-400 transition-all flex flex-col justify-between cursor-pointer group" data-tool="resource-directory">
+              <div>
+                <div class="flex items-center justify-between mb-2.5">
+                  <div class="w-9 h-9 rounded-xl bg-blue-50/80 text-blue-700 flex items-center justify-center border border-blue-100/60 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                    <span class="material-symbols-outlined text-[19px]">contact_phone</span>
+                  </div>
+                </div>
+                <h3 class="font-heading font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">Resource Directory</h3>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Manage cast, crew and production vendor contacts.</p>
+              </div>
+              <div class="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+                <span>Directory</span>
+                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
