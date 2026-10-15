@@ -1,6 +1,6 @@
 import { store } from './state/store.js';
 import { renderHeader } from './components/header.js';
-import { renderBottomNav } from './components/bottomNav.js';
+import { renderBottomNav, updateBottomNav } from './components/bottomNav.js';
 import { renderAuthScreen, attachAuthEvents } from './screens/auth.js';
 import { renderWelcomeScreen, attachWelcomeEvents } from './screens/welcome.js';
 import { renderWorkspaceScreen, attachWorkspaceEvents } from './screens/workspace.js';
@@ -450,7 +450,9 @@ class Router {
           navSlot.innerHTML = '';
         } else {
           navSlot.classList.remove('hidden');
-          navSlot.innerHTML = renderBottomNav(activeTab);
+          if (!updateBottomNav(activeTab)) {
+            navSlot.innerHTML = renderBottomNav(activeTab);
+          }
         }
       }
     }
@@ -461,7 +463,7 @@ class Router {
       cleanHtml = cleanHtml.replace(/<header[^>]*data-global-header="true"[^>]*>[\s\S]*?<\/header>/gi, '');
       cleanHtml = cleanHtml.replace(/<header\s+class="fixed\s+top-0\s+w-full\s+z-40\s+pt-safe\s+bg-surface[^>]*>[\s\S]*?<\/header>/gi, '');
       cleanHtml = cleanHtml.replace(/<nav[^>]*data-global-bottom-nav="true"[^>]*>[\s\S]*?<\/nav>/gi, '');
-      cleanHtml = cleanHtml.replace(/<nav\s+class="fixed\s+bottom-0\s+w-full\s+z-40\s+pb-safe\s+bg-surface[^>]*>[\s\S]*?<\/nav>/gi, '');
+      cleanHtml = cleanHtml.replace(/<nav\s+class="fixed\s+bottom-0[^>]*>[\s\S]*?<\/nav>/gi, '');
 
       contentSlot.innerHTML = cleanHtml;
       window.scrollTo({ top: 0, behavior: 'instant' });
