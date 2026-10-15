@@ -25,7 +25,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors">
+            <a href="/production/schedule?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors">
               Inspect Scene 18 Setup
             </a>
           </div>

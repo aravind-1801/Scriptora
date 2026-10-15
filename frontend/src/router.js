@@ -16,7 +16,6 @@ import { renderNotificationsScreen, attachNotificationsEvents } from './screens/
 import { renderProductionScreen, attachProductionEvents } from './screens/production.js';
 import { renderAiChatScreen, attachAiChatEvents } from './screens/aiChat.js';
 import { renderBreakdownScreen, attachBreakdownEvents } from './screens/production/breakdown.js';
-import { renderScenesScreen, attachScenesEvents } from './screens/production/scenes.js';
 import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/production/callSheets.js';
 import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
 import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
@@ -325,17 +324,14 @@ class Router {
       return;
     }
 
-    // 4.2 Scene Hub & Scene Details Dedicated Screen
+    // 4.2 Scene Hub Redirect -> Shooting Schedule with integrated scene details
     const sceneMatch = path.match(/^\/production\/scenes(?:\/([a-zA-Z0-9_-]+))?$/);
     if (sceneMatch) {
       const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId');
+      const scriptParam = query.get('scriptId') || 'chronicles-of-dust';
       const sceneId = sceneMatch[1] || query.get('sceneId');
-      this.render(
-        renderScenesScreen(fromParam, scriptParam, sceneId),
-        () => attachScenesEvents(this.navigate.bind(this), fromParam, scriptParam, sceneId),
-        { activeTab: 'production', sectionTitle: 'Pre-Production', subtitle: sceneId ? 'Scene Details & Logistics' : 'Scene Hub & Logistics' }
-      );
+      const dest = `/production/schedule?scriptId=${scriptParam}${sceneId ? `&sceneId=${sceneId}` : ''}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`;
+      this.navigate(dest, false);
       return;
     }
 

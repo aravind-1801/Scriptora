@@ -467,7 +467,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             </div>
             ${(cs.scenes || []).map(s => `
               <div class="px-3 py-2 flex items-center justify-between text-xs hover:bg-slate-50 transition-colors">
-                <a href="/production/scenes?scriptId=${scriptId}&sceneId=scene-${s.sceneNumber}&from=${encodeURIComponent(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`)}" class="w-16 font-mono font-bold text-blue-700 hover:underline" title="Inspect Scene Logistics">Sc ${s.sceneNumber}</a>
+                <a href="/production/schedule?scriptId=${scriptId}&sceneId=scene-${s.sceneNumber}&from=${encodeURIComponent(`/production/call-sheets?scriptId=${scriptId}&csId=${cs.id}`)}" class="w-16 font-mono font-bold text-blue-700 hover:underline" title="Inspect Scene Logistics in Schedule">Sc ${s.sceneNumber}</a>
                 <div class="flex-1 min-w-0 pr-2">
                   <div class="font-semibold text-slate-900 truncate">${s.heading}</div>
                   <div class="text-[11px] text-slate-500 truncate">${s.desc}</div>

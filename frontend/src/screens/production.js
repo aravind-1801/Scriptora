@@ -109,24 +109,6 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
               </div>
             </div>
 
-            <!-- Tool 2: Scene Hub -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="scene-hub">
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">hub</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">18 Scenes</span>
-                </div>
-                <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Scene Hub</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Track scene logistics, cast requirements, and complexity.</p>
-              </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>View Scenes</span>
-                <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
-              </div>
-            </div>
-
             <!-- Tool 3: Shooting Schedule -->
             <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="shooting-schedule">
               <div>
@@ -137,10 +119,10 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
                   <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">14 Days</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Shooting Schedule</h3>
-                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Plan shooting days and sequence scene stripboards.</p>
+                <p class="text-xs text-slate-500 mt-1 leading-relaxed">Plan shooting days, calendar matrix, and scene production details.</p>
               </div>
               <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
-                <span>Stripboard</span>
+                <span>Open Schedule</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
@@ -248,7 +230,6 @@ export async function attachProductionEvents(navigate, fromParam = null, scriptP
   const prodStudioOrigin = `/production?scriptId=${scriptId}`;
   const routeMap = {
     'script-breakdown': `/production/breakdown?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
-    'scene-hub': `/production/scenes?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
     'shooting-schedule': `/production/schedule?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
     'call-sheets': `/production/call-sheets?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
     'dialogue-sheets': `/production/dialogue-sides?scriptId=${scriptId}&from=${encodeURIComponent(prodStudioOrigin)}`,
