@@ -48,7 +48,7 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
             <div class="p-2 sm:px-3 first:pl-1">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Total Elements</span>
               <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-total">--</div>
-              <span class="text-[11px] text-slate-400">Across 18 Scenes</span>
+              <span class="text-[11px] text-slate-400">Across 10 Scenes</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Confirmed</span>
@@ -75,14 +75,17 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-slate-500 shrink-0">Filter Scene:</span>
               <select id="breakdown-scene-select" class="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none cursor-pointer">
-                <option value="all">All Scenes (18 Scenes)</option>
+                <option value="all">All Scenes (10 Scenes)</option>
                 <option value="scene-1">Scene 1 — Gate 4 Day</option>
                 <option value="scene-2">Scene 2 — Customs Shed</option>
                 <option value="scene-3">Scene 3 — Conduit Dusk</option>
                 <option value="scene-4">Scene 4 — Perimeter Fence</option>
+                <option value="scene-5">Scene 5 — Valve Tunnel</option>
+                <option value="scene-6">Scene 6 — Service Road</option>
                 <option value="scene-7">Scene 7 — Syndicate Control</option>
-                <option value="scene-16">Scene 16 — Spillway Catwalk</option>
-                <option value="scene-18">Scene 18 — Chamber B Night</option>
+                <option value="scene-8">Scene 8 — Reservoir Basin</option>
+                <option value="scene-9">Scene 9 — Drainage Vault</option>
+                <option value="scene-10">Scene 10 — Chamber B Night</option>
               </select>
             </div>
 

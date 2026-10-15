@@ -1235,7 +1235,7 @@ export async function getProductionResources(scriptId = 'chronicles-of-dust', ca
       scriptId,
       category: "Location",
       name: "Pumping Station Chamber B",
-      scenes: ["Scene 18"],
+      scenes: ["Scene 10"],
       department: "Locations",
       status: "Confirmed",
       contactRestricted: false,
@@ -1247,7 +1247,7 @@ export async function getProductionResources(scriptId = 'chronicles-of-dust', ca
       scriptId,
       category: "Props",
       name: "Hydraulic Bypass Valve Kit",
-      scenes: ["Scene 18"],
+      scenes: ["Scene 10"],
       department: "Props",
       status: "Confirmed",
       notes: "Hero prop with functional LED pressure gauge."
@@ -1291,7 +1291,7 @@ export async function getProductionDocuments(scriptId = 'chronicles-of-dust') {
       type: "Call Sheet",
       title: "Call Sheet #01 — Gate 4 Day Exterior",
       sourceVersion: "Draft 4.2",
-      shootDay: "Day 1 of 14",
+      shootDay: "Day 1 of 7",
       date: "Oct 24, 2026",
       callTime: "06:30 AM",
       location: "Mojave Outpost Gate 4",
@@ -1306,11 +1306,11 @@ export async function getProductionDocuments(scriptId = 'chronicles-of-dust') {
       type: "Call Sheet",
       title: "Call Sheet #02 — Pumping Station Chamber",
       sourceVersion: "Draft 4.2",
-      shootDay: "Day 2 of 14",
+      shootDay: "Day 2 of 7",
       date: "Oct 25, 2026",
       callTime: "07:00 AM",
       location: "Chamber B Dry Tank",
-      scenes: ["Scene 18"],
+      scenes: ["Scene 10"],
       status: "Draft",
       published: false,
       version: "v0.9"
@@ -1537,27 +1537,19 @@ export async function getProductionScenes(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  // Fallback defaults for 18 scenes
+  // Fallback defaults for 10 scenes across 7 shoot days
   const scenes = [];
   const sceneHeadings = [
-    { num: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", intExt: "EXT", dayNight: "DAY", p: "4 1/8", comp: "Moderate", day: "Day 1 of 14", cast: ["KEVIN", "MARCUS"], desc: "Wind whips dust across perimeter chain link. Kevin arrives at customs gate." },
-    { num: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", intExt: "INT", dayNight: "DAY", p: "3 4/8", comp: "Simple", day: "Day 1 of 14", cast: ["KEVIN", "MEERA"], desc: "Meera analyzes telemetry console indicating illegal pressure drop." },
-    { num: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", intExt: "EXT", dayNight: "DUSK", p: "7 2/8", comp: "Complex", day: "Day 2 of 14", cast: ["KEVIN"], desc: "Concrete conduit pipeline across cracked alkali flats during sunset." },
-    { num: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "5 0/8", comp: "Complex", day: "Day 3 of 14", cast: ["KEVIN", "MEERA"], desc: "Perimeter night patrol with solar rover and surveillance drones." },
-    { num: 5, heading: "INT. HYDRAULIC VALVE TUNNEL - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "5 4/8", comp: "Moderate", day: "Day 3 of 14", cast: ["KEVIN"], desc: "Rusty underground valves with echoing industrial turbine vibration." },
-    { num: 6, heading: "EXT. DESERT SERVICE ROAD - DAY", intExt: "EXT", dayNight: "DAY", p: "5 2/8", comp: "Simple", day: "Day 4 of 14", cast: ["KEVIN"], desc: "Kevin tracks tanker tire treads along decommissioned asphalt." },
-    { num: 7, heading: "INT. SYNDICATE PUMPING CONTROL - DAY", intExt: "INT", dayNight: "DAY", p: "6 3/8", comp: "Moderate", day: "Day 5 of 14", cast: ["COMMANDER VANCE", "KEVIN"], desc: "Vance oversees regional water diversion bank from glass observatory." },
-    { num: 8, heading: "EXT. RESERVOIR INTAKE BASIN - DAY", intExt: "EXT", dayNight: "DAY", p: "5 5/8", comp: "Complex", day: "Day 6 of 14", cast: ["MEERA"], desc: "Rappelling 60-foot descent down drained concrete spillway." },
-    { num: 9, heading: "INT. DRAINAGE VAULT - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 1/8", comp: "Moderate", day: "Day 7 of 14", cast: ["KEVIN", "MEERA"], desc: "Subterranean acoustic surveillance using directional hydrophones." },
-    { num: 10, heading: "EXT. PIPELINE COMPRESSOR STATION - DUSK", intExt: "EXT", dayNight: "DUSK", p: "5 3/8", comp: "Moderate", day: "Day 8 of 14", cast: ["KEVIN", "MARCUS"], desc: "Diesel compressor manifolds blowing atmospheric smoke into dusk sky." },
-    { num: 11, heading: "INT. CUSTOMS ARCHIVE STORAGE - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 4/8", comp: "Simple", day: "Day 9 of 14", cast: ["KEVIN"], desc: "Investigation of legacy river compact water rights deeds on microfiche." },
-    { num: 12, heading: "EXT. DRY WASH VALLEY - DAY", intExt: "EXT", dayNight: "DAY", p: "5 6/8", comp: "Complex", day: "Day 10 of 14", cast: ["KEVIN", "MEERA"], desc: "High-speed pursuit through sandstone canyons with heavy convoy." },
-    { num: 13, heading: "INT. EMERGENCY SLUICE GATEWAY - DAY", intExt: "INT", dayNight: "DAY", p: "4 3/8", comp: "Moderate", day: "Day 11 of 14", cast: ["KEVIN"], desc: "Manual mechanical winch operation on frozen cast-iron sluice gates." },
-    { num: 14, heading: "EXT. SOUTHWEST PRESSURE TOWER - DUSK", intExt: "EXT", dayNight: "DUSK", p: "4 6/8", comp: "Moderate", day: "Day 12 of 14", cast: ["MEERA"], desc: "Exterior ladder ascent under sweeping perimeter searchlights." },
-    { num: 15, heading: "INT. GENERATOR ROOM - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 2/8", comp: "Simple", day: "Day 12 of 14", cast: ["KEVIN", "COMMANDER VANCE"], desc: "Stand-off over turbine killswitch with pulsing crimson warning beacon." },
-    { num: 16, heading: "EXT. RESERVOIR SPILLWAY - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "4 7/8", comp: "Complex", day: "Day 13 of 14", cast: ["KEVIN", "MEERA"], desc: "Flash flood breach through spillway catwalk with torrential rain." },
-    { num: 17, heading: "INT. CONTROL GANTRY - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "3 4/8", comp: "Complex", day: "Day 14 of 14", cast: ["KEVIN", "MEERA", "COMMANDER VANCE"], desc: "High gantry physical climax suspended above subterranean drainage." },
-    { num: 18, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "2 6/8", comp: "Complex", day: "Day 2 of 14", cast: ["KEVIN", "MEERA"], desc: "Kevin anchors hydraulic bypass valve kit as high pressure brine seals." }
+    { num: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", intExt: "EXT", dayNight: "DAY", p: "4 1/8", comp: "Moderate", day: "Day 1 of 7", cast: ["KEVIN", "MARCUS"], desc: "Wind whips dust across perimeter chain link. Kevin arrives at customs gate." },
+    { num: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", intExt: "INT", dayNight: "DAY", p: "3 4/8", comp: "Simple", day: "Day 1 of 7", cast: ["KEVIN", "MEERA"], desc: "Meera analyzes telemetry console indicating illegal pressure drop." },
+    { num: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", intExt: "EXT", dayNight: "DUSK", p: "7 2/8", comp: "Complex", day: "Day 2 of 7", cast: ["KEVIN"], desc: "Concrete conduit pipeline across cracked alkali flats during sunset." },
+    { num: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "5 0/8", comp: "Complex", day: "Day 3 of 7", cast: ["KEVIN", "MEERA"], desc: "Perimeter night patrol with solar rover and surveillance drones." },
+    { num: 5, heading: "INT. HYDRAULIC VALVE TUNNEL - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "5 4/8", comp: "Moderate", day: "Day 3 of 7", cast: ["KEVIN"], desc: "Rusty underground valves with echoing industrial turbine vibration." },
+    { num: 6, heading: "EXT. DESERT SERVICE ROAD - DAY", intExt: "EXT", dayNight: "DAY", p: "5 2/8", comp: "Simple", day: "Day 4 of 7", cast: ["KEVIN"], desc: "Kevin tracks tanker tire treads along decommissioned asphalt." },
+    { num: 7, heading: "INT. SYNDICATE PUMPING CONTROL - DAY", intExt: "INT", dayNight: "DAY", p: "6 3/8", comp: "Moderate", day: "Day 5 of 7", cast: ["COMMANDER VANCE", "KEVIN"], desc: "Vance oversees regional water diversion bank from glass observatory." },
+    { num: 8, heading: "EXT. RESERVOIR INTAKE BASIN - DAY", intExt: "EXT", dayNight: "DAY", p: "5 5/8", comp: "Complex", day: "Day 6 of 7", cast: ["MEERA"], desc: "Rappelling 60-foot descent down drained concrete spillway." },
+    { num: 9, heading: "INT. DRAINAGE VAULT - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 1/8", comp: "Moderate", day: "Day 7 of 7", cast: ["KEVIN", "MEERA"], desc: "Subterranean acoustic surveillance using directional hydrophones." },
+    { num: 10, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "2 6/8", comp: "Complex", day: "Day 2 of 7", cast: ["KEVIN", "MEERA"], desc: "Kevin anchors hydraulic bypass valve kit as high pressure brine seals." }
   ];
 
   for (const s of sceneHeadings) {
@@ -2082,7 +2074,7 @@ export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
       id: "cs-1",
       scriptId,
       callSheetNumber: "01",
-      shootDay: "Day 1 of 14",
+      shootDay: "Day 1 of 7",
       shootDate: "Saturday, Oct 24, 2026",
       generalCrewCall: "06:00 AM",
       shootingCall: "06:30 AM",
@@ -2113,7 +2105,7 @@ export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
       id: "cs-2",
       scriptId,
       callSheetNumber: "02",
-      shootDay: "Day 2 of 14",
+      shootDay: "Day 2 of 7",
       shootDate: "Sunday, Oct 25, 2026",
       generalCrewCall: "06:30 AM",
       shootingCall: "07:00 AM",
@@ -2129,13 +2121,13 @@ export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
       weatherSummary: "Interior stage / sheltered facility. Ambient temp 68°F. Hearing protection mandatory.",
       scenes: [
         { sceneNumber: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", pages: "7 2/8", cast: ["KEVIN"], desc: "Kevin examines exterior tap line." },
-        { sceneNumber: 18, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", pages: "2 6/8", cast: ["KEVIN", "MEERA"], desc: "High water pressure valve breach and cable clamp." }
+        { sceneNumber: 10, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", pages: "2 6/8", cast: ["KEVIN", "MEERA"], desc: "High water pressure valve breach and cable clamp." }
       ],
       castCalls: [
         { character: "KEVIN", actor: "Arun Kumar", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" },
         { character: "MEERA", actor: "Priya Sharma", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" }
       ],
-      specialInstructions: "Wet set protocols in effect for Scene 18. Waterproof camera housing and electrical GFI circuits required.",
+      specialInstructions: "Wet set protocols in effect for Scene 10. Waterproof camera housing and electrical GFI circuits required.",
       approvedBy: null,
       publishedAt: null
     }
@@ -2252,19 +2244,12 @@ export async function getProductionSchedule(scriptId = 'chronicles-of-dust') {
 
   const defaults = [
     { dayNumber: 1, date: "Oct 24, 2026", title: "Outpost Perimeter & Shed", location: "Mojave Gate 4", sceneNumbers: [1, 2], totalPages: "7 5/8", estHours: 10.5, companyMoves: 0, isLocked: true, status: "Confirmed" },
-    { dayNumber: 2, date: "Oct 25, 2026", title: "Lakebed Conduit & Chamber B", location: "Chamber B Dry Tank", sceneNumbers: [3, 18], totalPages: "10 0/8", estHours: 11.0, companyMoves: 1, isLocked: false, status: "Draft" },
+    { dayNumber: 2, date: "Oct 25, 2026", title: "Lakebed Conduit & Chamber B", location: "Chamber B Dry Tank", sceneNumbers: [3, 10], totalPages: "10 0/8", estHours: 11.0, companyMoves: 1, isLocked: false, status: "Draft" },
     { dayNumber: 3, date: "Oct 26, 2026", title: "Perimeter Fence & Valve Tunnel", location: "Perimeter Sector 9", sceneNumbers: [4, 5], totalPages: "10 4/8", estHours: 11.5, companyMoves: 1, isLocked: false, status: "Draft" },
     { dayNumber: 4, date: "Oct 27, 2026", title: "Service Road Pursuit", location: "Route 66 Cutoff", sceneNumbers: [6], totalPages: "5 2/8", estHours: 8.0, companyMoves: 0, isLocked: false, status: "Draft" },
     { dayNumber: 5, date: "Oct 28, 2026", title: "Syndicate Regional Control", location: "Syndicate Regional HQ", sceneNumbers: [7], totalPages: "6 3/8", estHours: 9.0, companyMoves: 0, isLocked: false, status: "Draft" },
     { dayNumber: 6, date: "Oct 29, 2026", title: "Reservoir Intake Rappel", location: "Lake Mead Dry Spillway", sceneNumbers: [8], totalPages: "5 5/8", estHours: 10.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 7, date: "Oct 30, 2026", title: "Drainage Sub-vaults", location: "Vault Sub-structure 3", sceneNumbers: [9], totalPages: "4 1/8", estHours: 8.5, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 8, date: "Oct 31, 2026", title: "Compressor Smoke Run", location: "Compressor Station 12", sceneNumbers: [10], totalPages: "5 3/8", estHours: 9.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 9, date: "Nov 01, 2026", title: "Customs Archives", location: "Outpost Archives", sceneNumbers: [11], totalPages: "4 4/8", estHours: 7.5, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 10, date: "Nov 02, 2026", title: "Dry Wash Canyon Chase", location: "Red Rock Wash", sceneNumbers: [12], totalPages: "5 6/8", estHours: 11.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 11, date: "Nov 03, 2026", title: "Emergency Sluice Gears", location: "Sluice Mechanism House", sceneNumbers: [13], totalPages: "4 3/8", estHours: 8.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 12, date: "Nov 04, 2026", title: "Tower Scaffolding & Generator", location: "Tower 7 / Sub-basement", sceneNumbers: [14, 15], totalPages: "9 0/8", estHours: 10.5, companyMoves: 1, isLocked: false, status: "Draft" },
-    { dayNumber: 13, date: "Nov 05, 2026", title: "Spillway Torrential Catwalk", location: "Spillway Catwalk", sceneNumbers: [16], totalPages: "4 7/8", estHours: 11.5, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 14, date: "Nov 06, 2026", title: "High Gantry Climax & Wrap", location: "High Gantry Bay 4", sceneNumbers: [17], totalPages: "3 4/8", estHours: 9.5, companyMoves: 0, isLocked: false, status: "Draft" }
+    { dayNumber: 7, date: "Oct 30, 2026", title: "Drainage Sub-vaults & Wrap", location: "Vault Sub-structure 3", sceneNumbers: [9], totalPages: "4 1/8", estHours: 8.5, companyMoves: 0, isLocked: false, status: "Draft" }
   ];
   localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(defaults));
   return defaults;
@@ -2344,11 +2329,11 @@ export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
     {
       id: "ready-1",
       scriptId,
-      title: "Confirm Water Truck Safety Crew for Scene 18",
+      title: "Confirm Water Truck Safety Crew for Scene 10",
       category: "Safety / SFX",
       severity: "critical",
       status: "action_needed",
-      description: "High-pressure brine valve burst in Scene 18 requires Stunt Coordinator sign-off and standby water tanker.",
+      description: "High-pressure brine valve burst in Scene 10 requires Stunt Coordinator sign-off and standby water tanker.",
       targetRoute: "/production/changes",
       targetEntity: "prop-1"
     },
@@ -2359,9 +2344,9 @@ export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
       category: "Breakdown",
       severity: "warning",
       status: "action_needed",
-      description: "Scene 4 Night-Vision optics and Scene 18 cable rappel are currently in Needs Review status.",
+      description: "Scene 4 Night-Vision optics and Scene 10 cable rappel are currently in Needs Review status.",
       targetRoute: "/production/breakdown",
-      targetEntity: "scene-18"
+      targetEntity: "scene-10"
     },
     {
       id: "ready-3",
@@ -2370,18 +2355,18 @@ export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
       category: "Call Sheets",
       severity: "critical",
       status: "action_needed",
-      description: "Call Sheet #02 (Day 2 of 14) is currently in Draft status. Must be approved and published before crew distribution.",
+      description: "Call Sheet #02 (Day 2 of 7) is currently in Draft status. Must be approved and published before crew distribution.",
       targetRoute: "/production/call-sheets",
       targetEntity: "cs-2"
     },
     {
       id: "ready-4",
       scriptId,
-      title: "All 18 Scenes Stripboard Scheduled",
+      title: "All 10 Scenes Stripboard Scheduled",
       category: "Schedule",
       severity: "ready",
       status: "resolved",
-      description: "Every scene from Draft 4.2 has been allocated across the 14-day master shooting calendar.",
+      description: "Every scene from Draft 4.2 has been allocated across the 7-day master shooting calendar.",
       targetRoute: "/production/schedule",
       targetEntity: null
     },

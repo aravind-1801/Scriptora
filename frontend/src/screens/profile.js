@@ -342,7 +342,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Action Confirmation Modal (Sign Out / Delete) -->
-      <div id="action-modal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="action-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
           <div class="w-10 h-10 rounded-full flex items-center justify-center" id="action-modal-icon-box">
             <span class="material-symbols-outlined text-[20px]" id="action-modal-icon">logout</span>
@@ -357,7 +357,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Edit Profile Modal -->
-      <div id="modal-edit-profile" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-edit-profile" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h2 class="text-sm font-bold text-slate-900">Edit Profile & Account</h2>
@@ -424,7 +424,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Password Security Modal -->
-      <div id="modal-security" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-security" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 class="text-sm font-bold text-slate-900">Security & Password</h2>
@@ -468,7 +468,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 1. Editor Settings Modal -->
-      <div id="modal-setting-editor" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-editor" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 max-h-[90vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -524,7 +524,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 2. Language Settings Modal -->
-      <div id="modal-setting-language" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-language" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -563,7 +563,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 3. Appearance Settings Modal -->
-      <div id="modal-setting-appearance" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-appearance" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -605,7 +605,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 4. Notifications Settings Modal -->
-      <div id="modal-setting-notifications" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-notifications" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -652,7 +652,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 5. Intelligence Settings Modal -->
-      <div id="modal-setting-intelligence" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-intelligence" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -700,7 +700,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 6. Privacy & Data Settings Modal -->
-      <div id="modal-setting-privacy" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-privacy" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -739,7 +739,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 7. Storage & Sync Settings Modal -->
-      <div id="modal-setting-storage" class="settings-modal fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/40 backdrop-blur-sm hidden p-0 sm:p-4">
+      <div id="modal-setting-storage" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
         <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
@@ -850,11 +850,15 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     const modal = document.getElementById(modalId);
     if (modal) {
       modal.classList.remove('hidden');
+      modal.classList.add('flex');
     }
   }
 
   function closeAllSettingModals() {
-    document.querySelectorAll('.settings-modal').forEach(m => m.classList.add('hidden'));
+    document.querySelectorAll('.settings-modal').forEach(m => {
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    });
   }
 
   document.querySelectorAll('.setting-item').forEach(item => {
@@ -873,6 +877,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     modal.onclick = (e) => {
       if (e.target === modal) {
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
       }
     };
   });
@@ -1122,8 +1127,13 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const btnModalRemovePhoto = document.getElementById('btn-modal-remove-photo');
 
   function toggleProfileModal(open) {
-    if (open) editProfileModal?.classList.remove('hidden');
-    else editProfileModal?.classList.add('hidden');
+    if (open) {
+      editProfileModal?.classList.remove('hidden');
+      editProfileModal?.classList.add('flex');
+    } else {
+      editProfileModal?.classList.add('hidden');
+      editProfileModal?.classList.remove('flex');
+    }
   }
 
   if (triggerEmail) triggerEmail.onclick = () => toggleProfileModal(true);
@@ -1309,8 +1319,13 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const formUpdatePw = document.getElementById('form-update-pw');
 
   function toggleSecurity(open) {
-    if (open) securityModal?.classList.remove('hidden');
-    else securityModal?.classList.add('hidden');
+    if (open) {
+      securityModal?.classList.remove('hidden');
+      securityModal?.classList.add('flex');
+    } else {
+      securityModal?.classList.add('hidden');
+      securityModal?.classList.remove('flex');
+    }
   }
 
   if (triggerPw) triggerPw.onclick = () => toggleSecurity(true);
@@ -1393,15 +1408,21 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       actionConfirm.textContent = 'Delete Forever';
     }
     actionModal?.classList.remove('hidden');
+    actionModal?.classList.add('flex');
+  }
+
+  function closeActionModal() {
+    actionModal?.classList.add('hidden');
+    actionModal?.classList.remove('flex');
   }
 
   document.getElementById('btn-trigger-signout')?.addEventListener('click', () => openAction('signout'));
   document.getElementById('btn-trigger-delete-acc')?.addEventListener('click', () => openAction('delete'));
-  if (actionCancel) actionCancel.onclick = () => actionModal?.classList.add('hidden');
+  if (actionCancel) actionCancel.onclick = closeActionModal;
 
   if (actionConfirm) {
     actionConfirm.onclick = async () => {
-      actionModal?.classList.add('hidden');
+      closeActionModal();
       if (currentAction === 'signout') {
         await api.signOut();
         store.setState({ currentUser: null });

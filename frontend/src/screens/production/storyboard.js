@@ -31,8 +31,8 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <a href="/production/schedule?scriptId=${scriptId}&sceneId=scene-18&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors">
-              Inspect Scene 18 Setup
+            <a href="/production/schedule?scriptId=${scriptId}&sceneId=scene-10&from=${encodeURIComponent(`/production/storyboard?scriptId=${scriptId}`)}" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors">
+              Inspect Scene 10 Setup
             </a>
           </div>
         </div>
@@ -68,7 +68,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
           <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-2xs flex flex-col">
             <div class="aspect-video bg-slate-900 flex flex-col items-center justify-center text-slate-400 p-4 text-center relative overflow-hidden">
               <span class="material-symbols-outlined text-[32px] text-amber-400">blur_on</span>
-              <span class="text-[11px] font-mono mt-1 text-slate-300">SCENE 18 · SHOT 18F</span>
+              <span class="text-[11px] font-mono mt-1 text-slate-300">SCENE 10 · SHOT 10F</span>
               <span class="text-[10px] text-slate-500">Dutch Angle Close-Up (85mm, 2.39:1)</span>
               <div class="absolute bottom-2 right-2 text-[9px] px-1.5 py-0.5 rounded bg-black/60 text-white font-mono">INT. NIGHT</div>
             </div>
@@ -110,8 +110,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             description: 'Fluorescent tube flicker rim lighting Kevin and Meera over telemetry anomaly.'
           },
           {
-            sceneNum: 18,
-            shotNum: '18D',
+            sceneNum: 10,
+            shotNum: '10D',
             title: 'High Pressure Bypass Tank',
             lens: 'Close Tracking Dolly (35mm Anamorphic)',
             intExt: 'INT',

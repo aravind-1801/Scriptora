@@ -38,13 +38,9 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
               <span class="material-symbols-outlined text-[16px]">download</span>
               <span class="hidden sm:inline">Export PDF</span>
             </button>
-            <button id="btn-add-shoot-day" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Add a new shoot day to schedule">
-              <span class="material-symbols-outlined text-[16px]">add</span>
-              <span class="hidden sm:inline">Add Day</span>
-            </button>
-            <button id="btn-confirm-schedule" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Confirm and lock master shooting schedule">
-              <span class="material-symbols-outlined text-[16px]">check_circle</span>
-              <span>Confirm</span>
+            <button id="btn-add-shoot-day" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Add a new shoot day to schedule">
+              <span class="material-symbols-outlined text-[16px]">add_circle</span>
+              <span>Add Date</span>
             </button>
           </div>
         `)}
@@ -62,7 +58,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
                   Draft 4.2 (Pinned)
                 </span>
               </div>
-              <p class="text-[11px] text-slate-500 truncate mt-0.5">Master shooting calendar • 14 Shoot Days • October 24 – November 06, 2026</p>
+              <p class="text-[11px] text-slate-500 truncate mt-0.5">Master shooting calendar • 7 Shoot Days • October 24 – October 30, 2026</p>
             </div>
           </div>
           <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
@@ -76,23 +72,23 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
             <div class="p-2 sm:px-3 first:pl-1">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Shoot Window</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">14 Days</div>
-              <span class="text-[11px] text-slate-400">Oct 24 – Nov 06</span>
+              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">7 Days</div>
+              <span class="text-[11px] text-slate-400">Oct 24 – Oct 30</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Scenes Scheduled</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">18 of 18 Scenes</div>
+              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">10 of 10 Scenes</div>
               <span class="text-[11px] text-emerald-600 font-medium">100% Allocated</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Script Pages</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">96.0 Pages</div>
-              <span class="text-[11px] text-slate-400">Avg 6.8 pgs / day</span>
+              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">52.0 Pages</div>
+              <span class="text-[11px] text-slate-400">Avg 7.4 pgs / day</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Primary Locations</span>
               <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">3 Areas</div>
-              <span class="text-[11px] text-slate-400">Mojave & Soundstage</span>
+              <span class="text-[11px] text-slate-400">Mojave & Spillway</span>
             </div>
           </div>
         </div>
@@ -103,7 +99,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
         </div>
 
         <!-- Day Details Modal (Opens when user clicks any calendar day) -->
-        <div id="day-detail-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div id="day-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-4 max-h-[90vh] overflow-hidden">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2.5 min-w-0">
@@ -141,8 +137,67 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           </div>
         </div>
 
+        <!-- Add Shoot Date Modal -->
+        <div id="modal-add-day" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-md w-full p-4 sm:p-5 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <span class="material-symbols-outlined text-lg">calendar_add_on</span>
+                </div>
+                <div>
+                  <h3 class="font-heading font-bold text-sm text-slate-900">Add Shoot Date</h3>
+                  <p class="text-[11px] text-slate-500">Append a new shooting day to the calendar</p>
+                </div>
+              </div>
+              <button id="modal-add-day-close" type="button" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form id="form-add-shoot-day" class="flex flex-col gap-3">
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-600">Day Number</label>
+                  <input type="number" id="input-add-day-num" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 font-mono bg-slate-50 focus:outline-none focus:border-blue-600" required>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-600">Calendar Date</label>
+                  <input type="text" id="input-add-day-date" placeholder="e.g. Oct 31, 2026" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-600">Shoot Day Title / Focus</label>
+                <input type="text" id="input-add-day-title" placeholder="e.g. Day 8 — Second Unit & Pickups" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-600">Location / Stage</label>
+                <input type="text" id="input-add-day-location" placeholder="e.g. Mojave Desert Facility — Sector 4" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2.5">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-600">Est. Hours</label>
+                  <input type="number" id="input-add-day-hours" value="10" min="1" max="24" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-600">Est. Pages</label>
+                  <input type="text" id="input-add-day-pages" value="0.0" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600">
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 pt-2 border-t border-slate-100">
+                <button type="button" id="modal-add-day-cancel" class="flex-1 h-9 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">Cancel</button>
+                <button type="submit" class="flex-1 h-9 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer">Add Shoot Date</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
         <!-- Integrated Scene Detail Modal / Panel -->
-        <div id="scene-detail-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div id="scene-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
           <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-2xl w-full p-4 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-hidden">
             <!-- Header -->
             <div class="flex items-start justify-between border-b border-slate-100 pb-3 gap-3">
@@ -216,7 +271,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             <span class="material-symbols-outlined text-blue-600 text-lg">calendar_month</span>
             <h3 class="font-heading font-semibold text-sm text-slate-900">Shooting Calendar Matrix</h3>
           </div>
-          <span class="text-xs text-slate-500 font-medium">October 24 – November 06, 2026</span>
+          <span class="text-xs text-slate-500 font-medium">October 24 – October 30, 2026</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
@@ -402,17 +457,17 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       modalContent.querySelectorAll('.btn-modal-move-out').forEach(btn => {
         btn.onclick = async () => {
           const scNum = btn.getAttribute('data-scene');
-          const targetDayNum = prompt(`Enter target shoot day number (1 - 14) to move Scene ${scNum} to:`);
+          const targetDayNum = prompt(`Enter target shoot day number (1 - ${days.length}) to move Scene ${scNum} to:`);
           if (!targetDayNum || targetDayNum === String(day.dayNumber)) return;
           const targetNum = Number(targetDayNum);
-          if (targetNum >= 1 && targetNum <= 14) {
+          if (targetNum >= 1 && targetNum <= days.length) {
             await api.moveSceneBetweenDays(scriptId, scNum, day.dayNumber, targetNum);
             days = await api.getProductionSchedule(scriptId);
             showToast(`Scene ${scNum} moved to Day ${targetNum}`);
             openDayModal(day.dayNumber);
             renderCalendar();
           } else {
-            alert('Please enter a valid day number between 1 and 14.');
+            alert(`Please enter a valid day number between 1 and ${days.length}.`);
           }
         };
       });
@@ -727,34 +782,75 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // ADD SHOOT DATE MODAL LOGIC
+  // ---------------------------------------------------------------------------
+  const addDayModal = document.getElementById('modal-add-day');
   const addDayBtn = document.getElementById('btn-add-shoot-day');
-  if (addDayBtn) {
-    addDayBtn.onclick = async () => {
-      const nextDayNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
-      const title = prompt(`Enter title/focus for Shoot Day ${nextDayNum}:`, `Day ${nextDayNum} — Secondary Unit & Pickups`);
-      if (!title) return;
-      const location = prompt('Enter shoot location for this day:', 'Mojave Desert Facility');
-      if (!location) return;
-      await api.addProductionScheduleDay(scriptId, {
-        dayNumber: nextDayNum,
-        title,
-        date: `Shoot Day ${nextDayNum}`,
-        location,
-        estHours: 10,
-        sceneNumbers: []
-      });
-      days = await api.getProductionSchedule(scriptId);
-      showToast(`Added Shoot Day ${nextDayNum}`);
-      renderCalendar();
+  const addDayCloseBtn = document.getElementById('modal-add-day-close');
+  const addDayCancelBtn = document.getElementById('modal-add-day-cancel');
+  const addDayForm = document.getElementById('form-add-shoot-day');
+
+  function openAddDayModal() {
+    if (!addDayModal) return;
+    const nextDayNum = days.length > 0 ? Math.max(...days.map(d => d.dayNumber)) + 1 : 1;
+    const inputNum = document.getElementById('input-add-day-num');
+    const inputDate = document.getElementById('input-add-day-date');
+    const inputTitle = document.getElementById('input-add-day-title');
+    const inputLocation = document.getElementById('input-add-day-location');
+    const inputHours = document.getElementById('input-add-day-hours');
+    const inputPages = document.getElementById('input-add-day-pages');
+
+    if (inputNum) inputNum.value = nextDayNum;
+    if (inputDate) {
+      const baseDate = new Date(2026, 9, 23 + nextDayNum);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      inputDate.value = `${months[baseDate.getMonth()]} ${baseDate.getDate()}, ${baseDate.getFullYear()}`;
+    }
+    if (inputTitle) inputTitle.value = `Day ${nextDayNum} — Second Unit & Pickups`;
+    if (inputLocation) inputLocation.value = 'Mojave Soundstage 2';
+    if (inputHours) inputHours.value = '10';
+    if (inputPages) inputPages.value = '0.0';
+
+    addDayModal.classList.remove('hidden');
+  }
+
+  function closeAddDayModal() {
+    addDayModal?.classList.add('hidden');
+  }
+
+  if (addDayBtn) addDayBtn.onclick = openAddDayModal;
+  if (addDayCloseBtn) addDayCloseBtn.onclick = closeAddDayModal;
+  if (addDayCancelBtn) addDayCancelBtn.onclick = closeAddDayModal;
+  if (addDayModal) {
+    addDayModal.onclick = (e) => {
+      if (e.target === addDayModal) closeAddDayModal();
     };
   }
 
-  const confirmBtn = document.getElementById('btn-confirm-schedule');
-  if (confirmBtn) {
-    confirmBtn.onclick = async () => {
-      if (!confirm('Confirm and lock the master shooting calendar for Chronicles of Dust?')) return;
-      days = await api.confirmProductionSchedule(scriptId);
-      showToast('Master shooting schedule confirmed and locked by Owner');
+  if (addDayForm) {
+    addDayForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const dayNumber = Number(document.getElementById('input-add-day-num')?.value) || (days.length + 1);
+      const date = document.getElementById('input-add-day-date')?.value || `Shoot Day ${dayNumber}`;
+      const title = document.getElementById('input-add-day-title')?.value || `Day ${dayNumber}`;
+      const location = document.getElementById('input-add-day-location')?.value || 'Location TBD';
+      const estHours = Number(document.getElementById('input-add-day-hours')?.value) || 10;
+      const totalPages = document.getElementById('input-add-day-pages')?.value || '0.0';
+
+      await api.addProductionScheduleDay(scriptId, {
+        dayNumber,
+        title,
+        date,
+        location,
+        estHours,
+        totalPages,
+        sceneNumbers: []
+      });
+
+      days = await api.getProductionSchedule(scriptId);
+      closeAddDayModal();
+      showToast(`Added Shoot Day ${dayNumber} (${date})`);
       renderCalendar();
     };
   }

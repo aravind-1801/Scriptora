@@ -61,7 +61,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
                   <span id="pinned-version-label">${script.draft || 'Draft 4.2'} (Pinned)</span>
                 </span>
                 <span>•</span>
-                <span>18 Scenes</span>
+                <span>10 Scenes</span>
                 <span>•</span>
                 <span>78 Elements</span>
               </div>
@@ -116,7 +116,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
                   <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
                     <span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
                   </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">14 Days</span>
+                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">7 Days</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Shooting Schedule</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Plan shooting days, calendar matrix, and scene production details.</p>

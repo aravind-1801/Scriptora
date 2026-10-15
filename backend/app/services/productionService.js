@@ -22,10 +22,10 @@ export function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
       userRole: "Owner", // Current user role for this workspace
       roles: ["Owner", "Director", "Assistant Director", "Production", "Department Member", "Viewer"],
       stats: {
-        totalScenes: 18,
+        totalScenes: 10,
         breakdownElements: 78,
         callSheetsCount: 2,
-        shootingDays: 14,
+        shootingDays: 7,
         pendingProposals: 2,
         completedApprovals: 6
       },
@@ -107,7 +107,7 @@ export function createProductionProposal(scriptId, proposalData) {
     submittedBy: proposalData.submittedBy || "Elena Rostova",
     submitterRole: proposalData.submitterRole || "Director",
     status: "Awaiting review", // Draft, Proposed change, Awaiting review, Accepted, Rejected, Conflict, Confirmed
-    impact: proposalData.impact || "Modifies shoot days for Scene 18 & 19",
+    impact: proposalData.impact || "Modifies shoot days for Scene 9 & 10",
     createdAt: new Date().toISOString(),
     resolvedAt: null,
     resolutionNotes: null
@@ -280,7 +280,7 @@ export function deleteBreakdownItem(scriptId, itemId) {
 }
 
 export function createBreakdownItem(scriptId, itemData) {
-  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 18));
+  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 10));
   const newItem = {
     id: `elem-${Date.now()}`,
     scriptId,
@@ -348,7 +348,7 @@ export function createProductionCallSheet(scriptId, data) {
     id: `cs-${Date.now()}`,
     scriptId,
     callSheetNumber: String(db.productionCallSheets.length + 1).padStart(2, '0'),
-    shootDay: data.shootDay || "Day 3 of 14",
+    shootDay: data.shootDay || "Day 3 of 7",
     shootDate: data.shootDate || "Monday, Oct 26, 2026",
     generalCrewCall: data.generalCrewCall || "06:00 AM",
     shootingCall: data.shootingCall || "06:30 AM",
@@ -465,7 +465,7 @@ export function confirmProductionSchedule(scriptId) {
   logProductionAudit(scriptId, {
     action: "CONFIRM_MASTER_SCHEDULE",
     category: "APPROVAL",
-    details: "Owner locked and confirmed 14-day master stripboard schedule",
+    details: "Owner locked and confirmed 7-day master stripboard schedule",
     sourceVersion: "Draft 4.2"
   });
   return db.productionSchedule;
