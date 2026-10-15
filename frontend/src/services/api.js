@@ -2306,6 +2306,26 @@ export async function confirmProductionSchedule(scriptId) {
   return schedule;
 }
 
+export async function moveSceneBetweenDays(scriptId, sceneNum, fromDayNum, toDayNum) {
+  const schedule = await getProductionSchedule(scriptId);
+  const fromDay = schedule.find(d => d.dayNumber === Number(fromDayNum));
+  const toDay = schedule.find(d => d.dayNumber === Number(toDayNum));
+  if (!fromDay || !toDay) return schedule;
+
+  fromDay.sceneNumbers = (fromDay.sceneNumbers || []).filter(n => n !== Number(sceneNum));
+  if (!(toDay.sceneNumbers || []).includes(Number(sceneNum))) {
+    toDay.sceneNumbers = [...(toDay.sceneNumbers || []), Number(sceneNum)];
+  }
+
+  await updateProductionScheduleDay(scriptId, fromDayNum, { sceneNumbers: fromDay.sceneNumbers });
+  await updateProductionScheduleDay(scriptId, toDayNum, { sceneNumbers: toDay.sceneNumbers });
+  return schedule;
+}
+
+export async function reorderSceneWithinDay(scriptId, dayNumber, newSceneNumbers) {
+  return await updateProductionScheduleDay(scriptId, dayNumber, { sceneNumbers: newSceneNumbers });
+}
+
 export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
   try {
     const data = await request(`/production/${scriptId}/readiness`);
