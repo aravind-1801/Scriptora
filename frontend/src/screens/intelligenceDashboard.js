@@ -37,10 +37,10 @@ export function renderIntelligenceDashboardScreen() {
         
         <!-- Navigation Row -->
         <div class="flex items-center justify-between">
-          <a href="/intelligence/context" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline">
+          <button id="intelligence-dashboard-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/context" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Context Setup</span>
-          </a>
+          </button>
           <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full shadow-xs">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
             <span class="text-xs text-blue-700 font-medium truncate max-w-[150px]">${script.title} · ${script.draft || 'Draft 4.2'}</span>

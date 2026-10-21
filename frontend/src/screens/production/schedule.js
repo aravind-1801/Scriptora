@@ -1285,6 +1285,45 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     };
   }
 
+  // Multi-stage Shooting Schedule Back Navigation:
+  // 1. Edit Scene -> Scene Details (cancel edit state, retain scene details)
+  // 2. Scene Details -> Shooting Schedule (close day modal, return to matrix)
+  // 3. Shooting Schedule -> Production Tools
+  if (window.scriptoraRouter) {
+    window.scriptoraRouter.registerBackHandler(() => {
+      // Stage 1: If in any scene/day edit mode, step back to scene details
+      if (
+        editingSceneCards.size > 0 ||
+        editingNotesSceneIds.size > 0 ||
+        editingSnippetSceneIds.size > 0 ||
+        addingCastSceneIds.size > 0 ||
+        editingDayInfo ||
+        editingDayConstraints ||
+        showAssignSceneDropdown
+      ) {
+        editingSceneCards.clear();
+        editingNotesSceneIds.clear();
+        editingSnippetSceneIds.clear();
+        addingCastSceneIds.clear();
+        editingDayInfo = false;
+        editingDayConstraints = false;
+        showAssignSceneDropdown = false;
+        if (currentOpenDayNumber) {
+          renderModalDayContent(currentOpenDayNumber);
+        }
+        return true;
+      }
+
+      // Stage 2: If day modal is open, step back to calendar
+      if (dayModal && !dayModal.classList.contains('hidden')) {
+        closeDayModal();
+        return true;
+      }
+
+      return false;
+    });
+  }
+
 
 
   // ---------------------------------------------------------------------------

@@ -28,10 +28,10 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
         
         <!-- Back Navigation & Title -->
         <div class="flex flex-col gap-1">
-          <a href="${returnUrl}" id="collab-back-btn" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit">
+          <button id="collab-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>${returnLabel}</span>
-          </a>
+          </button>
           <h1 class="font-heading text-2xl font-bold text-slate-900 tracking-tight mt-1">Collaborators</h1>
           <p class="text-xs text-slate-500">Work together on your screenplay with controlled access.</p>
         </div>
@@ -219,7 +219,11 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
     backBtn.onclick = (e) => {
       e.preventDefault();
       if (isFromEditor) sessionStorage.removeItem('scriptora_from_editor');
-      navigate(returnUrl);
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back(returnUrl);
+      } else {
+        navigate(returnUrl);
+      }
     };
   }
 
@@ -228,7 +232,11 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
     bottomReturnBtn.onclick = (e) => {
       e.preventDefault();
       if (isFromEditor) sessionStorage.removeItem('scriptora_from_editor');
-      navigate(returnUrl);
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back(returnUrl);
+      } else {
+        navigate(returnUrl);
+      }
     };
   }
 

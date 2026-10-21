@@ -121,6 +121,13 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
   const userInitials = store.state.currentUser?.initials || 'AK';
 
+  let dynamicLabel = null;
+  if (window.scriptoraRouter) {
+    const prev = window.scriptoraRouter.peekPreviousRoute?.();
+    if (prev) dynamicLabel = window.scriptoraRouter.getRouteLabel(prev);
+  }
+  const backLabel = dynamicLabel || 'Workspace';
+
   return `
     <div id="editor-root" class="flex flex-col min-h-screen bg-slate-100 text-slate-900 w-full relative select-text antialiased">
       
@@ -132,10 +139,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         <!-- ROW 1: TOP APP HEADER (Order: Back, Title & Save Status, Auto-Save, Save Icon, Collab) -->
         <div class="h-11 px-3 flex items-center justify-between max-w-5xl mx-auto">
           <div class="flex items-center gap-2 min-w-0">
-            <!-- Back to Workspace button -->
-            <button aria-label="Back to Workspace" id="editor-back-btn" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all text-xs font-semibold shrink-0" title="Back to Workspace">
+            <!-- Back button -->
+            <button aria-label="Back to ${backLabel}" id="editor-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 active:scale-95 transition-all text-xs font-semibold shrink-0 cursor-pointer" title="Back to ${backLabel}">
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span class="hidden sm:inline">Workspace</span>
+              <span class="hidden sm:inline" id="editor-back-label">${backLabel}</span>
             </button>
             
             <!-- Script Title & Save status -->
@@ -1065,7 +1072,11 @@ export async function attachEditorEvents(scriptId, navigate) {
         performSave(false);
       }
       window.__scriptoraEditorPopstate = null;
-      navigate('/workspace');
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back('/workspace');
+      } else {
+        navigate('/workspace');
+      }
     };
   }
 

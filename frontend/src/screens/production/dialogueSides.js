@@ -346,6 +346,31 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
     bindCardEvents();
   }
 
+  // Register back handler to dismiss open sides drawers or inline edits on Back
+  if (window.scriptoraRouter) {
+    window.scriptoraRouter.registerBackHandler(() => {
+      if (activeEditDrawerId) {
+        const editDrawer = document.getElementById(`edit-drawer-${activeEditDrawerId}`);
+        if (editDrawer) {
+          editDrawer.classList.add('hidden');
+          editDrawer.innerHTML = '';
+        }
+        activeEditDrawerId = null;
+        return true;
+      }
+      if (activeSidesDrawerId) {
+        const sidesDrawer = document.getElementById(`sides-drawer-${activeSidesDrawerId}`);
+        if (sidesDrawer) {
+          sidesDrawer.classList.add('hidden');
+          sidesDrawer.innerHTML = '';
+        }
+        activeSidesDrawerId = null;
+        return true;
+      }
+      return false;
+    });
+  }
+
   function bindCardEvents() {
     // 1. Sides Drawer Toggle
     document.querySelectorAll('.btn-toggle-sides').forEach(btn => {

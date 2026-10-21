@@ -16,7 +16,7 @@ export function renderNotificationsScreen() {
           <!-- Contextual Sub-bar: Back Navigation and Mark All Read Action -->
           <div class="flex items-center justify-between pb-2 border-b border-slate-200/70">
             <div class="flex items-center gap-2">
-              <button aria-label="Go back" id="btn-back-notif" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0">
+              <button aria-label="Go back" id="btn-back-notif" data-scriptora-back="true" data-back-fallback="/workspace" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0 cursor-pointer">
                 <span class="material-symbols-outlined text-[17px]">arrow_back</span>
                 <span>Back</span>
               </button>
@@ -91,8 +91,12 @@ export function attachNotificationsEvents(navigate) {
   const backBtn = document.getElementById('btn-back-notif');
   if (backBtn) {
     backBtn.onclick = () => {
-      const prev = store.getPreviousRoute('/workspace');
-      navigate(prev);
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back('/workspace');
+      } else {
+        const prev = store.getPreviousRoute('/workspace');
+        navigate(prev);
+      }
     };
   }
 

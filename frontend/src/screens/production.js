@@ -12,9 +12,14 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
   const returnUrl = isFromEditor
     ? (sessionStorage.getItem('scriptora_prod_return') || (from && from.startsWith('/editor') ? from : `/editor/${scriptId}`))
     : (from && from.startsWith('/') ? from : '/workspace');
+  let dynamicLabel = null;
+  if (window.scriptoraRouter) {
+    const prev = window.scriptoraRouter.peekPreviousRoute?.();
+    if (prev) dynamicLabel = window.scriptoraRouter.getRouteLabel(prev);
+  }
   const returnLabel = isFromEditor
     ? 'Editor'
-    : (from?.includes('/intelligence') ? 'Intelligence' : 'Workspace');
+    : (dynamicLabel || (from?.includes('/intelligence') ? 'Intelligence' : 'Workspace'));
 
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.scripts?.[0] || {
     id: 'chronicles-of-dust',
@@ -31,9 +36,14 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
       <!-- Main Workspace Container -->
       <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
         
-        <!-- Page Title Header (Clean and Aligned) -->
+        <!-- Page Title Header (Clean and Aligned with Back Button) -->
         <div class="flex items-center justify-between gap-2 py-1 border-b border-slate-200/70">
-          <h1 class="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">Production Tools</h1>
+          <div class="flex items-center gap-2 min-w-0">
+            <button id="production-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back to ${returnLabel}" title="Back to ${returnLabel}">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <h1 class="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">Production Tools</h1>
+          </div>
         </div>
 
         <!-- Screenplay Selector Card (Simplified & Compact) -->
@@ -164,6 +174,18 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
 export async function attachProductionEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+
+  // Back Button
+  const backBtn = document.getElementById('production-back-btn');
+  if (backBtn) {
+    backBtn.onclick = () => {
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back('/workspace');
+      } else {
+        navigate('/workspace');
+      }
+    };
+  }
 
   // 1. Script Selector Switcher
   const scriptSelect = document.getElementById('prod-script-select');

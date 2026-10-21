@@ -13,10 +13,15 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
   const isNew = urlParams.get('action') === 'new';
   const isEdit = urlParams.get('action') === 'edit';
   const from = fromParam || urlParams.get('from');
-  const defaultBack = isEdit
-    ? `/production/call-sheets?scriptId=${scriptId}&csId=${csId}`
-    : (csId || isNew ? `/production/call-sheets?scriptId=${scriptId}` : '/production');
-  const backUrl = from || defaultBack;
+  let defaultBack = '/production';
+  if (isEdit) {
+    defaultBack = `/production/call-sheets?scriptId=${scriptId}&csId=${csId}`;
+  } else if (csId || isNew) {
+    defaultBack = `/production/call-sheets?scriptId=${scriptId}`;
+  } else {
+    defaultBack = from || '/production';
+  }
+  const backUrl = defaultBack;
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">

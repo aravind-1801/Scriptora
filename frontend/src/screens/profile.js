@@ -69,21 +69,26 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const activeCoAuthors = 3;
   const healthIndex = user.stats?.healthIndex || '98%';
 
+  let dynamicLabel = null;
+  if (window.scriptoraRouter) {
+    const prev = window.scriptoraRouter.peekPreviousRoute?.();
+    if (prev) dynamicLabel = window.scriptoraRouter.getRouteLabel(prev);
+  }
+  const backLabel = isFromEditor ? 'Back to Editor' : (dynamicLabel ? `Back to ${dynamicLabel}` : 'Back');
+
   return `
     ${renderHeader('Profile', 'Account & preferences.')}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
         
-        <!-- Back Navigation to Editor (When entered from Editor) -->
-        ${isFromEditor ? `
-          <div class="flex flex-col gap-1 -mb-3">
-            <a href="${returnUrl}" id="profile-back-to-editor-btn" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span>Back to Editor</span>
-            </a>
-          </div>
-        ` : ''}
+        <!-- Back Navigation -->
+        <div class="flex flex-col gap-1 -mb-3">
+          <button id="profile-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            <span>${backLabel}</span>
+          </button>
+        </div>
 
         <!-- Profile Header -->
         <div class="flex items-center justify-between">
@@ -794,12 +799,16 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
 
   // Back Navigation
-  const backBtn = document.getElementById('profile-back-to-editor-btn');
+  const backBtn = document.getElementById('profile-back-btn') || document.getElementById('profile-back-to-editor-btn');
   if (backBtn) {
     backBtn.onclick = (e) => {
       e.preventDefault();
       sessionStorage.removeItem('scriptora_from_editor');
-      navigate(returnUrl);
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back(returnUrl);
+      } else {
+        navigate(returnUrl);
+      }
     };
   }
 
@@ -808,7 +817,11 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     bottomReturnBtn.onclick = (e) => {
       e.preventDefault();
       sessionStorage.removeItem('scriptora_from_editor');
-      navigate(returnUrl);
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back(returnUrl);
+      } else {
+        navigate(returnUrl);
+      }
     };
   }
 

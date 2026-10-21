@@ -7,6 +7,11 @@ export function renderIntelligenceSelectorScreen() {
   const scripts = store.state.scripts || [];
   const selectedId = store.state.selectedScriptId || 'chronicles-of-dust';
   const active = scripts.find(s => s.id === selectedId) || scripts[0] || { title: 'Chronicles of Dust', id: 'chronicles-of-dust' };
+  let backLabel = 'Workspace';
+  if (window.scriptoraRouter) {
+    const prev = window.scriptoraRouter.peekPreviousRoute?.();
+    if (prev) backLabel = window.scriptoraRouter.getRouteLabel(prev);
+  }
 
   return `
     ${renderHeader('Intelligence', 'Script Selector')}
@@ -16,10 +21,10 @@ export function renderIntelligenceSelectorScreen() {
         
         <!-- Navigation Breadcrumb -->
         <div class="flex items-center justify-between">
-          <a href="/workspace" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-medium no-underline">
+          <button id="intelligence-selector-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-medium no-underline cursor-pointer">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Workspace</span>
-          </a>
+            <span>${backLabel}</span>
+          </button>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
             <span class="text-[10px] font-semibold uppercase tracking-wider">Select Script</span>

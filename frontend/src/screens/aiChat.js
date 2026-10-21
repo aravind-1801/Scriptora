@@ -21,9 +21,12 @@ export function renderAiChatScreen() {
       <!-- Main Conversation Screen: fills space between Header (56px) and Bottom Nav (56px) -->
       <main class="flex-1 flex flex-col w-full max-w-2xl mx-auto pt-14 pb-16 overflow-hidden relative fade-in">
         
-        <!-- Compact, Unobtrusive Context Indicator Bar -->
-        <div class="px-4 py-1.5 border-b border-slate-200/60 bg-surface/90 backdrop-blur-xs flex items-center justify-between text-xs shrink-0 z-10">
+        <!-- Compact, Unobtrusive Context Indicator Bar with Back Button -->
+        <div class="px-3 sm:px-4 py-1.5 border-b border-slate-200/60 bg-surface/90 backdrop-blur-xs flex items-center justify-between text-xs shrink-0 z-10">
           <div class="flex items-center gap-1.5 text-slate-500 text-[11px] min-w-0">
+            <button id="chat-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="w-6 h-6 -ml-1 rounded-lg hover:bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center justify-center shrink-0 cursor-pointer transition-colors" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+            </button>
             <span class="material-symbols-outlined text-[15px] text-blue-600 shrink-0">movie_creation</span>
             <span class="truncate">Screenplay: <strong class="text-slate-800 font-semibold">${script.title}</strong> <span class="text-slate-400">(${script.draft})</span></span>
           </div>
@@ -107,8 +110,19 @@ export function attachAiChatEvents(navigate) {
   const sendBtn = document.getElementById('chat-send-btn');
   const container = document.getElementById('chat-messages-container');
   const clearBtn = document.getElementById('btn-clear-chat');
+  const chatBackBtn = document.getElementById('chat-back-btn');
   const chips = document.querySelectorAll('.chat-chip');
   const activeScriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+
+  if (chatBackBtn) {
+    chatBackBtn.onclick = () => {
+      if (window.scriptoraRouter) {
+        window.scriptoraRouter.back('/workspace');
+      } else {
+        navigate('/workspace');
+      }
+    };
+  }
 
   // Load saved history if any
   const saved = localStorage.getItem('scriptora_chat_history');

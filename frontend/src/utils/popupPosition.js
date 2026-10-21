@@ -120,6 +120,9 @@ export function positionPopup(triggerEl, popupEl, options = {}) {
 export function setupPopupToggle(triggerEl, popupEl, options = {}) {
   if (!triggerEl || !popupEl) return;
 
+  popupEl.classList.add('scriptora-popup');
+  popupEl.setAttribute('data-scriptora-popup', 'true');
+
   const update = () => {
     if (!popupEl.classList.contains('hidden')) {
       positionPopup(triggerEl, popupEl, options);

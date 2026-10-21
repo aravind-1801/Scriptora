@@ -27,6 +27,9 @@ class Router {
     this.appEl = null;
     this.currentPath = null;
     this.isFullScreen = false;
+    this.isNavigatingBack = false;
+    this.backHandlers = [];
+    this.scrollPositions = {};
   }
 
   getBasePath() {
@@ -42,6 +45,145 @@ class Router {
       return window.location.hash.slice(1);
     }
     return window.location.pathname + window.location.search;
+  }
+
+  normalizePath(path) {
+    if (!path) return '/';
+    const base = this.getBasePath();
+    let p = path;
+    if (base && p.toLowerCase().startsWith(base.toLowerCase())) {
+      p = p.slice(base.length) || '/';
+    }
+    // Remove query and hash for path-level comparison
+    const qIndex = p.indexOf('?');
+    const hIndex = p.indexOf('#');
+    let cutIndex = p.length;
+    if (qIndex !== -1) cutIndex = Math.min(cutIndex, qIndex);
+    if (hIndex !== -1) cutIndex = Math.min(cutIndex, hIndex);
+    const pathOnly = p.slice(0, cutIndex).replace(/\/+$/, '') || '/';
+    return pathOnly.startsWith('/') ? pathOnly : '/' + pathOnly;
+  }
+
+  getRouteFallback(path) {
+    const norm = this.normalizePath(path);
+    if (norm.startsWith('/production/') && norm !== '/production') {
+      return '/production';
+    }
+    if (norm === '/production') {
+      return '/workspace';
+    }
+    if (norm.startsWith('/intelligence/analysis/')) {
+      return '/intelligence/analysis';
+    }
+    if (norm === '/intelligence/analysis' || norm === '/intelligence/analysis/select') {
+      return '/intelligence/dashboard';
+    }
+    if (norm === '/intelligence/dashboard' || norm === '/intelligence/overview') {
+      return '/intelligence/context';
+    }
+    if (norm === '/intelligence/context') {
+      return '/intelligence';
+    }
+    if (norm === '/intelligence' || norm === '/intelligence/select') {
+      return '/workspace';
+    }
+    if (norm === '/profile/collaborators') {
+      return '/profile';
+    }
+    if (norm === '/profile' || norm === '/notifications' || norm === '/chat' || norm.startsWith('/editor')) {
+      return '/workspace';
+    }
+    return '/workspace';
+  }
+
+  getRouteLabel(path) {
+    const norm = this.normalizePath(path);
+    if (norm === '/workspace') return 'Workspace';
+    if (norm === '/production') return 'Production';
+    if (norm.startsWith('/production/schedule')) return 'Schedule';
+    if (norm.startsWith('/production/breakdown')) return 'Breakdown';
+    if (norm.startsWith('/production/call-sheets')) return 'Call Sheets';
+    if (norm.startsWith('/production/dialogue-sides')) return 'Dialogue Sides';
+    if (norm.startsWith('/production/storyboard')) return 'Storyboard';
+    if (norm.startsWith('/editor')) return 'Editor';
+    if (norm === '/intelligence') return 'Intelligence';
+    if (norm === '/intelligence/context') return 'Context';
+    if (norm === '/intelligence/dashboard') return 'Analysis';
+    if (norm.startsWith('/intelligence/analysis')) return 'Vectors';
+    if (norm === '/profile') return 'Profile';
+    if (norm === '/profile/collaborators') return 'Collaborators';
+    if (norm === '/notifications') return 'Notifications';
+    if (norm === '/chat') return 'AI Chat';
+    return 'Back';
+  }
+
+  registerBackHandler(handler) {
+    if (typeof handler !== 'function') return () => {};
+    this.backHandlers.push(handler);
+    return () => {
+      const idx = this.backHandlers.indexOf(handler);
+      if (idx !== -1) this.backHandlers.splice(idx, 1);
+    };
+  }
+
+  triggerBackHandlers() {
+    // 1. Explicitly registered back handlers (e.g. Day Modal in Schedule, Scene Edit modes, Editor sub-views)
+    for (let i = this.backHandlers.length - 1; i >= 0; i--) {
+      const handler = this.backHandlers[i];
+      try {
+        const handled = handler();
+        if (handled) return true;
+      } catch (err) {
+        console.error("Back handler error:", err);
+      }
+    }
+
+    // 2. Visible popups, contextual dropdowns, and overlays
+    const visiblePopups = Array.from(document.querySelectorAll(
+      '.scriptora-popup:not(.hidden), [data-scriptora-popup]:not(.hidden), [role="menu"]:not(.hidden), #quick-add-menu:not(.hidden)'
+    ));
+    if (visiblePopups.length > 0) {
+      const topmost = visiblePopups[visiblePopups.length - 1];
+      topmost.classList.add('hidden');
+      return true;
+    }
+
+    // 3. Open schedule day modal if visible
+    const dayModal = document.getElementById('day-detail-modal') || document.getElementById('modal-day-details');
+    if (dayModal && !dayModal.classList.contains('hidden')) {
+      const closeBtn = document.getElementById('modal-day-close') || document.getElementById('modal-day-done');
+      if (closeBtn) {
+        closeBtn.click();
+      } else {
+        dayModal.classList.add('hidden');
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  peekPreviousRoute() {
+    return store.peekPreviousRoute(null);
+  }
+
+  back(fallback = null) {
+    // 1. Check overlays / sub-views first
+    if (this.triggerBackHandlers()) {
+      return;
+    }
+
+    // 2. Pop the immediate preceding route from navigation journey
+    let prev = store.popHistory();
+    // Drop duplicates matching current path
+    while (prev && this.normalizePath(prev) === this.normalizePath(this.currentPath)) {
+      prev = store.popHistory();
+    }
+
+    const target = prev || fallback || this.getRouteFallback(this.currentPath);
+    this.isNavigatingBack = true;
+    this.navigate(target, false);
+    this.isNavigatingBack = false;
   }
 
   ensureShell() {
@@ -72,6 +214,7 @@ class Router {
 
     // Ensure application shell is ready
     this.ensureShell();
+    window.scriptoraRouter = this;
 
     // Global fullscreen handler for focused writing modes (e.g. Focus Mode)
     window.setScriptoraFullScreen = (isFull) => {
@@ -82,8 +225,21 @@ class Router {
       if (navSlot) navSlot.classList.toggle('hidden', !!isFull);
     };
 
-    // Intercept clicks on local links
+    // Intercept clicks on local links and back buttons
     document.body.addEventListener('click', (e) => {
+      // 1. Back button click interception
+      const backTrigger = e.target.closest(
+        '[data-scriptora-back], #prod-subnav-back, #editor-back-btn, #btn-back-notif, #analysis-back-btn, #collab-back-btn, #profile-back-to-editor-btn, #profile-back-btn, #production-back-btn, #chat-back-btn, #intelligence-selector-back-btn'
+      );
+      if (backTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        const fallback = backTrigger.getAttribute('data-back-fallback') || backTrigger.getAttribute('href') || null;
+        this.back(fallback);
+        return;
+      }
+
+      // 2. Local link navigation interception
       const anchor = e.target.closest('a');
       if (
         anchor &&
@@ -108,8 +264,21 @@ class Router {
         const handled = window.__scriptoraEditorPopstate(e);
         if (handled) return;
       }
+
+      // If an overlay or modal or dropdown was open, close it instead of leaving!
+      if (this.triggerBackHandlers()) {
+        const cur = this.getCurrentLocation();
+        window.history.pushState({ scriptoraPath: cur }, '', cur);
+        return;
+      }
+
+      // Normal browser popstate
+      store.popHistory();
+      this.isNavigatingBack = true;
       this.resolve(this.getCurrentLocation());
+      this.isNavigatingBack = false;
     });
+
     window.addEventListener('hashchange', () => {
       this.resolve(this.getCurrentLocation());
     });
@@ -119,8 +288,18 @@ class Router {
   }
 
   navigate(path, replace = false) {
+    // Record current scroll position
     if (this.currentPath) {
-      store.pushHistory(this.currentPath);
+      this.scrollPositions[this.normalizePath(this.currentPath)] = window.scrollY;
+    }
+
+    // Only record into history stack for normal forward navigation
+    if (!this.isNavigatingBack && !replace && this.currentPath) {
+      const normCurrent = this.normalizePath(this.currentPath);
+      const normTarget = this.normalizePath(path);
+      if (normCurrent !== normTarget) {
+        store.pushHistory(this.currentPath);
+      }
     }
 
     const base = this.getBasePath();
@@ -132,9 +311,9 @@ class Router {
       : path;
 
     if (replace) {
-      window.history.replaceState(null, '', fullTarget);
+      window.history.replaceState({ scriptoraPath: cleanPath }, '', fullTarget);
     } else {
-      window.history.pushState(null, '', fullTarget);
+      window.history.pushState({ scriptoraPath: cleanPath }, '', fullTarget);
     }
 
     this.resolve(cleanPath);
@@ -456,7 +635,15 @@ class Router {
       cleanHtml = cleanHtml.replace(/<nav\s+class="fixed\s+bottom-0[^>]*>[\s\S]*?<\/nav>/gi, '');
 
       contentSlot.innerHTML = cleanHtml;
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      const targetNorm = this.normalizePath(this.currentPath);
+      const savedScroll = this.scrollPositions[targetNorm];
+      if (this.isNavigatingBack && savedScroll !== undefined) {
+        setTimeout(() => {
+          window.scrollTo({ top: savedScroll, behavior: 'instant' });
+        }, 10);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
 
       // Trigger smooth inward transition
       contentSlot.classList.remove('fade-in');
