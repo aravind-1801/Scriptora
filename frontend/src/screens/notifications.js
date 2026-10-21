@@ -2,6 +2,7 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
+import { setupPopupToggle } from '../utils/popupPosition.js';
 
 export function renderNotificationsScreen() {
   const userInitials = store.state.currentUser?.initials || 'JD';
@@ -249,12 +250,15 @@ export function attachNotificationsEvents(navigate) {
   // Simulator Menu
   const simToggle = document.getElementById('btn-toggle-sim');
   const simMenu = document.getElementById('sim-menu-dropdown');
-  if (simToggle) simToggle.onclick = () => simMenu?.classList.toggle('hidden');
+  let simMenuHandler = null;
+  if (simToggle && simMenu) {
+    simMenuHandler = setupPopupToggle(simToggle, simMenu, { placement: 'bottom-end' });
+  }
 
   document.querySelectorAll('.sim-opt').forEach(opt => {
     opt.onclick = () => {
       simState = opt.getAttribute('data-state');
-      simMenu?.classList.add('hidden');
+      simMenuHandler?.close();
       loadData();
       showToast(`Simulating ${simState} state`);
     };

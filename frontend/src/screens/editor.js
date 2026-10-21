@@ -125,9 +125,9 @@ export function renderEditorScreen(scriptId, targetScene = null) {
     <div id="editor-root" class="flex flex-col min-h-screen bg-slate-100 text-slate-900 w-full relative select-text antialiased">
       
       <!-- ========================================================= -->
-      <!-- STATIC TOP HEADER (FIXED: Never scrolls with screenplay)  -->
+      <!-- STATIC TOP HEADER (STICKY: Never scrolls with screenplay) -->
       <!-- ========================================================= -->
-      <header id="editor-fixed-header" class="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
+      <header id="editor-fixed-header" class="shrink-0 sticky top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all">
         
         <!-- ROW 1: TOP APP HEADER (Order: Back, Title & Save Status, Auto-Save, Save Icon, Collab) -->
         <div class="h-11 px-3 flex items-center justify-between max-w-5xl mx-auto">
@@ -440,8 +440,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
-      <!-- ========================================================= -->
-      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-screen flex flex-col items-center transition-[padding] duration-200 ease-out" style="padding-top: ${editorToolbarExpanded ? '208px' : '136px'}; transition: padding-top 0.2s ease-out;">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3">
         
         <!-- Document 1: Continuous A4 Sheets Container -->
         <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4">
@@ -1191,19 +1190,10 @@ function setupAutoSaveToggle() {
 // MASTER TOOLBAR COLLAPSE / EXPAND TOGGLE (Section 2, 3, 4, 15)
 // =========================================================================
 export function updateEditorHeaderOffset() {
-  const headerEl = document.getElementById('editor-fixed-header');
   const scrollEl = document.getElementById('editor-main-scroll');
-  if (!headerEl || !scrollEl) return;
-  if (focusModeActive) {
-    scrollEl.style.paddingTop = `${headerEl.offsetHeight || 56}px`;
-    scrollEl.style.paddingBottom = '32px';
-    return;
-  }
-  const height = headerEl.offsetHeight;
-  if (height > 0) {
-    scrollEl.style.paddingTop = `${height}px`;
-    scrollEl.style.paddingBottom = '88px';
-  }
+  if (!scrollEl) return;
+  scrollEl.style.paddingTop = '12px';
+  scrollEl.style.paddingBottom = focusModeActive ? '32px' : '88px';
 }
 
 function setupToolbarCollapseToggle() {
@@ -2990,40 +2980,47 @@ function positionAutocomplete(dropdown, editableEl) {
   const anchorRect = getActiveCaretOrBlockRect(editableEl);
   if (!anchorRect) return;
 
-  // Viewport metrics
+  // Visual Viewport metrics (crucial on mobile when virtual keyboard appears)
   const vv = window.visualViewport;
+  const viewportTop = vv ? vv.offsetTop : 0;
+  const viewportLeft = vv ? vv.offsetLeft : 0;
   const viewportHeight = vv ? vv.height : window.innerHeight;
   const viewportWidth = vv ? vv.width : window.innerWidth;
 
-  // Top editor navigation toolbar bounding check
-  const topToolbar = document.getElementById('editor-header-nav');
-  const toolbarBottom = topToolbar ? topToolbar.getBoundingClientRect().bottom : 136;
+  // Top editor stationary header bounding check
+  const topToolbar = document.getElementById('editor-fixed-header') || document.getElementById('editor-header-nav');
+  const toolbarBottom = topToolbar ? topToolbar.getBoundingClientRect().bottom : (viewportTop + 56);
 
   // If the active line has been scrolled offscreen, hide the dropdown
-  if (anchorRect.bottom < toolbarBottom + 5 || anchorRect.top > viewportHeight - 20) {
+  if (anchorRect.bottom < toolbarBottom + 4 || anchorRect.top > (viewportTop + viewportHeight - 16)) {
     hideAutocomplete();
     return;
   }
 
   const dropdownWidth = Math.min(270, viewportWidth - 24);
   dropdown.style.width = `${dropdownWidth}px`;
-  const dropdownHeight = Math.min(220, dropdown.scrollHeight || 180);
+  
+  const preferredHeight = Math.min(220, dropdown.scrollHeight || 180);
+  const spaceBelow = (viewportTop + viewportHeight) - anchorRect.bottom - 8;
+  const spaceAbove = anchorRect.top - Math.max(toolbarBottom, viewportTop) - 8;
 
   // Vertical placement: Below cursor by default, flip above if constrained
-  const spaceBelow = viewportHeight - anchorRect.bottom;
-  const spaceAbove = anchorRect.top - toolbarBottom;
-
   let topPos;
-  if (spaceBelow < dropdownHeight + 12 && spaceAbove > dropdownHeight + 12) {
-    // Flip above
-    topPos = anchorRect.top - dropdownHeight - 6;
+  let maxH = preferredHeight;
+  const placeAbove = spaceBelow < preferredHeight && spaceAbove > spaceBelow;
+
+  if (placeAbove) {
+    maxH = Math.max(80, Math.min(preferredHeight, spaceAbove));
+    topPos = anchorRect.top - maxH - 6;
   } else {
-    // Place below
+    maxH = Math.max(80, Math.min(preferredHeight, spaceBelow));
     topPos = anchorRect.bottom + 6;
   }
 
-  // Constrain within safe viewport boundaries
-  topPos = Math.max(toolbarBottom + 6, Math.min(viewportHeight - dropdownHeight - 8, topPos));
+  // Constrain within visible viewport boundaries
+  topPos = Math.max(Math.max(toolbarBottom, viewportTop) + 4, Math.min(viewportTop + viewportHeight - maxH - 8, topPos));
+  dropdown.style.maxHeight = `${Math.round(maxH)}px`;
+  dropdown.style.overflowY = 'auto';
 
   // Horizontal placement: Align beside active caret or line
   const blockEl = editableEl.closest('.screenplay-block');
@@ -3031,19 +3028,19 @@ function positionAutocomplete(dropdown, editableEl) {
   let leftPos;
 
   if (type === 'transition') {
-    leftPos = Math.max(12, anchorRect.right - dropdownWidth);
+    leftPos = Math.max(viewportLeft + 12, anchorRect.right - dropdownWidth);
   } else {
     leftPos = anchorRect.left;
-    if (leftPos + dropdownWidth > viewportWidth - 12) {
-      leftPos = viewportWidth - dropdownWidth - 12;
+    if (leftPos + dropdownWidth > viewportLeft + viewportWidth - 12) {
+      leftPos = viewportLeft + viewportWidth - dropdownWidth - 12;
     }
-    if (leftPos < 12) {
-      leftPos = 12;
+    if (leftPos < viewportLeft + 12) {
+      leftPos = viewportLeft + 12;
     }
   }
 
-  dropdown.style.top = `${topPos}px`;
-  dropdown.style.left = `${leftPos}px`;
+  dropdown.style.top = `${Math.round(topPos)}px`;
+  dropdown.style.left = `${Math.round(leftPos)}px`;
 }
 
 // Helper to get only user-created or active screenplay characters (Prompt 23: 4-8)

@@ -182,3 +182,50 @@ button, a {
   width: 100% !important;
   text-align: right !important;
 }
+
+/* Screenplay Editor Mobile & Desktop Viewport & Stationary Header Architecture */
+html.editor-mode,
+body.editor-mode {
+  height: 100% !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+body.editor-mode #scriptora-app-shell,
+body.editor-mode #scriptora-global-content {
+  height: 100% !important;
+  height: 100dvh !important;
+  min-height: 0 !important;
+  max-height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+#editor-root {
+  height: 100% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+#editor-fixed-header {
+  position: sticky !important;
+  top: 0 !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  z-index: 40 !important;
+}
+
+#editor-main-scroll {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+}
+

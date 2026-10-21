@@ -3,6 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { setupPopupToggle } from '../utils/popupPosition.js';
 
 export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -281,13 +282,16 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   // Active script dropdown
   const projBtn = document.getElementById('projectSelectBtn');
   const projDropdown = document.getElementById('projectDropdown');
-  if (projBtn) projBtn.onclick = () => projDropdown?.classList.toggle('hidden');
+  let projDropdownHandler = null;
+  if (projBtn && projDropdown) {
+    projDropdownHandler = setupPopupToggle(projBtn, projDropdown, { placement: 'bottom-start' });
+  }
 
   document.querySelectorAll('.switch-script-opt').forEach(opt => {
     opt.onclick = () => {
       const id = opt.getAttribute('data-id');
       store.selectScript(id);
-      projDropdown?.classList.add('hidden');
+      projDropdownHandler?.close();
       navigate(`/profile/collaborators${isFromEditor ? `?from=editor&scriptId=${id}` : ''}`);
     };
   });

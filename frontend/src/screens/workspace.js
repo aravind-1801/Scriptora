@@ -3,6 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { positionPopup } from '../utils/popupPosition.js';
 
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
@@ -302,20 +303,28 @@ export function attachWorkspaceEvents(navigate) {
 
   // More menu popover
   const menuPopover = document.getElementById('script-menu-popover');
+  let activeScriptMoreBtn = null;
+
   document.querySelectorAll('.script-more-btn').forEach(btn => {
     btn.onclick = (e) => {
       e.stopPropagation();
       targetScriptId = btn.getAttribute('data-script-id');
-      const rect = btn.getBoundingClientRect();
-      menuPopover.style.top = `${rect.bottom + window.scrollY + 4}px`;
-      menuPopover.style.left = `${Math.min(rect.left - 130, window.innerWidth - 180)}px`;
+      activeScriptMoreBtn = btn;
+      positionPopup(btn, menuPopover, { placement: 'bottom-end', offset: 4 });
       menuPopover.classList.remove('hidden');
     };
   });
 
+  window.addEventListener('scroll', () => {
+    if (activeScriptMoreBtn && menuPopover && !menuPopover.classList.contains('hidden')) {
+      positionPopup(activeScriptMoreBtn, menuPopover, { placement: 'bottom-end', offset: 4 });
+    }
+  }, { passive: true });
+
   window.onclick = (e) => {
     if (!e.target.closest('#script-menu-popover') && !e.target.closest('.script-more-btn')) {
       menuPopover?.classList.add('hidden');
+      activeScriptMoreBtn = null;
     }
   };
 

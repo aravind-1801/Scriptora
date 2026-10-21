@@ -5,6 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportSchedulePdf, exportBreakdownPdf } from '../../services/pdfExport.js';
+import { setupPopupToggle } from '../../utils/popupPosition.js';
 
 // Category icon map matching SCRIPTORA design tokens
 const CATEGORY_ICONS = {
@@ -106,8 +107,13 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
               <div class="flex items-center gap-2.5 min-w-0">
                 <div id="modal-day-badge" class="w-8 h-8 rounded-lg bg-slate-900 text-white font-heading font-bold text-xs flex items-center justify-center shrink-0">D1</div>
                 <div class="min-w-0">
-                  <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Day 1 • Oct 24</h3>
-                  <p id="modal-day-sub" class="text-[11px] text-slate-500 truncate">Mojave Gate 4 • 7 5/8 pgs</p>
+                  <div class="flex items-center gap-1.5">
+                    <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Day 1 • Oct 24</h3>
+                    <button id="modal-day-edit-btn" class="p-0.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer" title="Edit Shoot Day Info">
+                      <span class="material-symbols-outlined text-[15px]">edit</span>
+                    </button>
+                  </div>
+                  <p id="modal-day-sub" class="text-[11px] text-slate-500 truncate cursor-pointer hover:text-blue-600 transition-colors" title="Click to edit location & hours">Mojave Gate 4 • 7 5/8 pgs</p>
                 </div>
               </div>
               <div class="flex items-center gap-1 shrink-0">
@@ -117,6 +123,10 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
                     <span class="material-symbols-outlined text-lg">more_vert</span>
                   </button>
                   <div id="modal-day-menu-dropdown" class="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-30 hidden">
+                    <button id="modal-day-menu-edit" class="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
+                      <span class="material-symbols-outlined text-[16px]">edit_calendar</span>
+                      <span>Edit Day Info</span>
+                    </button>
                     <button id="modal-day-lock-toggle" class="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
                       <span id="modal-day-lock-icon" class="material-symbols-outlined text-[16px]">lock</span>
                       <span id="modal-day-lock-label">Lock Day</span>
@@ -303,9 +313,36 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   }
 
   // ---------------------------------------------------------------------------
-  // DAY DETAILS MODAL LOGIC (Compact view with inline scene expansion)
+  // DAY DETAILS MODAL LOGIC (Fully editable with inline scene expansion)
   // ---------------------------------------------------------------------------
   let currentOpenDayNumber = null;
+  let editingDayInfo = false;
+  let editingDayConstraints = false;
+  const editingSceneCards = new Set();
+  let showAssignSceneDropdown = false;
+  const editingSnippetSceneIds = new Set();
+  const addingCastSceneIds = new Set();
+  let modalMenuHandler = null;
+
+  function recalculateDayPages(dayObj) {
+    const scs = (dayObj.sceneNumbers || []).map(num => scenes.find(s => s.sceneNumber === num)).filter(Boolean);
+    let totalEighths = 0;
+    scs.forEach(sc => {
+      const m = (sc.pages || '').match(/(\d+)\s*(\d+)\/8/);
+      if (m) {
+        totalEighths += parseInt(m[1], 10) * 8 + parseInt(m[2], 10);
+      } else {
+        const p = parseFloat(sc.pages);
+        if (!isNaN(p)) {
+          totalEighths += Math.round(p * 8);
+        }
+      }
+    });
+    const whole = Math.floor(totalEighths / 8);
+    const eighths = totalEighths % 8;
+    dayObj.totalPages = `${whole} ${eighths}/8`;
+    return dayObj.totalPages;
+  }
 
   function openDayModal(dayNumber, autoExpandSceneId = null) {
     const day = days.find(d => d.dayNumber === Number(dayNumber));
@@ -325,22 +362,42 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     const modalContent = document.getElementById('modal-day-content');
     const menuBtn = document.getElementById('modal-day-menu-btn');
     const menuDropdown = document.getElementById('modal-day-menu-dropdown');
+    const editDayBtn = document.getElementById('modal-day-edit-btn');
+    const menuEditBtn = document.getElementById('modal-day-menu-edit');
     const lockToggle = document.getElementById('modal-day-lock-toggle');
     const lockLabel = document.getElementById('modal-day-lock-label');
     const lockIcon = document.getElementById('modal-day-lock-icon');
     const deleteBtn = document.getElementById('modal-day-delete');
 
-    // Header: Keep only day number, date, location & pages
+    // Header: Keep day badge, date, location & pages
     if (modalBadge) modalBadge.textContent = `D${day.dayNumber}`;
     if (modalTitle) modalTitle.textContent = `Day ${day.dayNumber} • ${day.date.split(',')[0]}`;
     if (modalSub) modalSub.textContent = `${day.location}${day.totalPages ? ` • ${day.totalPages} pgs` : ''}`;
 
-    // Contextual menu setup
-    if (menuDropdown) menuDropdown.classList.add('hidden');
+    // Contextual menu setup with robust positioning
     if (menuBtn && menuDropdown) {
-      menuBtn.onclick = (e) => {
+      menuDropdown.classList.add('hidden');
+      modalMenuHandler = setupPopupToggle(menuBtn, menuDropdown, { placement: 'bottom-end', zIndex: 120 });
+    }
+
+    if (editDayBtn) {
+      editDayBtn.onclick = () => {
+        editingDayInfo = !editingDayInfo;
+        openDayModal(day.dayNumber);
+      };
+    }
+    if (menuEditBtn) {
+      menuEditBtn.onclick = (e) => {
         e.stopPropagation();
-        menuDropdown.classList.toggle('hidden');
+        modalMenuHandler?.close();
+        editingDayInfo = !editingDayInfo;
+        openDayModal(day.dayNumber);
+      };
+    }
+    if (modalSub) {
+      modalSub.onclick = () => {
+        editingDayInfo = true;
+        openDayModal(day.dayNumber);
       };
     }
 
@@ -350,7 +407,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (lockToggle) {
       lockToggle.onclick = async (e) => {
         e.stopPropagation();
-        menuDropdown?.classList.add('hidden');
+        modalMenuHandler?.close();
         day.isLocked = !day.isLocked;
         await api.updateProductionScheduleDay(scriptId, day.dayNumber, { isLocked: day.isLocked });
         showToast(`Day ${day.dayNumber} ${day.isLocked ? 'locked' : 'unlocked'}`);
@@ -363,7 +420,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (deleteBtn) {
       deleteBtn.onclick = async (e) => {
         e.stopPropagation();
-        menuDropdown?.classList.add('hidden');
+        modalMenuHandler?.close();
         if (!confirm(`Are you sure you want to remove Shoot Day ${day.dayNumber}? Any scenes should be moved first.`)) return;
         const res = await api.deleteProductionScheduleDay(scriptId, day.dayNumber);
         if (res.success) {
@@ -381,8 +438,44 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       .map(num => scenes.find(s => s.sceneNumber === num))
       .filter(Boolean);
 
+    // Scenes not yet assigned to this day
+    const availableScenesToAssign = scenes.filter(s => !day.sceneNumbers.includes(s.sceneNumber));
+
     if (modalContent) {
       modalContent.innerHTML = `
+        <!-- Optional Inline Day Info Editor -->
+        ${editingDayInfo ? `
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-col gap-2.5 animate-in fade-in">
+            <div class="flex items-center justify-between">
+              <span class="font-heading font-bold text-xs text-blue-950 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px] text-blue-600">edit_calendar</span>
+                <span>Edit Shoot Day ${day.dayNumber} Info</span>
+              </span>
+              <button id="btn-cancel-day-top" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+              <div>
+                <label class="block text-slate-600 font-medium mb-1">Shoot Date</label>
+                <input type="text" id="input-edit-day-date" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.date}" placeholder="e.g. Oct 25, 2026" />
+              </div>
+              <div>
+                <label class="block text-slate-600 font-medium mb-1">Estimated Daily Hours</label>
+                <input type="number" id="input-edit-day-hours" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.estHours || 11}" step="0.5" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-slate-600 font-medium mb-1">Primary Location / Focus</label>
+                <input type="text" id="input-edit-day-loc" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.location || ''}" placeholder="e.g. Chamber B Dry Tank" />
+              </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-1 border-t border-blue-200/60">
+              <button id="btn-cancel-day-info" class="px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-200/60 text-[11px] font-medium cursor-pointer">Cancel</button>
+              <button id="btn-save-day-info" class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold shadow-2xs transition-colors cursor-pointer">Save Day</button>
+            </div>
+          </div>
+        ` : ''}
+
         <!-- Collapsible Production Constraints (Progressive Disclosure) -->
         <div class="border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/50">
           <button id="btn-toggle-day-constraints" class="w-full px-3 py-2 flex items-center justify-between text-left text-xs text-slate-700 hover:bg-slate-100/60 transition-colors cursor-pointer">
@@ -392,54 +485,161 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             </span>
             <span id="constraints-chevron" class="material-symbols-outlined text-[16px] text-slate-400 transition-transform">expand_more</span>
           </button>
-          <div id="day-constraints-content" class="px-3 pb-2.5 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60 hidden flex flex-col gap-1">
-            <div><span class="text-slate-400 font-medium">Location:</span> ${day.location}</div>
-            <div><span class="text-slate-400 font-medium">Estimated Daily Hours:</span> ${day.estHours} hrs (including meal break)</div>
-            <div><span class="text-slate-400 font-medium">Rest Turnaround:</span> Standard 12-hour crew rest turnaround active</div>
+          <div id="day-constraints-content" class="px-3 pb-2.5 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60 hidden flex flex-col gap-1.5">
+            ${editingDayConstraints ? `
+              <div class="flex flex-col gap-2 pt-1">
+                <div>
+                  <label class="block text-slate-600 font-medium mb-0.5">Location</label>
+                  <input type="text" id="input-constraints-loc" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.location || ''}" />
+                </div>
+                <div>
+                  <label class="block text-slate-600 font-medium mb-0.5">Estimated Daily Hours</label>
+                  <input type="number" id="input-constraints-hours" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.estHours || 11}" step="0.5" />
+                </div>
+                <div>
+                  <label class="block text-slate-600 font-medium mb-0.5">Turnaround Rule / Notes</label>
+                  <input type="text" id="input-constraints-turnaround" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.turnaroundNote || 'Standard 12-hour crew rest turnaround active'}" />
+                </div>
+                <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/60">
+                  <button id="btn-cancel-constraints" class="px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
+                  <button id="btn-save-constraints" class="px-2.5 py-1 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs cursor-pointer">Save Constraints</button>
+                </div>
+              </div>
+            ` : `
+              <div class="flex items-center justify-between">
+                <div><span class="text-slate-400 font-medium">Location:</span> ${day.location}</div>
+                <button id="btn-edit-constraints" class="text-blue-600 hover:underline font-semibold text-[11px] flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined text-[13px]">edit</span>
+                  <span>Edit</span>
+                </button>
+              </div>
+              <div><span class="text-slate-400 font-medium">Estimated Daily Hours:</span> ${day.estHours} hrs (including meal break)</div>
+              <div><span class="text-slate-400 font-medium">Rest Turnaround:</span> ${day.turnaroundNote || 'Standard 12-hour crew rest turnaround active'}</div>
+            `}
           </div>
         </div>
 
-        <!-- Assigned Scenes Header -->
+        <!-- Assigned Scenes Header with Assign Button -->
         <div class="flex items-center justify-between pt-1">
-          <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
+          <div class="flex items-center gap-2">
+            <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
+            <button id="btn-toggle-assign-scene" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-[10px] font-semibold transition-colors cursor-pointer" title="Assign scene to this shoot day">
+              <span class="material-symbols-outlined text-[12px]">add</span>
+              <span>Assign Scene</span>
+            </button>
+          </div>
           <span class="text-[11px] text-slate-400 font-mono">${day.totalPages} pages total</span>
         </div>
 
-        <!-- Concise Scene List with Inline Expansion -->
+        <!-- Inline Scene Assign Selector -->
+        ${showAssignSceneDropdown ? `
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-2.5 flex flex-col gap-2 animate-in fade-in">
+            <div class="flex items-center justify-between text-xs font-semibold text-blue-900">
+              <span>Add Screenplay Scene to Shoot Day ${day.dayNumber}</span>
+              <button id="btn-close-assign-scene" class="text-slate-400 hover:text-slate-700 cursor-pointer">
+                <span class="material-symbols-outlined text-[15px]">close</span>
+              </button>
+            </div>
+            ${availableScenesToAssign.length > 0 ? `
+              <div class="flex items-center gap-2">
+                <select id="select-scene-to-assign" class="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none cursor-pointer">
+                  ${availableScenesToAssign.map(sc => `
+                    <option value="${sc.sceneNumber}">#${sc.sceneNumber} ${sc.heading} (${sc.pages} pgs)</option>
+                  `).join('')}
+                </select>
+                <button id="btn-confirm-assign-scene" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer shrink-0">
+                  Add to Day
+                </button>
+              </div>
+            ` : `
+              <div class="text-[11px] text-slate-500 py-1">All scenes from this screenplay are already assigned.</div>
+            `}
+          </div>
+        ` : ''}
+
+        <!-- Concise Scene List with Inline Expansion & Inline Quick-Edit -->
         <div class="flex flex-col gap-2">
           ${dayScenes.length > 0 ? dayScenes.map((s, idx) => {
             const isExpanded = expandedSceneIds.has(s.id);
             const isMoreOpen = openMoreDetailsIds.has(s.id);
             const isEditingNotes = editingNotesSceneIds.has(s.id);
+            const isEditingCard = editingSceneCards.has(s.id);
+            const isEditingSnippet = editingSnippetSceneIds.has(s.id);
+            const isAddingCast = addingCastSceneIds.has(s.id);
 
             // Fetch elements for this scene from cached breakdown
             const sElements = breakdown.filter(b => b.sceneId === s.id || b.sceneNumber === s.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(s.sceneNumber)));
 
             return `
               <div class="scene-item-card rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs transition-all" data-scene-num="${s.sceneNumber}" data-scene-id="${s.id}">
-                <!-- Compact Scene Row -->
-                <div class="p-2.5 sm:p-3 flex items-center justify-between gap-2">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span class="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 font-mono font-bold text-xs flex items-center justify-center text-slate-800 shrink-0">#${s.sceneNumber}</span>
-                    <div class="min-w-0">
-                      <div class="font-medium text-slate-900 text-xs truncate leading-snug">${s.heading}</div>
-                      <div class="text-[11px] text-slate-500 font-medium">${s.pages} pgs</div>
+                ${isEditingCard ? `
+                  <!-- Inline Edit Scene Mode -->
+                  <div class="p-3 bg-blue-50/40 flex flex-col gap-2">
+                    <div class="text-[11px] font-bold text-slate-800 flex items-center justify-between border-b border-blue-200/60 pb-1.5">
+                      <span>Edit Scene #${s.sceneNumber}</span>
+                      <button class="btn-cancel-scene-edit text-slate-400 hover:text-slate-700 cursor-pointer" data-scene-id="${s.id}">
+                        <span class="material-symbols-outlined text-[15px]">close</span>
+                      </button>
+                    </div>
+                    <div class="flex flex-col gap-1.5">
+                      <div>
+                        <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Scene Heading</label>
+                        <input type="text" class="input-scene-heading w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500" value="${s.heading}" />
+                      </div>
+                      <div class="grid grid-cols-2 gap-2">
+                        <div>
+                          <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Pages</label>
+                          <input type="text" class="input-scene-pages w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 focus:outline-none focus:border-blue-500" value="${s.pages}" placeholder="e.g. 7 2/8" />
+                        </div>
+                        <div>
+                          <label class="block text-[10px] text-slate-500 font-semibold mb-0.5">Complexity</label>
+                          <select class="input-scene-complexity w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-900 focus:outline-none">
+                            <option value="Low" ${s.complexity === 'Low' ? 'selected' : ''}>Low</option>
+                            <option value="Medium" ${s.complexity === 'Medium' || !s.complexity ? 'selected' : ''}>Medium</option>
+                            <option value="High" ${s.complexity === 'High' ? 'selected' : ''}>High</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="flex items-center justify-between pt-1">
+                        <button class="btn-remove-scene-day text-rose-600 hover:text-rose-700 text-[11px] font-medium flex items-center gap-1 cursor-pointer" data-scene="${s.sceneNumber}">
+                          <span class="material-symbols-outlined text-[13px]">delete</span>
+                          <span>Remove from Day</span>
+                        </button>
+                        <div class="flex items-center gap-1.5">
+                          <button class="btn-cancel-scene-edit px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer" data-scene-id="${s.id}">Cancel</button>
+                          <button class="btn-save-scene-edit px-3 py-1 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs cursor-pointer" data-scene-id="${s.id}">Save Scene</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                ` : `
+                  <!-- Compact Scene Row -->
+                  <div class="p-2.5 sm:p-3 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <span class="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 font-mono font-bold text-xs flex items-center justify-center text-slate-800 shrink-0">#${s.sceneNumber}</span>
+                      <div class="min-w-0">
+                        <div class="font-medium text-slate-900 text-xs truncate leading-snug">${s.heading}</div>
+                        <div class="text-[11px] text-slate-500 font-medium">${s.pages} pgs</div>
+                      </div>
+                    </div>
 
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button class="btn-scene-up p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
-                      <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
-                    </button>
-                    <button class="btn-scene-down p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
-                      <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
-                    </button>
-                    <button class="btn-toggle-scene-inline px-2.5 py-1 rounded-lg ${isExpanded ? 'bg-blue-600 text-white font-semibold' : 'bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200/80'} text-[11px] flex items-center gap-1 transition-colors cursor-pointer" data-scene-id="${s.id}">
-                      <span>Details</span>
-                      <span class="material-symbols-outlined text-[14px] transition-transform inline-details-chevron ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
-                    </button>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button class="btn-scene-up p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
+                        <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                      </button>
+                      <button class="btn-scene-down p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
+                        <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                      </button>
+                      <button class="btn-edit-scene-quick p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer" data-scene-id="${s.id}" title="Edit scene heading & pages">
+                        <span class="material-symbols-outlined text-[16px]">edit</span>
+                      </button>
+                      <button class="btn-toggle-scene-inline px-2.5 py-1 rounded-lg ${isExpanded ? 'bg-blue-600 text-white font-semibold' : 'bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200/80'} text-[11px] flex items-center gap-1 transition-colors cursor-pointer" data-scene-id="${s.id}">
+                        <span>Details</span>
+                        <span class="material-symbols-outlined text-[14px] transition-transform inline-details-chevron ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                `}
 
                 <!-- Inline Expanded Scene Details (Normal Document Flow) -->
                 <div class="scene-inline-details border-t border-slate-100 bg-slate-50/60 p-3 ${isExpanded ? '' : 'hidden'} flex flex-col gap-2.5 text-xs text-slate-700">
@@ -452,11 +652,30 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                       </p>
                     </div>
 
-                    ${s.snippet ? `
-                      <p class="text-[11px] text-slate-600 bg-white border border-slate-200/80 rounded-lg p-2 leading-relaxed">
-                        ${s.snippet}
-                      </p>
-                    ` : ''}
+                    <!-- Editable Scene Snippet -->
+                    ${isEditingSnippet ? `
+                      <div class="flex flex-col gap-1.5 bg-white border border-slate-200 rounded-lg p-2">
+                        <label class="text-[10px] font-semibold text-slate-500">Edit Scene Snippet / Description</label>
+                        <textarea class="input-scene-snippet w-full text-xs p-1.5 border border-slate-200 rounded focus:outline-none focus:border-blue-500" rows="3">${s.snippet || ''}</textarea>
+                        <div class="flex items-center justify-end gap-1.5">
+                          <button class="btn-cancel-snippet px-2 py-0.5 rounded text-[11px] text-slate-600 hover:bg-slate-100 cursor-pointer" data-scene-id="${s.id}">Cancel</button>
+                          <button class="btn-save-snippet px-2.5 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold cursor-pointer" data-scene-id="${s.id}">Save</button>
+                        </div>
+                      </div>
+                    ` : `
+                      <div class="flex flex-col gap-1 bg-white border border-slate-200/80 rounded-lg p-2">
+                        <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                          <span>Scene Snippet</span>
+                          <button class="btn-edit-snippet text-blue-600 hover:underline cursor-pointer flex items-center gap-0.5" data-scene-id="${s.id}">
+                            <span class="material-symbols-outlined text-[12px]">edit</span>
+                            <span>Edit</span>
+                          </button>
+                        </div>
+                        <p class="text-[11px] text-slate-600 leading-relaxed">
+                          ${s.snippet || '<span class="italic text-slate-400">No snippet provided.</span>'}
+                        </p>
+                      </div>
+                    `}
 
                     <!-- Quick Action Links -->
                     <div class="flex items-center gap-2 pt-0.5 flex-wrap">
@@ -486,14 +705,30 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                     </button>
 
                     <div class="more-details-panel ${isMoreOpen ? '' : 'hidden'} flex flex-col gap-2.5 pt-2 text-xs">
-                      <!-- Cast -->
-                      <div class="flex flex-col gap-1">
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Cast</span>
+                      <!-- Cast with Add & Remove functionality -->
+                      <div class="flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Cast</span>
+                          <button class="btn-toggle-add-cast text-[11px] text-blue-600 font-medium hover:underline flex items-center gap-0.5 cursor-pointer" data-scene-id="${s.id}">
+                            <span class="material-symbols-outlined text-[13px]">add</span>
+                            <span>Add Cast</span>
+                          </button>
+                        </div>
+                        ${isAddingCast ? `
+                          <div class="flex items-center gap-1.5 py-1">
+                            <input type="text" class="input-new-cast-name flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" placeholder="Character name (e.g. AARAV)" />
+                            <button class="btn-save-new-cast px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] shadow-2xs cursor-pointer" data-scene-id="${s.id}">Add</button>
+                            <button class="btn-cancel-new-cast px-2 py-1 rounded-lg text-slate-500 hover:bg-slate-100 text-[11px] cursor-pointer" data-scene-id="${s.id}">Cancel</button>
+                          </div>
+                        ` : ''}
                         <div class="flex items-center gap-1.5 flex-wrap">
                           ${(s.cast && s.cast.length > 0) ? s.cast.map(c => `
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-800">
+                            <span class="inline-flex items-center gap-1 pl-1.5 pr-1 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-800">
                               <span class="w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-600 text-[9px] flex items-center justify-center font-bold">${c.charAt(0)}</span>
                               <span>${c}</span>
+                              <button class="btn-remove-cast-member text-slate-400 hover:text-rose-600 ml-0.5 cursor-pointer" data-scene-id="${s.id}" data-cast="${c}" title="Remove character">
+                                <span class="material-symbols-outlined text-[12px]">close</span>
+                              </button>
                             </span>
                           `).join('') : '<span class="text-slate-400 text-[11px] italic">No cast assigned</span>'}
                         </div>
@@ -588,7 +823,34 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         </div>
       `;
 
-      // 1. Wire Constraints toggle
+      // 1. Wire Day Info Editor Buttons
+      const btnCancelDayTop = document.getElementById('btn-cancel-day-top');
+      const btnCancelDayInfo = document.getElementById('btn-cancel-day-info');
+      const btnSaveDayInfo = document.getElementById('btn-save-day-info');
+
+      if (btnCancelDayTop) btnCancelDayTop.onclick = () => { editingDayInfo = false; openDayModal(day.dayNumber); };
+      if (btnCancelDayInfo) btnCancelDayInfo.onclick = () => { editingDayInfo = false; openDayModal(day.dayNumber); };
+      if (btnSaveDayInfo) {
+        btnSaveDayInfo.onclick = async () => {
+          const dateVal = document.getElementById('input-edit-day-date')?.value?.trim();
+          const hoursVal = parseFloat(document.getElementById('input-edit-day-hours')?.value) || day.estHours;
+          const locVal = document.getElementById('input-edit-day-loc')?.value?.trim();
+          if (dateVal) day.date = dateVal;
+          if (hoursVal) day.estHours = hoursVal;
+          if (locVal) day.location = locVal;
+          await api.updateProductionScheduleDay(scriptId, day.dayNumber, {
+            date: day.date,
+            estHours: day.estHours,
+            location: day.location
+          });
+          showToast(`Shoot Day ${day.dayNumber} updated`);
+          editingDayInfo = false;
+          renderCalendar();
+          openDayModal(day.dayNumber);
+        };
+      }
+
+      // 2. Wire Constraints toggle & edit
       const constraintsBtn = document.getElementById('btn-toggle-day-constraints');
       const constraintsContent = document.getElementById('day-constraints-content');
       const constraintsChevron = document.getElementById('constraints-chevron');
@@ -601,7 +863,235 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       }
 
-      // 2. Wire Inline Scene Details Expand/Collapse
+      const btnEditConstraints = document.getElementById('btn-edit-constraints');
+      const btnCancelConstraints = document.getElementById('btn-cancel-constraints');
+      const btnSaveConstraints = document.getElementById('btn-save-constraints');
+
+      if (btnEditConstraints) {
+        btnEditConstraints.onclick = () => {
+          editingDayConstraints = true;
+          openDayModal(day.dayNumber);
+          // Keep constraints open
+          document.getElementById('day-constraints-content')?.classList.remove('hidden');
+        };
+      }
+      if (btnCancelConstraints) {
+        btnCancelConstraints.onclick = () => {
+          editingDayConstraints = false;
+          openDayModal(day.dayNumber);
+          document.getElementById('day-constraints-content')?.classList.remove('hidden');
+        };
+      }
+      if (btnSaveConstraints) {
+        btnSaveConstraints.onclick = async () => {
+          const locVal = document.getElementById('input-constraints-loc')?.value?.trim();
+          const hoursVal = parseFloat(document.getElementById('input-constraints-hours')?.value) || day.estHours;
+          const turnaroundVal = document.getElementById('input-constraints-turnaround')?.value?.trim();
+          if (locVal) day.location = locVal;
+          if (hoursVal) day.estHours = hoursVal;
+          if (turnaroundVal) day.turnaroundNote = turnaroundVal;
+          await api.updateProductionScheduleDay(scriptId, day.dayNumber, {
+            location: day.location,
+            estHours: day.estHours,
+            turnaroundNote: day.turnaroundNote
+          });
+          showToast(`Production constraints updated`);
+          editingDayConstraints = false;
+          renderCalendar();
+          openDayModal(day.dayNumber);
+          document.getElementById('day-constraints-content')?.classList.remove('hidden');
+        };
+      }
+
+      // 3. Wire Scene Assignment
+      const btnToggleAssign = document.getElementById('btn-toggle-assign-scene');
+      const btnCloseAssign = document.getElementById('btn-close-assign-scene');
+      const btnConfirmAssign = document.getElementById('btn-confirm-assign-scene');
+
+      if (btnToggleAssign) {
+        btnToggleAssign.onclick = () => {
+          showAssignSceneDropdown = !showAssignSceneDropdown;
+          openDayModal(day.dayNumber);
+        };
+      }
+      if (btnCloseAssign) {
+        btnCloseAssign.onclick = () => {
+          showAssignSceneDropdown = false;
+          openDayModal(day.dayNumber);
+        };
+      }
+      if (btnConfirmAssign) {
+        btnConfirmAssign.onclick = async () => {
+          const scNum = Number(document.getElementById('select-scene-to-assign')?.value);
+          if (scNum && !day.sceneNumbers.includes(scNum)) {
+            day.sceneNumbers.push(scNum);
+            recalculateDayPages(day);
+            await api.updateProductionScheduleDay(scriptId, day.dayNumber, {
+              sceneNumbers: day.sceneNumbers,
+              totalPages: day.totalPages
+            });
+            showToast(`Scene #${scNum} added to Shoot Day ${day.dayNumber}`);
+            showAssignSceneDropdown = false;
+            renderCalendar();
+            openDayModal(day.dayNumber);
+          }
+        };
+      }
+
+      // 4. Wire Scene Card Quick-Edit
+      modalContent.querySelectorAll('.btn-edit-scene-quick').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingSceneCards.add(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-cancel-scene-edit').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingSceneCards.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-save-scene-edit').forEach(btn => {
+        btn.onclick = async () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const card = btn.closest('.scene-item-card');
+          const heading = card?.querySelector('.input-scene-heading')?.value?.trim();
+          const pages = card?.querySelector('.input-scene-pages')?.value?.trim();
+          const complexity = card?.querySelector('.input-scene-complexity')?.value;
+          const sc = scenes.find(s => s.id === scId);
+          if (sc) {
+            if (heading) sc.heading = heading;
+            if (pages) sc.pages = pages;
+            if (complexity) sc.complexity = complexity;
+            await api.updateProductionScene(scriptId, sc.id, { heading, pages, complexity });
+            recalculateDayPages(day);
+            await api.updateProductionScheduleDay(scriptId, day.dayNumber, { totalPages: day.totalPages });
+            showToast(`Scene #${sc.sceneNumber} updated`);
+            editingSceneCards.delete(scId);
+            renderCalendar();
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      // 5. Wire Remove Scene from Day
+      modalContent.querySelectorAll('.btn-remove-scene-day').forEach(btn => {
+        btn.onclick = async () => {
+          const scNum = Number(btn.getAttribute('data-scene'));
+          if (scNum) {
+            day.sceneNumbers = day.sceneNumbers.filter(n => n !== scNum);
+            recalculateDayPages(day);
+            await api.updateProductionScheduleDay(scriptId, day.dayNumber, {
+              sceneNumbers: day.sceneNumbers,
+              totalPages: day.totalPages
+            });
+            showToast(`Scene #${scNum} removed from Day ${day.dayNumber}`);
+            renderCalendar();
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      // 6. Wire Snippet Editing
+      modalContent.querySelectorAll('.btn-edit-snippet').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingSnippetSceneIds.add(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-cancel-snippet').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingSnippetSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-save-snippet').forEach(btn => {
+        btn.onclick = async () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const card = btn.closest('.scene-item-card');
+          const snippetVal = card?.querySelector('.input-scene-snippet')?.value?.trim();
+          const sc = scenes.find(s => s.id === scId);
+          if (sc) {
+            sc.snippet = snippetVal;
+            await api.updateProductionScene(scriptId, sc.id, { snippet: snippetVal });
+            showToast(`Scene #${sc.sceneNumber} snippet updated`);
+            editingSnippetSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      // 7. Wire Cast Editing (Add & Remove)
+      modalContent.querySelectorAll('.btn-toggle-add-cast').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            addingCastSceneIds.add(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-cancel-new-cast').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            addingCastSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-save-new-cast').forEach(btn => {
+        btn.onclick = async () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const card = btn.closest('.scene-item-card');
+          const castName = card?.querySelector('.input-new-cast-name')?.value?.trim().toUpperCase();
+          const sc = scenes.find(s => s.id === scId);
+          if (sc && castName) {
+            sc.cast = sc.cast || [];
+            if (!sc.cast.includes(castName)) {
+              sc.cast.push(castName);
+              await api.updateProductionScene(scriptId, sc.id, { cast: sc.cast });
+              showToast(`Character ${castName} added to Scene #${sc.sceneNumber}`);
+            }
+            addingCastSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-remove-cast-member').forEach(btn => {
+        btn.onclick = async () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const castName = btn.getAttribute('data-cast');
+          const sc = scenes.find(s => s.id === scId);
+          if (sc && castName) {
+            sc.cast = (sc.cast || []).filter(c => c !== castName);
+            await api.updateProductionScene(scriptId, sc.id, { cast: sc.cast });
+            showToast(`Character ${castName} removed from Scene #${sc.sceneNumber}`);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      // 8. Wire Inline Scene Details Expand/Collapse
       modalContent.querySelectorAll('.btn-toggle-scene-inline').forEach(btn => {
         btn.onclick = () => {
           const scId = btn.getAttribute('data-scene-id');
@@ -615,7 +1105,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       });
 
-      // 3. Wire More Details Toggle
+      // 9. Wire More Details Toggle
       modalContent.querySelectorAll('.btn-toggle-more-details').forEach(btn => {
         btn.onclick = () => {
           const scId = btn.getAttribute('data-scene-id');
@@ -629,7 +1119,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       });
 
-      // 4. Wire Scene Reorder Up / Down
+      // 10. Wire Scene Reorder Up / Down
       modalContent.querySelectorAll('.btn-scene-up').forEach(btn => {
         btn.onclick = async () => {
           const scNum = Number(btn.getAttribute('data-scene'));
@@ -666,7 +1156,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       });
 
-      // 5. Wire Inline Move Shoot Day
+      // 11. Wire Inline Move Shoot Day
       modalContent.querySelectorAll('.btn-inline-move-day').forEach(btn => {
         btn.onclick = async () => {
           const scNum = Number(btn.getAttribute('data-scene'));
@@ -685,7 +1175,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       });
 
-      // 6. Wire Production Notes Editing Workflow
+      // 12. Wire Production Notes Editing Workflow
       modalContent.querySelectorAll('.btn-edit-notes').forEach(btn => {
         btn.onclick = () => {
           const scId = btn.getAttribute('data-scene-id');
@@ -727,7 +1217,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         };
       });
 
-      // 7. Wire Quick Links: Breakdown, Sides, PDF
+      // 13. Wire Quick Links: Breakdown, Sides, PDF
       modalContent.querySelectorAll('.btn-scene-breakdown').forEach(btn => {
         btn.onclick = () => {
           const scNum = btn.getAttribute('data-scene-num');
@@ -779,7 +1269,13 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   const closeDayModal = () => {
     dayModal?.classList.add('hidden');
     currentOpenDayNumber = null;
-    document.getElementById('modal-day-menu-dropdown')?.classList.add('hidden');
+    editingDayInfo = false;
+    editingDayConstraints = false;
+    editingSceneCards.clear();
+    showAssignSceneDropdown = false;
+    editingSnippetSceneIds.clear();
+    addingCastSceneIds.clear();
+    modalMenuHandler?.close();
   };
   if (modalClose) modalClose.onclick = closeDayModal;
   if (modalDone) modalDone.onclick = closeDayModal;
@@ -789,16 +1285,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     };
   }
 
-  // Close dropdown on window click outside
-  window.addEventListener('click', (e) => {
-    const dropdown = document.getElementById('modal-day-menu-dropdown');
-    const menuBtn = document.getElementById('modal-day-menu-btn');
-    if (dropdown && !dropdown.classList.contains('hidden')) {
-      if (!dropdown.contains(e.target) && !menuBtn?.contains(e.target)) {
-        dropdown.classList.add('hidden');
-      }
-    }
-  });
+
 
   // ---------------------------------------------------------------------------
   // INTEGRATED SCENE OPENER (Opens day and expands scene inline in normal flow)

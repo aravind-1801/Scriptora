@@ -157,6 +157,15 @@ class Router {
     const query = new URLSearchParams(queryPart || '');
     this.currentPath = fullPath;
 
+    // Manage viewport and stationary header mode for editor
+    if (path.startsWith('/editor')) {
+      document.body.classList.add('editor-mode');
+      document.documentElement.classList.add('editor-mode');
+    } else {
+      document.body.classList.remove('editor-mode');
+      document.documentElement.classList.remove('editor-mode');
+    }
+
     // Check authentication for protected routes
     const isAuth = !!store.state.currentUser;
     const publicPaths = ['/welcome', '/auth'];
