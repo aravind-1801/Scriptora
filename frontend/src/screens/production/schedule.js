@@ -98,39 +98,49 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           <div class="p-12 text-center text-slate-400 text-xs">Loading shooting calendar...</div>
         </div>
 
-        <!-- Day Details Modal (Opens when user clicks any calendar day) -->
+        <!-- Simplified Day Details Modal (Opens when user clicks any calendar day) -->
         <div id="day-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-4 max-h-[90vh] overflow-hidden">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-3 max-h-[90vh] overflow-hidden">
+            <!-- Modal Header: Day number, date, location & compact contextual menu -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
               <div class="flex items-center gap-2.5 min-w-0">
-                <div id="modal-day-badge" class="w-8 h-8 rounded-lg bg-slate-900 text-white font-heading font-bold text-xs flex items-center justify-center">D1</div>
+                <div id="modal-day-badge" class="w-8 h-8 rounded-lg bg-slate-900 text-white font-heading font-bold text-xs flex items-center justify-center shrink-0">D1</div>
                 <div class="min-w-0">
-                  <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Day 1 Details</h3>
-                  <p id="modal-day-sub" class="text-[11px] text-slate-500">Date • Location • Call time</p>
+                  <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Day 1 • Oct 24</h3>
+                  <p id="modal-day-sub" class="text-[11px] text-slate-500 truncate">Mojave Gate 4 • 7 5/8 pgs</p>
                 </div>
               </div>
-              <button id="modal-day-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-                <span class="material-symbols-outlined text-lg">close</span>
-              </button>
+              <div class="flex items-center gap-1 shrink-0">
+                <!-- Contextual menu for secondary day actions -->
+                <div class="relative">
+                  <button id="modal-day-menu-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" title="Day actions">
+                    <span class="material-symbols-outlined text-lg">more_vert</span>
+                  </button>
+                  <div id="modal-day-menu-dropdown" class="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-lg py-1 z-30 hidden">
+                    <button id="modal-day-lock-toggle" class="w-full px-3 py-2 text-left text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer">
+                      <span id="modal-day-lock-icon" class="material-symbols-outlined text-[16px]">lock</span>
+                      <span id="modal-day-lock-label">Lock Day</span>
+                    </button>
+                    <button id="modal-day-delete" class="w-full px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer">
+                      <span class="material-symbols-outlined text-[16px]">delete</span>
+                      <span>Delete Day</span>
+                    </button>
+                  </div>
+                </div>
+                <button id="modal-day-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" title="Close">
+                  <span class="material-symbols-outlined text-lg">close</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Modal Content (Scene reordering & day constraints) -->
-            <div id="modal-day-content" class="flex-1 overflow-y-auto flex flex-col gap-3 pr-1 text-xs">
+            <!-- Modal Content (Scene reordering & inline details) -->
+            <div id="modal-day-content" class="flex-1 overflow-y-auto flex flex-col gap-2.5 pr-1 text-xs">
               <!-- Injected dynamically -->
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-              <div class="flex items-center gap-2">
-                <button id="modal-day-lock-toggle" class="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium text-xs flex items-center gap-1.5 cursor-pointer">
-                  <span class="material-symbols-outlined text-[15px]">lock</span>
-                  <span id="modal-day-lock-label">Lock Day</span>
-                </button>
-                <button id="modal-day-delete" class="px-2.5 py-1.5 rounded-xl text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 font-medium text-xs flex items-center gap-1 cursor-pointer" title="Delete this shoot day">
-                  <span class="material-symbols-outlined text-[15px]">delete</span>
-                  <span>Delete Day</span>
-                </button>
-              </div>
-              <button id="modal-day-done" class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer">
+            <!-- Compact Footer: Essential action only -->
+            <div class="flex items-center justify-end pt-2 border-t border-slate-100">
+              <button id="modal-day-done" class="w-full sm:w-auto px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer text-center">
                 Done
               </button>
             </div>
@@ -196,51 +206,6 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           </div>
         </div>
 
-        <!-- Integrated Scene Detail Modal / Panel -->
-        <div id="scene-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-2xl w-full p-4 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-hidden">
-            <!-- Header -->
-            <div class="flex items-start justify-between border-b border-slate-100 pb-3 gap-3">
-              <div class="flex items-start gap-3 min-w-0">
-                <div id="scene-detail-num" class="w-10 h-10 rounded-xl bg-slate-900 text-white font-mono font-bold text-sm flex items-center justify-center shrink-0">#--</div>
-                <div class="min-w-0">
-                  <h3 id="scene-detail-heading" class="font-heading font-bold text-sm sm:text-base text-slate-900 leading-tight">Scene Heading</h3>
-                  <p id="scene-detail-meta" class="text-[11px] text-slate-500 mt-0.5">Chronicles of Dust • Draft 4.2 (Pinned) • -- Pages</p>
-                </div>
-              </div>
-              <button id="scene-detail-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors shrink-0 cursor-pointer" title="Close scene details">
-                <span class="material-symbols-outlined text-lg">close</span>
-              </button>
-            </div>
-
-            <!-- Scrollable Body -->
-            <div id="scene-detail-body" class="flex-1 overflow-y-auto flex flex-col gap-4 pr-1 text-xs text-slate-700">
-              <!-- Injected dynamically by openSceneDetail() -->
-            </div>
-
-            <!-- Footer with Actions -->
-            <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-2 flex-wrap">
-              <div class="flex items-center gap-2 flex-wrap">
-                <button id="btn-scene-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export Scene Logistics PDF">
-                  <span class="material-symbols-outlined text-[15px]">download</span>
-                  <span>Export Scene PDF</span>
-                </button>
-                <button id="btn-scene-open-breakdown" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Open scene in Script Breakdown">
-                  <span class="material-symbols-outlined text-[15px]">dataset</span>
-                  <span>Breakdown</span>
-                </button>
-                <button id="btn-scene-open-sides" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Open Actor Sides for this scene">
-                  <span class="material-symbols-outlined text-[15px]">description</span>
-                  <span>Actor Sides</span>
-                </button>
-              </div>
-              <button id="btn-scene-close" class="px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition-colors cursor-pointer">
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-
       </main>
 
       ${renderBottomNav('production')}
@@ -254,11 +219,18 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
   const calendarContainer = document.getElementById('schedule-calendar-container');
   const dayModal = document.getElementById('day-detail-modal');
-  const sceneModal = document.getElementById('scene-detail-modal');
   if (!calendarContainer) return;
 
   let days = await api.getProductionSchedule(scriptId);
   let scenes = await api.getProductionScenes(scriptId);
+  let breakdown = await api.getProductionBreakdown(scriptId);
+
+  // Track currently expanded inline scenes inside the day modal: Set of scene IDs
+  const expandedSceneIds = new Set();
+  // Track open 'more details' sections: Set of scene IDs
+  const openMoreDetailsIds = new Set();
+  // Track scene editing state: Set of scene IDs
+  const editingNotesSceneIds = new Set();
 
   // ---------------------------------------------------------------------------
   // CALENDAR VIEW RENDERER (Clean, readable chronological matrix)
@@ -320,7 +292,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       };
     });
 
-    // Attach click events specifically on scene badges to directly open integrated scene details
+    // Attach click events specifically on scene badges to directly open that day with scene details expanded inline
     calendarContainer.querySelectorAll('.btn-badge-scene').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
@@ -331,31 +303,77 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   }
 
   // ---------------------------------------------------------------------------
-  // DAY DETAILS MODAL LOGIC (Inspect scenes, shooting order, move scene, lock)
+  // DAY DETAILS MODAL LOGIC (Compact view with inline scene expansion)
   // ---------------------------------------------------------------------------
-  function openDayModal(dayNumber) {
+  let currentOpenDayNumber = null;
+
+  function openDayModal(dayNumber, autoExpandSceneId = null) {
     const day = days.find(d => d.dayNumber === Number(dayNumber));
     if (!day) return;
+    currentOpenDayNumber = day.dayNumber;
+
+    if (autoExpandSceneId) {
+      const matchScene = scenes.find(s => s.id === autoExpandSceneId || String(s.sceneNumber) === String(autoExpandSceneId));
+      if (matchScene) {
+        expandedSceneIds.add(matchScene.id);
+      }
+    }
 
     const modalBadge = document.getElementById('modal-day-badge');
     const modalTitle = document.getElementById('modal-day-title');
     const modalSub = document.getElementById('modal-day-sub');
     const modalContent = document.getElementById('modal-day-content');
+    const menuBtn = document.getElementById('modal-day-menu-btn');
+    const menuDropdown = document.getElementById('modal-day-menu-dropdown');
     const lockToggle = document.getElementById('modal-day-lock-toggle');
     const lockLabel = document.getElementById('modal-day-lock-label');
+    const lockIcon = document.getElementById('modal-day-lock-icon');
+    const deleteBtn = document.getElementById('modal-day-delete');
 
+    // Header: Keep only day number, date, location & pages
     if (modalBadge) modalBadge.textContent = `D${day.dayNumber}`;
-    if (modalTitle) modalTitle.textContent = `Day ${day.dayNumber} — ${day.title}`;
-    if (modalSub) modalSub.textContent = `${day.date} • ${day.location} • Call: 07:00 AM • ${day.totalPages} pgs`;
+    if (modalTitle) modalTitle.textContent = `Day ${day.dayNumber} • ${day.date.split(',')[0]}`;
+    if (modalSub) modalSub.textContent = `${day.location}${day.totalPages ? ` • ${day.totalPages} pgs` : ''}`;
+
+    // Contextual menu setup
+    if (menuDropdown) menuDropdown.classList.add('hidden');
+    if (menuBtn && menuDropdown) {
+      menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        menuDropdown.classList.toggle('hidden');
+      };
+    }
+
     if (lockLabel) lockLabel.textContent = day.isLocked ? 'Unlock Day' : 'Lock Day';
+    if (lockIcon) lockIcon.textContent = day.isLocked ? 'lock_open' : 'lock';
 
     if (lockToggle) {
-      lockToggle.onclick = async () => {
+      lockToggle.onclick = async (e) => {
+        e.stopPropagation();
+        menuDropdown?.classList.add('hidden');
         day.isLocked = !day.isLocked;
         await api.updateProductionScheduleDay(scriptId, day.dayNumber, { isLocked: day.isLocked });
         showToast(`Day ${day.dayNumber} ${day.isLocked ? 'locked' : 'unlocked'}`);
         if (lockLabel) lockLabel.textContent = day.isLocked ? 'Unlock Day' : 'Lock Day';
+        if (lockIcon) lockIcon.textContent = day.isLocked ? 'lock_open' : 'lock';
         renderCalendar();
+      };
+    }
+
+    if (deleteBtn) {
+      deleteBtn.onclick = async (e) => {
+        e.stopPropagation();
+        menuDropdown?.classList.add('hidden');
+        if (!confirm(`Are you sure you want to remove Shoot Day ${day.dayNumber}? Any scenes should be moved first.`)) return;
+        const res = await api.deleteProductionScheduleDay(scriptId, day.dayNumber);
+        if (res.success) {
+          showToast(`Shoot Day ${day.dayNumber} deleted`);
+          closeDayModal();
+          days = await api.getProductionSchedule(scriptId);
+          renderCalendar();
+        } else {
+          showToast(res.message || 'Failed to delete day');
+        }
       };
     }
 
@@ -365,59 +383,254 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
     if (modalContent) {
       modalContent.innerHTML = `
-        <div class="flex items-center justify-between pb-1">
-          <span class="font-semibold text-slate-700 text-xs">Scenes in Shooting Order (${dayScenes.length})</span>
-          <span class="text-[11px] text-slate-400">Use arrows to adjust shooting order</span>
+        <!-- Collapsible Production Constraints (Progressive Disclosure) -->
+        <div class="border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/50">
+          <button id="btn-toggle-day-constraints" class="w-full px-3 py-2 flex items-center justify-between text-left text-xs text-slate-700 hover:bg-slate-100/60 transition-colors cursor-pointer">
+            <span class="font-medium flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[15px] text-slate-400">info</span>
+              <span>Production Constraints (${day.estHours} hrs)</span>
+            </span>
+            <span id="constraints-chevron" class="material-symbols-outlined text-[16px] text-slate-400 transition-transform">expand_more</span>
+          </button>
+          <div id="day-constraints-content" class="px-3 pb-2.5 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60 hidden flex flex-col gap-1">
+            <div><span class="text-slate-400 font-medium">Location:</span> ${day.location}</div>
+            <div><span class="text-slate-400 font-medium">Estimated Daily Hours:</span> ${day.estHours} hrs (including meal break)</div>
+            <div><span class="text-slate-400 font-medium">Rest Turnaround:</span> Standard 12-hour crew rest turnaround active</div>
+          </div>
         </div>
+
+        <!-- Assigned Scenes Header -->
+        <div class="flex items-center justify-between pt-1">
+          <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
+          <span class="text-[11px] text-slate-400 font-mono">${day.totalPages} pages total</span>
+        </div>
+
+        <!-- Concise Scene List with Inline Expansion -->
         <div class="flex flex-col gap-2">
-          ${dayScenes.length > 0 ? dayScenes.map((s, idx) => `
-            <div class="rounded-xl border border-slate-200 p-2.5 bg-slate-50 flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2.5 min-w-0">
-                <span class="w-6 h-6 rounded bg-white border border-slate-200 font-mono font-bold text-xs flex items-center justify-center text-slate-800 shrink-0">#${s.sceneNumber}</span>
-                <div class="min-w-0">
-                  <div class="font-medium text-slate-800 text-xs truncate">${s.heading}</div>
-                  <div class="text-[10px] text-slate-500 font-mono">${s.intExt} · ${s.dayNight} · ${s.pages} pgs</div>
+          ${dayScenes.length > 0 ? dayScenes.map((s, idx) => {
+            const isExpanded = expandedSceneIds.has(s.id);
+            const isMoreOpen = openMoreDetailsIds.has(s.id);
+            const isEditingNotes = editingNotesSceneIds.has(s.id);
+
+            // Fetch elements for this scene from cached breakdown
+            const sElements = breakdown.filter(b => b.sceneId === s.id || b.sceneNumber === s.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(s.sceneNumber)));
+
+            return `
+              <div class="scene-item-card rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs transition-all" data-scene-num="${s.sceneNumber}" data-scene-id="${s.id}">
+                <!-- Compact Scene Row -->
+                <div class="p-2.5 sm:p-3 flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 font-mono font-bold text-xs flex items-center justify-center text-slate-800 shrink-0">#${s.sceneNumber}</span>
+                    <div class="min-w-0">
+                      <div class="font-medium text-slate-900 text-xs truncate leading-snug">${s.heading}</div>
+                      <div class="text-[11px] text-slate-500 font-medium">${s.pages} pgs</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button class="btn-scene-up p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
+                      <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
+                    </button>
+                    <button class="btn-scene-down p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 disabled:opacity-20 disabled:pointer-events-none transition-colors cursor-pointer" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
+                      <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
+                    </button>
+                    <button class="btn-toggle-scene-inline px-2.5 py-1 rounded-lg ${isExpanded ? 'bg-blue-600 text-white font-semibold' : 'bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200/80'} text-[11px] flex items-center gap-1 transition-colors cursor-pointer" data-scene-id="${s.id}">
+                      <span>Details</span>
+                      <span class="material-symbols-outlined text-[14px] transition-transform inline-details-chevron ${isExpanded ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Inline Expanded Scene Details (Normal Document Flow) -->
+                <div class="scene-inline-details border-t border-slate-100 bg-slate-50/60 p-3 ${isExpanded ? '' : 'hidden'} flex flex-col gap-2.5 text-xs text-slate-700">
+                  <!-- Initial Compact Summary: Full heading, assigned day, screenplay/draft, snippet, compact quick actions -->
+                  <div class="flex flex-col gap-1.5">
+                    <div>
+                      <h4 class="font-heading font-bold text-xs text-slate-900 leading-snug">#${s.sceneNumber} ${s.heading}</h4>
+                      <p class="text-[11px] text-slate-500 mt-0.5">
+                        Shoot Day ${day.dayNumber} • Chronicles of Dust • Draft 4.2 (Pinned)
+                      </p>
+                    </div>
+
+                    ${s.snippet ? `
+                      <p class="text-[11px] text-slate-600 bg-white border border-slate-200/80 rounded-lg p-2 leading-relaxed">
+                        ${s.snippet}
+                      </p>
+                    ` : ''}
+
+                    <!-- Quick Action Links -->
+                    <div class="flex items-center gap-2 pt-0.5 flex-wrap">
+                      <button class="btn-scene-breakdown inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 shadow-2xs transition-colors cursor-pointer" data-scene-num="${s.sceneNumber}">
+                        <span class="material-symbols-outlined text-[14px] text-blue-600">dataset</span>
+                        <span>Breakdown</span>
+                      </button>
+                      <button class="btn-scene-sides inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 shadow-2xs transition-colors cursor-pointer" data-scene-num="${s.sceneNumber}">
+                        <span class="material-symbols-outlined text-[14px] text-blue-600">description</span>
+                        <span>Actor Sides</span>
+                      </button>
+                      <button class="btn-scene-pdf inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 shadow-2xs transition-colors cursor-pointer" data-scene-id="${s.id}">
+                        <span class="material-symbols-outlined text-[14px] text-blue-600">download</span>
+                        <span>Export PDF</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Expandable 'More Details' Section -->
+                  <div class="pt-1">
+                    <button class="btn-toggle-more-details w-full py-1.5 px-2.5 rounded-lg bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer" data-scene-id="${s.id}">
+                      <span class="flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-[15px] text-slate-500">tune</span>
+                        <span>More Details</span>
+                      </span>
+                      <span class="material-symbols-outlined text-[16px] text-slate-400 transition-transform more-details-chevron ${isMoreOpen ? 'rotate-180' : ''}">expand_more</span>
+                    </button>
+
+                    <div class="more-details-panel ${isMoreOpen ? '' : 'hidden'} flex flex-col gap-2.5 pt-2 text-xs">
+                      <!-- Cast -->
+                      <div class="flex flex-col gap-1">
+                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Cast</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          ${(s.cast && s.cast.length > 0) ? s.cast.map(c => `
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] font-medium text-slate-800">
+                              <span class="w-3.5 h-3.5 rounded-full bg-slate-100 text-slate-600 text-[9px] flex items-center justify-center font-bold">${c.charAt(0)}</span>
+                              <span>${c}</span>
+                            </span>
+                          `).join('') : '<span class="text-slate-400 text-[11px] italic">No cast assigned</span>'}
+                        </div>
+                      </div>
+
+                      <!-- Breakdown Elements -->
+                      <div class="flex flex-col gap-1 pt-1 border-t border-slate-200/60">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Breakdown Elements (${sElements.length})</span>
+                          <button class="btn-scene-breakdown text-[11px] text-blue-600 font-medium hover:underline cursor-pointer" data-scene-num="${s.sceneNumber}">Edit in Breakdown &rarr;</button>
+                        </div>
+                        ${sElements.length > 0 ? `
+                          <div class="flex items-center gap-1.5 flex-wrap">
+                            ${sElements.map(elem => `
+                              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[11px] text-slate-700">
+                                <span class="material-symbols-outlined text-[13px] text-blue-600">${CATEGORY_ICONS[elem.category] || 'label'}</span>
+                                <span>${elem.name}</span>
+                                ${elem.category ? `<span class="text-slate-400 text-[9px]">(${elem.category})</span>` : ''}
+                              </span>
+                            `).join('')}
+                          </div>
+                        ` : `
+                          <div class="text-[11px] text-slate-400 italic py-0.5">No breakdown elements tagged for this scene.</div>
+                        `}
+                      </div>
+
+                      <!-- Move Shoot Day -->
+                      <div class="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/60">
+                        <span class="text-[11px] font-medium text-slate-600">Assigned Shoot Day:</span>
+                        <div class="flex items-center gap-1.5">
+                          <select class="select-inline-move-day bg-white border border-slate-200 rounded-lg px-2 py-1 text-[11px] text-slate-800 font-medium focus:outline-none cursor-pointer" data-scene="${s.sceneNumber}">
+                            ${days.map(d => `
+                              <option value="${d.dayNumber}" ${d.dayNumber === day.dayNumber ? 'selected' : ''}>
+                                Day ${d.dayNumber} (${d.date.split(',')[0]})
+                              </option>
+                            `).join('')}
+                          </select>
+                          <button class="btn-inline-move-day px-2 py-1 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-semibold cursor-pointer" data-scene="${s.sceneNumber}">
+                            Move
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- Production & Continuity Notes (Compact Editable Workflow) -->
+                      <div class="notes-container border-t border-slate-200/60 pt-1.5 flex flex-col gap-1.5">
+                        <div class="flex items-center justify-between">
+                          <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Production & Continuity Notes</span>
+                          <button class="btn-edit-notes text-[11px] text-blue-600 font-semibold hover:underline flex items-center gap-1 cursor-pointer" data-scene-id="${s.id}">
+                            <span class="material-symbols-outlined text-[13px]">edit</span>
+                            <span>${(s.directorNotes || s.continuityNotes) ? 'Edit Notes' : 'Add Notes'}</span>
+                          </button>
+                        </div>
+
+                        <!-- Display Mode (Collapsed by default, shown when not editing) -->
+                        <div class="notes-display-mode ${isEditingNotes ? 'hidden' : ''} flex flex-col gap-1 text-[11px] text-slate-600 bg-white border border-slate-200/70 rounded-lg p-2">
+                          ${(s.directorNotes || s.continuityNotes) ? `
+                            ${s.directorNotes ? `<div><span class="font-medium text-slate-800">Director:</span> ${s.directorNotes}</div>` : ''}
+                            ${s.continuityNotes ? `<div><span class="font-medium text-slate-800">Continuity:</span> ${s.continuityNotes}</div>` : ''}
+                          ` : `
+                            <div class="text-slate-400 italic">No production or continuity notes logged.</div>
+                          `}
+                        </div>
+
+                        <!-- Editable Fields (Only visible when explicitly editing) -->
+                        <div class="notes-edit-mode ${isEditingNotes ? '' : 'hidden'} flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-2.5">
+                          <div>
+                            <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">Director's Notes</label>
+                            <textarea class="input-director-notes w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" rows="2" placeholder="Camera, lighting, director preferences...">${s.directorNotes || ''}</textarea>
+                          </div>
+                          <div>
+                            <label class="block text-[10px] font-semibold text-slate-600 mb-0.5">Continuity Notes</label>
+                            <textarea class="input-continuity-notes w-full text-xs p-2 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500" rows="2" placeholder="Props, costume, timeline markers...">${s.continuityNotes || ''}</textarea>
+                          </div>
+                          <div class="flex items-center justify-end gap-2 pt-1">
+                            <button class="btn-cancel-notes px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 text-[11px] font-medium cursor-pointer" data-scene-id="${s.id}">
+                              Cancel
+                            </button>
+                            <button class="btn-save-notes px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold shadow-2xs transition-colors cursor-pointer" data-scene-id="${s.id}">
+                              Save Notes
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div class="flex items-center gap-1.5 shrink-0">
-                <button class="btn-modal-up p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none cursor-pointer" data-scene="${s.sceneNumber}" ${idx === 0 ? 'disabled' : ''} title="Move earlier in shooting order">
-                  <span class="material-symbols-outlined text-[16px]">arrow_upward</span>
-                </button>
-                <button class="btn-modal-down p-1 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 disabled:pointer-events-none cursor-pointer" data-scene="${s.sceneNumber}" ${idx === dayScenes.length - 1 ? 'disabled' : ''} title="Move later in shooting order">
-                  <span class="material-symbols-outlined text-[16px]">arrow_downward</span>
-                </button>
-                <button class="btn-modal-move-out px-2 py-1 rounded bg-white hover:bg-slate-100 border border-slate-200 text-[10px] font-semibold text-slate-700 cursor-pointer" data-scene="${s.sceneNumber}" title="Move scene to another day">
-                  Move Day
-                </button>
-                <button class="btn-inspect-scene px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 font-semibold text-[10px] ml-1 cursor-pointer" data-scene-id="${s.id}" title="View integrated scene production details">
-                  Details
-                </button>
-              </div>
-            </div>
-          `).join('') : `
+            `;
+          }).join('') : `
             <div class="text-center py-4 text-slate-400 text-xs italic">No scenes assigned to this day.</div>
           `}
         </div>
-
-        <div class="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 flex flex-col gap-1">
-          <div class="font-semibold text-slate-800">Production Constraints</div>
-          <div>• Location: ${day.location}</div>
-          <div>• Estimated Daily Hours: ${day.estHours} hrs (including meal break)</div>
-          <div>• Turnaround: Standard 12-hour crew rest requirement active</div>
-        </div>
       `;
 
-      // Wire Inspect / Details buttons
-      modalContent.querySelectorAll('.btn-inspect-scene').forEach(btn => {
+      // 1. Wire Constraints toggle
+      const constraintsBtn = document.getElementById('btn-toggle-day-constraints');
+      const constraintsContent = document.getElementById('day-constraints-content');
+      const constraintsChevron = document.getElementById('constraints-chevron');
+      if (constraintsBtn && constraintsContent) {
+        constraintsBtn.onclick = () => {
+          const isHidden = constraintsContent.classList.toggle('hidden');
+          if (constraintsChevron) {
+            constraintsChevron.classList.toggle('rotate-180', !isHidden);
+          }
+        };
+      }
+
+      // 2. Wire Inline Scene Details Expand/Collapse
+      modalContent.querySelectorAll('.btn-toggle-scene-inline').forEach(btn => {
         btn.onclick = () => {
           const scId = btn.getAttribute('data-scene-id');
-          if (scId) openSceneDetail(scId);
+          if (!scId) return;
+          if (expandedSceneIds.has(scId)) {
+            expandedSceneIds.delete(scId);
+          } else {
+            expandedSceneIds.add(scId);
+          }
+          openDayModal(day.dayNumber);
         };
       });
 
-      // Wire Up/Down inside modal
-      modalContent.querySelectorAll('.btn-modal-up').forEach(btn => {
+      // 3. Wire More Details Toggle
+      modalContent.querySelectorAll('.btn-toggle-more-details').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (!scId) return;
+          if (openMoreDetailsIds.has(scId)) {
+            openMoreDetailsIds.delete(scId);
+          } else {
+            openMoreDetailsIds.add(scId);
+          }
+          openDayModal(day.dayNumber);
+        };
+      });
+
+      // 4. Wire Scene Reorder Up / Down
+      modalContent.querySelectorAll('.btn-scene-up').forEach(btn => {
         btn.onclick = async () => {
           const scNum = Number(btn.getAttribute('data-scene'));
           const idx = day.sceneNumbers.indexOf(scNum);
@@ -429,13 +642,13 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             day.sceneNumbers = arr;
             await api.reorderSceneWithinDay(scriptId, day.dayNumber, arr);
             showToast('Scene shooting order updated');
-            openDayModal(day.dayNumber);
             renderCalendar();
+            openDayModal(day.dayNumber);
           }
         };
       });
 
-      modalContent.querySelectorAll('.btn-modal-down').forEach(btn => {
+      modalContent.querySelectorAll('.btn-scene-down').forEach(btn => {
         btn.onclick = async () => {
           const scNum = Number(btn.getAttribute('data-scene'));
           const idx = day.sceneNumbers.indexOf(scNum);
@@ -447,46 +660,113 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             day.sceneNumbers = arr;
             await api.reorderSceneWithinDay(scriptId, day.dayNumber, arr);
             showToast('Scene shooting order updated');
-            openDayModal(day.dayNumber);
             renderCalendar();
+            openDayModal(day.dayNumber);
           }
         };
       });
 
-      // Wire Move Day inside modal
-      modalContent.querySelectorAll('.btn-modal-move-out').forEach(btn => {
+      // 5. Wire Inline Move Shoot Day
+      modalContent.querySelectorAll('.btn-inline-move-day').forEach(btn => {
         btn.onclick = async () => {
-          const scNum = btn.getAttribute('data-scene');
-          const targetDayNum = prompt(`Enter target shoot day number (1 - ${days.length}) to move Scene ${scNum} to:`);
-          if (!targetDayNum || targetDayNum === String(day.dayNumber)) return;
-          const targetNum = Number(targetDayNum);
-          if (targetNum >= 1 && targetNum <= days.length) {
-            await api.moveSceneBetweenDays(scriptId, scNum, day.dayNumber, targetNum);
-            days = await api.getProductionSchedule(scriptId);
-            showToast(`Scene ${scNum} moved to Day ${targetNum}`);
+          const scNum = Number(btn.getAttribute('data-scene'));
+          const card = btn.closest('.scene-item-card');
+          const select = card?.querySelector('.select-inline-move-day');
+          const targetDayNum = Number(select?.value);
+          if (!targetDayNum || targetDayNum === day.dayNumber) {
+            showToast(`Scene ${scNum} is already on Day ${day.dayNumber}`);
+            return;
+          }
+          await api.moveSceneBetweenDays(scriptId, scNum, day.dayNumber, targetDayNum);
+          days = await api.getProductionSchedule(scriptId);
+          showToast(`Scene ${scNum} moved to Shoot Day ${targetDayNum}`);
+          renderCalendar();
+          openDayModal(day.dayNumber);
+        };
+      });
+
+      // 6. Wire Production Notes Editing Workflow
+      modalContent.querySelectorAll('.btn-edit-notes').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingNotesSceneIds.add(scId);
             openDayModal(day.dayNumber);
-            renderCalendar();
-          } else {
-            alert(`Please enter a valid day number between 1 and ${days.length}.`);
           }
         };
       });
 
-      // Wire Delete Day inside modal
-      const deleteDayBtn = document.getElementById('modal-day-delete');
-      if (deleteDayBtn) {
-        deleteDayBtn.onclick = async () => {
-          if (!confirm(`Are you sure you want to remove Shoot Day ${day.dayNumber}? Any scenes should be moved first.`)) return;
-          const res = await api.deleteProductionScheduleDay(scriptId, day.dayNumber);
-          if (res.success) {
-            showToast(`Shoot Day ${day.dayNumber} deleted`);
-            closeDayModal();
-            days = await api.getProductionSchedule(scriptId);
-            renderCalendar();
-          } else {
-            showToast(res.message || 'Failed to delete day');
+      modalContent.querySelectorAll('.btn-cancel-notes').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          if (scId) {
+            editingNotesSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
           }
         };
+      });
+
+      modalContent.querySelectorAll('.btn-save-notes').forEach(btn => {
+        btn.onclick = async () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const card = btn.closest('.scene-item-card');
+          const dirNotes = card?.querySelector('.input-director-notes')?.value || '';
+          const contNotes = card?.querySelector('.input-continuity-notes')?.value || '';
+          const sc = scenes.find(s => s.id === scId);
+          if (sc) {
+            sc.directorNotes = dirNotes;
+            sc.continuityNotes = contNotes;
+            await api.updateProductionScene(scriptId, sc.id, {
+              directorNotes: dirNotes,
+              continuityNotes: contNotes
+            });
+            showToast(`Scene ${sc.sceneNumber} notes saved`);
+            editingNotesSceneIds.delete(scId);
+            openDayModal(day.dayNumber);
+          }
+        };
+      });
+
+      // 7. Wire Quick Links: Breakdown, Sides, PDF
+      modalContent.querySelectorAll('.btn-scene-breakdown').forEach(btn => {
+        btn.onclick = () => {
+          const scNum = btn.getAttribute('data-scene-num');
+          navigate(`/production/breakdown?scriptId=${scriptId}&scene=${scNum}`);
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-scene-sides').forEach(btn => {
+        btn.onclick = () => {
+          const scNum = btn.getAttribute('data-scene-num');
+          navigate(`/production/dialogue-sides?scriptId=${scriptId}&scene=${scNum}`);
+        };
+      });
+
+      modalContent.querySelectorAll('.btn-scene-pdf').forEach(btn => {
+        btn.onclick = () => {
+          const scId = btn.getAttribute('data-scene-id');
+          const sc = scenes.find(s => s.id === scId);
+          if (!sc) return;
+          const scElements = breakdown.filter(b => b.sceneId === sc.id || b.sceneNumber === sc.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(sc.sceneNumber)));
+          try {
+            exportBreakdownPdf(scElements, {
+              title: `Chronicles of Dust — Scene ${sc.sceneNumber}`,
+              draft: 'Draft 4.2'
+            });
+            showToast(`Exported Scene ${sc.sceneNumber} Logistics PDF`);
+          } catch (err) {
+            console.error(err);
+            showToast('Failed to export scene PDF');
+          }
+        };
+      });
+
+      // If auto-expand requested, scroll matching scene into view
+      if (autoExpandSceneId) {
+        setTimeout(() => {
+          const targetCard = modalContent.querySelector(`[data-scene-id="${autoExpandSceneId}"], [data-scene-num="${autoExpandSceneId}"]`);
+          targetCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
       }
     }
 
@@ -496,7 +776,11 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   // Close Day Modal
   const modalClose = document.getElementById('modal-day-close');
   const modalDone = document.getElementById('modal-day-done');
-  const closeDayModal = () => dayModal?.classList.add('hidden');
+  const closeDayModal = () => {
+    dayModal?.classList.add('hidden');
+    currentOpenDayNumber = null;
+    document.getElementById('modal-day-menu-dropdown')?.classList.add('hidden');
+  };
   if (modalClose) modalClose.onclick = closeDayModal;
   if (modalDone) modalDone.onclick = closeDayModal;
   if (dayModal) {
@@ -505,8 +789,19 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     };
   }
 
+  // Close dropdown on window click outside
+  window.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('modal-day-menu-dropdown');
+    const menuBtn = document.getElementById('modal-day-menu-btn');
+    if (dropdown && !dropdown.classList.contains('hidden')) {
+      if (!dropdown.contains(e.target) && !menuBtn?.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    }
+  });
+
   // ---------------------------------------------------------------------------
-  // INTEGRATED SCENE DETAIL MODAL / DRAWER
+  // INTEGRATED SCENE OPENER (Opens day and expands scene inline in normal flow)
   // ---------------------------------------------------------------------------
   async function openSceneDetail(sceneId) {
     let scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId) || `scene-${s.sceneNumber}` === String(sceneId));
@@ -518,253 +813,17 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       return;
     }
 
-    // Ensure full elements list is loaded from breakdown
-    const breakdown = await api.getProductionBreakdown(scriptId);
-    const elements = breakdown.filter(b => b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber)));
-    scene.elements = elements;
-
     // Find currently assigned day in schedule
     const assignedDay = days.find(d => (d.sceneNumbers || []).includes(scene.sceneNumber));
-
-    // Populate modal header
-    const numEl = document.getElementById('scene-detail-num');
-    const headEl = document.getElementById('scene-detail-heading');
-    const metaEl = document.getElementById('scene-detail-meta');
-    if (numEl) numEl.textContent = `#${scene.sceneNumber}`;
-    if (headEl) headEl.textContent = scene.heading;
-    if (metaEl) metaEl.textContent = `Chronicles of Dust • Draft 4.2 (Pinned) • ${scene.pages || '1 0/8'} Pages • ${assignedDay ? `Shoot Day ${assignedDay.dayNumber}` : 'Unscheduled'}`;
-
-    const body = document.getElementById('scene-detail-body');
-    if (body) {
-      // Group elements by category
-      const categories = {};
-      elements.forEach(elem => {
-        const cat = elem.category || 'Other';
-        if (!categories[cat]) categories[cat] = [];
-        categories[cat].push(elem);
-      });
-
-      body.innerHTML = `
-        <!-- Alignment & Status Chips -->
-        <div class="flex items-center gap-2 flex-wrap">
-          <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">${scene.intExt}</span>
-          <span class="px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-slate-100 text-slate-800 border border-slate-200">${scene.dayNight}</span>
-          <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            ${assignedDay ? `Day ${assignedDay.dayNumber}: ${assignedDay.location}` : 'Unscheduled'}
-          </span>
-          <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold ${scene.complexity === 'Complex' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-50 text-slate-600 border border-slate-200'}">
-            Complexity: ${scene.complexity || 'Standard'}
-          </span>
-          <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            ${scene.status || 'Scheduled'}
-          </span>
-        </div>
-
-        <!-- Warning Banner if Needs Review / Source Changed -->
-        ${scene.status === 'Needs Review' ? `
-          <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex items-start gap-2.5">
-            <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">warning</span>
-            <div>
-              <div class="font-semibold text-xs">Source Screenplay Revision Notice</div>
-              <div class="text-[11px] text-amber-800 mt-0.5">Dialogue and stage directions in Draft 4.2 were adjusted for Scene ${scene.sceneNumber}. Confirm associated breakdown items match the revision.</div>
-            </div>
-          </div>
-        ` : ''}
-
-        <!-- Source Screenplay Scene Description -->
-        <div class="rounded-xl border border-slate-200 p-3 bg-slate-50 flex flex-col gap-1.5">
-          <div class="flex items-center justify-between text-[11px] text-slate-500 font-semibold">
-            <span>SOURCE SCENE SNIPPET</span>
-            <span class="text-blue-600 font-normal">Draft 4.2 Baseline</span>
-          </div>
-          <p class="font-mono text-xs text-slate-800 leading-relaxed">${scene.snippet || 'Scene description synchronized from screenplay source.'}</p>
-        </div>
-
-        <!-- Cast Members in Scene -->
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-slate-800 text-xs">Cast & Characters (${(scene.cast || []).length})</span>
-            <span class="text-[11px] text-slate-400">Confirmed cast assignments</span>
-          </div>
-          <div class="flex items-center gap-2 flex-wrap">
-            ${(scene.cast && scene.cast.length > 0) ? scene.cast.map(c => `
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white border border-slate-200 shadow-2xs">
-                <div class="w-5 h-5 rounded-full bg-slate-100 text-slate-700 font-bold text-[10px] flex items-center justify-center font-heading">${c.charAt(0)}</div>
-                <span class="font-semibold text-slate-800 text-xs">${c}</span>
-              </div>
-            `).join('') : `
-              <span class="text-slate-400 text-xs italic">No cast assigned to this scene.</span>
-            `}
-          </div>
-        </div>
-
-        <!-- Confirmed Production Elements (Breakdown Integration) -->
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-slate-800 text-xs">Confirmed Breakdown Elements (${elements.length})</span>
-            <span class="text-[11px] text-slate-400">Props, Costumes, FX & Stunts</span>
-          </div>
-          ${elements.length > 0 ? `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              ${Object.entries(categories).map(([category, items]) => `
-                <div class="p-2.5 rounded-xl border border-slate-200 bg-white flex flex-col gap-1.5">
-                  <div class="flex items-center gap-1.5 text-slate-700 font-semibold text-[11px]">
-                    <span class="material-symbols-outlined text-[15px] text-blue-600">${CATEGORY_ICONS[category] || 'label'}</span>
-                    <span>${category}</span>
-                    <span class="text-[10px] text-slate-400 font-normal">(${items.length})</span>
-                  </div>
-                  <div class="flex flex-col gap-1">
-                    ${items.map(it => `
-                      <div class="flex items-center justify-between text-xs py-0.5 border-b border-slate-100 last:border-b-0">
-                        <span class="font-medium text-slate-800 truncate">${it.name}</span>
-                        <span class="text-[10px] text-slate-400 shrink-0 ml-2">${it.quantity || it.status || ''}</span>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          ` : `
-            <div class="p-3 rounded-xl border border-dashed border-slate-200 text-center text-slate-400 text-xs">
-              No elements tagged for Scene ${scene.sceneNumber}. Open Script Breakdown to tag elements.
-            </div>
-          `}
-        </div>
-
-        <!-- Day Assignment Selector -->
-        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-3">
-          <div>
-            <div class="font-semibold text-slate-800 text-xs">Assigned Shoot Day</div>
-            <div class="text-[11px] text-slate-500">Move scene to another day in the shooting schedule</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <select id="select-scene-shoot-day" class="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:outline-none cursor-pointer">
-              ${days.map(d => `
-                <option value="${d.dayNumber}" ${assignedDay && assignedDay.dayNumber === d.dayNumber ? 'selected' : ''}>
-                  Day ${d.dayNumber} — ${d.date.split(',')[0]} (${d.location})
-                </option>
-              `).join('')}
-            </select>
-            <button id="btn-update-scene-day" class="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer">
-              Move
-            </button>
-          </div>
-        </div>
-
-        <!-- Editable Production Notes & Continuity Notes -->
-        <div class="flex flex-col gap-2.5 pt-1">
-          <div class="flex items-center justify-between">
-            <span class="font-semibold text-slate-800 text-xs">Production & Continuity Notes</span>
-            <span class="text-[11px] text-slate-400">Editable logistics and camera notes</span>
-          </div>
-          <div class="flex flex-col gap-2">
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Director's Production Notes</label>
-              <textarea id="edit-scene-director-notes" rows="2" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors" placeholder="Log camera setup, lighting notes, director preferences...">${scene.directorNotes || ''}</textarea>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-600 mb-1">Continuity Notes</label>
-              <textarea id="edit-scene-continuity-notes" rows="2" class="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 transition-colors" placeholder="Log hair, costume, prop condition, timeline markers...">${scene.continuityNotes || ''}</textarea>
-            </div>
-            <div class="flex justify-end">
-              <button id="btn-save-scene-notes" class="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer">
-                Save Scene Notes
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Wire Save Scene Notes
-      const saveNotesBtn = document.getElementById('btn-save-scene-notes');
-      if (saveNotesBtn) {
-        saveNotesBtn.onclick = async () => {
-          const directorNotes = document.getElementById('edit-scene-director-notes')?.value || '';
-          const continuityNotes = document.getElementById('edit-scene-continuity-notes')?.value || '';
-          scene.directorNotes = directorNotes;
-          scene.continuityNotes = continuityNotes;
-          await api.updateProductionScene(scriptId, scene.id, { directorNotes, continuityNotes });
-          showToast(`Scene ${scene.sceneNumber} notes saved successfully`);
-        };
-      }
-
-      // Wire Move Shoot Day
-      const updateDayBtn = document.getElementById('btn-update-scene-day');
-      if (updateDayBtn) {
-        updateDayBtn.onclick = async () => {
-          const targetDayNum = Number(document.getElementById('select-scene-shoot-day')?.value);
-          if (assignedDay && assignedDay.dayNumber === targetDayNum) {
-            showToast(`Scene ${scene.sceneNumber} is already on Day ${targetDayNum}`);
-            return;
-          }
-          if (assignedDay) {
-            await api.moveSceneBetweenDays(scriptId, scene.sceneNumber, assignedDay.dayNumber, targetDayNum);
-          } else {
-            const targetDay = days.find(d => d.dayNumber === targetDayNum);
-            if (targetDay) {
-              targetDay.sceneNumbers = [...(targetDay.sceneNumbers || []), scene.sceneNumber];
-              await api.updateProductionScheduleDay(scriptId, targetDayNum, { sceneNumbers: targetDay.sceneNumbers });
-            }
-          }
-          days = await api.getProductionSchedule(scriptId);
-          showToast(`Scene ${scene.sceneNumber} moved to Shoot Day ${targetDayNum}`);
-          renderCalendar();
-          openSceneDetail(scene.id);
-        };
-      }
+    if (assignedDay) {
+      openDayModal(assignedDay.dayNumber, scene.id);
+    } else if (days.length > 0) {
+      openDayModal(days[0].dayNumber, scene.id);
     }
-
-    // Wire Footer Quick Actions
-    const exportScenePdfBtn = document.getElementById('btn-scene-export-pdf');
-    if (exportScenePdfBtn) {
-      exportScenePdfBtn.onclick = () => {
-        try {
-          exportBreakdownPdf(scene.elements || [], {
-            title: `Chronicles of Dust — Scene ${scene.sceneNumber}`,
-            draft: 'Draft 4.2'
-          });
-          showToast(`Exported Scene ${scene.sceneNumber} Logistics PDF`);
-        } catch (err) {
-          console.error(err);
-          showToast('Failed to export scene PDF');
-        }
-      };
-    }
-
-    const openBreakdownBtn = document.getElementById('btn-scene-open-breakdown');
-    if (openBreakdownBtn) {
-      openBreakdownBtn.onclick = () => {
-        navigate(`/production/breakdown?scriptId=${scriptId}&scene=${scene.sceneNumber}`);
-      };
-    }
-
-    const openSidesBtn = document.getElementById('btn-scene-open-sides');
-    if (openSidesBtn) {
-      openSidesBtn.onclick = () => {
-        navigate(`/production/dialogue-sides?scriptId=${scriptId}&scene=${scene.sceneNumber}`);
-      };
-    }
-
-    sceneModal?.classList.remove('hidden');
-  }
-
-  function closeSceneDetail() {
-    sceneModal?.classList.add('hidden');
-  }
-
-  // Wire close triggers for scene modal
-  const sceneCloseBtn = document.getElementById('scene-detail-close');
-  const btnSceneClose = document.getElementById('btn-scene-close');
-  if (sceneCloseBtn) sceneCloseBtn.onclick = closeSceneDetail;
-  if (btnSceneClose) btnSceneClose.onclick = closeSceneDetail;
-  if (sceneModal) {
-    sceneModal.onclick = (e) => {
-      if (e.target === sceneModal) closeSceneDetail();
-    };
   }
 
   // ---------------------------------------------------------------------------
-  // PRIMARY ACTION BUTTONS: EXPORT PDF, ADD DAY & CONFIRM SCHEDULE
+  // PRIMARY ACTION BUTTON: EXPORT MASTER SCHEDULE PDF
   // ---------------------------------------------------------------------------
   const exportPdfBtn = document.getElementById('btn-export-schedule-pdf');
   if (exportPdfBtn) {
