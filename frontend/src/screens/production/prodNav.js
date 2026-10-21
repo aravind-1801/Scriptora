@@ -26,32 +26,26 @@ export function renderProdSubNav(title, icon = 'tune', backUrl = null, extraActi
 
   return `
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2 px-1 border-b border-slate-200/80 mb-3">
-      <div class="flex items-center gap-2 min-w-0">
-        <a href="${resolvedBackUrl}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0" title="Back to ${resolvedBackLabel}">
-          <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-          <span>${resolvedBackLabel}</span>
+      <div class="flex items-center gap-2.5 min-w-0 flex-1">
+        <a href="${resolvedBackUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back to ${resolvedBackLabel}" title="Back to ${resolvedBackLabel}">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         </a>
-        <div class="flex items-center gap-2 min-w-0">
-          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
-            <span class="material-symbols-outlined text-[17px]">${icon}</span>
-          </div>
-          <div class="min-w-0">
-            <h1 class="font-heading font-semibold text-sm text-slate-900 truncate leading-tight">${title}</h1>
-            <div class="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium truncate">
-              <span class="text-blue-700 font-semibold truncate">Chronicles of Dust</span>
-              <span>•</span>
-              <span class="flex items-center gap-0.5 text-slate-600 font-semibold">
-                <span class="material-symbols-outlined text-[11px] text-slate-400">lock</span>
-                <span>Draft 4.2 (Pinned)</span>
-              </span>
-            </div>
+        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
+          <span class="material-symbols-outlined text-[18px]">${icon}</span>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h1 class="font-heading font-semibold text-sm sm:text-base text-slate-900 truncate leading-tight">${title}</h1>
+          <div class="text-[11px] text-blue-700 font-medium truncate leading-normal">
+            Chronicles of Dust
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-        ${extraActionsHtml}
-      </div>
+      ${extraActionsHtml ? `
+        <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+          ${extraActionsHtml}
+        </div>
+      ` : ''}
     </div>
   `;
 }

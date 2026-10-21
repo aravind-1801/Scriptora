@@ -31,40 +31,24 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
       <!-- Main Workspace Container -->
       <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
         
-        <!-- Unified Header Row (Back + Title) -->
-        <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-200/70">
-          <div class="flex items-center gap-2 min-w-0">
-            <a href="${returnUrl}" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0" id="prod-back-nav" title="Back to ${returnLabel}">
-              <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-              <span class="truncate">${returnLabel}</span>
-            </a>
-            <h1 class="font-heading font-semibold text-sm text-slate-900 truncate">Production Tools</h1>
-          </div>
+        <!-- Page Title Header (Clean and Aligned) -->
+        <div class="flex items-center justify-between gap-2 py-1 border-b border-slate-200/70">
+          <h1 class="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">Production Tools</h1>
         </div>
 
-        <!-- Screenplay & Source Version Selector Card -->
-        <section class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
-              <span class="material-symbols-outlined text-[20px]">movie_creation</span>
+        <!-- Screenplay Selector Card (Simplified & Compact) -->
+        <section class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-3.5 shadow-xs flex items-center justify-between">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
+              <span class="material-symbols-outlined text-[19px]">movie_creation</span>
             </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <select id="prod-script-select" class="font-heading font-semibold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer pr-1 truncate">
-                  <option value="chronicles-of-dust" ${script.id === 'chronicles-of-dust' ? 'selected' : ''}>Chronicles of Dust (Feature)</option>
-                  <option value="the-neon-horizon" ${script.id === 'the-neon-horizon' ? 'selected' : ''}>The Neon Horizon (Pilot)</option>
-                </select>
-              </div>
-              <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500">
-                <span class="flex items-center gap-1 text-slate-700 font-medium" id="prod-pinned-version-badge">
-                  <span class="material-symbols-outlined text-[13px] text-slate-400">lock</span>
-                  <span id="pinned-version-label">${script.draft || 'Draft 4.2'} (Pinned)</span>
-                </span>
-                <span>•</span>
-                <span>10 Scenes</span>
-                <span>•</span>
-                <span>78 Elements</span>
-              </div>
+            <div class="min-w-0 flex-1">
+              <select id="prod-script-select" class="w-full font-heading font-semibold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5">
+                <option value="chronicles-of-dust" ${script.id === 'chronicles-of-dust' ? 'selected' : ''}>Chronicles of Dust (Feature)</option>
+                <option value="the-neon-horizon" ${script.id === 'the-neon-horizon' ? 'selected' : ''}>The Neon Horizon (Pilot)</option>
+              </select>
+              <!-- Pinned source version tracking preserved for underlying system state -->
+              <span id="pinned-version-label" class="sr-only">${script.draft || 'Draft 4.2'} (Pinned)</span>
             </div>
           </div>
         </section>
@@ -87,94 +71,80 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
           </div>
         </div>
 
-        <!-- Production Tools Grid -->
+        <!-- Production Tools Grid (Consistent 2-column on wider, naturally stacked on mobile) -->
         <section class="flex flex-col gap-2.5">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             
             <!-- Tool 1: Script Breakdown -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="script-breakdown">
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="script-breakdown">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">dataset</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">78 Items</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors mb-2.5">
+                  <span class="material-symbols-outlined text-[18px]">dataset</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Script Breakdown</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Tag and organise production requirements by scene.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+              <div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Open Breakdown</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
-            <!-- Tool 3: Shooting Schedule -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="shooting-schedule">
+            <!-- Tool 2: Shooting Schedule -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="shooting-schedule">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">7 Days</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors mb-2.5">
+                  <span class="material-symbols-outlined text-[18px]">calendar_view_week</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Shooting Schedule</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Plan shooting days, calendar matrix, and scene production details.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+              <div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Open Schedule</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
-            <!-- Tool 4: Call Sheets -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
+            <!-- Tool 3: Call Sheets -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="call-sheets">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">assignment</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">2 Active</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors mb-2.5">
+                  <span class="material-symbols-outlined text-[18px]">assignment</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Call Sheets</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Prepare and manage daily shooting call sheets.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+              <div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Call Sheets</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
-            <!-- Tool 5: Dialogue Sheets & Actor Sides -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="dialogue-sheets">
+            <!-- Tool 4: Dialogue Sheets & Actor Sides -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="dialogue-sheets">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">record_voice_over</span>
-                  </div>
-                  <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-medium">Ready</span>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors mb-2.5">
+                  <span class="material-symbols-outlined text-[18px]">record_voice_over</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Dialogue Sheets & Sides</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Character-wise speech cues and scene actor sides.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+              <div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Actor Sides</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>
             </div>
 
-            <!-- Tool 6: Storyboard Studio -->
-            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="storyboard-studio">
+            <!-- Tool 5: Storyboard Studio -->
+            <div class="tool-card bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all flex flex-col justify-between cursor-pointer group" data-tool="storyboard-studio">
               <div>
-                <div class="flex items-center justify-between mb-3">
-                  <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <span class="material-symbols-outlined text-[18px]">art_track</span>
-                  </div>
+                <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors mb-2.5">
+                  <span class="material-symbols-outlined text-[18px]">art_track</span>
                 </div>
                 <h3 class="font-heading font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">Storyboard Studio</h3>
                 <p class="text-xs text-slate-500 mt-1 leading-relaxed">Visual shot composition and camera setups.</p>
               </div>
-              <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
+              <div class="pt-2.5 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-blue-600">
                 <span>Shot Board</span>
                 <span class="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
               </div>

@@ -640,20 +640,21 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
 
       const catCfg = CATEGORY_CONFIG[item.category] || { icon: 'label' };
 
-      const statusBadge = isConfirmed
-        ? `<span class="px-2 py-0.5 rounded-md bg-slate-50 text-slate-600 border border-slate-200 text-[10px] font-medium flex items-center gap-1"><span class="material-symbols-outlined text-[11px] text-emerald-600">check</span>Confirmed</span>`
-        : isReview
+      // Status badge: remove prominent Confirmed badge per visual cleanup, preserve Needs Review & Excluded states
+      const statusBadge = isReview
         ? `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-medium flex items-center gap-1">Needs Review</span>`
-        : `<span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-medium flex items-center gap-1">Excluded</span>`;
+        : isRejected
+        ? `<span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-medium flex items-center gap-1">Excluded</span>`
+        : '';
 
       // Multi-scene pills
       const scenesArr = Array.isArray(item.scenes) && item.scenes.length > 0 ? item.scenes : [item.sceneNumber];
       const scenesDisplay = scenesArr.map(s => `Sc ${s}`).join(', ');
 
       return `
-        <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs hover:border-slate-300 transition-colors flex flex-col gap-2.5" data-id="${item.id}">
-          <!-- Top Row: Element Name on Left, then Scene Tag, Category Tag, Status, Action Buttons -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div class="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-4 shadow-xs hover:border-slate-300 transition-colors flex flex-col gap-2.5" data-id="${item.id}">
+          <!-- Top Row: Element Name on Left, Scene Tag, Category Tag, and Compact Action Buttons -->
+          <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-2 flex-wrap min-w-0">
               <h3 class="font-heading font-bold text-base text-slate-900 tracking-tight shrink-0 mr-1">${item.name}</h3>
               <span class="px-2 py-0.5 rounded-md bg-blue-50/70 text-blue-700 border border-blue-100 font-semibold text-xs shrink-0 flex items-center gap-1">
@@ -667,27 +668,27 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
               ${statusBadge}
             </div>
 
-            <!-- Primary Action Buttons -->
-            <div class="flex items-center gap-1.5 self-end sm:self-center shrink-0">
-              <button class="btn-toggle-edit px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer" data-id="${item.id}" title="Edit all fields of this element">
+            <!-- Primary Action Buttons (Compact, aligned near heading) -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button class="btn-toggle-edit px-2 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer" data-id="${item.id}" title="Edit details" aria-label="Edit ${item.name}">
                 <span class="material-symbols-outlined text-[15px]">${isEditing ? 'expand_less' : 'edit'}</span>
-                <span>${isEditing ? 'Close' : 'Edit'}</span>
+                <span class="hidden sm:inline">${isEditing ? 'Close' : 'Edit'}</span>
               </button>
 
               ${!isConfirmed ? `
-                <button class="btn-confirm-item px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer" data-id="${item.id}">
-                  <span class="material-symbols-outlined text-[15px]">check</span>
+                <button class="btn-confirm-item px-2 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold text-xs transition-colors flex items-center gap-1 cursor-pointer" data-id="${item.id}" title="Confirm item" aria-label="Confirm ${item.name}">
+                  <span class="material-symbols-outlined text-[14px]">check</span>
                   <span>Confirm</span>
                 </button>
               ` : `
-                <button class="btn-review-item px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-xs transition-colors cursor-pointer" data-id="${item.id}">
+                <button class="btn-review-item px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium text-xs transition-colors cursor-pointer" data-id="${item.id}" title="Request re-review" aria-label="Request re-review for ${item.name}">
                   Re-review
                 </button>
               `}
 
               ${!isRejected ? `
-                <button class="btn-reject-item p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" data-id="${item.id}" title="Reject element">
-                  <span class="material-symbols-outlined text-[18px]">block</span>
+                <button class="btn-reject-item p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" data-id="${item.id}" title="Reject element" aria-label="Reject ${item.name}">
+                  <span class="material-symbols-outlined text-[16px]">block</span>
                 </button>
               ` : ''}
             </div>
