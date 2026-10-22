@@ -5,7 +5,7 @@
 [![Vite](https://img.shields.io/badge/Vite-5.4-purple?style=flat-square)](https://vitejs.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8?style=flat-square)](https://tailwindcss.com/)
 
-**SCRIPTORA** is a cinematic screenplay writing workspace, professional script editor, pre-production planning studio, and narrative intelligence platform built for screenwriters, showrunners, directors, and production teams.
+**SCRIPTORA** is an end-to-end cinematic screenplay writing workspace, professional script editor, pre-production planning studio, and narrative intelligence platform built for screenwriters, showrunners, directors, and production crews.
 
 ---
 
@@ -36,55 +36,51 @@
 ---
 
 ### 🎥 Dedicated Pre-Production Workspaces & Production Workflows
-Every major production tool opens as a **dedicated screen** (no modal popups) with stable context tracking (`Chronicles of Dust • Draft 4.2 Pinned`), role-based permissions, and end-to-end persistence:
+Every core production tool opens as a **dedicated workspace** with stable screenplay context tracking (`Chronicles of Dust • Draft 4.2 Pinned`), role-based permissions, and end-to-end local/cloud persistence:
 
 1. **Category-Aware Script Breakdown Workspace (`/production/breakdown`)**:
-   - **Distinct Production Categories**: Tailored data models and dedicated visual presentation for Cast & Characters, Locations, Props, Costumes & Wardrobe, Practical FX, Stunts & Action, Vehicles & Equipment, Sound, and Hair & Makeup.
+   - **9 Distinct Production Categories**: Tailored data models and dedicated visual presentation for Cast & Characters, Locations, Props, Costumes & Wardrobe, Practical FX, Stunts & Action, Vehicles & Equipment, Sound, and Hair & Makeup.
+   - **Sleek Mobile Category Filter Bar**: Equal-height category filter pill boxes with clean two-line text wrapping (`text-[9px]`), centered icons, and responsive horizontal scroll designed to never overflow or misalign on mobile viewports.
    - **Screenplay Characters vs. Cast Members**: Strict separation between the screenplay-linked character entity and assigned real-world talent. Supports uncast open roles without forcing fake actor assignments, casting lifecycle statuses (`Confirmed Cast`, `Offer Out`, `Auditioning`, `Uncast / Open`), and actor availability schedules.
    - **Full User Editability**: Every displayed field is editable by authorized users via dedicated inline expandable card editors — edit names, descriptions, categories, multi-scene associations, statuses, quantities, readiness, sourcing, safety planning, and continuity notes with real-time Save & Cancel persistence.
    - **AI Suggestions vs. Production Decisions**: Immutable screenplay evidence quotations (`sourceSnippet`), original AI extraction tracking (`originalAiSuggestion`), and separate user correction audit logging (`userCorrection`) without altering source evidence.
    - **Dynamic Modal & Multi-Scene Linking**: Add production elements manually with dynamic category-specific input fields and link items to single or multiple scenes simultaneously.
-2. **Category-Aware Scene Hub & Logistics (`/production/scenes` & `/production/scenes/:sceneId`)**:
-   - Master 18-scene index with completion filters, day/night badges, and cast appearance lists.
-   - **Grouped Scene Summary**: Confirmed Scene Elements section organized by production category with category-specific count badges, tailored metadata (Actor & Casting status for Cast, Sourcing & Quantity for Props, Safety Mandates for FX, Rigging status for Stunts), and direct edit shortcuts to the Script Breakdown workspace.
-   - Dedicated Scene Detail inspector with actor sides shortcuts, shooting day schedules, and separate editable Director & Continuity Notes.
-3. **Call Sheets Workspace (`/production/call-sheets`)**:
-   - Dual creation paths: schedule-linked generation from confirmed shooting days or standalone manual creation.
-   - Call times, crew calls, talent call schedule, hospital/emergency contacts, weather advisories, parking instructions, and Director/Producer signatures.
-   - Owner publication approval workflow with immutable snapshot versioning and vector PDF export.
+   - **Direct Vector PDF Export**: Single-click high-fidelity PDF export of the complete breakdown catalogue.
+
+2. **Master Shooting Schedule & Calendar Matrix (`/production/schedule`)**:
+   - **Streamlined 7-Day Calendar Stripboard**: Interactive 7-day master calendar with Day/Night indicators, Interior/Exterior color badges, estimated shooting page counts, and scene listings.
+   - **Integrated Scene Logistics**: Direct inline progressive expansion for scenes within each shoot day, surfacing cast lists, props, locations, and director notes in context without needing a disconnected scene hub.
+   - **Interactive Shoot Day Details Modal**:
+     - Edit shoot day titles, call times, location notes, and weather/crew advisories.
+     - Interactive date picker to reschedule shoot dates with live validation.
+     - Day locking toggles to prevent accidental modifications during active production.
+     - Real shoot day element deletion with safety confirmation modal.
+     - Contextual 3-dot kebab menu with leak-free, idempotent event wiring and viewport-relative positioning.
+   - **Authentic Schedule PDF Export**: Export publication-ready shooting schedules formatted for call-time distribution and callboard posting.
+
+3. **Daily Call Sheets Workspace (`/production/call-sheets`)**:
+   - **Dual Creation Paths**: Direct schedule-linked generation from confirmed shooting days or standalone manual creation.
+   - **Comprehensive Production Details**: General crew call time, individual talent call schedule, scene-by-scene shooting blocks, hospital/emergency contacts, weather advisories, parking instructions, and Director/Producer signatures.
+   - **Approval & Distribution**: Owner publication approval workflow with immutable snapshot versioning and vector PDF export.
+
 4. **Dialogue Sheets & Actor Sides (`/production/dialogue-sides`)**:
-   - Dual-mode tool: **Character Dialogue Sheets** in screenplay order or **Actor Sides** filtered by character and scene.
-   - Pinned source draft metadata stamps and single-click PDF export.
-5. **Master Shooting Schedule & Stripboard (`/production/schedule`)**:
-   - 14-day stripboard calendar with day/night, interior/exterior color indicators, and estimated shooting page counts.
-   - Day locking toggles, company move detection, conflict validation, and Owner confirmation.
-6. **Production Resource Directory (`/production/directory`)**:
-   - Comprehensive directory for Cast, Crew, Locations, Props, Vehicles, and Equipment.
-   - Department-based access control with contact masking (`[Restricted — Production Authorized Only]`) for non-Owner/Production roles.
-7. **Production Documents Workspace (`/production/documents`)**:
-   - Searchable document catalogue organized by Script Preparation, Actors & Rehearsal, Scheduling, On-Set Production, and Management.
-   - Formatted document viewer, printable PDF export, and revocable 24-hour sharing link generator.
-8. **Production Change Proposals & Approvals (`/production/changes`)**:
-   - Consolidated Owner review queue for pending collaborator proposals.
-   - Side-by-side value diffs, author attribution, conflict detection, and Accept/Reject workflows with explanatory notes.
-9. **Unified History & Version Management (`/production/history`)**:
-   - Centralized audit trail stream tracking breakdowns, call sheets, schedule edits, approvals, and documents.
-   - Version comparison diff modal and non-destructive restoration to earlier script or production drafts.
-10. **Guided Readiness & Validation (`/production/readiness`)**:
-    - Pre-flight checklist classifying blockers by Critical, Warning, and Passed.
-    - Direct "Fix Issue" routing to offending records before production documents are locked or published.
-11. **Storyboard Studio Preview (`/production/storyboard`)**:
-    - Concept frame gallery with focal length lenses (24mm, 50mm, 85mm), aspect ratio framing (2.39:1, 16:9), and scene linkage staging.
+   - **Dual-Mode Document Layout**:
+     - **Character Dialogue Sheets**: Full dialogue streams arranged in screenplay sequence for rehearsals and table reads.
+     - **Actor Sides**: Filtered sides by character and scene, formatted in authentic physical paper sides style.
+   - **Draft Tracking & Navigation**: Pinned source draft metadata stamps, dedicated subnav heading with robust multi-stage back navigation, and instantaneous vector PDF export.
+
+5. **Storyboard Studio Preview (`/production/storyboard`)**:
+   - **Visual Shot Composition**: Concept frame gallery with focal length lenses (24mm, 50mm, 85mm), aspect ratio framing (2.39:1, 16:9), shot types (Wide, Medium, Close-up), and scene linkage staging.
 
 ---
 
-### 🌐 Persistent Global Shell & Navigation
+### 🌐 Persistent Global Shell & Ergonomic Navigation
 - **Global Application Shell**: Single reusable application shell (`#scriptora-app-shell`) encapsulating `#scriptora-global-header`, dynamic content area `#scriptora-global-content`, and `#scriptora-global-nav`.
-- **Persistent Global Header**: Available on every screen (Workspace, Intelligence, AI Chat, Pre-Production, Editor, Notifications, Profile), maintaining consistent branding, section subtitles, notification bell with live unread indicator, and user profile avatar.
+- **Persistent Global Header**: Available across all application routes, maintaining consistent branding, section subtitles, notification bell with live unread indicator, and user profile avatar.
 - **Refined Floating Center AI Chat Button**:
   - Centered at the exact horizontal midpoint (3rd destination in 5-column grid).
   - Raised visibly above the bottom navigation bar (`-translate-y-3.5`) with a protective cutout halo ring (`ring-4 ring-surface/95`).
-  - Formed in SCRIPTORA's signature light-blue, white, and royal blue palette (no dark block).
+  - Formed in SCRIPTORA's signature light-blue, white, and royal blue palette.
   - Inactive: Crisp white surface, subtle blue border, soft blue elevation, and primary blue chat icon.
   - Active: Rich royal blue (`bg-blue-600 text-white`) with soft blue ring.
   - Symbol-only presentation with full accessibility (`aria-label="AI Chat"` and tooltip discoverability hint).
@@ -94,7 +90,16 @@ Every major production tool opens as a **dedicated screen** (no modal popups) wi
   3. AI Chat *(floating raised center button)*
   4. Production
   5. Profile
-- **Smooth Inward Transition**: Reuses SCRIPTORA's inward `.fade-in` animation on screen content only, keeping the global header and bottom navigation stable and flicker-free during transitions.
+- **Multi-Stage Back Navigation Stack**:
+  - Global router interceptor (`window.scriptoraRouter.back()`) with prioritized dismissal:
+    1. First closes registered sub-views (edit modes, inline forms).
+    2. Closes open modal dialogs (both portaled and in-page).
+    3. Dismisses open popups, contextual dropdowns, and kebab menus.
+    4. Navigates back along the user's authentic history stack with sensible route fallbacks.
+- **Global Viewport-Relative Modal & Popup Portal Engine (`popupPosition.js`)**:
+  - Reparents modals and dropdowns to `#scriptora-modal-portal` on `document.body` to eliminate container clipping and z-index stacking context traps.
+  - Non-destructive body scroll locking that preserves scroll position and prevents background page scrolling on mobile and desktop.
+  - Smart viewport bounding and overflow avoidance.
 
 ---
 
@@ -108,7 +113,8 @@ Every major production tool opens as a **dedicated screen** (no modal popups) wi
 ### 👥 Collaboration & Account Management
 - **Draft & Version Management**: Snapshot screenplay drafts, restore previous iterations, and compare screenplay diffs side-by-side.
 - **Collaborator Management**: Invite co-writers and editors via Join Codes with role-based permissions (`Owner`, `Editor`, `Viewer`, `Production`).
-- **Profile & Preferences**: Local profile photo upload and preview, global editor typography controls, line spacing (`1.0`, `1.5`, `2.0`), scene number display toggles, and notification feeds.
+- **Profile & Preferences**: Local profile photo upload and preview with persistent avatar sync, global editor typography controls, line spacing (`1.0`, `1.5`, `2.0`), scene number display toggles, and notification feeds.
+- **Authentication & Security**: Email/password authentication with session persistence, Google OAuth 2.0 readiness, and Firebase integration support.
 
 ---
 
@@ -124,26 +130,24 @@ SCRIPTORA/
 │   │   │   ├── production/       # Dedicated Pre-Production workspaces
 │   │   │   │   ├── prodNav.js    # Shared contextual subnav (script, draft, role)
 │   │   │   │   ├── breakdown.js  # Script Breakdown workspace
-│   │   │   │   ├── scenes.js     # Scene Hub & Scene Detail inspector
+│   │   │   │   ├── schedule.js   # Shooting Schedule, Stripboard & Scene Logistics
 │   │   │   │   ├── callSheets.js # Call Sheets creation & publishing
 │   │   │   │   ├── dialogueSides.js # Dialogue Sheets & Actor Sides
-│   │   │   │   ├── schedule.js   # Shooting Schedule & Stripboard
-│   │   │   │   ├── directory.js  # Production Resource Directory
-│   │   │   │   ├── documents.js  # Documents catalogue & exports
-│   │   │   │   ├── changes.js    # Change Proposals & Owner Approvals
-│   │   │   │   ├── history.js    # Version History & Audit Trail
-│   │   │   │   ├── readiness.js  # Guided Readiness & Validation
 │   │   │   │   └── storyboard.js # Storyboard Studio discovery staging
-│   │   │   ├── workspace.js      # Main Scriptora workspace
+│   │   │   ├── workspace.js      # Main Scriptora screenplay workspace
 │   │   │   ├── editor.js         # Continuous A4 Screenplay Editor
 │   │   │   ├── aiChat.js         # Universal AI Chat Assistant
 │   │   │   ├── intelligence*.js  # Narrative Intelligence suite
 │   │   │   ├── notifications.js  # Activity stream
-│   │   │   └── profile.js        # User account & local photo upload
-│   │   ├── services/             # API client & local offline cache fallback
+│   │   │   ├── profile.js        # User account & local photo upload
+│   │   │   ├── collaborators.js  # Team access & Join Code invitations
+│   │   │   ├── auth.js           # Authentication & sign-in screens
+│   │   │   └── production.js     # Production Tools hub
+│   │   ├── services/             # API client, PDF generation & local storage cache
 │   │   ├── state/                # Reactive store & navigation history stack
-│   │   ├── utils/                # Brand tokens, character sanitizer, formatting
-│   │   ├── router.js             # SPA Router with Persistent Global Shell
+│   │   ├── utils/                # Brand tokens, popup positioning, character sanitizer
+│   │   │   └── popupPosition.js  # Global modal/popup portal & scroll-lock engine
+│   │   ├── router.js             # SPA Router with Persistent Global Shell & Back Interceptor
 │   │   └── main.js               # Application bootstrap
 │   ├── index.html
 │   ├── package.json
@@ -224,7 +228,7 @@ This compiles Vite assets into `frontend/dist/` and synchronizes root deployment
 ```bash
 npm run deploy
 ```
-Publishes the compiled production build directly to the `gh-pages` branch.
+Publishes the compiled production build directly to the `gh-pages` branch via official GitHub Actions workflows.
 
 ### Deploy to Vercel / Cloud Providers
 - **Frontend**: Deploy `/frontend` to [Vercel](https://vercel.com/) with build command `npm run build` and output directory `dist`. Set `VITE_API_URL` to your production backend.
