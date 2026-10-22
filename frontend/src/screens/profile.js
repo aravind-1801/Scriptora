@@ -472,7 +472,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
 
       <!-- 1. Editor Settings Modal -->
       <div id="modal-setting-editor" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
-        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 overflow-y-auto">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">format_align_left</span>
