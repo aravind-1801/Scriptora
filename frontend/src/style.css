@@ -309,3 +309,26 @@ body.editor-mode #scriptora-global-content {
   overscroll-behavior-y: contain !important;
 }
 
+/* ==========================================================================
+   Global Main-Screen Heading Typography
+   Consistent hierarchy, bold prominence & responsive sizing across all screens
+   Matching the prominent bold design reference
+   ========================================================================== */
+.page-heading,
+h1.page-heading {
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.625rem !important; /* 26px mobile */
+  line-height: 2rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em !important;
+  color: #0f172a !important; /* text-slate-900 */
+}
+
+@media (min-width: 640px) {
+  .page-heading,
+  h1.page-heading {
+    font-size: 1.875rem !important; /* 30px tablet/desktop */
+    line-height: 2.25rem !important;
+  }
+}
+

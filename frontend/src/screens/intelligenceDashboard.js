@@ -43,7 +43,7 @@ export function renderIntelligenceDashboardScreen() {
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             </button>
             <div class="flex flex-col min-w-0">
-              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Intelligence</h1>
+              <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Intelligence</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Understand your screenplay.</p>
             </div>
           </div>

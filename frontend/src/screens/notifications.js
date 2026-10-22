@@ -24,7 +24,7 @@ export function renderNotificationsScreen() {
                 <span class="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
               <div class="flex flex-col min-w-0">
-                <h1 class="font-heading font-bold text-xl sm:text-2xl text-slate-900 tracking-tight truncate">Notifications</h1>
+                <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Notifications</h1>
                 <p class="text-xs text-slate-500 mt-0.5 truncate">Updates, collaboration and system alerts.</p>
               </div>
             </div>

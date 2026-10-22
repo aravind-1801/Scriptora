@@ -79,7 +79,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
         <!-- Profile Header -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Profile</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Profile</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Account & preferences.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80 shrink-0">

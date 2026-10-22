@@ -39,7 +39,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
         <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Production Tools</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Production Tools</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Your filmmaking workspace.</p>
           </div>
         </div>
