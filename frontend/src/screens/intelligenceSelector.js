@@ -13,7 +13,7 @@ export function renderIntelligenceSelectorScreen() {
     ${renderHeader('Intelligence', 'Script Selector')}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
-      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
+      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4 fade-in">
         
         <!-- Section Header -->
         <div class="flex items-center justify-between gap-3 py-1">

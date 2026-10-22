@@ -1560,7 +1560,7 @@ ${Xe?Xe+". ":""}${Ne}
     ${Fe("Intelligence","Script Selector")}
 
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
-      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
+      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4 fade-in">
         
         <!-- Section Header -->
         <div class="flex items-center justify-between gap-3 py-1">
@@ -3925,12 +3925,12 @@ ${Xe?Xe+". ":""}${Ne}
           </div>
         </div>
       `}c.innerHTML=B("Today",w)+B("Earlier",f),document.querySelectorAll(".notif-row").forEach(k=>{k.onclick=async()=>{const E=parseInt(k.getAttribute("data-id")),h=k.getAttribute("data-route");await Rn(E),await I.refreshNotifications(),h?e(h):o()}})}o();const l=document.getElementById("filter-all-btn"),i=document.getElementById("filter-unread-btn");l&&(l.onclick=()=>{s="all",l.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",i.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",o()}),i&&(i.onclick=()=>{s="unread",i.className="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all",l.className="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all",o()});const r=document.getElementById("btn-mark-all-read");r&&(r.onclick=async()=>{await Mn(),await I.refreshNotifications(),S("All notifications marked as read"),o()});const p=document.getElementById("btn-toggle-sim"),x=document.getElementById("sim-menu-dropdown");let u=null;p&&x&&(u=Ws(p,x,{placement:"bottom-end"})),document.querySelectorAll(".sim-opt").forEach(c=>{c.onclick=()=>{n=c.getAttribute("data-state"),u?.close(),o(),S(`Simulating ${n} state`)}})}function oo(e=null,t=null){const s=new URLSearchParams(window.location.search||""),n=e||s.get("from"),a=t||s.get("scriptId")||I.state.selectedScriptId||"chronicles-of-dust",o=n==="editor"||n&&n.startsWith("/editor");o?sessionStorage.getItem("scriptora_prod_return")||(n&&n.startsWith("/editor")||`${a}`):n&&n.startsWith("/");let l=null;if(window.scriptoraRouter){const r=window.scriptoraRouter.peekPreviousRoute?.();r&&(l=window.scriptoraRouter.getRouteLabel(r))}o||l||n?.includes("/intelligence");const i=I.state.scripts?.find(r=>r.id===a)||I.state.scripts?.[0]||{id:"chronicles-of-dust",draft:"Draft 4.2"};return`
-    <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
-      <!-- Standard App Header -->
-      ${Fe("Pre-Production","Production Tools")}
+    <!-- Standard App Header -->
+    ${Fe("Pre-Production","Production Tools")}
 
-      <!-- Main Workspace Container -->
-      <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
+    <!-- Main Workspace Container -->
+    <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-3.5 fade-in">
         
         <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
         <div class="flex items-center justify-between gap-3 py-1">
@@ -4060,11 +4060,11 @@ ${Xe?Xe+". ":""}${Ne}
           </div>
         </section>
 
-      </main>
+      </div>
+    </main>
 
-      <!-- Bottom Navigation with Production Active -->
-      ${je("production")}
-    </div>
+    <!-- Bottom Navigation with Production Active -->
+    ${je("production")}
   `}async function lo(e,t=null,s=null){const n=new URLSearchParams(window.location.search||""),a=s||n.get("scriptId")||I.state.selectedScriptId||"chronicles-of-dust",o=document.getElementById("production-back-btn");o&&(o.onclick=()=>{window.scriptoraRouter?window.scriptoraRouter.back("/workspace"):e("/workspace")});const l=document.getElementById("prod-script-select");l&&(l.onchange=u=>{const c=u.target.value;I.setState({selectedScriptId:c}),e(`/production?scriptId=${c}`)});const i=document.getElementById("btn-repin-source");i&&(i.onclick=async()=>{const u="Draft 4.3";await _n(a,u),document.getElementById("source-version-alert")?.classList.add("hidden");const c=document.getElementById("pinned-version-label");c&&(c.textContent=`${u} (Pinned)`),S(`Pinned source updated to ${u}`)});const r=document.getElementById("btn-dismiss-staleness");r&&(r.onclick=()=>{document.getElementById("source-version-alert")?.classList.add("hidden"),S("Retained Draft 4.2 pinned baseline")});const p=`/production?scriptId=${a}`,x={"script-breakdown":`/production/breakdown?scriptId=${a}&from=${encodeURIComponent(p)}`,"shooting-schedule":`/production/schedule?scriptId=${a}&from=${encodeURIComponent(p)}`,"call-sheets":`/production/call-sheets?scriptId=${a}&from=${encodeURIComponent(p)}`,"dialogue-sheets":`/production/dialogue-sides?scriptId=${a}&from=${encodeURIComponent(p)}`,"storyboard-studio":`/production/storyboard?scriptId=${a}&from=${encodeURIComponent(p)}`};document.querySelectorAll(".tool-card").forEach(u=>{u.onclick=()=>{const c=u.getAttribute("data-tool");x[c]&&e(x[c])}})}function io(){const e=I.state.selectedScriptId||"chronicles-of-dust",t=I.state.scripts?.find(s=>s.id===e)||{title:"Chronicles of Dust",draft:"Draft 4.2"};return`
     <div class="fixed inset-0 bg-surface flex flex-col font-body text-slate-800 select-none overflow-hidden">
       <!-- Standard Header (Fixed Top) -->

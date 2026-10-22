@@ -30,12 +30,12 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
   };
 
   return `
-    <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
-      <!-- Standard App Header -->
-      ${renderHeader('Pre-Production', 'Production Tools')}
+    <!-- Standard App Header -->
+    ${renderHeader('Pre-Production', 'Production Tools')}
 
-      <!-- Main Workspace Container -->
-      <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
+    <!-- Main Workspace Container -->
+    <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+      <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-3.5 fade-in">
         
         <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
         <div class="flex items-center justify-between gap-3 py-1">
@@ -165,11 +165,11 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
           </div>
         </section>
 
-      </main>
+      </div>
+    </main>
 
-      <!-- Bottom Navigation with Production Active -->
-      ${renderBottomNav('production')}
-    </div>
+    <!-- Bottom Navigation with Production Active -->
+    ${renderBottomNav('production')}
   `;
 }
 
