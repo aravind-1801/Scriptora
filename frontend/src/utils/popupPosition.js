@@ -1,10 +1,44 @@
 /**
  * SCRIPTORA Shared Overlay & Popup Positioning Engine
- * Robust, viewport-aware positioning for dropdowns, popovers, and contextual menus.
+ * Robust, viewport-aware positioning for modals, dropdowns, popovers, and contextual menus.
  * Automatically accounts for mobile virtual keyboards, visualViewport, safe areas,
- * flipping above/below triggers, and horizontal clamping.
+ * persistent global header, bottom navigation bar, flipping above/below triggers,
+ * horizontal clamping, and background scroll locking.
  */
 
+let openModalsCount = 0;
+let modalScrollY = 0;
+
+/**
+ * Lock background page scroll without altering scroll position.
+ */
+export function lockBodyScroll() {
+  if (openModalsCount === 0) {
+    modalScrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.body.dataset.scriptoraModalScrollY = String(modalScrollY);
+    document.body.classList.add('scriptora-modal-open');
+    document.body.style.top = `-${modalScrollY}px`;
+  }
+  openModalsCount++;
+}
+
+/**
+ * Unlock background page scroll and restore exact user scroll position.
+ */
+export function unlockBodyScroll() {
+  openModalsCount = Math.max(0, openModalsCount - 1);
+  if (openModalsCount === 0) {
+    document.body.classList.remove('scriptora-modal-open');
+    document.body.style.top = '';
+    const savedY = parseInt(document.body.dataset.scriptoraModalScrollY || '0', 10);
+    window.scrollTo({ top: savedY, behavior: 'instant' });
+  }
+}
+
+/**
+ * Calculate viewport-aware popup coordinates avoiding clipping by headers,
+ * nav bars, and screen edges.
+ */
 export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
   if (!triggerEl || !popupEl) return null;
 
@@ -12,8 +46,7 @@ export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
     placement = 'auto', // 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end' | 'auto'
     offset = 4,
     boundaryMargin = 8,
-    preferPosition = 'bottom', // 'bottom' | 'top'
-    isFixed = true
+    preferPosition = 'bottom' // 'bottom' | 'top'
   } = options;
 
   const triggerRect = triggerEl.getBoundingClientRect();
@@ -25,13 +58,32 @@ export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
   const viewportTop = vv ? vv.offsetTop : 0;
   const viewportLeft = vv ? vv.offsetLeft : 0;
 
+  // Header and bottom nav awareness
+  const globalHeader = document.getElementById('editor-fixed-header') ||
+                       document.getElementById('scriptora-global-header') ||
+                       document.querySelector('header[data-global-header="true"]');
+  const headerBottom = globalHeader && !globalHeader.classList.contains('hidden')
+    ? globalHeader.getBoundingClientRect().bottom
+    : (viewportTop + 56);
+
+  const globalNav = document.getElementById('scriptora-global-nav') ||
+                    document.getElementById('scriptora-bottom-nav') ||
+                    document.querySelector('nav[data-global-bottom-nav="true"]');
+  const navTop = globalNav && !globalNav.classList.contains('hidden')
+    ? globalNav.getBoundingClientRect().top
+    : (viewportTop + viewportHeight);
+
+  // Safe vertical boundaries
+  const topBound = Math.max(viewportTop + boundaryMargin, headerBottom + 4);
+  const bottomBound = Math.min(viewportTop + viewportHeight - boundaryMargin, navTop - 4);
+
   // Measure popup (ensure rendered/measured)
   const popupWidth = popupEl.offsetWidth || 200;
   const popupHeight = popupEl.offsetHeight || 160;
 
   // Space calculations
-  const spaceBelow = (viewportTop + viewportHeight) - triggerRect.bottom - offset - boundaryMargin;
-  const spaceAbove = triggerRect.top - viewportTop - offset - boundaryMargin;
+  const spaceBelow = bottomBound - triggerRect.bottom - offset;
+  const spaceAbove = triggerRect.top - topBound - offset;
 
   // Determine vertical placement
   let placeTop = false;
@@ -48,23 +100,23 @@ export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
     }
   }
 
-  // Calculate top coordinate
+  // Calculate top coordinate & maxHeight
   let top;
   let maxHeight;
   if (placeTop) {
-    maxHeight = Math.max(100, Math.min(popupHeight, spaceAbove));
+    maxHeight = Math.max(90, Math.min(popupHeight, spaceAbove));
     top = triggerRect.top - maxHeight - offset;
   } else {
-    maxHeight = Math.max(100, Math.min(popupHeight, spaceBelow));
+    maxHeight = Math.max(90, Math.min(popupHeight, spaceBelow));
     top = triggerRect.bottom + offset;
   }
 
   // Clamp top to viewport bounds
-  top = Math.max(viewportTop + boundaryMargin, Math.min(viewportTop + viewportHeight - maxHeight - boundaryMargin, top));
+  top = Math.max(topBound, Math.min(bottomBound - maxHeight, top));
 
   // Determine horizontal placement
   let left;
-  const isRightAligned = placement.endsWith('end') || triggerRect.left + popupWidth > viewportWidth - boundaryMargin;
+  const isRightAligned = placement.endsWith('end') || (triggerRect.left + popupWidth > viewportWidth - boundaryMargin);
 
   if (isRightAligned) {
     left = triggerRect.right - popupWidth;
@@ -90,6 +142,11 @@ export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
 export function positionPopup(triggerEl, popupEl, options = {}) {
   if (!triggerEl || !popupEl) return;
 
+  // Reparent to document.body if inside a scrolling or overflow container to avoid clipping
+  if (options.portal !== false && popupEl.parentElement !== document.body && !popupEl.closest('.scriptora-modal-overlay')) {
+    document.body.appendChild(popupEl);
+  }
+
   // Ensure element is visible enough to measure
   const wasHidden = popupEl.classList.contains('hidden');
   if (wasHidden) {
@@ -98,7 +155,7 @@ export function positionPopup(triggerEl, popupEl, options = {}) {
   }
 
   popupEl.style.position = 'fixed';
-  popupEl.style.zIndex = options.zIndex || '50';
+  popupEl.style.zIndex = options.zIndex || '120';
 
   const coords = calculatePopupPosition(triggerEl, popupEl, options);
   if (coords) {
@@ -163,4 +220,56 @@ export function setupPopupToggle(triggerEl, popupEl, options = {}) {
   }
 
   return { open, close, toggle, update };
+}
+
+/**
+ * Standard SCRIPTORA Modal Initializer
+ * Wires up top-aligned mobile placement, background scroll lock, backdrop click,
+ * escape key closing, and scroll preservation.
+ */
+export function setupModal(overlayEl, options = {}) {
+  if (!overlayEl) return null;
+
+  overlayEl.classList.add('scriptora-modal-overlay');
+  const card = overlayEl.querySelector('.scriptora-modal-card') || overlayEl.firstElementChild;
+  if (card) {
+    card.classList.add('scriptora-modal-card');
+  }
+
+  const { closeSelectors = [], onClose = null, onOpen = null } = options;
+
+  const open = () => {
+    overlayEl.classList.remove('hidden');
+    lockBodyScroll();
+    if (typeof onOpen === 'function') onOpen();
+  };
+
+  const close = () => {
+    overlayEl.classList.add('hidden');
+    unlockBodyScroll();
+    if (typeof onClose === 'function') onClose();
+  };
+
+  // Close when clicking directly on the backdrop outside the card
+  overlayEl.addEventListener('click', (e) => {
+    if (e.target === overlayEl) {
+      close();
+    }
+  });
+
+  // Wire close buttons
+  closeSelectors.forEach(sel => {
+    const btn = typeof sel === 'string' ? overlayEl.querySelector(sel) : sel;
+    if (btn) btn.addEventListener('click', close);
+  });
+
+  // Escape key handler
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape' && !overlayEl.classList.contains('hidden')) {
+      close();
+    }
+  };
+  document.addEventListener('keydown', onKeyDown);
+
+  return { open, close };
 }

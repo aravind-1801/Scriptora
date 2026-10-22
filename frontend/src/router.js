@@ -20,6 +20,7 @@ import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/produc
 import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
 import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
 import { renderStoryboardScreen, attachStoryboardEvents } from './screens/production/storyboard.js';
+import { unlockBodyScroll } from './utils/popupPosition.js';
 
 
 class Router {
@@ -288,6 +289,7 @@ class Router {
   }
 
   navigate(path, replace = false) {
+    unlockBodyScroll();
     // Record current scroll position
     if (this.currentPath) {
       this.scrollPositions[this.normalizePath(this.currentPath)] = window.scrollY;

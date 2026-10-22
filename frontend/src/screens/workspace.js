@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { positionPopup } from '../utils/popupPosition.js';
+import { positionPopup, lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
 
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
@@ -145,8 +145,8 @@ export function renderWorkspaceScreen() {
     </main>
 
     <!-- New Script Modal -->
-    <div id="new-script-modal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden items-end sm:items-center justify-center p-0 sm:p-4">
-      <div class="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+    <div id="new-script-modal" class="scriptora-modal-overlay fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex">
+      <div class="scriptora-modal-card w-full sm:max-w-md bg-white rounded-2xl p-5 shadow-xl flex flex-col gap-4">
         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
           <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -269,8 +269,12 @@ export function attachWorkspaceEvents(navigate) {
     if (open) {
       newScriptModal.classList.remove('hidden');
       newScriptModal.classList.add('flex');
+      lockBodyScroll();
       document.getElementById('new-script-title')?.focus();
     } else {
+      if (!newScriptModal.classList.contains('hidden')) {
+        unlockBodyScroll();
+      }
       newScriptModal.classList.add('hidden');
       newScriptModal.classList.remove('flex');
     }
@@ -279,6 +283,11 @@ export function attachWorkspaceEvents(navigate) {
   if (newScriptBtn) newScriptBtn.onclick = () => toggleNewScriptModal(true);
   if (closeNewScriptModal) closeNewScriptModal.onclick = () => toggleNewScriptModal(false);
   if (cancelNewScriptBtn) cancelNewScriptBtn.onclick = () => toggleNewScriptModal(false);
+  if (newScriptModal) {
+    newScriptModal.onclick = (e) => {
+      if (e.target === newScriptModal) toggleNewScriptModal(false);
+    };
+  }
 
   if (formNewScript) {
     formNewScript.onsubmit = async (e) => {

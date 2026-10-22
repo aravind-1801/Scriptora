@@ -3,6 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
 
 export function renderIntelligenceDashboardScreen() {
   const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
@@ -196,8 +197,8 @@ export function renderIntelligenceDashboardScreen() {
       </div>
 
       <!-- Quick Script Switcher Modal -->
-      <div id="script-switcher-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm items-end sm:items-center justify-center hidden p-0 sm:p-4">
-        <div class="w-full max-w-lg bg-white rounded-t-2xl sm:rounded-2xl p-4 flex flex-col gap-3 shadow-xl">
+      <div id="script-switcher-modal" class="scriptora-modal-overlay fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden flex">
+        <div class="scriptora-modal-card w-full max-w-lg bg-white rounded-2xl p-4 flex flex-col gap-3 shadow-xl">
           <div class="flex items-center justify-between pb-2 border-b border-slate-100">
             <span class="text-xs font-bold uppercase tracking-wider text-slate-600 font-heading">Switch Screenplay</span>
             <button id="close-script-switcher-modal" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
@@ -288,14 +289,30 @@ export function attachIntelligenceDashboardEvents(navigate) {
   const trigger = document.getElementById('script-selector-trigger');
   const closeBtn = document.getElementById('close-script-switcher-modal');
 
-  if (trigger) trigger.onclick = () => modal?.classList.remove('hidden');
-  if (closeBtn) closeBtn.onclick = () => modal?.classList.add('hidden');
+  const openSwitcherModal = () => {
+    modal?.classList.remove('hidden');
+    lockBodyScroll();
+  };
+  const closeSwitcherModal = () => {
+    if (modal && !modal.classList.contains('hidden')) {
+      unlockBodyScroll();
+    }
+    modal?.classList.add('hidden');
+  };
+
+  if (trigger) trigger.onclick = openSwitcherModal;
+  if (closeBtn) closeBtn.onclick = closeSwitcherModal;
+  if (modal) {
+    modal.onclick = (e) => {
+      if (e.target === modal) closeSwitcherModal();
+    };
+  }
 
   document.querySelectorAll('.script-switch-opt').forEach(opt => {
     opt.onclick = () => {
       const id = opt.getAttribute('data-id');
       store.selectScript(id);
-      modal?.classList.add('hidden');
+      closeSwitcherModal();
       navigate('/intelligence');
     };
   });

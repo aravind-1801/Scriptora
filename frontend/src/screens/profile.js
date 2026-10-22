@@ -3,6 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+import { lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
 
 export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -344,8 +345,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Action Confirmation Modal (Sign Out / Delete) -->
-      <div id="action-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
+      <div id="action-modal" class="scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
           <div class="w-10 h-10 rounded-full flex items-center justify-center" id="action-modal-icon-box">
             <span class="material-symbols-outlined text-[20px]" id="action-modal-icon">logout</span>
           </div>
@@ -359,8 +360,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Edit Profile Modal -->
-      <div id="modal-edit-profile" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 max-h-[92vh] overflow-y-auto">
+      <div id="modal-edit-profile" class="scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <h2 class="text-sm font-bold text-slate-900">Edit Profile & Account</h2>
             <button type="button" class="close-profile-modal p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><span class="material-symbols-outlined text-[18px]">close</span></button>
@@ -426,8 +427,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- Password Security Modal -->
-      <div id="modal-security" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
+      <div id="modal-security" class="scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2">
             <h2 class="text-sm font-bold text-slate-900">Security & Password</h2>
             <button type="button" class="close-security-modal p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><span class="material-symbols-outlined text-[18px]">close</span></button>
@@ -470,8 +471,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 1. Editor Settings Modal -->
-      <div id="modal-setting-editor" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 max-h-[90vh] overflow-y-auto">
+      <div id="modal-setting-editor" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">format_align_left</span>
@@ -526,8 +527,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 2. Language Settings Modal -->
-      <div id="modal-setting-language" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-language" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">translate</span>
@@ -565,8 +566,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 3. Appearance Settings Modal -->
-      <div id="modal-setting-appearance" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-appearance" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">palette</span>
@@ -607,8 +608,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 4. Notifications Settings Modal -->
-      <div id="modal-setting-notifications" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-notifications" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">notifications_active</span>
@@ -654,8 +655,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 5. Intelligence Settings Modal -->
-      <div id="modal-setting-intelligence" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-intelligence" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">auto_awesome</span>
@@ -702,8 +703,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 6. Privacy & Data Settings Modal -->
-      <div id="modal-setting-privacy" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-privacy" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">security</span>
@@ -741,8 +742,8 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       </div>
 
       <!-- 7. Storage & Sync Settings Modal -->
-      <div id="modal-setting-storage" class="settings-modal fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs hidden p-3 sm:p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
+      <div id="modal-setting-storage" class="settings-modal scriptora-modal-overlay fixed inset-0 z-[100] flex bg-slate-900/50 backdrop-blur-xs hidden">
+        <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-600 text-[20px]">cloud_done</span>
@@ -861,14 +862,18 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      lockBodyScroll();
     }
   }
 
   function closeAllSettingModals() {
+    let closedAny = false;
     document.querySelectorAll('.settings-modal').forEach(m => {
+      if (!m.classList.contains('hidden')) closedAny = true;
       m.classList.add('hidden');
       m.classList.remove('flex');
     });
+    if (closedAny) unlockBodyScroll();
   }
 
   document.querySelectorAll('.setting-item').forEach(item => {
@@ -886,6 +891,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   document.querySelectorAll('.settings-modal, #modal-edit-profile, #modal-security, #action-modal').forEach(modal => {
     modal.onclick = (e) => {
       if (e.target === modal) {
+        if (!modal.classList.contains('hidden')) {
+          unlockBodyScroll();
+        }
         modal.classList.add('hidden');
         modal.classList.remove('flex');
       }
@@ -1140,7 +1148,11 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     if (open) {
       editProfileModal?.classList.remove('hidden');
       editProfileModal?.classList.add('flex');
+      lockBodyScroll();
     } else {
+      if (editProfileModal && !editProfileModal.classList.contains('hidden')) {
+        unlockBodyScroll();
+      }
       editProfileModal?.classList.add('hidden');
       editProfileModal?.classList.remove('flex');
     }
@@ -1332,7 +1344,11 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     if (open) {
       securityModal?.classList.remove('hidden');
       securityModal?.classList.add('flex');
+      lockBodyScroll();
     } else {
+      if (securityModal && !securityModal.classList.contains('hidden')) {
+        unlockBodyScroll();
+      }
       securityModal?.classList.add('hidden');
       securityModal?.classList.remove('flex');
     }
@@ -1419,9 +1435,13 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     }
     actionModal?.classList.remove('hidden');
     actionModal?.classList.add('flex');
+    lockBodyScroll();
   }
 
   function closeActionModal() {
+    if (actionModal && !actionModal.classList.contains('hidden')) {
+      unlockBodyScroll();
+    }
     actionModal?.classList.add('hidden');
     actionModal?.classList.remove('flex');
   }

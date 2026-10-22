@@ -5,6 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportBreakdownPdf } from '../../services/pdfExport.js';
+import { lockBodyScroll, unlockBodyScroll } from '../../utils/popupPosition.js';
 
 // Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const CATEGORY_CONFIG = {
@@ -142,8 +143,8 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
       ${renderBottomNav('production')}
 
       <!-- Add Element Modal -->
-      <div id="modal-add-element" class="hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div id="modal-add-element" class="scriptora-modal-overlay hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex">
+        <div class="scriptora-modal-card bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-[18px] text-blue-600">playlist_add</span>
@@ -1020,12 +1021,23 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
   const openModal = () => {
     updateModalCategoryFields();
     addModal?.classList.remove('hidden');
+    lockBodyScroll();
   };
-  const closeModal = () => addModal?.classList.add('hidden');
+  const closeModal = () => {
+    if (addModal && !addModal.classList.contains('hidden')) {
+      unlockBodyScroll();
+    }
+    addModal?.classList.add('hidden');
+  };
 
   if (btnOpenAdd) btnOpenAdd.onclick = openModal;
   if (btnCloseAdd) btnCloseAdd.onclick = closeModal;
   if (btnCancelAdd) btnCancelAdd.onclick = closeModal;
+  if (addModal) {
+    addModal.onclick = (e) => {
+      if (e.target === addModal) closeModal();
+    };
+  }
 
   const exportBreakdownBtn = document.getElementById('btn-export-breakdown-pdf');
   if (exportBreakdownBtn) {

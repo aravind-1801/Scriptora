@@ -5,7 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportSchedulePdf, exportBreakdownPdf } from '../../services/pdfExport.js';
-import { setupPopupToggle } from '../../utils/popupPosition.js';
+import { setupPopupToggle, lockBodyScroll, unlockBodyScroll } from '../../utils/popupPosition.js';
 
 // Category icon map matching SCRIPTORA design tokens
 const CATEGORY_ICONS = {
@@ -78,8 +78,8 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
         </div>
 
         <!-- Simplified Day Details Modal (Opens when user clicks any calendar day) -->
-        <div id="day-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-3 max-h-[90vh] overflow-hidden">
+        <div id="day-detail-modal" class="scriptora-modal-overlay fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex hidden">
+          <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-xl w-full p-4 sm:p-5 flex flex-col gap-3 overflow-hidden">
             <!-- Modal Header: Day number, date, location & compact contextual menu -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
               <div class="flex items-center gap-2.5 min-w-0">
@@ -122,7 +122,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
             </div>
 
             <!-- Modal Content (Scene reordering & inline details) -->
-            <div id="modal-day-content" class="flex-1 overflow-y-auto flex flex-col gap-2.5 pr-1 text-xs">
+            <div id="modal-day-content" class="scriptora-modal-body flex-1 overflow-y-auto flex flex-col gap-2.5 pr-1 text-xs">
               <!-- Injected dynamically -->
             </div>
 
@@ -136,8 +136,8 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
         </div>
 
         <!-- Add Shoot Date Modal -->
-        <div id="modal-add-day" class="fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-md w-full p-4 sm:p-5 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
+        <div id="modal-add-day" class="scriptora-modal-overlay fixed inset-0 z-[100] bg-slate-900/50 backdrop-blur-xs flex hidden">
+          <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-xl max-w-md w-full p-4 sm:p-5 flex flex-col gap-4 overflow-y-auto">
             <div class="flex items-center justify-between border-b border-slate-100 pb-3">
               <div class="flex items-center gap-2.5">
                 <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -1239,12 +1239,16 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     }
 
     dayModal?.classList.remove('hidden');
+    lockBodyScroll();
   }
 
   // Close Day Modal
   const modalClose = document.getElementById('modal-day-close');
   const modalDone = document.getElementById('modal-day-done');
   const closeDayModal = () => {
+    if (dayModal && !dayModal.classList.contains('hidden')) {
+      unlockBodyScroll();
+    }
     dayModal?.classList.add('hidden');
     currentOpenDayNumber = null;
     editingDayInfo = false;
@@ -1376,9 +1380,13 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (inputPages) inputPages.value = '0.0';
 
     addDayModal.classList.remove('hidden');
+    lockBodyScroll();
   }
 
   function closeAddDayModal() {
+    if (addDayModal && !addDayModal.classList.contains('hidden')) {
+      unlockBodyScroll();
+    }
     addDayModal?.classList.add('hidden');
   }
 
