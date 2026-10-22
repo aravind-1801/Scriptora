@@ -1,5 +1,6 @@
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
+import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
@@ -9,12 +10,21 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
+  const from = fromParam || urlParams.get('from');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${renderHeader('Pre-Production', 'Dialogue Sheets & Actor Sides')}
 
       <main class="flex-1 w-full max-w-2xl mx-auto px-4 pt-16 pb-28 flex flex-col gap-3.5 fade-in">
+        ${renderProdSubNav(
+          'Dialogue & Actor Sides',
+          'theater_comedy',
+          from || '/production',
+          '',
+          null,
+          'Dialogue sheets and actor scene sides.'
+        )}
         
         <!-- Mode Switcher Tabs Card (Segmented Control & Selector beneath it) -->
         <div class="bg-white rounded-3xl border border-slate-200/80 p-3.5 shadow-2xs flex flex-col gap-3">
@@ -57,6 +67,22 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   const tabSides = document.getElementById('tab-mode-sides');
   const filterArea = document.getElementById('filter-controls');
   const contentArea = document.getElementById('dialogue-sides-content');
+
+  // Wire back button in subnav
+  const subnavBackBtn = document.getElementById('prod-subnav-back');
+  if (subnavBackBtn) {
+    subnavBackBtn.onclick = (e) => {
+      e.preventDefault();
+      const fallbackUrl = fromParam || `/production?scriptId=${scriptId}`;
+      if (typeof navigate === 'function') {
+        navigate(fallbackUrl);
+      } else if (window.scriptoraRouter) {
+        window.scriptoraRouter.back(fallbackUrl);
+      } else {
+        window.location.href = fallbackUrl;
+      }
+    };
+  }
 
   // Dialogue Repository for Chronicles of Dust (Draft 4.2)
   const scriptDialogue = [
