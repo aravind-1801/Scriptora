@@ -7,7 +7,8 @@ export default defineConfig(({ command, mode }) => {
     : 'http://localhost:8000';
 
   const isVercel = !!process.env.VERCEL;
-  const base = process.env.BASE_URL || (isVercel ? '/' : (command === 'serve' ? '/' : '/Scriptora/'));
+  let base = process.env.BASE_URL || (isVercel ? '/' : (command === 'serve' ? '/' : '/Scriptora/'));
+  if (!base.endsWith('/')) base += '/';
 
   return {
     base,
