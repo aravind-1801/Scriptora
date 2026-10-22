@@ -4,8 +4,6 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
-import { renderTitleIcon, renderTitleIconBox } from '../components/titleIcon.js';
-
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
   const currentDraft = scripts.find(s => s.isCurrentDraft) || scripts[0];
@@ -19,12 +17,9 @@ export function renderWorkspaceScreen() {
         
         <!-- Header Title & Telemetry -->
         <div class="flex items-center justify-between gap-3 py-1">
-          <div class="flex items-center gap-2.5 min-w-0">
-            ${renderTitleIconBox('file-pen-line')}
-            <div class="flex flex-col min-w-0">
-              <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Workspace</h1>
-              <p class="text-xs text-slate-500 mt-0.5 truncate">Your writing space.</p>
-            </div>
+          <div class="flex flex-col min-w-0">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Workspace</h1>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">Your writing space.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>

@@ -4,7 +4,6 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { openModal, closeModal } from '../utils/popupPosition.js';
-import { renderTitleIcon, renderTitleIconBox } from '../components/titleIcon.js';
 
 export function renderIntelligenceDashboardScreen() {
   const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
@@ -43,7 +42,6 @@ export function renderIntelligenceDashboardScreen() {
             <button id="intelligence-dashboard-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/context" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             </button>
-            ${renderTitleIconBox('chart-no-axes-combined')}
             <div class="flex flex-col min-w-0">
               <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Intelligence</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Understand your screenplay.</p>
