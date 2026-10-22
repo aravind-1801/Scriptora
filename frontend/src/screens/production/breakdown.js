@@ -211,6 +211,43 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
         </div>
       </div>
 
+      <!-- Delete Element Confirmation Modal -->
+      <div id="modal-delete-element" class="scriptora-modal-overlay hidden fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex">
+        <div class="scriptora-modal-card bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px] text-rose-600">delete</span>
+              <h3 class="font-heading font-bold text-sm text-slate-900">Delete Production Element?</h3>
+            </div>
+            <button id="close-delete-modal" class="text-slate-400 hover:text-slate-700 cursor-pointer" aria-label="Close modal">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+          
+          <div class="p-5 flex flex-col gap-3 text-xs">
+            <div class="p-3 bg-rose-50/60 border border-rose-100 rounded-xl flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <span id="delete-modal-name" class="font-heading font-bold text-sm text-rose-950"></span>
+                <span id="delete-modal-category" class="px-2 py-0.5 rounded-md bg-white border border-rose-200 text-rose-800 text-[10px] font-semibold"></span>
+              </div>
+              <p id="delete-modal-scenes" class="text-[11px] text-rose-800/80 font-mono"></p>
+            </div>
+
+            <p class="text-slate-600 text-xs leading-relaxed">
+              Are you sure you want to delete this element from the production breakdown? This action will remove tracking and review records for this element. Screenplay text and scene content will remain completely intact.
+            </p>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button type="button" id="btn-cancel-delete" class="px-3.5 py-1.5 rounded-xl text-slate-600 hover:bg-slate-100 font-medium cursor-pointer transition-colors">Cancel</button>
+              <button type="button" id="btn-confirm-delete" class="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold shadow-2xs cursor-pointer transition-colors flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[15px]">delete</span>
+                <span>Delete Element</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   `;
 }
@@ -692,6 +729,10 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
                   <span class="material-symbols-outlined text-[16px]">block</span>
                 </button>
               ` : ''}
+
+              <button class="btn-delete-element p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" data-id="${item.id}" title="Delete element" aria-label="Delete ${item.name}">
+                <span class="material-symbols-outlined text-[16px]">delete</span>
+              </button>
             </div>
           </div>
 
@@ -799,13 +840,12 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
     });
 
     container.querySelectorAll('.btn-delete-element').forEach(btn => {
-      btn.onclick = async () => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
         const id = btn.getAttribute('data-id');
-        if (confirm('Are you sure you want to remove or archive this element from the breakdown?')) {
-          await api.deleteBreakdownItem(scriptId, id);
-          showToast('Element removed from breakdown');
-          activeEditingItemId = null;
-          renderList();
+        const item = list.find(i => i.id === id);
+        if (item) {
+          handleOpenDeleteModal(item);
         }
       };
     });
@@ -1032,6 +1072,68 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
   if (addModal) {
     addModal.onclick = (e) => {
       if (e.target === addModal) handleCloseAddModal();
+    };
+  }
+
+  // Delete Element Modal Handling
+  const deleteModal = document.getElementById('modal-delete-element');
+  const btnCloseDelete = document.getElementById('close-delete-modal');
+  const btnCancelDelete = document.getElementById('btn-cancel-delete');
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+  let pendingDeleteElement = null;
+
+  const handleOpenDeleteModal = (item) => {
+    pendingDeleteElement = item;
+    const nameEl = document.getElementById('delete-modal-name');
+    const catEl = document.getElementById('delete-modal-category');
+    const scenesEl = document.getElementById('delete-modal-scenes');
+
+    if (nameEl) nameEl.textContent = item.name;
+    if (catEl) catEl.textContent = item.category;
+    if (scenesEl) {
+      const scenesArr = Array.isArray(item.scenes) && item.scenes.length > 0 ? item.scenes : [item.sceneNumber];
+      scenesEl.textContent = `Associated with: ${scenesArr.map(s => `Scene ${s}`).join(', ')}`;
+    }
+
+    openModal(deleteModal);
+  };
+
+  const handleCloseDeleteModal = () => {
+    pendingDeleteElement = null;
+    closeModal(deleteModal);
+  };
+
+  if (btnCloseDelete) btnCloseDelete.onclick = handleCloseDeleteModal;
+  if (btnCancelDelete) btnCancelDelete.onclick = handleCloseDeleteModal;
+  if (deleteModal) {
+    deleteModal.onclick = (e) => {
+      if (e.target === deleteModal) handleCloseDeleteModal();
+    };
+  }
+
+  if (btnConfirmDelete) {
+    btnConfirmDelete.onclick = async () => {
+      if (!pendingDeleteElement) return;
+      const item = pendingDeleteElement;
+      btnConfirmDelete.disabled = true;
+      btnConfirmDelete.classList.add('opacity-75', 'cursor-not-allowed');
+
+      try {
+        const res = await api.deleteBreakdownItem(scriptId, item.id);
+        if (res && (res.success || res.removedId)) {
+          showToast(`Deleted "${item.name}" from breakdown`);
+          handleCloseDeleteModal();
+          activeEditingItemId = null;
+          await renderList();
+        } else {
+          showToast(res?.message || 'Failed to delete element');
+        }
+      } catch (err) {
+        showToast('Error deleting element: ' + (err.message || 'Network error'));
+      } finally {
+        btnConfirmDelete.disabled = false;
+        btnConfirmDelete.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
     };
   }
 

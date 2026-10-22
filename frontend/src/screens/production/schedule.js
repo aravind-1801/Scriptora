@@ -454,59 +454,15 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
           </div>
         ` : ''}
 
-        <!-- Collapsible Production Constraints (Progressive Disclosure) -->
-        <div class="border border-slate-200/80 rounded-xl overflow-hidden bg-slate-50/50">
-          <button id="btn-toggle-day-constraints" class="w-full px-3 py-2 flex items-center justify-between text-left text-xs text-slate-700 hover:bg-slate-100/60 transition-colors cursor-pointer">
-            <span class="font-medium flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-[15px] text-slate-400">info</span>
-              <span>Production Constraints (${day.estHours} hrs)</span>
-            </span>
-            <span id="constraints-chevron" class="material-symbols-outlined text-[16px] text-slate-400 transition-transform">expand_more</span>
-          </button>
-          <div id="day-constraints-content" class="px-3 pb-2.5 pt-1 text-[11px] text-slate-600 border-t border-slate-200/60 hidden flex flex-col gap-1.5">
-            ${editingDayConstraints ? `
-              <div class="flex flex-col gap-2 pt-1">
-                <div>
-                  <label class="block text-slate-600 font-medium mb-0.5">Location</label>
-                  <input type="text" id="input-constraints-loc" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.location || ''}" />
-                </div>
-                <div>
-                  <label class="block text-slate-600 font-medium mb-0.5">Estimated Daily Hours</label>
-                  <input type="number" id="input-constraints-hours" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.estHours || 11}" step="0.5" />
-                </div>
-                <div>
-                  <label class="block text-slate-600 font-medium mb-0.5">Turnaround Rule / Notes</label>
-                  <input type="text" id="input-constraints-turnaround" class="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.turnaroundNote || 'Standard 12-hour crew rest turnaround active'}" />
-                </div>
-                <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200/60">
-                  <button id="btn-cancel-constraints" class="px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer">Cancel</button>
-                  <button id="btn-save-constraints" class="px-2.5 py-1 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs cursor-pointer">Save Constraints</button>
-                </div>
-              </div>
-            ` : `
-              <div class="flex items-center justify-between">
-                <div><span class="text-slate-400 font-medium">Location:</span> ${day.location}</div>
-                <button id="btn-edit-constraints" class="text-blue-600 hover:underline font-semibold text-[11px] flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[13px]">edit</span>
-                  <span>Edit</span>
-                </button>
-              </div>
-              <div><span class="text-slate-400 font-medium">Estimated Daily Hours:</span> ${day.estHours} hrs (including meal break)</div>
-              <div><span class="text-slate-400 font-medium">Rest Turnaround:</span> ${day.turnaroundNote || 'Standard 12-hour crew rest turnaround active'}</div>
-            `}
-          </div>
-        </div>
-
         <!-- Assigned Scenes Header with Assign Button -->
-        <div class="flex items-center justify-between pt-1">
+        <div class="flex items-center justify-between pt-0.5">
           <div class="flex items-center gap-2">
             <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
-            <button id="btn-toggle-assign-scene" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-[10px] font-semibold transition-colors cursor-pointer" title="Assign scene to this shoot day">
-              <span class="material-symbols-outlined text-[12px]">add</span>
+            <button id="btn-toggle-assign-scene" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-[11px] font-semibold transition-colors cursor-pointer" title="Assign scene to this shoot day">
+              <span class="material-symbols-outlined text-[13px]">add</span>
               <span>Assign Scene</span>
             </button>
           </div>
-          <span class="text-[11px] text-slate-400 font-mono">${day.totalPages} pages total</span>
         </div>
 
         <!-- Inline Scene Assign Selector -->
