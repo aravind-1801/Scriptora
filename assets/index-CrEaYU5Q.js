@@ -324,7 +324,7 @@
         <!-- Header Title & Telemetry -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Workspace</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Workspace</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Your writing space.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
@@ -1558,7 +1558,7 @@ ${Xe?Xe+". ":""}${Te}
         <!-- Section Header -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Select Screenplay</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
@@ -1642,7 +1642,7 @@ ${Xe?Xe+". ":""}${Te}
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             </button>
             <div class="flex flex-col min-w-0">
-              <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Context Calibration</h1>
+              <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Context Calibration</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Tell us about your screenplay to calibrate intelligence metrics.</p>
             </div>
           </div>
@@ -1767,7 +1767,7 @@ ${Xe?Xe+". ":""}${Te}
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             </button>
             <div class="flex flex-col min-w-0">
-              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Intelligence</h1>
+              <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Intelligence</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Understand your screenplay.</p>
             </div>
           </div>
@@ -1948,7 +1948,7 @@ ${Xe?Xe+". ":""}${Te}
               <span class="material-symbols-outlined text-[18px]">arrow_back</span>
             </button>
             <div class="flex flex-col min-w-0">
-              <h1 class="font-heading text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Analyse Individually</h1>
+              <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Analyse Individually</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Choose an area to explore in your screenplay.</p>
             </div>
           </div>
@@ -2890,7 +2890,7 @@ ${Xe?Xe+". ":""}${Te}
         <!-- Profile Header -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Profile</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Profile</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Account & preferences.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80 shrink-0">
@@ -3599,7 +3599,7 @@ ${Xe?Xe+". ":""}${Te}
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
           </button>
           <div class="flex flex-col min-w-0">
-            <h1 class="font-heading text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Collaborators</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Collaborators</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Work together on your screenplay with controlled access.</p>
           </div>
         </div>
@@ -3804,7 +3804,7 @@ ${Xe?Xe+". ":""}${Te}
                 <span class="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
               <div class="flex flex-col min-w-0">
-                <h1 class="font-heading font-bold text-xl sm:text-2xl text-slate-900 tracking-tight truncate">Notifications</h1>
+                <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Notifications</h1>
                 <p class="text-xs text-slate-500 mt-0.5 truncate">Updates, collaboration and system alerts.</p>
               </div>
             </div>
@@ -3932,7 +3932,7 @@ ${Xe?Xe+". ":""}${Te}
         <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex flex-col min-w-0">
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Production Tools</h1>
+            <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Production Tools</h1>
             <p class="text-xs text-slate-500 mt-0.5 truncate">Your filmmaking workspace.</p>
           </div>
         </div>
