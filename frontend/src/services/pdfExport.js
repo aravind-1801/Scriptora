@@ -624,91 +624,150 @@ export function exportSchedulePdf(scheduleDays = [], scenes = [], scriptInfo = {
 }
 
 // =============================================================================
-// 6. STORYBOARD STUDIO PDF EXPORT
+// 6. STORYBOARD STUDIO MASTER PDF EXPORT
 // =============================================================================
-export function exportStoryboardPdf(frames = [], scriptInfo = {}) {
-  const title = scriptInfo.title || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || 'Draft 4.2';
-  const pages = [];
+export function exportStoryboardPdf(storyboardOrFrames = [], scriptInfo = {}) {
+  const isStoryboardObj = storyboardOrFrames && typeof storyboardOrFrames === 'object' && !Array.isArray(storyboardOrFrames);
+  const storyboard = isStoryboardObj ? storyboardOrFrames : null;
+  const rawShots = isStoryboardObj ? (storyboard.shots || []) : (Array.isArray(storyboardOrFrames) ? storyboardOrFrames : []);
 
-  const defaultFrames = [
+  const title = scriptInfo.title || (storyboard?.screenplayTitle) || 'Chronicles of Dust';
+  const draft = scriptInfo.draft || scriptInfo.sourceVersion || (storyboard?.sourceVersion) || 'Draft 4.2';
+  const sceneHeading = scriptInfo.heading || (storyboard?.sceneHeading) || (rawShots[0]?.sceneHeading) || 'SCENE 1 - EXT. MOJAVE OUTPOST GATE 4 - DAY';
+  const sceneNum = storyboard?.sceneNumber || rawShots[0]?.sceneNumber || rawShots[0]?.sceneNum || 1;
+
+  const defaultShots = [
     {
-      sceneNum: 1,
-      shotNum: '1A',
+      shotNumber: '1A',
       title: 'Perimeter Outpost Gate',
-      lens: 'Wide Establishing Drone (24mm, 2.39:1)',
-      intExt: 'EXT',
-      dayNight: 'DAY',
-      description: "High altitude drone descending across dust devils toward Kevin's arrival."
+      shotSize: 'Wide Shot',
+      cameraAngle: 'High Angle',
+      focalLength: '24mm Wide',
+      aspectRatio: '2.39:1',
+      lightingMood: 'Daylight Dust',
+      description: "High altitude drone descending across dust devils toward Kevin's arrival at the arid customs gate.",
+      approvalStatus: 'approved',
+      directorNotes: "Capture sunrise glint off the guard gate perimeter wires."
     },
     {
-      sceneNum: 2,
-      shotNum: '2C',
-      title: 'Customs Shed Hologram',
-      lens: 'Medium Two-Shot (50mm, 2.39:1)',
-      intExt: 'INT',
-      dayNight: 'DAY',
-      description: 'Fluorescent tube flicker rim lighting Kevin and Meera over telemetry anomaly.'
+      shotNumber: '1B',
+      title: 'Gate Scanner Clearance Standoff',
+      shotSize: 'Medium Two-Shot',
+      cameraAngle: 'Eye Level',
+      focalLength: '50mm Prime',
+      aspectRatio: '2.39:1',
+      lightingMood: 'Harsh Fluorescent Rim',
+      description: 'Kevin presents his ID badge to Marcus over the buzzing clearance terminal.',
+      approvalStatus: 'approved',
+      directorNotes: "Focus pull from scanner terminal to Kevin's tense expression."
     },
     {
-      sceneNum: 18,
-      shotNum: '18D',
-      title: 'High Pressure Bypass Tank',
-      lens: 'Close Tracking Dolly (35mm Anamorphic)',
-      intExt: 'INT',
-      dayNight: 'NIGHT',
-      description: 'Wrench slips in Kevin hand under spurting brine vapor with pulsing red siren strobe.'
+      shotNumber: '1C',
+      title: 'Terminal Diagnostic Anomaly',
+      shotSize: 'Close-Up',
+      cameraAngle: 'Low Angle',
+      focalLength: '85mm Portrait',
+      aspectRatio: '2.39:1',
+      lightingMood: 'Cyan Strobe',
+      description: 'Close-up insert of the flickering scanner console displaying pressure alert warning in red neon.',
+      approvalStatus: 'proposed',
+      directorNotes: 'Practical screen insert with pulsing alarm strobe.'
     }
   ];
 
-  const actualFrames = (frames && frames.length > 0) ? frames : defaultFrames;
-  const pVectors = [];
-  const pTexts = [];
+  const actualShots = (rawShots && rawShots.length > 0) ? rawShots : defaultShots;
+  const shotsPerPage = 3;
+  const totalPages = Math.ceil(actualShots.length / shotsPerPage) || 1;
+  const pages = [];
 
-  // Masthead
-  pVectors.push({ type: 'rect', x: 36, y: 735, w: 540, h: 32, fill: [0.08, 0.12, 0.20] });
-  pTexts.push({ text: 'SCRIPTORA -- STORYBOARD STUDIO SHOT COMPOSITION', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
-  pTexts.push({ text: `${title.toUpperCase()} (${draft}) -- VISUAL SHOT BOARDS`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
-  pTexts.push({ text: 'PAGE 1 OF 1', x: 515, y: 747, font: 'F2', size: 9, color: [1.0, 1.0, 1.0] });
+  for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+    const pVectors = [];
+    const pTexts = [];
+    const pageShots = actualShots.slice(pageIdx * shotsPerPage, (pageIdx + 1) * shotsPerPage);
 
-  let cardY = 575;
-  for (const f of actualFrames) {
-    // Shot Frame Outer Card
-    pVectors.push({ type: 'rect', x: 36, y: cardY, w: 540, h: 140, fill: [1.0, 1.0, 1.0], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
+    // Masthead Header Bar
+    pVectors.push({ type: 'rect', x: 36, y: 735, w: 540, h: 32, fill: [0.08, 0.12, 0.20] });
+    pTexts.push({ text: 'SCRIPTORA -- STORYBOARD STUDIO SHOT COMPOSITION', x: 46, y: 752, font: 'F2', size: 10, color: [1.0, 1.0, 1.0] });
+    pTexts.push({ text: `${title.toUpperCase()} (${draft}) -- ${escapePdfText(sceneHeading).toUpperCase()}`, x: 46, y: 741, font: 'F1', size: 8, color: [0.7, 0.8, 1.0] });
+    pTexts.push({ text: `PAGE ${pageIdx + 1} OF ${totalPages}`, x: 505, y: 747, font: 'F2', size: 9, color: [1.0, 1.0, 1.0] });
 
-    // Simulated Concept Framing Box (2.39:1 widescreen simulation)
-    pVectors.push({ type: 'rect', x: 46, y: cardY + 15, w: 200, h: 110, fill: [0.08, 0.10, 0.15], stroke: [0.3, 0.35, 0.4], lineWidth: 1.0 });
-    // Camera crosshairs
-    pVectors.push({ type: 'line', x1: 141, y1: cardY + 70, x2: 151, y2: cardY + 70, stroke: [0.5, 0.6, 0.7], lineWidth: 0.6 });
-    pVectors.push({ type: 'line', x1: 146, y1: cardY + 65, x2: 146, y2: cardY + 75, stroke: [0.5, 0.6, 0.7], lineWidth: 0.6 });
+    let cardY = 575;
+    for (const f of pageShots) {
+      const shotNumStr = f.shotNumber || f.shotNum || `${sceneNum}A`;
+      const shotTitle = f.title || `Shot ${shotNumStr}`;
+      const lensSetup = f.focalLength || f.lens || '50mm Prime';
+      const framingRatio = f.aspectRatio || '2.39:1';
+      const angleSize = `${f.shotSize || 'Medium Shot'} / ${f.cameraAngle || 'Eye Level'}`;
+      const appStatus = (f.approvalStatus || 'Draft').toUpperCase();
+      const statusColor = appStatus === 'APPROVED' ? [0.1, 0.6, 0.2] : (appStatus === 'PROPOSED' ? [0.8, 0.5, 0.1] : [0.4, 0.45, 0.5]);
 
-    // Badge inside camera frame
-    pTexts.push({ text: `${f.intExt || 'EXT'}. ${f.dayNight || 'DAY'}`, x: 52, y: cardY + 23, font: 'F3', size: 7.5, color: [0.8, 0.8, 0.8] });
+      // Outer Card Box
+      pVectors.push({ type: 'rect', x: 36, y: cardY, w: 540, h: 140, fill: [1.0, 1.0, 1.0], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
 
-    // Shot Metadata Details on Right
-    pTexts.push({ text: `SCENE ${f.sceneNum || 1} -- SHOT ${f.shotNum || '1A'}`, x: 260, y: cardY + 110, font: 'F2', size: 10, color: [0.1, 0.3, 0.8] });
-    pTexts.push({ text: f.title || 'Shot Concept', x: 260, y: cardY + 95, font: 'F2', size: 11, color: [0.1, 0.1, 0.1] });
-    pTexts.push({ text: `Camera Setup: ${f.lens || '50mm Prime (2.39:1)'}`, x: 260, y: cardY + 78, font: 'F3', size: 8.5, color: [0.4, 0.45, 0.5] });
-    
-    // Description paragraph
-    const descLines = wrapPdfText(f.description || '', 48);
-    let descY = cardY + 60;
-    for (const dLine of descLines) {
-      pTexts.push({ text: dLine, x: 260, y: descY, font: 'F1', size: 8, color: [0.2, 0.25, 0.3] });
-      descY -= 12;
+      // Visual Viewport Frame Simulation (2.39:1 or 16:9 widescreen canvas)
+      pVectors.push({ type: 'rect', x: 46, y: cardY + 15, w: 200, h: 110, fill: [0.08, 0.10, 0.15], stroke: [0.25, 0.30, 0.38], lineWidth: 1.0 });
+
+      // Viewport Rule-of-Thirds Grid Markers
+      pVectors.push({ type: 'line', x1: 112, y1: cardY + 15, x2: 112, y2: cardY + 125, stroke: [0.2, 0.25, 0.32], lineWidth: 0.4 });
+      pVectors.push({ type: 'line', x1: 178, y1: cardY + 15, x2: 178, y2: cardY + 125, stroke: [0.2, 0.25, 0.32], lineWidth: 0.4 });
+      pVectors.push({ type: 'line', x1: 46, y1: cardY + 52, x2: 246, y2: cardY + 52, stroke: [0.2, 0.25, 0.32], lineWidth: 0.4 });
+      pVectors.push({ type: 'line', x1: 46, y1: cardY + 88, x2: 246, y2: cardY + 88, stroke: [0.2, 0.25, 0.32], lineWidth: 0.4 });
+
+      // Center Crosshair
+      pVectors.push({ type: 'line', x1: 141, y1: cardY + 70, x2: 151, y2: cardY + 70, stroke: [0.4, 0.6, 0.8], lineWidth: 0.8 });
+      pVectors.push({ type: 'line', x1: 146, y1: cardY + 65, x2: 146, y2: cardY + 75, stroke: [0.4, 0.6, 0.8], lineWidth: 0.8 });
+
+      // Corner Framing Tick Marks
+      pVectors.push({ type: 'line', x1: 52, y1: cardY + 119, x2: 58, y2: cardY + 119, stroke: [0.5, 0.7, 0.9], lineWidth: 0.8 });
+      pVectors.push({ type: 'line', x1: 52, y1: cardY + 119, x2: 52, y2: cardY + 113, stroke: [0.5, 0.7, 0.9], lineWidth: 0.8 });
+      pVectors.push({ type: 'line', x1: 240, y1: cardY + 21, x2: 234, y2: cardY + 21, stroke: [0.5, 0.7, 0.9], lineWidth: 0.8 });
+      pVectors.push({ type: 'line', x1: 240, y1: cardY + 21, x2: 240, y2: cardY + 27, stroke: [0.5, 0.7, 0.9], lineWidth: 0.8 });
+
+      // Frame Badges inside canvas
+      pTexts.push({ text: `REC * SHOT ${shotNumStr}`, x: 52, y: cardY + 110, font: 'F4', size: 7.5, color: [1.0, 1.0, 1.0] });
+      pTexts.push({ text: `${framingRatio} * ${lensSetup}`, x: 52, y: cardY + 23, font: 'F3', size: 7, color: [0.7, 0.8, 0.9] });
+
+      // Right Side Shot Details
+      pTexts.push({ text: `SHOT ${shotNumStr} -- SCENE ${sceneNum}`, x: 260, y: cardY + 115, font: 'F2', size: 9.5, color: [0.1, 0.3, 0.8] });
+
+      // Status Pill on top-right of card
+      pVectors.push({ type: 'rect', x: 480, y: cardY + 112, w: 86, h: 16, fill: [0.95, 0.96, 0.98], stroke: statusColor, lineWidth: 0.7 });
+      pTexts.push({ text: appStatus, x: 486, y: cardY + 117, font: 'F2', size: 7, color: statusColor });
+
+      // Shot Title
+      pTexts.push({ text: shotTitle.slice(0, 38), x: 260, y: cardY + 100, font: 'F2', size: 10.5, color: [0.08, 0.1, 0.12] });
+
+      // Camera & Lens Details
+      pTexts.push({ text: `Camera: ${angleSize} * ${lensSetup} (${framingRatio})`, x: 260, y: cardY + 86, font: 'F1', size: 8, color: [0.35, 0.4, 0.45] });
+
+      // Description
+      const descLines = wrapPdfText(f.description || '', 48);
+      let descY = cardY + 72;
+      for (let d = 0; d < Math.min(descLines.length, 3); d++) {
+        pTexts.push({ text: descLines[d], x: 260, y: descY, font: 'F1', size: 8, color: [0.18, 0.22, 0.26] });
+        descY -= 11;
+      }
+
+      // Director's Notes or Continuity
+      const dirNotes = f.directorNotes || f.continuity?.lightingContinuity || f.continuity?.eyeline || '';
+      if (dirNotes) {
+        pTexts.push({ text: `Note: ${dirNotes.slice(0, 52)}`, x: 260, y: cardY + 25, font: 'F5', size: 7.5, color: [0.45, 0.48, 0.52] });
+      }
+
+      cardY -= 150;
     }
 
-    cardY -= 150;
+    // Page Footer
+    pVectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
+    pTexts.push({ text: 'SCRIPTORA STORYBOARD STUDIO -- OFFICIAL CAMERA & CONCEPT COMPOSITION', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
+    pTexts.push({ text: `Page ${pageIdx + 1} of ${totalPages}`, x: 510, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
+
+    pages.push({ vectors: pVectors, texts: pTexts });
   }
 
-  // Footer
-  pVectors.push({ type: 'line', x1: 36, y1: 52, x2: 576, y2: 52, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-  pTexts.push({ text: 'SCRIPTORA STORYBOARD STUDIO -- CAMERA & CONCEPT ARCHITECTURE', x: 36, y: 40, font: 'F2', size: 7.5, color: [0.4, 0.45, 0.5] });
-  pTexts.push({ text: 'Page 1 of 1', x: 525, y: 40, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
-
-  pages.push({ vectors: pVectors, texts: pTexts });
   const blob = compilePdfDocument(pages);
-  const filename = `Storyboard_${title.replace(/\s+/g, '_')}.pdf`;
+  const cleanSceneHeading = (sceneHeading || 'Scene1').replace(/[^a-zA-Z0-9]+/g, '_').slice(0, 30);
+  const filename = `Storyboard_${title.replace(/\s+/g, '_')}_${cleanSceneHeading}.pdf`;
   downloadPdfBlob(blob, filename);
   return blob;
 }

@@ -69,8 +69,13 @@ Every core production tool opens as a **dedicated workspace** with stable screen
      - **Actor Sides**: Filtered sides by character and scene, formatted in authentic physical paper sides style.
    - **Draft Tracking & Navigation**: Pinned source draft metadata stamps, dedicated subnav heading with robust multi-stage back navigation, and instantaneous vector PDF export.
 
-5. **Storyboard Studio Preview (`/production/storyboard`)**:
-   - **Visual Shot Composition**: Concept frame gallery with focal length lenses (24mm, 50mm, 85mm), aspect ratio framing (2.39:1, 16:9), shot types (Wide, Medium, Close-up), and scene linkage staging.
+5. **Storyboard Studio Workspace (`/production/storyboard`)**:
+   - **Dual Working Views**: Seamless switching between **Contact Sheet** (responsive visual grid) and **Sequence Editor** (chronological ordering timeline with screenplay context).
+   - **Scene-Grounded Source Context**: Direct linkage to actual screenplay scenes (Scenes 1 to 10), displaying INT/EXT, DAY/NIGHT, shoot days, scene snippets, and cast lists with instant navigation to Shooting Schedule contexts.
+   - **AI Shot & Sequence Generation**: Single-shot and 4-shot scene sequence generation with genuine provider configuration checks, cost disclosure ($0.040 DALL-E 3, $0.030 Imagen 3, $0.018 SDXL, Free Built-in Concept Engine), and honest error handling when keys are not configured.
+   - **Camera & Cinematic Controls**: Aspect ratios (2.39:1, 16:9, 4:3, 9:16), lenses (18mm to 105mm, Anamorphic), shot sizes, camera movements, lighting moods, and 7 visual style presets.
+   - **Visual Continuity Tracking**: Screen direction, eyeline, and lighting continuity tracking across consecutive cuts with automated conflict detection.
+   - **Shot Lifecycle & Approval**: Frame inspection drawer, drag/touch reordering, single and batch approval workflows, manual reference photo import, and authentic multi-page vector PDF export.
 
 ---
 

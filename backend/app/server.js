@@ -7,6 +7,7 @@ import * as screenplayService from './services/screenplayService.js';
 import * as collaborationService from './services/collaborationService.js';
 import * as intelligenceService from './services/intelligenceService.js';
 import * as productionService from './services/productionService.js';
+import * as storyboardService from './services/storyboardService.js';
 
 const PORT = process.env.PORT || 8000;
 
@@ -523,6 +524,110 @@ export const server = http.createServer(async (req, res) => {
       const body = await readBody(req);
       const ws = productionService.restoreProductionSnapshot(prodRestoreMatch[1], body.version);
       return sendJson(res, 200, { workspace: ws });
+    }
+
+    // 17. STORYBOARD STUDIO ENDPOINTS
+    if (pathname === '/production/ai/providers' && method === 'GET') {
+      const providers = storyboardService.getAiProviders();
+      return sendJson(res, 200, { providers });
+    }
+
+    const prodSbListMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboards$/);
+    if (prodSbListMatch && method === 'GET') {
+      const storyboards = storyboardService.getStoryboards(prodSbListMatch[1]);
+      return sendJson(res, 200, { storyboards });
+    }
+
+    const prodSbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard$/);
+    if (prodSbMatch) {
+      const scriptId = prodSbMatch[1];
+      if (method === 'GET') {
+        const sceneId = url.searchParams.get('sceneId') || 'scene-1';
+        const storyboard = storyboardService.getStoryboardByScene(scriptId, sceneId);
+        return sendJson(res, 200, { storyboard });
+      }
+      if (method === 'POST') {
+        const body = await readBody(req);
+        const storyboard = storyboardService.saveStoryboard(scriptId, body);
+        return sendJson(res, 200, { storyboard });
+      }
+    }
+
+    const prodSbShotsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/shots$/);
+    if (prodSbShotsMatch && method === 'POST') {
+      const scriptId = prodSbShotsMatch[1];
+      const sceneId = prodSbShotsMatch[2];
+      const body = await readBody(req);
+      const result = storyboardService.addShot(scriptId, sceneId, body);
+      return sendJson(res, 201, result);
+    }
+
+    const prodSbShotDetailMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/shots\/([a-zA-Z0-9_-]+)$/);
+    if (prodSbShotDetailMatch) {
+      const scriptId = prodSbShotDetailMatch[1];
+      const sceneId = prodSbShotDetailMatch[2];
+      const shotId = prodSbShotDetailMatch[3];
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const result = storyboardService.updateShot(scriptId, sceneId, shotId, body);
+        return sendJson(res, 200, result);
+      }
+      if (method === 'DELETE') {
+        const result = storyboardService.deleteShot(scriptId, sceneId, shotId);
+        return sendJson(res, 200, result);
+      }
+    }
+
+    const prodSbReorderMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/reorder$/);
+    if (prodSbReorderMatch && method === 'POST') {
+      const scriptId = prodSbReorderMatch[1];
+      const sceneId = prodSbReorderMatch[2];
+      const body = await readBody(req);
+      const result = storyboardService.reorderShots(scriptId, sceneId, body.shotIds);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbApproveMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/shots\/([a-zA-Z0-9_-]+)\/approve$/);
+    if (prodSbApproveMatch && method === 'POST') {
+      const scriptId = prodSbApproveMatch[1];
+      const sceneId = prodSbApproveMatch[2];
+      const shotId = prodSbApproveMatch[3];
+      const body = await readBody(req);
+      const result = storyboardService.approveShot(scriptId, sceneId, shotId, body.status, body.notes);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbBatchApproveMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/batch-approve$/);
+    if (prodSbBatchApproveMatch && method === 'POST') {
+      const scriptId = prodSbBatchApproveMatch[1];
+      const sceneId = prodSbBatchApproveMatch[2];
+      const body = await readBody(req);
+      const result = storyboardService.batchApproveShots(scriptId, sceneId, body.shotIds, body.status, body.notes);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbGenShotMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-shot$/);
+    if (prodSbGenShotMatch && method === 'POST') {
+      const scriptId = prodSbGenShotMatch[1];
+      const body = await readBody(req);
+      try {
+        const result = await storyboardService.generateShotImage(body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message, provider: body.provider });
+      }
+    }
+
+    const prodSbGenSeqMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-sequence$/);
+    if (prodSbGenSeqMatch && method === 'POST') {
+      const scriptId = prodSbGenSeqMatch[1];
+      const body = await readBody(req);
+      try {
+        const result = await storyboardService.generateSceneSequence(scriptId, body.sceneId, body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message, provider: body.provider });
+      }
     }
 
     // 404

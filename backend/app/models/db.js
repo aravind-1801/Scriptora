@@ -1312,6 +1312,7 @@ export const db = {
       targetRoute: "/production/directory",
       targetEntity: "res-1"
     }
-  ]
+  ],
+  storyboards: []
 };
 

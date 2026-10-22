@@ -71,6 +71,79 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Google Auth Login:', googleLogin.status, googleLogin.body.user?.email === 'maya.lin@scriptora.studio' && googleLogin.body.user?.avatarUrl?.length > 0 ? 'PASS' : 'FAIL');
 
+    // 8. Storyboard AI Providers List
+    const providers = await request('/api/production/ai/providers');
+    console.log('✓ Storyboard AI Providers:', providers.status, Array.isArray(providers.body.providers) && providers.body.providers.length >= 4 ? 'PASS' : 'FAIL');
+
+    // 9. Fetch Storyboard for Scene 1
+    const sb1 = await request('/api/production/chronicles-of-dust/storyboard?sceneId=scene-1');
+    console.log('✓ Get Storyboard Scene 1:', sb1.status, sb1.body.storyboard?.shots?.length >= 3 ? 'PASS' : 'FAIL');
+
+    // 10. Add Shot to Scene 1
+    const addShot = await request('/api/production/chronicles-of-dust/storyboard/scene-1/shots', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        title: 'Desert Gate Approach',
+        description: 'Low angle shot of Kevin walking toward entrance.',
+        shotSize: 'Low Angle Tracking',
+        focalLength: '35mm'
+      }
+    });
+    console.log('✓ Add Storyboard Shot:', addShot.status, addShot.body.shot?.title === 'Desert Gate Approach' ? 'PASS' : 'FAIL');
+    const newShotId = addShot.body.shot?.id;
+
+    // 11. Approve Shot
+    if (newShotId) {
+      const approve = await request(`/api/production/chronicles-of-dust/storyboard/scene-1/shots/${newShotId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: { status: 'approved', notes: 'Approved for production sides.' }
+      });
+      console.log('✓ Approve Storyboard Shot:', approve.status, approve.body.shot?.approvalStatus === 'approved' ? 'PASS' : 'FAIL');
+    }
+
+    // 12. Procedural Concept Generation
+    const genShot = await request('/api/production/chronicles-of-dust/storyboard/generate-shot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        provider: 'scriptora-concept',
+        prompt: 'Dusty desert highway outpost',
+        shotSize: 'Wide Shot',
+        cameraAngle: 'High Angle',
+        focalLength: '24mm Wide',
+        lightingMood: 'Daylight',
+        aspectRatio: '2.39:1',
+        visualStyle: 'Cinematic Concept Art',
+        sceneHeading: 'EXT. MOJAVE OUTPOST GATE 4 - DAY'
+      }
+    });
+    console.log('✓ Procedural Concept Shot Generation:', genShot.status, genShot.body.imageUrl?.startsWith('data:image/svg+xml') ? 'PASS' : 'FAIL');
+
+    // 13. Unconfigured Provider Honest Error Handling
+    const unconfGen = await request('/api/production/chronicles-of-dust/storyboard/generate-shot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        provider: 'openai-dalle3',
+        prompt: 'Futuristic city'
+      }
+    });
+    console.log('✓ Unconfigured Provider Honest Error Handling:', unconfGen.status === 400 && unconfGen.body.error?.includes('not configured') ? 'PASS' : (process.env.OPENAI_API_KEY ? 'PASS (Configured)' : 'FAIL'));
+
+    // 14. AI Scene Sequence Generation
+    const genSeq = await request('/api/production/chronicles-of-dust/storyboard/generate-sequence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        sceneId: 'scene-1',
+        visualStyle: 'Cinematic Concept Art',
+        aspectRatio: '2.39:1'
+      }
+    });
+    console.log('✓ AI Scene Sequence Generation:', genSeq.status, genSeq.body.proposedShots?.length === 4 ? 'PASS' : 'FAIL');
+
     console.log('\n[TEST] All backend integration tests PASSED successfully!');
     server.close();
     process.exit(0);
