@@ -2620,17 +2620,16 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // TAB key handling
+  // TAB key handling: Complete screenplay-formatting cycle
+  // 1. Scene Heading -> Character
+  // 2. Character -> Dialogue
+  // 3. Dialogue -> Transition
+  // 4. Transition -> Scene Heading (repeating cycle; Action -> Character preserved)
   if (e.key === 'Tab') {
     e.preventDefault();
-    if (type === 'action') {
-      convertBlockType(blockEl, 'character');
-      return;
-    }
-    if (type === 'character') {
-      convertBlockType(blockEl, 'dialogue');
-      return;
-    }
+    hideAutocomplete();
+    cycleScreenplayBlockType(blockEl, e.shiftKey);
+    return;
   }
 
   // ENTER key handling: Contextual screenplay transition flow
@@ -2827,6 +2826,60 @@ function createNewSceneAfter(sceneId) {
   }, 30);
 }
 
+// Complete Screenplay-formatting Tab Cycle:
+// 1. Scene Heading -> Character
+// 2. Character -> Dialogue
+// 3. Dialogue -> Transition
+// 4. Transition -> Scene Heading (and repeat)
+// Preserves Action -> Character from existing flow
+export function cycleScreenplayBlockType(blockEl, reverse = false) {
+  if (!blockEl) return false;
+  const type = blockEl.getAttribute('data-block-type') || 'action';
+
+  let nextType;
+  if (reverse) {
+    if (type === 'scene') {
+      nextType = 'transition';
+    } else if (type === 'transition') {
+      nextType = 'dialogue';
+    } else if (type === 'dialogue') {
+      nextType = 'character';
+    } else if (type === 'character') {
+      nextType = 'scene';
+    } else if (type === 'action' || type === 'text') {
+      nextType = 'scene';
+    } else if (type === 'parenthetical') {
+      nextType = 'character';
+    } else {
+      nextType = 'scene';
+    }
+  } else {
+    if (type === 'scene') {
+      nextType = 'character';
+    } else if (type === 'character') {
+      nextType = 'dialogue';
+    } else if (type === 'dialogue') {
+      nextType = 'transition';
+    } else if (type === 'transition') {
+      nextType = 'scene';
+    } else if (type === 'action' || type === 'text') {
+      nextType = 'character';
+    } else if (type === 'parenthetical') {
+      nextType = 'dialogue';
+    } else if (type === 'shot') {
+      nextType = 'character';
+    } else {
+      nextType = 'character';
+    }
+  }
+
+  if (nextType) {
+    convertBlockType(blockEl, nextType);
+    return true;
+  }
+  return false;
+}
+
 // Convert existing block to a new type (Section 9: Parenthetical starts as () with cursor at (|))
 function convertBlockType(blockEl, newType) {
   const blockId = blockEl.getAttribute('data-block-id');
@@ -2837,7 +2890,7 @@ function convertBlockType(blockEl, newType) {
   if (!b) return;
 
   b.type = newType;
-  if (newType === 'character') {
+  if (newType === 'character' || newType === 'scene' || newType === 'transition') {
     b.content = b.content.toUpperCase();
   }
   if (newType === 'action' || newType === 'dialogue') {
@@ -2853,6 +2906,9 @@ function convertBlockType(blockEl, newType) {
       b.content = '()';
     }
   }
+
+  hasUnsavedChanges = true;
+  if (autoSaveEnabled) scheduleAutosave();
 
   renderScreenplayPages();
 
@@ -2883,6 +2939,9 @@ function convertBlockType(blockEl, newType) {
           hideAutocomplete();
         }
       }
+    }
+    if (newType === 'scene' || newType === 'character') {
+      populateNavigators();
     }
   }, 25);
 }
