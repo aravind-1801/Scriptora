@@ -1,3 +1,5 @@
+import { renderHeader } from '../components/header.js';
+import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
@@ -9,23 +11,27 @@ export function renderNotificationsScreen() {
 
   return `
     <div class="flex flex-col min-h-screen bg-surface w-full relative">
+      ${renderHeader('Notifications', 'Activity')}
+
       <!-- Main Notifications Stream with contextual subnav bar -->
       <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
         <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-1 space-y-4 fade-in">
           
           <!-- Contextual Sub-bar: Back Navigation and Mark All Read Action -->
-          <div class="flex items-center justify-between pb-2 border-b border-slate-200/70">
-            <div class="flex items-center gap-2">
-              <button aria-label="Go back" id="btn-back-notif" data-scriptora-back="true" data-back-fallback="/workspace" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 transition-colors text-xs font-semibold shrink-0 cursor-pointer">
-                <span class="material-symbols-outlined text-[17px]">arrow_back</span>
-                <span>Back</span>
+          <div class="flex items-center justify-between gap-3 pb-2 border-b border-slate-200/70">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <button aria-label="Back" id="btn-back-notif" data-scriptora-back="true" data-back-fallback="/workspace" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" title="Back">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
               </button>
-              <span class="font-heading font-bold text-sm text-slate-800">Notifications Activity</span>
+              <div class="flex flex-col min-w-0">
+                <h1 class="font-heading font-bold text-xl sm:text-2xl text-slate-900 tracking-tight truncate">Notifications</h1>
+                <p class="text-xs text-slate-500 mt-0.5 truncate">Updates, collaboration and system alerts.</p>
+              </div>
             </div>
 
-            <button id="btn-mark-all-read" class="px-2.5 py-1 text-xs text-blue-600 font-semibold hover:bg-blue-50 rounded-lg active:scale-95 transition-all flex items-center gap-1">
+            <button id="btn-mark-all-read" class="px-2.5 py-1 text-xs text-blue-600 font-semibold hover:bg-blue-50 rounded-lg active:scale-95 transition-all flex items-center gap-1 shrink-0">
               <span class="material-symbols-outlined text-[16px]">done_all</span>
-              <span>Mark all read</span>
+              <span class="hidden sm:inline">Mark all read</span>
             </button>
           </div>
           
@@ -82,6 +88,8 @@ export function renderNotificationsScreen() {
 
         </div>
       </main>
+
+      ${renderBottomNav('workspace')}
     </div>
   `;
 }

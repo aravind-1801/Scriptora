@@ -37,7 +37,9 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
               <span class="material-symbols-outlined text-[16px]">add</span>
               <span>New Call Sheet</span>
             </a>
-          ` : ''
+          ` : '',
+          null,
+          'Daily call sheets, crew calls and shooting details.'
         )}
 
         <div id="callsheet-view-container" class="flex flex-col gap-3">

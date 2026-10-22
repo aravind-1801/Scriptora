@@ -20,7 +20,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             <span class="material-symbols-outlined text-[16px]">download</span>
             <span>Export PDF</span>
           </button>
-        `)}
+        `, null, 'Visual shot composition and concept frames.')}
 
         <!-- Feature Intro Banner -->
         <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">

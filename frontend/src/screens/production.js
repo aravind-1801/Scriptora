@@ -36,13 +36,11 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
       <!-- Main Workspace Container -->
       <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-16 flex flex-col gap-3.5 fade-in">
         
-        <!-- Page Title Header (Clean and Aligned with Back Button) -->
-        <div class="flex items-center justify-between gap-2 py-1 border-b border-slate-200/70">
-          <div class="flex items-center gap-2 min-w-0">
-            <button id="production-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back to ${returnLabel}" title="Back to ${returnLabel}">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            </button>
-            <h1 class="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight">Production Tools</h1>
+        <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
+        <div class="flex items-center justify-between py-1">
+          <div class="flex flex-col">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 font-heading">Production Tools</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Your filmmaking workspace.</p>
           </div>
         </div>
 

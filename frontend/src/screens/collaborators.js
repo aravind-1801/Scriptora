@@ -27,13 +27,14 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
         
         <!-- Back Navigation & Title -->
-        <div class="flex flex-col gap-1">
-          <button id="collab-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit cursor-pointer">
+        <div class="flex items-center gap-2.5">
+          <button id="collab-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
             <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>${returnLabel}</span>
           </button>
-          <h1 class="font-heading text-2xl font-bold text-slate-900 tracking-tight mt-1">Collaborators</h1>
-          <p class="text-xs text-slate-500">Work together on your screenplay with controlled access.</p>
+          <div class="flex flex-col min-w-0">
+            <h1 class="font-heading text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Collaborators</h1>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">Work together on your screenplay with controlled access.</p>
+          </div>
         </div>
 
         <!-- Project Context Selector -->

@@ -18,40 +18,26 @@ export function getBackLabelFromUrl(url) {
   return 'Back';
 }
 
-export function renderProdSubNav(title, icon = 'tune', backUrl = null, extraActionsHtml = '', customBackLabel = null) {
+export function renderProdSubNav(title, icon = 'tune', backUrl = null, extraActionsHtml = '', customBackLabel = null, subtitle = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const fromParam = urlParams.get('from');
   const resolvedBackUrl = backUrl || fromParam || '/production';
-  
-  // Dynamic previous label if available in router history
-  let dynamicLabel = null;
-  if (window.scriptoraRouter) {
-    const prevRoute = window.scriptoraRouter.peekPreviousRoute?.();
-    if (prevRoute) {
-      dynamicLabel = window.scriptoraRouter.getRouteLabel(prevRoute);
-    }
-  }
-  const resolvedBackLabel = customBackLabel || dynamicLabel || getBackLabelFromUrl(resolvedBackUrl);
+  const resolvedSubtitle = subtitle || 'Chronicles of Dust';
 
   return `
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 py-2 px-1 border-b border-slate-200/80 mb-3">
+    <div class="flex items-center justify-between gap-3 py-1 border-b border-slate-200/70 pb-3 mb-2">
       <div class="flex items-center gap-2.5 min-w-0 flex-1">
-        <button type="button" id="prod-subnav-back" data-scriptora-back="true" data-back-fallback="${resolvedBackUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back to ${resolvedBackLabel}" title="Back to ${resolvedBackLabel}">
+        <button type="button" id="prod-subnav-back" data-scriptora-back="true" data-back-fallback="${resolvedBackUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
           <span class="material-symbols-outlined text-[18px]">arrow_back</span>
         </button>
-        <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80">
-          <span class="material-symbols-outlined text-[18px]">${icon}</span>
-        </div>
-        <div class="min-w-0 flex-1">
-          <h1 class="font-heading font-semibold text-sm sm:text-base text-slate-900 truncate leading-tight">${title}</h1>
-          <div class="text-[11px] text-blue-700 font-medium truncate leading-normal">
-            Chronicles of Dust
-          </div>
+        <div class="flex flex-col min-w-0">
+          <h1 class="font-heading font-bold text-lg sm:text-xl text-slate-900 tracking-tight truncate">${title}</h1>
+          <p class="text-xs text-slate-500 mt-0.5 truncate">${resolvedSubtitle}</p>
         </div>
       </div>
 
       ${extraActionsHtml ? `
-        <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+        <div class="flex items-center gap-2 shrink-0">
           ${extraActionsHtml}
         </div>
       ` : ''}

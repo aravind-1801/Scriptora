@@ -19,22 +19,21 @@ export function renderIntelligenceSelectorScreen() {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
-        <!-- Navigation Breadcrumb -->
-        <div class="flex items-center justify-between">
-          <button id="intelligence-selector-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-medium no-underline cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>${backLabel}</span>
-          </button>
+        <!-- Section Header -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="intelligence-selector-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
+            </div>
+          </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-            <span class="text-[10px] font-semibold uppercase tracking-wider">Select Script</span>
+            <span class="text-[10px] font-semibold uppercase tracking-wider">Intelligence</span>
           </div>
-        </div>
-
-        <!-- Section Title -->
-        <div class="flex flex-col">
-          <h2 class="font-heading text-xl font-bold tracking-tight text-slate-900 leading-tight">Select a screenplay</h2>
-          <span class="text-xs text-slate-500 mt-0.5">Choose a script to understand its story, characters and structure.</span>
         </div>
 
         <!-- Script List Container -->

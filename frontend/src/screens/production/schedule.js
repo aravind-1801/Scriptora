@@ -44,29 +44,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
               <span>Add Date</span>
             </button>
           </div>
-        `)}
-
-        <!-- Top Context Header Bar: Project & Pinned Screenplay -->
-        <div class="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4 shadow-xs flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined text-lg">calendar_month</span>
-            </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-heading font-semibold text-sm text-slate-900 truncate">Chronicles of Dust</span>
-                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  Draft 4.2 (Pinned)
-                </span>
-              </div>
-              <p class="text-[11px] text-slate-500 truncate mt-0.5">Master shooting calendar • 7 Shoot Days • October 24 – October 30, 2026</p>
-            </div>
-          </div>
-          <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>100% Scenes Scheduled</span>
-          </div>
-        </div>
+        `, null, 'Master shooting schedule & stripboard.')}
 
         <!-- Schedule Metrics Summary Bar -->
         <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 shadow-xs">

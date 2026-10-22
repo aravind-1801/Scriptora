@@ -40,7 +40,7 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
               <span>Add Element</span>
             </button>
           </div>
-        `)}
+        `, null, 'Elements, departments and scene requirements.')}
 
         <!-- Breakdown Status Summary -->
         <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs">

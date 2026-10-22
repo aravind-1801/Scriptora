@@ -82,21 +82,18 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
         
-        <!-- Back Navigation -->
-        <div class="flex flex-col gap-1 -mb-3">
-          <button id="profile-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline w-fit cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>${backLabel}</span>
-          </button>
-        </div>
-
         <!-- Profile Header -->
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight font-heading">Profile</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Account & preferences.</p>
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="profile-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Profile</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Account & preferences.</p>
+            </div>
           </div>
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80 shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
             <span>${user.badge || 'Member Pro'}</span>
           </div>
