@@ -100,35 +100,35 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
           <!-- Bottom Row: Category Tabs -->
           <div class="flex items-stretch gap-1.5 overflow-x-auto pb-1 text-xs shrink-0 border-t border-slate-100 pt-2" id="cat-filters">
             <button class="cat-btn px-2.5 py-1.5 rounded-lg font-semibold bg-blue-600 text-white shadow-xs inline-flex items-center justify-center gap-1 cursor-pointer shrink-0 h-[44px]" data-cat="all">
-              <span>All Categories</span>
+              <span class="text-[11px]">All Categories</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Cast">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Cast">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">person</span>
-              <span class="text-center leading-tight">Cast & Characters</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Cast & Characters</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Locations">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Locations">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">location_on</span>
-              <span class="text-center leading-tight">Locations</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Locations</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Props">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Props">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">inventory_2</span>
-              <span class="text-center leading-tight">Props</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Props</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Practical FX">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Practical FX">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">science</span>
-              <span class="text-center leading-tight">Practical FX</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Practical FX</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Stunts">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Stunts">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">sports_kabaddi</span>
-              <span class="text-center leading-tight">Stunts & Action</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Stunts & Action</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Costumes">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Costumes">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">checkroom</span>
-              <span class="text-center leading-tight">Costumes</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Costumes</span>
             </button>
-            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Vehicles">
+            <button class="cat-btn px-1 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px] overflow-hidden" data-cat="Vehicles">
               <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">commute</span>
-              <span class="text-center leading-tight">Vehicles</span>
+              <span class="text-[9px] text-center leading-tight w-full px-0.5">Vehicles</span>
             </button>
           </div>
         </div>
