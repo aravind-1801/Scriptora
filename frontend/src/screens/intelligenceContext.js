@@ -133,14 +133,14 @@ export function renderIntelligenceContextScreen() {
           </div>
         </section>
 
-      </div>
+        <!-- Proceed to Analysis Action Button -->
+        <div class="pt-1.5">
+          <button type="button" id="btn-submit-context" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+            <span class="truncate font-semibold">Calibrate & Proceed to Analysis</span>
+            <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
 
-      <!-- Sticky Bottom Action Button -->
-      <div class="fixed bottom-14 left-0 right-0 z-40 bg-surface/90 backdrop-blur-md px-4 py-2.5 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto">
-        <button type="button" id="btn-submit-context" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-          <span class="truncate font-semibold">Calibrate & Proceed to Analysis</span>
-          <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-        </button>
       </div>
 
     </main>
