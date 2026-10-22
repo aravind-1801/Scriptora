@@ -265,7 +265,7 @@ class Router {
     document.addEventListener('click', (e) => {
       // 1. Back button click interception
       const backTrigger = e.target.closest(
-        '[data-scriptora-back], #prod-subnav-back, #editor-back-btn, #btn-back-notif, #analysis-back-btn, #collab-back-btn, #profile-back-to-editor-btn, #profile-back-btn, #production-back-btn, #chat-back-btn, #intelligence-selector-back-btn, #intelligence-dashboard-back-btn, #intelligence-context-back-btn, #individual-analysis-selector-back-btn'
+        '[data-scriptora-back], #prod-subnav-back, #editor-back-btn, #btn-back-notif, #analysis-back-btn, #collab-back-btn, #production-back-btn, #chat-back-btn, #intelligence-dashboard-back-btn, #intelligence-context-back-btn, #individual-analysis-selector-back-btn'
       );
       if (backTrigger) {
         e.preventDefault();

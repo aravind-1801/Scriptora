@@ -7,11 +7,6 @@ export function renderIntelligenceSelectorScreen() {
   const scripts = store.state.scripts || [];
   const selectedId = store.state.selectedScriptId || 'chronicles-of-dust';
   const active = scripts.find(s => s.id === selectedId) || scripts[0] || { title: 'Chronicles of Dust', id: 'chronicles-of-dust' };
-  let backLabel = 'Workspace';
-  if (window.scriptoraRouter) {
-    const prev = window.scriptoraRouter.peekPreviousRoute?.();
-    if (prev) backLabel = window.scriptoraRouter.getRouteLabel(prev);
-  }
 
   return `
     ${renderHeader('Intelligence', 'Script Selector')}
@@ -20,15 +15,10 @@ export function renderIntelligenceSelectorScreen() {
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
         <!-- Section Header -->
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <button id="intelligence-selector-back-btn" data-scriptora-back="true" data-back-fallback="/workspace" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            </button>
-            <div class="flex flex-col min-w-0">
-              <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
-              <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
-            </div>
+        <div class="flex items-center justify-between gap-3 py-1">
+          <div class="flex flex-col min-w-0">
+            <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>

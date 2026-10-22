@@ -70,13 +70,6 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const activeCoAuthors = 3;
   const healthIndex = user.stats?.healthIndex || '98%';
 
-  let dynamicLabel = null;
-  if (window.scriptoraRouter) {
-    const prev = window.scriptoraRouter.peekPreviousRoute?.();
-    if (prev) dynamicLabel = window.scriptoraRouter.getRouteLabel(prev);
-  }
-  const backLabel = isFromEditor ? 'Back to Editor' : (dynamicLabel ? `Back to ${dynamicLabel}` : 'Back');
-
   return `
     ${renderHeader('Profile', 'Account & preferences.')}
 
@@ -84,15 +77,10 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       <div class="flex flex-col w-full max-w-lg mx-auto px-4 pt-3 pb-8 space-y-6 fade-in">
         
         <!-- Profile Header -->
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <button id="profile-back-btn" data-scriptora-back="true" data-back-fallback="${returnUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            </button>
-            <div class="flex flex-col min-w-0">
-              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Profile</h1>
-              <p class="text-xs text-slate-500 mt-0.5 truncate">Account & preferences.</p>
-            </div>
+        <div class="flex items-center justify-between gap-3 py-1">
+          <div class="flex flex-col min-w-0">
+            <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Profile</h1>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">Account & preferences.</p>
           </div>
           <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80 shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
@@ -795,20 +783,6 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
-
-  // Back Navigation
-  const backBtn = document.getElementById('profile-back-btn') || document.getElementById('profile-back-to-editor-btn');
-  if (backBtn) {
-    backBtn.onclick = (e) => {
-      e.preventDefault();
-      sessionStorage.removeItem('scriptora_from_editor');
-      if (window.scriptoraRouter) {
-        window.scriptoraRouter.back(returnUrl);
-      } else {
-        navigate(returnUrl);
-      }
-    };
-  }
 
   const bottomReturnBtn = document.getElementById('profile-bottom-return-btn');
   if (bottomReturnBtn) {
