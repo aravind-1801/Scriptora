@@ -5,7 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportBreakdownPdf } from '../../services/pdfExport.js';
-import { lockBodyScroll, unlockBodyScroll } from '../../utils/popupPosition.js';
+import { openModal, closeModal } from '../../utils/popupPosition.js';
 
 // Category grouping configuration (Disciplined neutral palette matching Intelligence)
 const CATEGORY_CONFIG = {
@@ -1018,24 +1018,20 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
   const btnCancelAdd = document.getElementById('btn-cancel-add');
   const addForm = document.getElementById('form-add-element');
 
-  const openModal = () => {
+  const handleOpenAddModal = () => {
     updateModalCategoryFields();
-    addModal?.classList.remove('hidden');
-    lockBodyScroll();
+    openModal(addModal);
   };
-  const closeModal = () => {
-    if (addModal && !addModal.classList.contains('hidden')) {
-      unlockBodyScroll();
-    }
-    addModal?.classList.add('hidden');
+  const handleCloseAddModal = () => {
+    closeModal(addModal);
   };
 
-  if (btnOpenAdd) btnOpenAdd.onclick = openModal;
-  if (btnCloseAdd) btnCloseAdd.onclick = closeModal;
-  if (btnCancelAdd) btnCancelAdd.onclick = closeModal;
+  if (btnOpenAdd) btnOpenAdd.onclick = handleOpenAddModal;
+  if (btnCloseAdd) btnCloseAdd.onclick = handleCloseAddModal;
+  if (btnCancelAdd) btnCancelAdd.onclick = handleCloseAddModal;
   if (addModal) {
     addModal.onclick = (e) => {
-      if (e.target === addModal) closeModal();
+      if (e.target === addModal) handleCloseAddModal();
     };
   }
 

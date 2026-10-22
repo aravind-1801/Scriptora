@@ -20,7 +20,7 @@ import { renderCallSheetsScreen, attachCallSheetsEvents } from './screens/produc
 import { renderDialogueSidesScreen, attachDialogueSidesEvents } from './screens/production/dialogueSides.js';
 import { renderScheduleScreen, attachScheduleEvents } from './screens/production/schedule.js';
 import { renderStoryboardScreen, attachStoryboardEvents } from './screens/production/storyboard.js';
-import { unlockBodyScroll } from './utils/popupPosition.js';
+import { unlockBodyScroll, closeModal } from './utils/popupPosition.js';
 
 
 class Router {
@@ -139,25 +139,30 @@ class Router {
       }
     }
 
-    // 2. Visible popups, contextual dropdowns, and overlays
+    // 2. Open modals in portal or page
+    const openModals = Array.from(document.querySelectorAll(
+      '#scriptora-modal-portal .scriptora-modal-overlay:not(.hidden), .scriptora-modal-overlay:not(.hidden)'
+    ));
+    if (openModals.length > 0) {
+      const topmostModal = openModals[openModals.length - 1];
+      const closeBtn = topmostModal.querySelector(
+        '[data-modal-close], #modal-day-close, #modal-day-done, .close-setting-modal, .close-profile-modal, #action-modal-cancel, #new-script-cancel, [id$="-cancel"], [id$="-close"]'
+      );
+      if (closeBtn) {
+        closeBtn.click();
+      } else {
+        closeModal(topmostModal);
+      }
+      return true;
+    }
+
+    // 3. Visible popups, contextual dropdowns, and overlays
     const visiblePopups = Array.from(document.querySelectorAll(
       '.scriptora-popup:not(.hidden), [data-scriptora-popup]:not(.hidden), [role="menu"]:not(.hidden), #quick-add-menu:not(.hidden)'
     ));
     if (visiblePopups.length > 0) {
       const topmost = visiblePopups[visiblePopups.length - 1];
       topmost.classList.add('hidden');
-      return true;
-    }
-
-    // 3. Open schedule day modal if visible
-    const dayModal = document.getElementById('day-detail-modal') || document.getElementById('modal-day-details');
-    if (dayModal && !dayModal.classList.contains('hidden')) {
-      const closeBtn = document.getElementById('modal-day-close') || document.getElementById('modal-day-done');
-      if (closeBtn) {
-        closeBtn.click();
-      } else {
-        dayModal.classList.add('hidden');
-      }
       return true;
     }
 
@@ -629,6 +634,13 @@ class Router {
     }
 
     if (contentSlot) {
+      // Clear any portaled modals from previous screen and reset scroll lock
+      const modalPortal = document.getElementById('scriptora-modal-portal');
+      if (modalPortal) {
+        modalPortal.innerHTML = '';
+      }
+      unlockBodyScroll();
+
       // Remove any duplicate header or bottom navigation tags from screen template
       let cleanHtml = html || '';
       cleanHtml = cleanHtml.replace(/<header[^>]*data-global-header="true"[^>]*>[\s\S]*?<\/header>/gi, '');

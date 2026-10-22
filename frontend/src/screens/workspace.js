@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { positionPopup, lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
+import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
 
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
@@ -267,16 +267,10 @@ export function attachWorkspaceEvents(navigate) {
   function toggleNewScriptModal(open) {
     if (!newScriptModal) return;
     if (open) {
-      newScriptModal.classList.remove('hidden');
-      newScriptModal.classList.add('flex');
-      lockBodyScroll();
+      openModal(newScriptModal);
       document.getElementById('new-script-title')?.focus();
     } else {
-      if (!newScriptModal.classList.contains('hidden')) {
-        unlockBodyScroll();
-      }
-      newScriptModal.classList.add('hidden');
-      newScriptModal.classList.remove('flex');
+      closeModal(newScriptModal);
     }
   }
 

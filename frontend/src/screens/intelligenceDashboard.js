@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
+import { openModal, closeModal } from '../utils/popupPosition.js';
 
 export function renderIntelligenceDashboardScreen() {
   const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
@@ -290,14 +290,10 @@ export function attachIntelligenceDashboardEvents(navigate) {
   const closeBtn = document.getElementById('close-script-switcher-modal');
 
   const openSwitcherModal = () => {
-    modal?.classList.remove('hidden');
-    lockBodyScroll();
+    openModal(modal);
   };
   const closeSwitcherModal = () => {
-    if (modal && !modal.classList.contains('hidden')) {
-      unlockBodyScroll();
-    }
-    modal?.classList.add('hidden');
+    closeModal(modal);
   };
 
   if (trigger) trigger.onclick = openSwitcherModal;

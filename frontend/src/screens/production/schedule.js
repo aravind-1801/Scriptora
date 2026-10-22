@@ -5,7 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportSchedulePdf, exportBreakdownPdf } from '../../services/pdfExport.js';
-import { setupPopupToggle, lockBodyScroll, unlockBodyScroll } from '../../utils/popupPosition.js';
+import { setupPopupToggle, openModal, closeModal } from '../../utils/popupPosition.js';
 
 // Category icon map matching SCRIPTORA design tokens
 const CATEGORY_ICONS = {
@@ -1238,18 +1238,14 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
       }
     }
 
-    dayModal?.classList.remove('hidden');
-    lockBodyScroll();
+    openModal(dayModal);
   }
 
   // Close Day Modal
   const modalClose = document.getElementById('modal-day-close');
   const modalDone = document.getElementById('modal-day-done');
   const closeDayModal = () => {
-    if (dayModal && !dayModal.classList.contains('hidden')) {
-      unlockBodyScroll();
-    }
-    dayModal?.classList.add('hidden');
+    closeModal(dayModal);
     currentOpenDayNumber = null;
     editingDayInfo = false;
     editingDayConstraints = false;
@@ -1379,15 +1375,11 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (inputHours) inputHours.value = '10';
     if (inputPages) inputPages.value = '0.0';
 
-    addDayModal.classList.remove('hidden');
-    lockBodyScroll();
+    openModal(addDayModal);
   }
 
   function closeAddDayModal() {
-    if (addDayModal && !addDayModal.classList.contains('hidden')) {
-      unlockBodyScroll();
-    }
-    addDayModal?.classList.add('hidden');
+    closeModal(addDayModal);
   }
 
   if (addDayBtn) addDayBtn.onclick = openAddDayModal;

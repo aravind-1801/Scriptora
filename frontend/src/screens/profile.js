@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { lockBodyScroll, unlockBodyScroll } from '../utils/popupPosition.js';
+import { openModal, closeModal } from '../utils/popupPosition.js';
 
 export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -860,20 +860,14 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     const modalId = `modal-setting-${sheetId.replace('sheet-', '')}`;
     const modal = document.getElementById(modalId);
     if (modal) {
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      lockBodyScroll();
+      openModal(modal);
     }
   }
 
   function closeAllSettingModals() {
-    let closedAny = false;
     document.querySelectorAll('.settings-modal').forEach(m => {
-      if (!m.classList.contains('hidden')) closedAny = true;
-      m.classList.add('hidden');
-      m.classList.remove('flex');
+      closeModal(m);
     });
-    if (closedAny) unlockBodyScroll();
   }
 
   document.querySelectorAll('.setting-item').forEach(item => {
@@ -891,11 +885,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   document.querySelectorAll('.settings-modal, #modal-edit-profile, #modal-security, #action-modal').forEach(modal => {
     modal.onclick = (e) => {
       if (e.target === modal) {
-        if (!modal.classList.contains('hidden')) {
-          unlockBodyScroll();
-        }
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        closeModal(modal);
       }
     };
   });
@@ -1146,15 +1136,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
 
   function toggleProfileModal(open) {
     if (open) {
-      editProfileModal?.classList.remove('hidden');
-      editProfileModal?.classList.add('flex');
-      lockBodyScroll();
+      openModal(editProfileModal);
     } else {
-      if (editProfileModal && !editProfileModal.classList.contains('hidden')) {
-        unlockBodyScroll();
-      }
-      editProfileModal?.classList.add('hidden');
-      editProfileModal?.classList.remove('flex');
+      closeModal(editProfileModal);
     }
   }
 
@@ -1342,15 +1326,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
 
   function toggleSecurity(open) {
     if (open) {
-      securityModal?.classList.remove('hidden');
-      securityModal?.classList.add('flex');
-      lockBodyScroll();
+      openModal(securityModal);
     } else {
-      if (securityModal && !securityModal.classList.contains('hidden')) {
-        unlockBodyScroll();
-      }
-      securityModal?.classList.add('hidden');
-      securityModal?.classList.remove('flex');
+      closeModal(securityModal);
     }
   }
 
@@ -1433,17 +1411,11 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 cursor-pointer';
       actionConfirm.textContent = 'Delete Forever';
     }
-    actionModal?.classList.remove('hidden');
-    actionModal?.classList.add('flex');
-    lockBodyScroll();
+    openModal(actionModal);
   }
 
   function closeActionModal() {
-    if (actionModal && !actionModal.classList.contains('hidden')) {
-      unlockBodyScroll();
-    }
-    actionModal?.classList.add('hidden');
-    actionModal?.classList.remove('flex');
+    closeModal(actionModal);
   }
 
   document.getElementById('btn-trigger-signout')?.addEventListener('click', () => openAction('signout'));

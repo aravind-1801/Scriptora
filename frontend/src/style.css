@@ -76,38 +76,34 @@ button, a {
 
 /* =========================================================================
    SCRIPTORA Global Modal & Popup Positioning Architecture
-   - On mobile: Top-aligned directly beneath persistent header (3.5rem + pt-safe + 8px),
-     leaves comfortable clearance above bottom nav (4.5rem + pb-safe),
-     internal content scrolls smoothly without scrolling the background page.
-   - On desktop & tablet: Centered dialog with standard comfortable padding.
+   - Portaled to top-level #scriptora-modal-portal directly on document.body.
+   - Perfectly centered in the current visible viewport regardless of background scroll.
+   - Respects safe areas (notches & home indicator) with responsive max-height.
+   - Non-destructive background scroll lock (no jump-to-top or position:fixed on body).
+   - Internal smooth scrolling inside .scriptora-modal-body.
    ========================================================================= */
+
+#scriptora-modal-portal {
+  position: relative;
+  z-index: 9999;
+}
 
 .scriptora-modal-overlay {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 100 !important;
-  background-color: rgba(15, 23, 42, 0.52) !important;
+  z-index: 9999 !important;
+  background-color: rgba(15, 23, 42, 0.58) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
-  justify-content: flex-start !important;
-  padding-top: calc(3.5rem + env(safe-area-inset-top, 0px) + 8px) !important;
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px) + 8px) !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
+  justify-content: center !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 16px) 16px !important;
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
-  touch-action: pan-y !important;
-}
-
-@media (min-width: 640px) {
-  .scriptora-modal-overlay {
-    justify-content: center !important;
-    padding: 1.25rem !important;
-  }
+  box-sizing: border-box !important;
 }
 
 .scriptora-modal-overlay.hidden {
@@ -117,27 +113,33 @@ button, a {
 .scriptora-modal-card {
   width: 100% !important;
   max-width: 36rem;
-  max-height: calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px) - 4.5rem - env(safe-area-inset-bottom, 0px) - 24px) !important;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px) !important;
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   background-color: #ffffff !important;
   border-radius: 1rem !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.16), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
   border: 1px solid rgba(226, 232, 240, 0.95) !important;
-  margin: 0 auto !important;
+  margin: auto !important;
+  box-sizing: border-box !important;
   flex-shrink: 0 !important;
+  position: relative !important;
 }
 
 @media (min-width: 640px) {
   .scriptora-modal-card {
-    max-height: 85vh !important;
+    max-height: min(88vh, 760px) !important;
+    max-height: min(88dvh, 760px) !important;
     border-radius: 1.25rem !important;
   }
 }
 
 /* Internal scroll container inside modal card */
-.scriptora-modal-body {
+.scriptora-modal-body,
+.scriptora-modal-card.overflow-y-auto,
+.scriptora-modal-card > .overflow-y-auto {
   flex: 1 1 auto !important;
   min-height: 0 !important;
   overflow-y: auto !important;
@@ -145,12 +147,11 @@ button, a {
   overscroll-behavior: contain !important;
 }
 
-/* Background scroll lock while modal is open */
+/* Background scroll lock while modal is open (retains scroll position without snapping) */
+html.scriptora-modal-open,
 body.scriptora-modal-open {
   overflow: hidden !important;
-  position: fixed !important;
-  width: 100% !important;
-  touch-action: none !important;
+  overscroll-behavior: contain !important;
 }
 
 /* Empty contenteditable placeholder (Disappears naturally when characters are typed, returns on clear) */
