@@ -456,13 +456,11 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
         <!-- Assigned Scenes Header with Assign Button -->
         <div class="flex items-center justify-between pt-0.5">
-          <div class="flex items-center gap-2">
-            <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
-            <button id="btn-toggle-assign-scene" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-[11px] font-semibold transition-colors cursor-pointer" title="Assign scene to this shoot day">
-              <span class="material-symbols-outlined text-[13px]">add</span>
-              <span>Assign Scene</span>
-            </button>
-          </div>
+          <span class="font-heading font-semibold text-slate-900 text-xs">Assigned Scenes (${dayScenes.length})</span>
+          <button id="btn-toggle-assign-scene" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200/80 text-[11px] font-semibold transition-colors cursor-pointer" title="Assign scene to this shoot day">
+            <span class="material-symbols-outlined text-[13px]">add</span>
+            <span>Assign Scene</span>
+          </button>
         </div>
 
         <!-- Inline Scene Assign Selector -->

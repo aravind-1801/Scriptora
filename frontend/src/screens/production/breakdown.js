@@ -98,37 +98,37 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
           </div>
 
           <!-- Bottom Row: Category Tabs -->
-          <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs shrink-0 border-t border-slate-100 pt-2" id="cat-filters">
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-semibold bg-blue-600 text-white shadow-xs flex items-center gap-1 cursor-pointer" data-cat="all">
+          <div class="flex items-stretch gap-1.5 overflow-x-auto pb-1 text-xs shrink-0 border-t border-slate-100 pt-2" id="cat-filters">
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-semibold bg-blue-600 text-white shadow-xs inline-flex items-center justify-center gap-1 cursor-pointer shrink-0 h-[44px]" data-cat="all">
               <span>All Categories</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Cast">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">person</span>
-              <span>Cast & Characters</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Cast">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">person</span>
+              <span class="text-center leading-tight">Cast & Characters</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Locations">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">location_on</span>
-              <span>Locations</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Locations">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">location_on</span>
+              <span class="text-center leading-tight">Locations</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Props">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">inventory_2</span>
-              <span>Props</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Props">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">inventory_2</span>
+              <span class="text-center leading-tight">Props</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Practical FX">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">science</span>
-              <span>Practical FX</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Practical FX">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">science</span>
+              <span class="text-center leading-tight">Practical FX</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Stunts">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">sports_kabaddi</span>
-              <span>Stunts & Action</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Stunts">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">sports_kabaddi</span>
+              <span class="text-center leading-tight">Stunts & Action</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Costumes">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">checkroom</span>
-              <span>Costumes</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Costumes">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">checkroom</span>
+              <span class="text-center leading-tight">Costumes</span>
             </button>
-            <button class="cat-btn px-2.5 py-1 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 cursor-pointer" data-cat="Vehicles">
-              <span class="material-symbols-outlined text-[14px] text-slate-400">commute</span>
-              <span>Vehicles</span>
+            <button class="cat-btn px-2.5 py-1.5 rounded-lg font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer shrink-0 h-[44px] w-[68px]" data-cat="Vehicles">
+              <span class="material-symbols-outlined text-[14px] text-slate-400 leading-none">commute</span>
+              <span class="text-center leading-tight">Vehicles</span>
             </button>
           </div>
         </div>
