@@ -5,7 +5,7 @@ import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportSchedulePdf, exportBreakdownPdf } from '../../services/pdfExport.js';
-import { setupPopupToggle, openModal, closeModal } from '../../utils/popupPosition.js';
+import { setupPopupToggle, positionPopup, openModal, closeModal } from '../../utils/popupPosition.js';
 
 // Category icon map matching SCRIPTORA design tokens
 const CATEGORY_ICONS = {
@@ -352,11 +352,33 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (modalTitle) modalTitle.textContent = `Day ${day.dayNumber} • ${day.date.split(',')[0]}`;
     if (modalSub) modalSub.textContent = `${day.location}${day.totalPages ? ` • ${day.totalPages} pgs` : ''}`;
 
-    // Contextual menu setup with robust positioning
+    // Contextual menu setup — lean, idempotent, no listener leaks
     if (menuBtn && menuDropdown) {
       menuDropdown.classList.add('hidden');
-      modalMenuHandler = setupPopupToggle(menuBtn, menuDropdown, { placement: 'bottom-end', zIndex: 120 });
-      menuBtn.onclick = (e) => { e.stopPropagation(); modalMenuHandler.toggle(); };
+      // Stop clicks inside the dropdown from bubbling to the outside-click handler
+      menuDropdown.onclick = (e) => e.stopPropagation();
+      menuBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isHidden = menuDropdown.classList.contains('hidden');
+        // Close any other open popups first
+        document.querySelectorAll('[data-scriptora-popup]').forEach(el => {
+          if (el !== menuDropdown) el.classList.add('hidden');
+        });
+        if (isHidden) {
+          menuDropdown.classList.remove('hidden');
+          positionPopup(menuBtn, menuDropdown, { placement: 'bottom-end', zIndex: 10000 });
+        } else {
+          menuDropdown.classList.add('hidden');
+        }
+      };
+      // One-time outside-click handler stored on the element to avoid duplicates
+      if (!menuBtn._outsideClickAttached) {
+        menuBtn._outsideClickAttached = true;
+        document.addEventListener('click', () => {
+          menuDropdown.classList.add('hidden');
+        });
+      }
+      modalMenuHandler = { close: () => menuDropdown.classList.add('hidden') };
     }
 
     if (editDayBtn) {
