@@ -5328,30 +5328,28 @@ ${k}
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${Re("Pre-Production","Dialogue Sheets & Actor Sides")}
 
-      <main class="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-16 pb-24 flex flex-col gap-3.5 fade-in">
+      <main class="flex-1 w-full max-w-2xl mx-auto px-4 pt-16 pb-28 flex flex-col gap-3.5 fade-in">
         
         <!-- Mode Switcher Tabs Card (Segmented Control & Selector beneath it) -->
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-3 sm:p-4 shadow-2xs flex flex-col gap-3">
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-3.5 shadow-2xs flex flex-col gap-3">
           <!-- Segmented Control -->
-          <div class="flex items-center bg-slate-100 p-1 rounded-xl w-full">
-            <button id="tab-mode-dialogue" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${n==="dialogue"?"bg-white text-blue-600 shadow-2xs":"text-slate-600 hover:text-slate-900"} cursor-pointer">
+          <div class="flex items-center bg-slate-100/90 p-1 rounded-2xl w-full">
+            <button id="tab-mode-dialogue" class="flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all ${n==="dialogue"?"bg-white text-blue-600 shadow-2xs":"text-slate-600 hover:text-slate-900"} cursor-pointer text-center">
               Dialogue Sheets
             </button>
-            <button id="tab-mode-sides" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${n==="sides"?"bg-white text-blue-600 shadow-2xs":"text-slate-600 hover:text-slate-900"} cursor-pointer">
+            <button id="tab-mode-sides" class="flex-1 py-2 px-3 text-xs font-semibold rounded-xl transition-all ${n==="sides"?"bg-white text-blue-600 shadow-2xs":"text-slate-600 hover:text-slate-900"} cursor-pointer text-center">
               Actor Sides
             </button>
           </div>
 
           <!-- Dynamic Selector based on active mode -->
-          <div class="flex items-center justify-between gap-2" id="filter-controls-container">
-            <div class="flex items-center gap-2 flex-1" id="filter-controls">
-              <!-- Rendered via JS -->
-            </div>
+          <div class="flex items-center gap-2" id="filter-controls">
+            <!-- Rendered via JS -->
           </div>
         </div>
 
         <!-- Document Viewer Area (Screenplay Document Typesetting) -->
-        <div id="dialogue-sides-content" class="bg-white rounded-2xl border border-slate-200/90 p-6 sm:p-8 shadow-2xs flex flex-col gap-4 font-mono text-xs text-slate-800">
+        <div id="dialogue-sides-content" class="bg-white rounded-3xl border border-slate-200/80 p-5 sm:p-7 shadow-2xs flex flex-col gap-3 font-mono text-xs text-slate-800">
           <div class="text-center text-slate-400 py-8 font-sans">Generating extract...</div>
         </div>
 
@@ -5360,46 +5358,45 @@ ${k}
       ${De("production")}
     </div>
   `}async function Ja(e,t=null,s=null){const n=new URLSearchParams(window.location.search||"");s||n.get("scriptId")||w.state.selectedScriptId;let a=n.get("mode")||"dialogue",o="KEVIN",l=n.get("scene")||"1";const i=document.getElementById("tab-mode-dialogue"),d=document.getElementById("tab-mode-sides"),u=document.getElementById("filter-controls"),x=document.getElementById("dialogue-sides-content"),p=[{sceneNum:1,heading:"EXT. MOJAVE OUTPOST GATE 4 - DAY",character:"KEVIN",parenthetical:"(adjusting filter)",dialogue:"Wind gauge is spiking past forty knots, Marcus. Did you check the terminal pressure at the intake valve?",action:"Kevin wipes gritty red dust from the gauge glass with his thumb."},{sceneNum:1,heading:"EXT. MOJAVE OUTPOST GATE 4 - DAY",character:"MARCUS",parenthetical:"(shrugging)",dialogue:"Telemetry's been on the fritz since dawn. Central syndicate says it's thermal fluctuation.",action:"Marcus gestures with a cigarette toward the desert horizon."},{sceneNum:2,heading:"INT. OUTPOST CUSTOMS SHED - DAY",character:"MEERA",parenthetical:"(eyes on monitor)",dialogue:"That's no fluctuation. Look at line three. Someone bypassed the telemetry loop eighty miles upriver.",action:"Meera brings up a wireframe map showing a hidden subterranean siphon branch."},{sceneNum:2,heading:"INT. OUTPOST CUSTOMS SHED - DAY",character:"KEVIN",parenthetical:"(tense)",dialogue:"They're siphoning straight out of the municipal reservoir into private holding tanks.",action:"Kevin taps the terminal screen, freezing the anomaly coordinates."},{sceneNum:7,heading:"INT. SYNDICATE PUMPING CONTROL - DAY",character:"COMMANDER VANCE",parenthetical:"(smooth, unhurried)",dialogue:"Water belongs to those who possess the energy to lift it from the rock, Kevin. The frontier was built on that premise.",action:"Vance sips cold tea, watching the massive hydraulic pump pistons rise and plunge."},{sceneNum:7,heading:"INT. SYNDICATE PUMPING CONTROL - DAY",character:"KEVIN",parenthetical:"(stepping forward)",dialogue:"You signed the 2041 Treaty. If the southern aquifer collapses, ten thousand families wake up to dry taps.",action:"Kevin places the legal registry deed onto Vance's polished mahogany desk."},{sceneNum:18,heading:"INT. PUMPING STATION CHAMBER B - NIGHT",character:"KEVIN",parenthetical:"(shouting over the roar)",dialogue:"Hold the pylon, Meera! If the high-pressure valve seals now, the back-surge will fracture the entire chamber!",action:"Brine water sprays across Kevin's visor as he locks the hydraulic bypass manifold."},{sceneNum:18,heading:"INT. PUMPING STATION CHAMBER B - NIGHT",character:"MEERA",parenthetical:"(straining on cable)",dialogue:"Then don't let them break! Reroute the secondary relay through the floodgate breaker!",action:"Meera kicks off the iron catwalk, swinging across the chasm to secure the emergency lock."},{sceneNum:18,heading:"INT. PUMPING STATION CHAMBER B - NIGHT",character:"KEVIN",parenthetical:"(levering the valve bar)",dialogue:"Bypass locked! Bleed the line! Three... two... one!",action:"The pressure needles drop from red to blue as the municipal pipeline fills with fresh current."}];function r(){const y=new Date,m=T=>String(T).padStart(2,"0");return`${m(y.getDate())}/${m(y.getMonth()+1)}/${y.getFullYear()}`}function c(){if(u)if(a==="dialogue"){u.innerHTML=`
-        <span class="text-xs font-semibold text-slate-500">Character:</span>
-        <select id="char-select" class="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-900 focus:outline-none cursor-pointer">
-          <option value="KEVIN" ${o==="KEVIN"?"selected":""}>KEVIN (Lead)</option>
-          <option value="MEERA" ${o==="MEERA"?"selected":""}>MEERA (Lead)</option>
-          <option value="COMMANDER VANCE" ${o==="COMMANDER VANCE"?"selected":""}>COMMANDER VANCE</option>
-          <option value="MARCUS" ${o==="MARCUS"?"selected":""}>MARCUS</option>
-        </select>
+        <span class="text-xs font-semibold text-slate-500 shrink-0">Character:</span>
+        <div class="relative inline-flex items-center flex-1 max-w-xs">
+          <select id="char-select" class="w-full text-xs font-semibold bg-white border border-slate-200/90 rounded-2xl pl-3 pr-8 py-2 text-slate-900 appearance-none focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer">
+            <option value="KEVIN" ${o==="KEVIN"?"selected":""}>KEVIN (Lead)</option>
+            <option value="MEERA" ${o==="MEERA"?"selected":""}>MEERA (Lead)</option>
+            <option value="COMMANDER VANCE" ${o==="COMMANDER VANCE"?"selected":""}>COMMANDER VANCE</option>
+            <option value="MARCUS" ${o==="MARCUS"?"selected":""}>MARCUS</option>
+          </select>
+          <span class="material-symbols-outlined text-[18px] text-slate-400 absolute right-2.5 pointer-events-none">expand_more</span>
+        </div>
       `;const y=document.getElementById("char-select");y&&(y.onchange=m=>{o=m.target.value,f()})}else{u.innerHTML=`
-        <span class="text-xs font-semibold text-slate-500">Scene Extract:</span>
-        <select id="scene-select" class="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-900 focus:outline-none cursor-pointer">
-          <option value="1" ${l==="1"?"selected":""}>Scene 1 — Outpost Gate 4</option>
-          <option value="2" ${l==="2"?"selected":""}>Scene 2 — Customs Shed</option>
-          <option value="7" ${l==="7"?"selected":""}>Scene 7 — Syndicate Control</option>
-          <option value="18" ${l==="18"?"selected":""}>Scene 18 — Chamber B Climax</option>
-        </select>
+        <span class="text-xs font-semibold text-slate-500 shrink-0">Scene Extract:</span>
+        <div class="relative inline-flex items-center flex-1 max-w-xs">
+          <select id="scene-select" class="w-full text-xs font-semibold bg-white border border-slate-200/90 rounded-2xl pl-3 pr-8 py-2 text-slate-900 appearance-none focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer">
+            <option value="1" ${l==="1"?"selected":""}>Scene 1 — Outpost Gate 4</option>
+            <option value="2" ${l==="2"?"selected":""}>Scene 2 — Customs Shed</option>
+            <option value="7" ${l==="7"?"selected":""}>Scene 7 — Syndicate Control</option>
+            <option value="18" ${l==="18"?"selected":""}>Scene 18 — Chamber B Climax</option>
+          </select>
+          <span class="material-symbols-outlined text-[18px] text-slate-400 absolute right-2.5 pointer-events-none">expand_more</span>
+        </div>
       `;const y=document.getElementById("scene-select");y&&(y.onchange=m=>{l=m.target.value,f()})}}function f(){if(!x)return;const y=r();if(a==="dialogue"){const m=p.filter(T=>T.character===o);x.innerHTML=`
         <!-- Watermark Header -->
-        <div class="border-b-2 border-slate-900 pb-3 font-sans flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-          <div>
-            <div class="text-[10px] font-bold text-slate-400 tracking-widest uppercase">SCRIPTORA · PRODUCTION EXTRACT</div>
-            <h2 class="font-heading font-extrabold text-lg text-slate-900 tracking-tight">CHARACTER DIALOGUE SHEET — ${o}</h2>
-            <div class="text-[11px] text-slate-600 font-medium">Screenplay: Chronicles of Dust · Pinned Version: Draft 4.2</div>
-          </div>
-          <div class="flex items-center sm:items-end justify-between sm:justify-end gap-3 text-left sm:text-right text-[11px] text-slate-500">
-            <div>
-              <div>Lines: ${m.length} Cues</div>
-              <div>Date: ${y}</div>
-            </div>
-            <button id="btn-export-pdf" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors cursor-pointer" title="Export PDF">
-              <span class="material-symbols-outlined text-[15px]">print</span>
-              <span>Export PDF</span>
-            </button>
-          </div>
+        <div class="font-sans flex flex-col gap-1">
+          <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">SCRIPTORA · PRODUCTION EXTRACT</div>
+          <h2 class="font-heading font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight leading-snug">
+            CHARACTER DIALOGUE SHEET<br />— ${o}
+          </h2>
+          <div class="text-[12px] text-slate-600 font-medium mt-0.5">Screenplay: Chronicles of Dust · Pinned Version: Draft 4.2</div>
+          <div class="text-[12px] text-slate-500">Lines: ${m.length} Cues</div>
+          <div class="text-[12px] text-slate-500">Date: ${y}</div>
+          <div class="w-full h-0.5 bg-slate-900 mt-2 mb-4"></div>
         </div>
 
         <!-- Dialogue Elements -->
-        <div class="space-y-6 pt-2 max-w-2xl mx-auto">
+        <div class="space-y-6 pt-1 max-w-2xl mx-auto font-mono w-full">
           ${m.map(T=>`
-            <div class="space-y-1">
-              <div class="font-sans font-bold text-[11px] text-blue-700 uppercase tracking-wider">
+            <div class="space-y-1.5">
+              <div class="font-sans font-bold text-[12px] text-blue-700 uppercase tracking-wide">
                 SCENE ${T.sceneNum} — ${T.heading}
               </div>
               <div class="text-center font-bold text-[13px] text-slate-900 uppercase tracking-widest pt-2">
@@ -5417,37 +5414,34 @@ ${k}
           `).join("")}
         </div>
 
-        <div class="border-t border-slate-200 pt-3 mt-6 text-center font-sans text-[10px] text-slate-400">
-          Generated from Draft 4.2 pinned baseline. Exact dialogue punctuation and wording preserved.
+        <div class="border-t border-slate-200 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 font-sans text-[11px] text-slate-400">
+          <span>Generated from Draft 4.2 pinned baseline.</span>
+          <button id="btn-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs">
+            <span class="material-symbols-outlined text-[15px]">print</span>
+            <span>Export Genuine PDF</span>
+          </button>
         </div>
       `}else{const m=p.filter(N=>String(N.sceneNum)===String(l)),T=m[0]||{heading:`SCENE ${l}`};x.innerHTML=`
         <!-- Sides Masthead -->
-        <div class="border-b-2 border-slate-900 pb-3 font-sans flex flex-col sm:flex-row sm:items-end justify-between gap-2">
-          <div>
-            <div class="text-[10px] font-bold text-slate-400 tracking-widest uppercase">SCRIPTORA · PRODUCTION SIDES</div>
-            <h2 class="font-heading font-extrabold text-lg text-slate-900 tracking-tight">ACTOR SIDES — SCENE ${l}</h2>
-            <div class="text-[11px] text-slate-600 font-medium">${T.heading} · Draft 4.2</div>
-          </div>
-          <div class="flex items-center sm:items-end justify-between sm:justify-end gap-3 text-left sm:text-right text-[11px] text-slate-500">
-            <div>
-              <div>Rehearsal & On-Set Copy</div>
-              <div>Date: ${y}</div>
-            </div>
-            <button id="btn-export-pdf" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition-colors cursor-pointer" title="Export PDF">
-              <span class="material-symbols-outlined text-[15px]">print</span>
-              <span>Export PDF</span>
-            </button>
-          </div>
+        <div class="font-sans flex flex-col gap-1">
+          <div class="text-[11px] font-bold text-slate-400 tracking-wider uppercase">SCRIPTORA · PRODUCTION SIDES</div>
+          <h2 class="font-heading font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight leading-snug">
+            ACTOR SIDES<br />— SCENE ${l}
+          </h2>
+          <div class="text-[12px] text-slate-600 font-medium mt-0.5">${T.heading} · Draft 4.2</div>
+          <div class="text-[12px] text-slate-500">Rehearsal & On-Set Copy</div>
+          <div class="text-[12px] text-slate-500">Date: ${y}</div>
+          <div class="w-full h-0.5 bg-slate-900 mt-2 mb-4"></div>
         </div>
 
         <!-- Formatted Script Scene Beat -->
-        <div class="space-y-4 pt-2 max-w-2xl mx-auto leading-relaxed">
+        <div class="space-y-4 pt-1 max-w-2xl mx-auto leading-relaxed font-mono w-full">
           <div class="font-bold text-[13px] text-slate-900 uppercase">
             ${T.heading}
           </div>
 
           ${m.map(N=>`
-            <div class="space-y-1 my-3">
+            <div class="space-y-1.5 my-3">
               ${N.action?`
                 <div class="text-slate-700 text-[12px] leading-relaxed italic mb-2 font-sans">
                   ${N.action}
@@ -5468,10 +5462,14 @@ ${k}
           `).join("")}
         </div>
 
-        <div class="border-t border-slate-200 pt-3 mt-6 text-center font-sans text-[10px] text-slate-400">
-          END OF SCENE ${l} SIDES · STAMPED APPROVED DRAFT 4.2
+        <div class="border-t border-slate-200 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 font-sans text-[11px] text-slate-400">
+          <span>END OF SCENE ${l} SIDES · STAMPED APPROVED DRAFT 4.2</span>
+          <button id="btn-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs">
+            <span class="material-symbols-outlined text-[15px]">print</span>
+            <span>Export Genuine PDF</span>
+          </button>
         </div>
-      `}g()}function g(){const y=document.getElementById("btn-export-pdf");y&&(y.onclick=()=>{try{if(a==="dialogue"){const m=p.filter(T=>T.character===o);_a(o,m,{title:"Chronicles of Dust",draft:"Draft 4.2"}),S(`Exported ${o} Dialogue Sheet PDF`)}else{const m=Number(l),T=p.filter(k=>k.sceneNum===m),N=T[0]||{heading:`SCENE ${m}`};Ha(l,T,{heading:N.heading,pages:"2 1/8"},{title:"Chronicles of Dust",draft:"Draft 4.2"}),S(`Exported Scene ${l} Actor Sides PDF`)}}catch(m){console.error(m),S("Failed to generate PDF document")}})}i&&d&&(i.onclick=()=>{a="dialogue",i.className="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-blue-600 shadow-2xs cursor-pointer",d.className="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer",c(),f()},d.onclick=()=>{a="sides",d.className="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all bg-white text-blue-600 shadow-2xs cursor-pointer",i.className="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer",c(),f()}),c(),f()}const Ya={Cast:"person",Locations:"location_on",Props:"inventory_2","Practical FX":"science",Stunts:"sports_kabaddi",Costumes:"checkroom",Vehicles:"commute",Sound:"music_note","Hair & Makeup":"face",Equipment:"videocam","Special Equipment":"videocam"};function Xa(e=null,t=null){const s=new URLSearchParams(window.location.search||"");t||s.get("scriptId")||w.state.selectedScriptId;const n=e||s.get("from");return`
+      `}g()}function g(){const y=document.getElementById("btn-export-pdf");y&&(y.onclick=()=>{try{if(a==="dialogue"){const m=p.filter(T=>T.character===o);_a(o,m,{title:"Chronicles of Dust",draft:"Draft 4.2"}),S(`Exported ${o} Dialogue Sheet PDF`)}else{const m=Number(l),T=p.filter(k=>k.sceneNum===m),N=T[0]||{heading:`SCENE ${m}`};Ha(l,T,{heading:N.heading,pages:"2 1/8"},{title:"Chronicles of Dust",draft:"Draft 4.2"}),S(`Exported Scene ${l} Actor Sides PDF`)}}catch(m){console.error(m),S("Failed to generate PDF document")}})}i&&d&&(i.onclick=()=>{a="dialogue",i.className="flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all bg-white text-blue-600 shadow-2xs cursor-pointer text-center",d.className="flex-1 py-2 px-3 text-xs font-semibold rounded-xl transition-all text-slate-600 hover:text-slate-900 cursor-pointer text-center",c(),f()},d.onclick=()=>{a="sides",d.className="flex-1 py-2 px-3 text-xs font-bold rounded-xl transition-all bg-white text-blue-600 shadow-2xs cursor-pointer text-center",i.className="flex-1 py-2 px-3 text-xs font-semibold rounded-xl transition-all text-slate-600 hover:text-slate-900 cursor-pointer text-center",c(),f()}),c(),f()}const Ya={Cast:"person",Locations:"location_on",Props:"inventory_2","Practical FX":"science",Stunts:"sports_kabaddi",Costumes:"checkroom",Vehicles:"commute",Sound:"music_note","Hair & Makeup":"face",Equipment:"videocam","Special Equipment":"videocam"};function Xa(e=null,t=null){const s=new URLSearchParams(window.location.search||"");t||s.get("scriptId")||w.state.selectedScriptId;const n=e||s.get("from");return`
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
       ${Re("Pre-Production","Master Shooting Schedule")}
 
