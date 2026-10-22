@@ -11,6 +11,7 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
   const from = fromParam || urlParams.get('from');
+  const mainProductionUrl = from || `/production?scriptId=${scriptId}`;
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -20,7 +21,7 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
         ${renderProdSubNav(
           'Dialogue & Actor Sides',
           'theater_comedy',
-          from || '/production',
+          mainProductionUrl,
           '',
           null,
           'Dialogue sheets and actor scene sides.'
@@ -68,18 +69,19 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   const filterArea = document.getElementById('filter-controls');
   const contentArea = document.getElementById('dialogue-sides-content');
 
-  // Wire back button in subnav
+  // Wire back button in subnav to return directly to main production screen
   const subnavBackBtn = document.getElementById('prod-subnav-back');
   if (subnavBackBtn) {
     subnavBackBtn.onclick = (e) => {
       e.preventDefault();
-      const fallbackUrl = fromParam || `/production?scriptId=${scriptId}`;
+      e.stopPropagation();
+      const targetUrl = fromParam || `/production?scriptId=${scriptId}`;
       if (typeof navigate === 'function') {
-        navigate(fallbackUrl);
+        navigate(targetUrl);
       } else if (window.scriptoraRouter) {
-        window.scriptoraRouter.back(fallbackUrl);
+        window.scriptoraRouter.navigate(targetUrl);
       } else {
-        window.location.href = fallbackUrl;
+        window.location.href = targetUrl;
       }
     };
   }

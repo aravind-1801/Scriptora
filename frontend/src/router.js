@@ -241,6 +241,10 @@ class Router {
         e.preventDefault();
         e.stopPropagation();
         const fallback = backTrigger.getAttribute('data-back-fallback') || backTrigger.getAttribute('href') || null;
+        if (backTrigger.id === 'prod-subnav-back' && fallback) {
+          this.navigate(fallback);
+          return;
+        }
         this.back(fallback);
         return;
       }
@@ -634,6 +638,9 @@ class Router {
     }
 
     if (contentSlot) {
+      // Clear screen-scoped back handlers so previous screens cannot block navigation
+      this.backHandlers = [];
+
       // Clear any portaled modals from previous screen and reset scroll lock
       const modalPortal = document.getElementById('scriptora-modal-portal');
       if (modalPortal) {
