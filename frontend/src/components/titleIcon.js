@@ -1,10 +1,11 @@
 /**
  * SCRIPTORA Title Icons
- * Clean, stroke-based SVG icons matching the reference box layout in SCRIPTORA.
+ * Clean, stroke-based SVG icons matching the reference box layout in SCRIPTORA,
+ * scaled proportionately to the heading typography (20px-24px).
  */
 
 export function renderTitleIcon(name, extraClass = '') {
-  const classes = `w-[18px] h-[18px] text-blue-600 shrink-0 inline-block transition-colors ${extraClass}`.trim();
+  const classes = `w-[21px] h-[21px] sm:w-6 sm:h-6 text-blue-600 shrink-0 inline-block transition-colors ${extraClass}`.trim();
 
   switch (name) {
     case 'file-pen-line':
@@ -25,10 +26,10 @@ export function renderTitleIcon(name, extraClass = '') {
   }
 }
 
-export function renderTitleIconBox(name, extraBoxClass = '') {
+export function renderTitleIconBox(name, extraBoxClass = '', extraIconClass = '') {
   return `
-    <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs ${extraBoxClass}">
-      ${renderTitleIcon(name)}
+    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs ${extraBoxClass}">
+      ${renderTitleIcon(name, extraIconClass)}
     </div>
   `.trim();
 }

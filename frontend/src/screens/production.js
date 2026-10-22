@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { renderTitleIcon } from '../components/titleIcon.js';
+import { renderTitleIcon, renderTitleIconBox } from '../components/titleIcon.js';
 
 export function renderProductionScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -40,9 +40,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
         <!-- Page Title Header (Matches Workspace: Bold title + muted subtitle, no back button) -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs">
-              ${renderTitleIcon('film-strip')}
-            </div>
+            ${renderTitleIconBox('film-strip')}
             <div class="flex flex-col min-w-0">
               <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Production Tools</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Your filmmaking workspace.</p>

@@ -4,7 +4,7 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
-import { renderTitleIcon } from '../components/titleIcon.js';
+import { renderTitleIcon, renderTitleIconBox } from '../components/titleIcon.js';
 
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
@@ -20,9 +20,7 @@ export function renderWorkspaceScreen() {
         <!-- Header Title & Telemetry -->
         <div class="flex items-center justify-between gap-3 py-1">
           <div class="flex items-center gap-2.5 min-w-0">
-            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs">
-              ${renderTitleIcon('file-pen-line')}
-            </div>
+            ${renderTitleIconBox('file-pen-line')}
             <div class="flex flex-col min-w-0">
               <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 font-heading truncate">Workspace</h1>
               <p class="text-xs text-slate-500 mt-0.5 truncate">Your writing space.</p>
