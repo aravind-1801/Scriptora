@@ -356,6 +356,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (menuBtn && menuDropdown) {
       menuDropdown.classList.add('hidden');
       modalMenuHandler = setupPopupToggle(menuBtn, menuDropdown, { placement: 'bottom-end', zIndex: 120 });
+      menuBtn.onclick = (e) => { e.stopPropagation(); modalMenuHandler.toggle(); };
     }
 
     if (editDayBtn) {
