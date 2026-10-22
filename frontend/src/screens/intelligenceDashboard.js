@@ -35,25 +35,18 @@ export function renderIntelligenceDashboardScreen() {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
-        <!-- Navigation Row -->
-        <div class="flex items-center justify-between">
-          <button id="intelligence-dashboard-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/context" class="inline-flex items-center gap-1 text-slate-500 hover:text-slate-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Context Setup</span>
-          </button>
-          <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full shadow-xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            <span class="text-xs text-blue-700 font-medium truncate max-w-[150px]">${script.title} · ${script.draft || 'Draft 4.2'}</span>
+        <!-- Section Title & Telemetry Header -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="intelligence-dashboard-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/context" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <h1 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight font-heading truncate">Intelligence</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Understand your screenplay.</p>
+            </div>
           </div>
-        </div>
-
-        <!-- Section Title & Status -->
-        <div class="flex items-center justify-between pt-1">
-          <div class="flex flex-col">
-            <h1 class="text-2xl font-bold text-slate-900 tracking-tight font-heading">Intelligence</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Understand your screenplay.</p>
-          </div>
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100/80 shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
             <span>Live Telemetry</span>
           </span>

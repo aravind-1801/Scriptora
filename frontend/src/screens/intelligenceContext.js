@@ -27,23 +27,21 @@ export function renderIntelligenceContextScreen() {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-5 fade-in">
         
-        <!-- Breadcrumb & Draft Indicator -->
-        <div class="flex items-center justify-between">
-          <button id="intelligence-context-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors py-1 text-xs font-semibold uppercase tracking-wider no-underline cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Script Selector</span>
-          </button>
-          <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full shadow-xs">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            <span class="text-xs text-blue-700 font-medium truncate max-w-[150px]">${script.title} · ${script.draft || 'Draft 4.2'}</span>
+        <!-- Header Block with Back Navigation -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="intelligence-context-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Context Calibration</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Tell us about your screenplay to calibrate intelligence metrics.</p>
+            </div>
           </div>
-        </div>
-
-        <!-- Header Block -->
-        <div class="flex flex-col gap-1">
-          <span class="text-[11px] font-bold text-blue-600 tracking-widest uppercase">Context Calibration</span>
-          <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900">Tell us about your screenplay</h1>
-          <p class="text-xs text-slate-500 mt-0.5">Set narrative parameters so SCRIPTORA can tailor pacing, scene economy, and character metrics.</p>
+          <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full shadow-xs shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            <span class="text-xs text-blue-700 font-medium truncate max-w-[140px]">${script.title}</span>
+          </div>
         </div>
 
         <!-- Section 1: Project Type Selection -->

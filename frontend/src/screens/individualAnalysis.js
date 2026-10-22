@@ -1368,26 +1368,23 @@ export function renderIndividualAnalysisScreen(type = 'pacing', from = null, ret
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
-        <!-- 1. SUB-HEADER NAVIGATION ROW -->
-        <div class="flex items-center justify-between">
-          <button id="analysis-back-btn" data-scriptora-back="true" data-back-fallback="${backUrl}" class="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 transition-colors text-xs font-semibold uppercase tracking-wider no-underline cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>${backText}</span>
-          </button>
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            <span class="text-xs font-medium">${script.title} · ${script.draft || 'Draft 4.2'}</span>
-          </div>
-        </div>
-
-        <!-- Section Title Header (Extra score beside heading removed as requested) -->
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-600 text-[22px]">${detail.icon}</span>
-              <h1 class="font-heading text-xl font-bold text-slate-900 tracking-tight">${detail.title}</h1>
+        <!-- Section Header with Back Navigation -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="analysis-back-btn" data-scriptora-back="true" data-back-fallback="${backUrl}" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0">${detail.icon}</span>
+                <h1 class="font-heading text-lg sm:text-xl font-bold text-slate-900 tracking-tight truncate">${detail.title}</h1>
+              </div>
+              <p id="analysis-header-desc" class="text-xs text-slate-500 mt-0.5 truncate">${detail.desc}</p>
             </div>
-            <p id="analysis-header-desc" class="text-xs text-slate-500 mt-0.5">${detail.desc}</p>
+          </div>
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            <span class="text-xs font-medium truncate max-w-[140px]">${script.title}</span>
           </div>
         </div>
 

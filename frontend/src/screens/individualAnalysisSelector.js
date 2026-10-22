@@ -31,24 +31,21 @@ export function renderIndividualAnalysisSelectorScreen() {
     <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-2.5 pb-8 space-y-4 fade-in">
         
-        <!-- Sub-header Navigation Row -->
-        <div class="px-1 py-1.5 flex items-center justify-between">
-          <button id="individual-analysis-selector-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/dashboard" class="inline-flex items-center gap-1.5 text-slate-500 hover:text-slate-900 transition-colors text-xs font-semibold uppercase tracking-wider no-underline cursor-pointer">
-            <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Script Analysis</span>
-          </button>
-          <!-- Active Draft Badge -->
-          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            <span class="text-xs font-medium">${script.title} · ${script.draft || 'Draft 4.2'}</span>
+        <!-- Section Header with Back Navigation -->
+        <div class="flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button id="individual-analysis-selector-back-btn" data-scriptora-back="true" data-back-fallback="/intelligence/dashboard" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 transition-colors flex items-center justify-center shrink-0 cursor-pointer" aria-label="Back" title="Back">
+              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+            </button>
+            <div class="flex flex-col min-w-0">
+              <h1 class="font-heading text-xl sm:text-2xl font-bold text-slate-900 tracking-tight truncate">Analyse Individually</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Choose an area to explore in your screenplay.</p>
+            </div>
           </div>
-        </div>
-
-        <!-- Section Header -->
-        <div class="flex flex-col">
-          <span class="text-[11px] font-bold text-blue-600 uppercase tracking-widest">Analysis Vectors</span>
-          <h1 class="font-heading text-2xl font-bold text-slate-900 tracking-tight">Analyse Individually</h1>
-          <p class="text-xs text-slate-500 mt-0.5">Choose an area to explore in your screenplay.</p>
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 shrink-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            <span class="text-xs font-medium truncate max-w-[140px]">${script.title}</span>
+          </div>
         </div>
 
         <!-- Search & Filter Bar -->
