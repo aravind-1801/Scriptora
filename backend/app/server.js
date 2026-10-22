@@ -69,6 +69,19 @@ export const server = http.createServer(async (req, res) => {
     if (pathname === '/auth/logout' && method === 'POST') {
       return sendJson(res, 200, authService.signOut());
     }
+    if ((pathname === '/auth/delete-account' && method === 'POST') || (pathname === '/auth/account' && method === 'DELETE')) {
+      const currentUser = authService.getCurrentUser();
+      if (!currentUser) {
+        return sendJson(res, 401, { error: 'Authentication required to delete account.' });
+      }
+      const body = await readBody(req);
+      try {
+        const result = authService.deleteAccount(body.confirmation || body.confirmPhrase);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
 
     // 2. SCRIPTS
     if (pathname === '/scripts' && method === 'GET') {

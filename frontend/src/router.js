@@ -35,6 +35,13 @@ class Router {
     this.historyIndex = 0;
   }
 
+  clearHistory() {
+    this.scrollPositions = {};
+    this.historyIndex = 0;
+    this.backHandlers = [];
+    store.clearHistory();
+  }
+
   getBasePath() {
     const p = window.location.pathname;
     if (p.toLowerCase().startsWith('/scriptora')) {

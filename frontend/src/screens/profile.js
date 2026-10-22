@@ -339,10 +339,18 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
             <span class="material-symbols-outlined text-[20px]" id="action-modal-icon">logout</span>
           </div>
           <h2 class="text-base font-bold text-slate-900" id="action-modal-title">Sign Out</h2>
-          <p class="text-xs text-slate-500" id="action-modal-desc">Are you sure you want to end your active session on this device?</p>
+          <p class="text-xs text-slate-500 leading-relaxed" id="action-modal-desc">Are you sure you want to end your active session on this device?</p>
+          
+          <!-- Explicit Confirmation Input for Delete Account -->
+          <div id="action-modal-input-wrap" class="hidden flex flex-col gap-1.5 mt-1">
+            <label class="text-[11px] font-semibold text-slate-700">Type <span class="font-mono font-bold text-red-600 select-all">DELETE MY ACCOUNT</span> to confirm:</label>
+            <input type="text" id="action-modal-phrase-input" placeholder="DELETE MY ACCOUNT" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:outline-none focus:border-red-600 font-mono text-slate-900" autocomplete="off" />
+            <p id="action-modal-error" class="text-[11px] text-red-600 hidden font-medium leading-tight"></p>
+          </div>
+
           <div class="flex items-center gap-2 mt-2">
-            <button type="button" class="flex-1 h-10 px-4 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer" id="action-modal-cancel">Cancel</button>
-            <button type="button" class="flex-1 h-10 px-4 rounded-xl text-white text-xs font-semibold shadow-xs cursor-pointer" id="action-modal-confirm">Confirm</button>
+            <button type="button" class="flex-1 h-10 px-4 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer transition-colors" id="action-modal-cancel">Cancel</button>
+            <button type="button" class="flex-1 h-10 px-4 rounded-xl text-white text-xs font-semibold shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1.5" id="action-modal-confirm">Confirm</button>
           </div>
         </div>
       </div>
@@ -1366,29 +1374,49 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const actionIconBox = document.getElementById('action-modal-icon-box');
   const actionConfirm = document.getElementById('action-modal-confirm');
   const actionCancel = document.getElementById('action-modal-cancel');
+  const actionInputWrap = document.getElementById('action-modal-input-wrap');
+  const actionPhraseInput = document.getElementById('action-modal-phrase-input');
+  const actionError = document.getElementById('action-modal-error');
   let currentAction = 'signout';
+  let isActionProcessing = false;
 
   function openAction(action) {
+    if (isActionProcessing) return;
     currentAction = action;
+
+    if (actionError) {
+      actionError.textContent = '';
+      actionError.classList.add('hidden');
+    }
+    if (actionPhraseInput) {
+      actionPhraseInput.value = '';
+    }
+
     if (action === 'signout') {
       actionTitle.textContent = 'Sign Out';
-      actionDesc.textContent = 'Are you sure you want to end your active session on this device?';
+      actionDesc.textContent = 'Are you sure you want to end your active session on this device? Unsaved changes in your draft have been synchronized.';
       actionIcon.textContent = 'logout';
       actionIconBox.className = 'w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center';
-      actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900 cursor-pointer';
+      actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900 cursor-pointer transition-colors flex items-center justify-center gap-1.5';
       actionConfirm.textContent = 'Sign Out';
+      if (actionInputWrap) actionInputWrap.classList.add('hidden');
     } else {
       actionTitle.textContent = 'Delete Account';
-      actionDesc.textContent = 'This action will permanently delete your portfolio, scripts, and collaborator access. This cannot be undone.';
+      actionDesc.textContent = 'This action will permanently delete your account, private screenplays, versions, and production records. Authorized collaborators on shared scripts will retain access.';
       actionIcon.textContent = 'warning';
       actionIconBox.className = 'w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center';
-      actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 cursor-pointer';
+      actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 cursor-pointer transition-colors flex items-center justify-center gap-1.5';
       actionConfirm.textContent = 'Delete Forever';
+      if (actionInputWrap) actionInputWrap.classList.remove('hidden');
     }
     openModal(actionModal);
+    if (action === 'delete' && actionPhraseInput) {
+      setTimeout(() => actionPhraseInput.focus(), 100);
+    }
   }
 
   function closeActionModal() {
+    if (isActionProcessing) return;
     closeModal(actionModal);
   }
 
@@ -1398,17 +1426,61 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
 
   if (actionConfirm) {
     actionConfirm.onclick = async () => {
-      closeActionModal();
-      if (currentAction === 'signout') {
-        await api.signOut();
-        store.setState({ currentUser: null });
-        showToast('Signed out of Scriptora');
-        navigate('/auth');
-      } else {
-        await api.signOut();
-        store.setState({ currentUser: null, scripts: [] });
-        showToast('Account deleted');
-        navigate('/auth');
+      if (isActionProcessing) return;
+
+      if (currentAction === 'delete') {
+        const phrase = (actionPhraseInput?.value || '').trim();
+        if (phrase.toUpperCase() !== 'DELETE MY ACCOUNT') {
+          if (actionError) {
+            actionError.textContent = 'Please type "DELETE MY ACCOUNT" exactly to proceed with deletion.';
+            actionError.classList.remove('hidden');
+          }
+          if (actionPhraseInput) actionPhraseInput.focus();
+          return;
+        }
+      }
+
+      isActionProcessing = true;
+      actionConfirm.disabled = true;
+      if (actionCancel) actionCancel.disabled = true;
+
+      const originalBtnText = actionConfirm.textContent;
+      actionConfirm.innerHTML = `
+        <span class="material-symbols-outlined text-[15px] animate-spin">refresh</span>
+        <span>${currentAction === 'signout' ? 'Signing Out...' : 'Deleting Account...'}</span>
+      `;
+
+      try {
+        if (currentAction === 'signout') {
+          await api.signOut();
+          store.resetUserSession();
+          if (window.scriptoraRouter?.clearHistory) {
+            window.scriptoraRouter.clearHistory();
+          }
+          closeModal(actionModal);
+          showToast('Signed out of Scriptora');
+          navigate('/auth', true);
+        } else {
+          const phrase = (actionPhraseInput?.value || '').trim();
+          const result = await api.deleteAccount(phrase);
+          store.resetUserSession();
+          if (window.scriptoraRouter?.clearHistory) {
+            window.scriptoraRouter.clearHistory();
+          }
+          closeModal(actionModal);
+          showToast(result.message || 'Account deleted successfully');
+          navigate('/auth', true);
+        }
+      } catch (err) {
+        isActionProcessing = false;
+        actionConfirm.disabled = false;
+        if (actionCancel) actionCancel.disabled = false;
+        actionConfirm.textContent = originalBtnText;
+        if (actionError) {
+          actionError.textContent = err.message || 'Operation failed. Please try again.';
+          actionError.classList.remove('hidden');
+        }
+        showToast(err.message || 'Action failed', 'error');
       }
     };
   }

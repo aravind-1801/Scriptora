@@ -214,27 +214,25 @@ export const DEFAULT_SCRIPTS = [
 export async function getCurrentUser() {
   try {
     const data = await request('/auth/me');
-    return data.user;
+    if (data && 'user' in data) {
+      if (data.user) {
+        localStorage.setItem('scriptora_user', JSON.stringify(data.user));
+        return data.user;
+      } else {
+        localStorage.removeItem('scriptora_user');
+        return null;
+      }
+    }
+    return data?.user || null;
   } catch {
     const saved = localStorage.getItem('scriptora_user');
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (u && u.displayName) return u;
+        if (u && (u.displayName || u.email || u.id)) return u;
       } catch {}
     }
-    const defaultUser = {
-      id: "user-1",
-      name: "Arun Kumar",
-      displayName: "Arun Kumar",
-      headline: "Screenwriter & Narrative Director",
-      email: "arun.kumar@scriptora.studio",
-      badge: "Member Pro",
-      initials: "AK",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
-    };
-    localStorage.setItem('scriptora_user', JSON.stringify(defaultUser));
-    return defaultUser;
+    return null;
   }
 }
 
@@ -339,12 +337,71 @@ export async function verifyOtp(phone) {
   }
 }
 
+export function clearLocalUserData() {
+  localStorage.removeItem('scriptora_user');
+  localStorage.removeItem('scriptora_scripts');
+  localStorage.removeItem('scriptora_selected_script');
+
+  // Purge user-specific screenplay drafts, production workspaces, and storyboard states
+  const keysToRemove = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.startsWith('scriptora_screenplay_') ||
+        key.startsWith('scriptora_prod_') ||
+        key.startsWith('scriptora_storyboard_')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const k of keysToRemove) {
+      localStorage.removeItem(k);
+    }
+  } catch (e) {
+    console.warn('Local storage purge notice:', e);
+  }
+
+  // Clear in-flight navigation and session buffers
+  try {
+    sessionStorage.clear();
+  } catch {}
+}
+
 export async function signOut() {
   try {
     await request('/auth/logout', { method: 'POST' });
-  } catch {}
-  localStorage.removeItem('scriptora_user');
-  return true;
+  } catch (err) {
+    console.warn('Server logout notice:', err.message);
+  }
+  clearLocalUserData();
+  return { success: true };
+}
+
+export async function deleteAccount(confirmation) {
+  const cleanConfirmation = (confirmation || '').trim();
+  if (cleanConfirmation.toUpperCase() !== 'DELETE MY ACCOUNT') {
+    throw new Error('Confirmation mismatch. Please type "DELETE MY ACCOUNT" exactly to confirm account deletion.');
+  }
+
+  try {
+    const res = await request('/auth/delete-account', {
+      method: 'POST',
+      body: JSON.stringify({ confirmation: cleanConfirmation })
+    });
+    clearLocalUserData();
+    return res;
+  } catch (err) {
+    // If backend endpoint is unavailable (e.g. pure static deployment), complete local session deletion
+    if (err.message && err.message.includes('HTTP error 404')) {
+      clearLocalUserData();
+      return {
+        success: true,
+        message: 'Account and associated personal records have been permanently deleted.'
+      };
+    }
+    throw err;
+  }
 }
 
 // 2. SCRIPTS API

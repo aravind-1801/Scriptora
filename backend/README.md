@@ -89,6 +89,7 @@ npm test
 * `POST /api/auth/register` — Registers a new screenwriter account.
 * `POST /api/auth/otp` — Verifies 6-digit phone authorization.
 * `POST /api/auth/logout` — Destroys active session.
+* `POST /api/auth/delete-account` — Authenticated account deletion requiring typed confirmation phrase (`DELETE MY ACCOUNT`), purging personal data while preserving shared collaborator projects.
 
 ### Screenplays & Scripts (`/api/scripts`, `/api/screenplay`)
 * `GET /api/scripts` — Lists portfolio screenplays.

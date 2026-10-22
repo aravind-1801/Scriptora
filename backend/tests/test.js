@@ -144,6 +144,44 @@ server.listen(PORT, async () => {
     });
     console.log('✓ AI Scene Sequence Generation:', genSeq.status, genSeq.body.proposedShots?.length === 4 ? 'PASS' : 'FAIL');
 
+    // 15. Sign Out (Session Invalidation)
+    const logoutRes = await request('/api/auth/logout', { method: 'POST' });
+    const meAfterLogout = await request('/api/auth/me');
+    console.log('✓ Sign Out & Session Invalidation:', logoutRes.status === 200 && meAfterLogout.body.user === null ? 'PASS' : 'FAIL');
+
+    // 16. Delete Account Unauthenticated Check (Must return 401)
+    const deleteUnauth = await request('/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { confirmation: 'DELETE MY ACCOUNT' }
+    });
+    console.log('✓ Delete Account Unauthenticated Protection (401):', deleteUnauth.status === 401 ? 'PASS' : 'FAIL');
+
+    // 17. Register Disposable Test User for Account Deletion
+    const testUserReg = await request('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { name: 'Disposable Author', email: 'disposable.author@scriptora.studio' }
+    });
+    console.log('✓ Register Disposable Test Account:', testUserReg.status === 201 && testUserReg.body.user?.email === 'disposable.author@scriptora.studio' ? 'PASS' : 'FAIL');
+
+    // 18. Delete Account Invalid Confirmation Phrase Check (Must return 400)
+    const deleteInvalidPhrase = await request('/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { confirmation: 'WRONG PHRASE' }
+    });
+    console.log('✓ Delete Account Phrase Verification (400 on mismatch):', deleteInvalidPhrase.status === 400 ? 'PASS' : 'FAIL');
+
+    // 19. Real Account Deletion with Exact Phrase ("DELETE MY ACCOUNT")
+    const deleteSuccess = await request('/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { confirmation: 'DELETE MY ACCOUNT' }
+    });
+    const meAfterDelete = await request('/api/auth/me');
+    console.log('✓ Real Account Deletion Workflow (200 & Purged):', deleteSuccess.status === 200 && deleteSuccess.body.success === true && meAfterDelete.body.user === null ? 'PASS' : 'FAIL');
+
     console.log('\n[TEST] All backend integration tests PASSED successfully!');
     server.close();
     process.exit(0);

@@ -64,3 +64,66 @@ export function signOut() {
   db.currentUser = null;
   return { success: true };
 }
+
+export function deleteAccount(confirmationText) {
+  const currentUser = db.currentUser;
+  if (!currentUser) {
+    throw new Error('Authentication required to delete account.');
+  }
+
+  const cleanConfirmation = (confirmationText || '').trim().toUpperCase();
+  if (cleanConfirmation !== 'DELETE MY ACCOUNT') {
+    throw new Error('Confirmation mismatch. Please type "DELETE MY ACCOUNT" exactly to confirm account deletion.');
+  }
+
+  const deletingEmail = currentUser.email;
+  const deletingId = currentUser.id;
+
+  // Preserve shared scripts with remaining collaborators; delete sole-owned scripts
+  const scriptsToKeep = [];
+  const scriptsToDelete = [];
+
+  for (const script of db.scripts) {
+    const collabs = db.collaborators[script.id] || [];
+    const remainingCollabs = collabs.filter(c => c.email !== deletingEmail && c.id !== deletingId);
+
+    if (remainingCollabs.length > 0) {
+      // Transfer ownership to the first remaining collaborator
+      if (!remainingCollabs.some(c => c.role === 'Owner')) {
+        remainingCollabs[0].role = 'Owner';
+      }
+      db.collaborators[script.id] = remainingCollabs;
+      scriptsToKeep.push(script);
+    } else {
+      scriptsToDelete.push(script.id);
+    }
+  }
+
+  db.scripts = scriptsToKeep;
+  for (const scriptId of scriptsToDelete) {
+    delete db.screenplays[scriptId];
+    delete db.collaborators[scriptId];
+    delete db.versions[scriptId];
+    if (Array.isArray(db.storyboards)) {
+      db.storyboards = db.storyboards.filter(sb => sb.scriptId !== scriptId);
+    }
+  }
+
+  // De-identify personal signatures in production records
+  if (Array.isArray(db.callSheets)) {
+    for (const cs of db.callSheets) {
+      if (cs.approvedBy && (cs.approvedBy.includes(currentUser.name) || cs.approvedBy.includes(currentUser.displayName))) {
+        cs.approvedBy = 'Former Member (Deleted)';
+      }
+    }
+  }
+
+  // Invalidate server session
+  db.currentUser = null;
+
+  return {
+    success: true,
+    message: 'Account and associated personal records have been permanently deleted.',
+    deletedUserId: deletingId
+  };
+}

@@ -79,6 +79,19 @@ class Store {
     } catch (e) {}
   }
 
+  resetUserSession() {
+    this.setState({
+      currentUser: null,
+      scripts: [],
+      activeScript: null,
+      screenplay: null,
+      historyStack: [],
+      selectedScriptId: 'chronicles-of-dust',
+      unreadNotifications: 0
+    });
+    this.clearHistory();
+  }
+
   async init() {
     try {
       const user = await api.getCurrentUser();
