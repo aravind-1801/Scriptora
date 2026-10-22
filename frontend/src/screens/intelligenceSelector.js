@@ -2,6 +2,7 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
+import { renderTitleIcon } from '../components/titleIcon.js';
 
 export function renderIntelligenceSelectorScreen() {
   const scripts = store.state.scripts || [];
@@ -16,9 +17,14 @@ export function renderIntelligenceSelectorScreen() {
         
         <!-- Section Header -->
         <div class="flex items-center justify-between gap-3 py-1">
-          <div class="flex flex-col min-w-0">
-            <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
-            <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100/80 shadow-2xs">
+              ${renderTitleIcon('chart-no-axes-combined')}
+            </div>
+            <div class="flex flex-col min-w-0">
+              <h1 class="font-heading text-xl sm:text-2xl font-bold tracking-tight text-slate-900 truncate">Select Screenplay</h1>
+              <p class="text-xs text-slate-500 mt-0.5 truncate">Choose a script to understand its story, characters and structure.</p>
+            </div>
           </div>
           <div class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-600 text-xs px-2.5 py-1 rounded-full font-medium shrink-0">
             <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
