@@ -29,8 +29,10 @@ class Router {
     this.currentPath = null;
     this.isFullScreen = false;
     this.isNavigatingBack = false;
+    this._backInProgress = false;
     this.backHandlers = [];
     this.scrollPositions = {};
+    this.historyIndex = 0;
   }
 
   getBasePath() {
@@ -170,26 +172,45 @@ class Router {
   }
 
   peekPreviousRoute() {
+    if (window.history.state?.prevPath) {
+      return window.history.state.prevPath;
+    }
     return store.peekPreviousRoute(null);
   }
 
   back(fallback = null) {
-    // 1. Check overlays / sub-views first
+    // Guard against simultaneous duplicate invocations
+    if (this._backInProgress) return;
+    this._backInProgress = true;
+    setTimeout(() => {
+      this._backInProgress = false;
+    }, 200);
+
+    // 1. Check overlays / sub-views first (modal, drawer, titlepage tab)
     if (this.triggerBackHandlers()) {
       return;
     }
 
-    // 2. Pop the immediate preceding route from navigation journey
+    // 2. Unwind browser history if previous in-app entry exists
+    const state = window.history.state || {};
+    const appStep = typeof state.appStep === 'number' ? state.appStep : this.historyIndex;
+    if (appStep > 0) {
+      window.history.back();
+      return;
+    }
+
+    // 3. Pop the immediate preceding route from store navigation stack if available
     let prev = store.popHistory();
-    // Drop duplicates matching current path
     while (prev && this.normalizePath(prev) === this.normalizePath(this.currentPath)) {
       prev = store.popHistory();
     }
 
     const target = prev || fallback || this.getRouteFallback(this.currentPath);
-    this.isNavigatingBack = true;
-    this.navigate(target, false);
-    this.isNavigatingBack = false;
+    if (target && this.normalizePath(target) !== this.normalizePath(this.currentPath)) {
+      this.isNavigatingBack = true;
+      this.navigate(target, true);
+      this.isNavigatingBack = false;
+    }
   }
 
   ensureShell() {
@@ -222,6 +243,15 @@ class Router {
     this.ensureShell();
     window.scriptoraRouter = this;
 
+    // Track browser history step to distinguish in-app navigation from initial entry
+    const state = window.history.state || {};
+    if (typeof state.appStep !== 'number') {
+      window.history.replaceState({ ...state, appStep: 0, scriptoraPath: this.getCurrentLocation() }, '', window.location.href);
+      this.historyIndex = 0;
+    } else {
+      this.historyIndex = state.appStep;
+    }
+
     // Global fullscreen handler for focused writing modes (e.g. Focus Mode)
     window.setScriptoraFullScreen = (isFull) => {
       this.isFullScreen = !!isFull;
@@ -231,20 +261,16 @@ class Router {
       if (navSlot) navSlot.classList.toggle('hidden', !!isFull);
     };
 
-    // Intercept clicks on local links and back buttons
-    document.body.addEventListener('click', (e) => {
+    // Intercept clicks on local links and back buttons in CAPTURE phase to prevent double execution
+    document.addEventListener('click', (e) => {
       // 1. Back button click interception
       const backTrigger = e.target.closest(
-        '[data-scriptora-back], #prod-subnav-back, #editor-back-btn, #btn-back-notif, #analysis-back-btn, #collab-back-btn, #profile-back-to-editor-btn, #profile-back-btn, #production-back-btn, #chat-back-btn, #intelligence-selector-back-btn'
+        '[data-scriptora-back], #prod-subnav-back, #editor-back-btn, #btn-back-notif, #analysis-back-btn, #collab-back-btn, #profile-back-to-editor-btn, #profile-back-btn, #production-back-btn, #chat-back-btn, #intelligence-selector-back-btn, #intelligence-dashboard-back-btn, #intelligence-context-back-btn, #individual-analysis-selector-back-btn'
       );
       if (backTrigger) {
         e.preventDefault();
         e.stopPropagation();
         const fallback = backTrigger.getAttribute('data-back-fallback') || backTrigger.getAttribute('href') || null;
-        if (backTrigger.id === 'prod-subnav-back' && fallback) {
-          this.navigate(fallback);
-          return;
-        }
         this.back(fallback);
         return;
       }
@@ -266,7 +292,7 @@ class Router {
           this.navigate(path);
         }
       }
-    });
+    }, true);
 
     // Listen to browser Back/Forward & hash changes
     window.addEventListener('popstate', (e) => {
@@ -278,11 +304,17 @@ class Router {
       // If an overlay or modal or dropdown was open, close it instead of leaving!
       if (this.triggerBackHandlers()) {
         const cur = this.getCurrentLocation();
-        window.history.pushState({ scriptoraPath: cur }, '', cur);
+        window.history.pushState({ ...(window.history.state || {}), scriptoraPath: cur }, '', cur);
         return;
       }
 
       // Normal browser popstate
+      if (typeof e.state?.appStep === 'number') {
+        this.historyIndex = e.state.appStep;
+      } else if (this.historyIndex > 0) {
+        this.historyIndex -= 1;
+      }
+
       store.popHistory();
       this.isNavigatingBack = true;
       this.resolve(this.getCurrentLocation());
@@ -321,10 +353,15 @@ class Router {
       ? `${base}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`
       : path;
 
+    const prevPath = this.currentPath ? this.normalizePath(this.currentPath) : null;
+
     if (replace) {
-      window.history.replaceState({ scriptoraPath: cleanPath }, '', fullTarget);
+      window.history.replaceState({ ...(window.history.state || {}), scriptoraPath: cleanPath, appStep: this.historyIndex, prevPath }, '', fullTarget);
     } else {
-      window.history.pushState({ scriptoraPath: cleanPath }, '', fullTarget);
+      if (!this.isNavigatingBack) {
+        this.historyIndex += 1;
+      }
+      window.history.pushState({ scriptoraPath: cleanPath, appStep: this.historyIndex, prevPath }, '', fullTarget);
     }
 
     this.resolve(cleanPath);
@@ -530,7 +567,7 @@ class Router {
       const scriptParam = query.get('scriptId') || 'chronicles-of-dust';
       const sceneId = sceneMatch[1] || query.get('sceneId');
       const dest = `/production/schedule?scriptId=${scriptParam}${sceneId ? `&sceneId=${sceneId}` : ''}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`;
-      this.navigate(dest, false);
+      this.navigate(dest, true);
       return;
     }
 

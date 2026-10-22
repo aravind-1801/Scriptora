@@ -1044,38 +1044,41 @@ export async function attachEditorEvents(scriptId, navigate) {
   // Clear any existing stack on clean session enter
   editorNavStack.length = 0;
 
-  // Intercept browser Back & phone Back gestures via router popstate hook
-  window.__scriptoraEditorPopstate = (e) => {
+  const editorBackHandler = () => {
     if (activeDocumentTab === 'titlepage') {
-      switchDocumentTab('screenplay');
+      closeTitlePageDoc();
       return true;
     }
     if (editorNavStack.length > 0) {
       return handleEditorBack();
     }
+    if (hasUnsavedChanges) {
+      performSave(false);
+    }
     return false;
   };
+
+  // Intercept browser Back & phone Back gestures via router popstate hook
+  window.__scriptoraEditorPopstate = () => {
+    return editorBackHandler();
+  };
+
+  if (window.scriptoraRouter) {
+    window.scriptoraRouter.registerBackHandler(editorBackHandler);
+  }
 
   // 1. Back button (Uses Hierarchical Stack: closes subview/tab first, only leaves at root)
   const backBtn = document.getElementById('editor-back-btn');
   if (backBtn) {
-    backBtn.onclick = () => {
-      if (activeDocumentTab === 'titlepage') {
-        closeTitlePageDoc();
-        return;
-      }
-      if (editorNavStack.length > 0) {
-        window.history.back();
-        return;
-      }
-      if (hasUnsavedChanges) {
-        performSave(false);
-      }
-      window.__scriptoraEditorPopstate = null;
+    backBtn.onclick = (e) => {
+      e?.preventDefault();
+      e?.stopPropagation();
       if (window.scriptoraRouter) {
         window.scriptoraRouter.back('/workspace');
       } else {
-        navigate('/workspace');
+        if (!editorBackHandler()) {
+          navigate('/workspace');
+        }
       }
     };
   }

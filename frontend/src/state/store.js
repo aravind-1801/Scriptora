@@ -3,13 +3,8 @@ import * as api from '../services/api.js';
 
 class Store {
   constructor() {
-    let savedHistory = [];
     try {
-      const stored = sessionStorage.getItem('scriptora_history_stack');
-      if (stored) {
-        savedHistory = JSON.parse(stored);
-        if (!Array.isArray(savedHistory)) savedHistory = [];
-      }
+      sessionStorage.removeItem('scriptora_history_stack');
     } catch (e) {}
 
     this.state = {
@@ -22,7 +17,7 @@ class Store {
       activeScript: null,
       screenplay: null,
       settings: null,
-      historyStack: savedHistory
+      historyStack: []
     };
     this.listeners = new Set();
   }
@@ -57,21 +52,12 @@ class Store {
     // Don't push if it's identical to top of stack
     if (stack.length === 0 || stack[stack.length - 1] !== clean) {
       stack.push(clean);
-      // Keep reasonable bound
       if (stack.length > 50) stack.shift();
-      try {
-        sessionStorage.setItem('scriptora_history_stack', JSON.stringify(stack));
-      } catch (e) {}
     }
   }
 
   popHistory() {
-    const stack = this.state.historyStack;
-    const prev = stack.pop();
-    try {
-      sessionStorage.setItem('scriptora_history_stack', JSON.stringify(stack));
-    } catch (e) {}
-    return prev;
+    return this.state.historyStack.pop();
   }
 
   getPreviousRoute(fallback = '/workspace') {

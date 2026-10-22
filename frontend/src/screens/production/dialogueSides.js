@@ -69,23 +69,6 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   const filterArea = document.getElementById('filter-controls');
   const contentArea = document.getElementById('dialogue-sides-content');
 
-  // Wire back button in subnav to return directly to main production screen
-  const subnavBackBtn = document.getElementById('prod-subnav-back');
-  if (subnavBackBtn) {
-    subnavBackBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const targetUrl = fromParam || `/production?scriptId=${scriptId}`;
-      if (typeof navigate === 'function') {
-        navigate(targetUrl);
-      } else if (window.scriptoraRouter) {
-        window.scriptoraRouter.navigate(targetUrl);
-      } else {
-        window.location.href = targetUrl;
-      }
-    };
-  }
-
   // Dialogue Repository for Chronicles of Dust (Draft 4.2)
   const scriptDialogue = [
     {
