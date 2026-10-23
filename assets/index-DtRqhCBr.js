@@ -52,14 +52,14 @@
         <!-- 1. Workspace Tab -->
         <a href="/workspace" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${t?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-workspace" aria-label="Workspace" title="Workspace">
           <span class="material-symbols-outlined text-[22px]" ${t?`style="font-variation-settings: 'FILL' 1;"`:""}>description</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Workspace</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Workspace</span>
           ${t?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':'<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
         <!-- 2. Intelligence Tab -->
         <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${s?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-intelligence" aria-label="Intelligence" title="Intelligence">
           <span class="material-symbols-outlined text-[22px]" ${s?`style="font-variation-settings: 'FILL' 1;"`:""}>insights</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Intelligence</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Intelligence</span>
           ${s?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':'<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
@@ -79,14 +79,14 @@
         <!-- 4. Pre-Production Tab (4th position) -->
         <a href="/production" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${a?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">
           <span class="material-symbols-outlined text-[22px]" ${a?`style="font-variation-settings: 'FILL' 1;"`:""}>movie_creation</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Production</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Production</span>
           ${a?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':'<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
         <!-- 5. Profile Tab -->
         <a href="/profile" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${o?"text-primary font-semibold":"text-slate-500 hover:text-slate-800"}" id="nav-tab-profile" aria-label="Profile" title="Profile">
           <span class="material-symbols-outlined text-[22px]" ${o?`style="font-variation-settings: 'FILL' 1;"`:""}>account_circle</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Profile</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Profile</span>
           ${o?'<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>':'<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 

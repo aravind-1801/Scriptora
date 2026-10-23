@@ -12,14 +12,14 @@ export function renderBottomNav(activeTab = 'workspace') {
         <!-- 1. Workspace Tab -->
         <a href="/workspace" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isWorkspace ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-workspace" aria-label="Workspace" title="Workspace">
           <span class="material-symbols-outlined text-[22px]" ${isWorkspace ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>description</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Workspace</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Workspace</span>
           ${isWorkspace ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
         <!-- 2. Intelligence Tab -->
         <a href="/intelligence" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isIntelligence ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-intelligence" aria-label="Intelligence" title="Intelligence">
           <span class="material-symbols-outlined text-[22px]" ${isIntelligence ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>insights</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Intelligence</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Intelligence</span>
           ${isIntelligence ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
@@ -42,14 +42,14 @@ export function renderBottomNav(activeTab = 'workspace') {
         <!-- 4. Pre-Production Tab (4th position) -->
         <a href="/production" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isProduction ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-production" aria-label="Pre-Production" title="Pre-Production">
           <span class="material-symbols-outlined text-[22px]" ${isProduction ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>movie_creation</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Production</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Production</span>
           ${isProduction ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
         <!-- 5. Profile Tab -->
         <a href="/profile" class="flex flex-col items-center justify-center min-w-[48px] min-h-[44px] transition-colors ${isProfile ? 'text-primary font-semibold' : 'text-slate-500 hover:text-slate-800'}" id="nav-tab-profile" aria-label="Profile" title="Profile">
           <span class="material-symbols-outlined text-[22px]" ${isProfile ? 'style="font-variation-settings: \'FILL\' 1;"' : ''}>account_circle</span>
-          <span class="text-[10.5px] font-medium mt-0.5 leading-none">Profile</span>
+          <span class="text-[9.5px] font-medium mt-0.5 leading-none">Profile</span>
           ${isProfile ? '<span class="w-1 h-1 rounded-full bg-primary mt-0.5"></span>' : '<span class="w-1 h-1 mt-0.5"></span>'}
         </a>
 
