@@ -792,6 +792,22 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
 
+  const user = store.state.currentUser || (() => {
+    try {
+      const saved = localStorage.getItem('scriptora_user');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      name: "Arun Kumar",
+      headline: "Screenwriter & Narrative Director",
+      email: "arun.kumar@scriptora.studio",
+      badge: "Member Pro",
+      initials: "AK",
+      avatarColor: "bg-blue-600",
+      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+    };
+  })();
+
   const bottomReturnBtn = document.getElementById('profile-bottom-return-btn');
   if (bottomReturnBtn) {
     bottomReturnBtn.onclick = (e) => {
@@ -1381,9 +1397,16 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   let isActionProcessing = false;
 
   function openAction(action) {
-    if (isActionProcessing) return;
+    isActionProcessing = false;
     currentAction = action;
 
+    if (actionConfirm) {
+      actionConfirm.disabled = false;
+      actionConfirm.textContent = action === 'signout' ? 'Sign Out' : 'Delete Forever';
+    }
+    if (actionCancel) {
+      actionCancel.disabled = false;
+    }
     if (actionError) {
       actionError.textContent = '';
       actionError.classList.add('hidden');
@@ -1416,12 +1439,22 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   }
 
   function closeActionModal() {
-    if (isActionProcessing) return;
+    isActionProcessing = false;
+    if (actionConfirm) actionConfirm.disabled = false;
+    if (actionCancel) actionCancel.disabled = false;
     closeModal(actionModal);
   }
 
-  document.getElementById('btn-trigger-signout')?.addEventListener('click', () => openAction('signout'));
-  document.getElementById('btn-trigger-delete-acc')?.addEventListener('click', () => openAction('delete'));
+  const btnSignout = document.getElementById('btn-trigger-signout');
+  if (btnSignout) {
+    btnSignout.onclick = () => openAction('signout');
+  }
+
+  const btnDeleteAcc = document.getElementById('btn-trigger-delete-acc');
+  if (btnDeleteAcc) {
+    btnDeleteAcc.onclick = () => openAction('delete');
+  }
+
   if (actionCancel) actionCancel.onclick = closeActionModal;
 
   if (actionConfirm) {
@@ -1472,15 +1505,20 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
           navigate('/auth', true);
         }
       } catch (err) {
-        isActionProcessing = false;
-        actionConfirm.disabled = false;
-        if (actionCancel) actionCancel.disabled = false;
-        actionConfirm.textContent = originalBtnText;
         if (actionError) {
           actionError.textContent = err.message || 'Operation failed. Please try again.';
           actionError.classList.remove('hidden');
         }
         showToast(err.message || 'Action failed', 'error');
+      } finally {
+        isActionProcessing = false;
+        if (actionConfirm) {
+          actionConfirm.disabled = false;
+          actionConfirm.textContent = originalBtnText;
+        }
+        if (actionCancel) {
+          actionCancel.disabled = false;
+        }
       }
     };
   }

@@ -392,8 +392,13 @@ export async function deleteAccount(confirmation) {
     clearLocalUserData();
     return res;
   } catch (err) {
-    // If backend endpoint is unavailable (e.g. pure static deployment), complete local session deletion
-    if (err.message && err.message.includes('HTTP error 404')) {
+    // If backend endpoint is unreachable or 404 (e.g. pure static deployment / offline), complete local session deletion safely
+    const isOfflineOrUnreachable = !err.status ||
+      err.message?.includes('404') ||
+      err.message?.includes('Failed to fetch') ||
+      err.message?.includes('NetworkError') ||
+      err.message?.includes('Load failed');
+    if (isOfflineOrUnreachable) {
       clearLocalUserData();
       return {
         success: true,
