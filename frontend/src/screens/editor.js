@@ -1524,9 +1524,9 @@ function renderScreenplayPages() {
   container.innerHTML = pages.map(page => `
     <div class="screenplay-page-sheet w-full max-w-[816px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
-      <!-- Top Page Header: Page number in top right (Only for Page > 1, no watermark overlay) -->
+      <!-- Top Page Header: Page number in top right -->
       <div class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
-        <span>${page.pageNumber > 1 ? `${page.pageNumber}.` : ''}</span>
+        <span>${page.pageNumber}.</span>
       </div>
 
       <!-- Screenplay Blocks naturally flowing across this A4 page -->
@@ -1723,7 +1723,7 @@ function addPageAtEnd() {
     }
   }, 80);
 
-  const totalPages = document.querySelectorAll('.screenplay-page-sheet').length;
+  const totalPages = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet').length;
   showToast(`Added Page at End (Page ${totalPages})`);
   if (autoSaveEnabled) scheduleAutosave();
 }
@@ -3924,7 +3924,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (menuGoPage) {
     menuGoPage.onclick = () => {
       closeEditorSubViewByName('moreMenu');
-      const totalPages = document.querySelectorAll('.screenplay-page-sheet').length || 1;
+      const totalPages = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet').length || 1;
       const pageStr = prompt(`Enter page number to jump to (1-${totalPages}):`, '1');
       if (pageStr) {
         const pageSheet = document.querySelector(`[data-page-num="${pageStr}"]`);
@@ -4567,8 +4567,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     if (!targetPageNumbers.has(pageNum)) return;
 
     const pageLines = [];
-    // Page number: top right flush with right margin (525pt, y=805), ONLY for pageNum > 1
-    if (includePageNumbers && pageNum > 1) {
+    // Page number: top right flush with right margin (525pt, y=805)
+    if (includePageNumbers) {
       const pageNumStr = `${pageNum}.`;
       pageLines.push({
         text: pageNumStr,
@@ -4666,7 +4666,13 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
   });
 
   if (pdfPages.length === 0) {
-    pdfPages.push([{ text: screenplay.title || 'Screenplay', x: LEFT_MARGIN, y: 750, font: 'F2', size: 12 }]);
+    const fallbackLines = [
+      { text: screenplay.title || 'Screenplay', x: LEFT_MARGIN, y: 750, font: 'F2', size: 12 }
+    ];
+    if (includePageNumbers) {
+      fallbackLines.push({ text: '1.', x: getRightX('1.', 12, RIGHT_MARGIN_X), y: 805, font: 'F1', size: 12 });
+    }
+    pdfPages.push(fallbackLines);
   }
 
   // Construct PDF 1.4 Binary Document (A4 MediaBox: 595.28 x 841.89 pt)
@@ -4799,7 +4805,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       const optStandardMargins = document.getElementById('optStandardMargins')?.checked !== false;
       const optSceneNum = document.getElementById('optSceneNumbers')?.checked !== false;
 
-      const pageSheets = Array.from(document.querySelectorAll('.screenplay-page-sheet'));
+      const pageSheets = Array.from(document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet'));
       const totalPages = pageSheets.length || 1;
 
       let targetPageNumbers = new Set();
@@ -5100,7 +5106,7 @@ function updateTelemetry() {
     });
   });
 
-  const pageSheets = document.querySelectorAll('.screenplay-page-sheet');
+  const pageSheets = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet');
   const pageCount = pageSheets.length || 1;
   const pageEl = document.getElementById('telemetry-page-count');
   const wordEl = document.getElementById('telemetry-word-count');
