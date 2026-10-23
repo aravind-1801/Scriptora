@@ -39,16 +39,15 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
         <!-- SubNav with Title, Project Context & Primary Actions -->
         ${renderProdSubNav('Storyboard Studio', 'art_track', from || '/production', `
           <div class="flex items-center gap-2">
-            <button id="btn-export-storyboard-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Export genuine Storyboard Studio PDF">
-              <span class="material-symbols-outlined text-[16px]">download</span>
+            <button id="btn-export-storyboard-pdf" class="w-8 h-8 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0" title="Export genuine Storyboard Studio PDF" aria-label="Export PDF">
+              <span class="material-symbols-outlined text-[17px]">download</span>
               <span class="hidden sm:inline">Export PDF</span>
             </button>
-            <button id="btn-generate-sequence" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Generate AI proposed shot sequence for scene">
-              <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
-              <span>Generate Scene</span>
+            <button id="btn-generate-sequence" class="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shadow-2xs transition-all cursor-pointer shrink-0" title="Generate Scene" aria-label="Generate Scene">
+              <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
             </button>
-            <button id="btn-add-shot" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer" title="Add shot manually">
-              <span class="material-symbols-outlined text-[16px]">add</span>
+            <button id="btn-add-shot" class="w-8 h-8 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl bg-slate-900 hover:bg-black active:scale-95 text-white text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0" title="Add shot manually" aria-label="Add Shot">
+              <span class="material-symbols-outlined text-[18px]">add</span>
               <span class="hidden sm:inline">Add Shot</span>
             </button>
           </div>
@@ -162,19 +161,16 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </div>
 
             <!-- Image Actions -->
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-1.5">
-                <button id="modal-btn-regenerate" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-semibold cursor-pointer">
-                  <span class="material-symbols-outlined text-[15px]">auto_awesome</span>
-                  <span>Regenerate Image</span>
-                </button>
-                <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer">
-                  <span class="material-symbols-outlined text-[15px]">upload</span>
-                  <span>Import Photo</span>
-                  <input type="file" id="modal-file-import" accept="image/*" class="sr-only" />
-                </label>
-              </div>
-              <div id="modal-cost-badge" class="text-[11px] text-slate-400 font-mono">Free (Built-in)</div>
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" id="modal-btn-regenerate" class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 active:scale-[0.99] text-xs font-semibold cursor-pointer transition-all">
+                <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                <span class="truncate">Regenerate Image</span>
+              </button>
+              <label class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-[0.99] text-xs font-semibold cursor-pointer transition-all">
+                <span class="material-symbols-outlined text-[16px]">upload</span>
+                <span class="truncate">Import Photo</span>
+                <input type="file" id="modal-file-import" accept="image/*" class="sr-only" />
+              </label>
             </div>
           </div>
 
@@ -339,10 +335,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button type="button" id="gen-modal-cancel" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">Cancel</button>
-              <button type="submit" id="gen-modal-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer">
-                <span class="material-symbols-outlined text-[16px]">sparkles</span>
-                <span id="gen-submit-label">Start Generation</span>
+              <button type="button" id="gen-modal-cancel" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+              <button type="submit" id="gen-modal-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                <span id="gen-submit-label">Generate Frame</span>
               </button>
             </div>
           </form>
@@ -1071,7 +1067,8 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         }
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">sparkles</span><span>Start Generation</span>`;
+        const currentLabel = generationTargetType === 'sequence' ? 'Generate 4-Shot Sequence' : 'Generate Frame';
+        submitBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">auto_awesome</span><span id="gen-submit-label">${currentLabel}</span>`;
       }
     };
   }
