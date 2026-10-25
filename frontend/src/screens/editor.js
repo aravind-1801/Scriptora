@@ -845,6 +845,14 @@ export function renderEditorScreen(scriptId, targetScene = null) {
                 <input type="checkbox" id="optStandardMargins" checked class="w-4 h-4 accent-blue-600 rounded">
                 <span>Standard Writers Guild A4 margins (1.5" Left, 1.0" Right)</span>
               </label>
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="optEmptyPageFirst" class="w-4 h-4 accent-blue-600 rounded">
+                <span>Add an empty page at the beginning (First page)</span>
+              </label>
+              <label class="flex items-center gap-2.5 cursor-pointer text-xs text-slate-700">
+                <input type="checkbox" id="optEmptyPageLast" class="w-4 h-4 accent-blue-600 rounded">
+                <span>Add an empty page at the end (Last page)</span>
+              </label>
             </div>
 
             <div id="exportProgressArea" class="hidden flex flex-col gap-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
@@ -1723,7 +1731,7 @@ function addPageAtEnd() {
     }
   }, 80);
 
-  const totalPages = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet').length;
+  const totalPages = document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)').length || 1;
   showToast(`Added Page at End (Page ${totalPages})`);
   if (autoSaveEnabled) scheduleAutosave();
 }
@@ -3924,7 +3932,7 @@ function setupToolbarAndMenu(scriptId, navigate) {
   if (menuGoPage) {
     menuGoPage.onclick = () => {
       closeEditorSubViewByName('moreMenu');
-      const totalPages = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet').length || 1;
+      const totalPages = document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)').length || 1;
       const pageStr = prompt(`Enter page number to jump to (1-${totalPages}):`, '1');
       if (pageStr) {
         const pageSheet = document.querySelector(`[data-page-num="${pageStr}"]`);
@@ -4476,6 +4484,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     includePageNumbers = true,
     sceneNumbers = true,
     preservePageBreaks = true,
+    emptyPageFirst = false,
+    emptyPageLast = false,
     pageSheets = []
   } = options;
 
@@ -4495,6 +4505,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
   const getRightX = (text, size = 12, rightBound = RIGHT_MARGIN_X) => Math.round(rightBound - getTextWidth(text, size));
 
   // 1. Title Page (Symmetric page centering, Courier 12pt, bottom-left contact info)
+  let titlePageAdded = false;
   if (includeTitlePage && screenplay.titlePage && (targetPageNumbers.has(1) || options.rangeType === 'all')) {
     const tp = screenplay.titlePage;
     const titleVal = (tp.title || screenplay.title || 'UNTITLED SCREENPLAY').toUpperCase();
@@ -4559,14 +4570,20 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     });
 
     pdfPages.push(tpLines);
+    titlePageAdded = true;
   }
 
   // 2. Continuous A4 Screenplay Pages
   pageSheets.forEach(sheet => {
+    // Exclude title page sheet element if matched accidentally
+    if (sheet.classList && sheet.classList.contains('screenplay-title-page-sheet')) return;
+
     const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
     if (!targetPageNumbers.has(pageNum)) return;
 
     const pageLines = [];
+    let hasActualContent = false;
+
     // Page number: top right flush with right margin (525pt, y=805)
     if (includePageNumbers) {
       const pageNumStr = `${pageNum}.`;
@@ -4599,6 +4616,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       if (bType === 'scene') {
         const editable = bEl.querySelector('[contenteditable="true"]');
         const text = (editable ? editable.innerText.trim() : bEl.innerText.trim()).toUpperCase();
+        if (text) hasActualContent = true;
         const sNum = sceneNumbers ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
 
         y -= PARAGRAPH_GAP;
@@ -4613,12 +4631,14 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         });
       } else if (bType === 'character') {
         const text = bEl.innerText.trim().toUpperCase();
+        if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         // Character cue indented to 3.7 inches from page left edge (266pt)
         pageLines.push({ text, x: 266, y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'parenthetical') {
         let text = bEl.innerText.trim();
+        if (text) hasActualContent = true;
         if (!text.startsWith('(')) text = '(' + text;
         if (!text.endsWith(')')) text = text + ')';
         // Parenthetical indented to 3.1 inches (223pt), max width 26ch
@@ -4628,6 +4648,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         });
       } else if (bType === 'dialogue') {
         const text = bEl.innerText.trim();
+        if (text) hasActualContent = true;
         // Dialogue indented to 2.5 inches (180pt), max width 35ch
         wrapPdfText(text, 35).forEach(line => {
           pageLines.push({ text: line, x: 180, y, font: 'F1', size: 12 });
@@ -4635,23 +4656,27 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         });
       } else if (bType === 'transition') {
         const text = bEl.innerText.trim().toUpperCase();
+        if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         // Transition flush with right writing boundary (525pt)
         pageLines.push({ text, x: getRightX(text, 12, RIGHT_MARGIN_X), y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'shot') {
         const text = bEl.innerText.trim().toUpperCase();
+        if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         pageLines.push({ text, x: LEFT_MARGIN, y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'image') {
         const caption = bEl.querySelector('[contenteditable="true"]')?.innerText?.trim() || 'Storyboard Image';
+        hasActualContent = true;
         y -= PARAGRAPH_GAP;
         pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: LEFT_MARGIN, y, font: 'F1', size: 12 });
         y -= LINE_HEIGHT_12;
       } else {
         const text = bEl.innerText.trim();
         if (text) {
+          hasActualContent = true;
           y -= PARAGRAPH_GAP;
           // Action flush left at 108pt, max 58 characters
           wrapPdfText(text, 58).forEach(line => {
@@ -4662,7 +4687,10 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       }
     });
 
-    pdfPages.push(pageLines);
+    // Only push page if it has actual content
+    if (hasActualContent) {
+      pdfPages.push(pageLines);
+    }
   });
 
   if (pdfPages.length === 0) {
@@ -4673,6 +4701,20 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       fallbackLines.push({ text: '1.', x: getRightX('1.', 12, RIGHT_MARGIN_X), y: 805, font: 'F1', size: 12 });
     }
     pdfPages.push(fallbackLines);
+  }
+
+  // Strip accidental trailing empty pages (pages with 0 content lines or only a page number header at y=805)
+  const isPageEmpty = (p) => !p || p.length === 0 || p.every(item => item.y === 805 || !item.text || item.text.trim() === '');
+  while (pdfPages.length > (titlePageAdded ? 1 : 1) && isPageEmpty(pdfPages[pdfPages.length - 1])) {
+    pdfPages.pop();
+  }
+
+  // User-requested empty pages: ONLY if explicitly chosen in export options
+  if (emptyPageFirst) {
+    pdfPages.unshift([]);
+  }
+  if (emptyPageLast) {
+    pdfPages.push([]);
   }
 
   // Construct PDF 1.4 Binary Document (A4 MediaBox: 595.28 x 841.89 pt)
@@ -4699,7 +4741,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     allObjects[pId] = `<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${cId} 0 R >>`;
 
     const streamOps = [];
-    for (const item of pdfPages[i]) {
+    const lines = pdfPages[i] || [];
+    for (const item of lines) {
       const font = item.font || 'F1';
       const size = item.size || 12;
       const x = item.x || LEFT_MARGIN;
@@ -4804,8 +4847,17 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       const optPreserveBreaks = document.getElementById('optPreservePageBreaks')?.checked !== false;
       const optStandardMargins = document.getElementById('optStandardMargins')?.checked !== false;
       const optSceneNum = document.getElementById('optSceneNumbers')?.checked !== false;
+      const optEmptyPageFirst = document.getElementById('optEmptyPageFirst')?.checked === true;
+      const optEmptyPageLast = document.getElementById('optEmptyPageLast')?.checked === true;
 
-      const pageSheets = Array.from(document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet'));
+      let pageSheets = Array.from(document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)'));
+      if (pageSheets.length === 0) {
+        pageSheets = Array.from(document.querySelectorAll('.screenplay-page-sheet:not(.screenplay-title-page-sheet)'));
+      }
+      if (pageSheets.length === 0) {
+        renderScreenplayPages();
+        pageSheets = Array.from(document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)'));
+      }
       const totalPages = pageSheets.length || 1;
 
       let targetPageNumbers = new Set();
@@ -4854,6 +4906,10 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         exportStatusText.textContent = `Completed! Starting download...`;
 
         let exportBody = '';
+        if (optEmptyPageFirst) {
+          exportBody += `\f\n`;
+        }
+
         if (document.getElementById('optTitlePage')?.checked && currentScreenplay.titlePage && (targetPageNumbers.has(1) || rangeType === 'all')) {
           const tp = currentScreenplay.titlePage;
           exportBody += `${tp.title || currentScreenplay.title}\n\n`;
@@ -4869,19 +4925,21 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         }
 
         // Export blocks grouped by page
-        pageSheets.forEach(sheet => {
-          const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+        pageSheets.forEach((sheet, sheetIdx) => {
+          const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || (sheetIdx + 1);
           if (!targetPageNumbers.has(pageNum)) return;
 
+          let sheetBody = '';
           if (optIncludePageNum) {
-            exportBody += `\n\t\t\t\t\t\t\t\t\t\t\t${pageNum}.\n\n`;
+            sheetBody += `\n\t\t\t\t\t\t\t\t\t\t\t${pageNum}.\n\n`;
           }
 
+          let hasContent = false;
           const blocksInSheet = sheet.querySelectorAll('.screenplay-block');
           blocksInSheet.forEach(bEl => {
             const bType = bEl.getAttribute('data-block-type');
             if (bType === 'pagebreak') {
-              if (optPreserveBreaks) exportBody += `\n[=== PAGE BREAK ===]\n\n`;
+              if (optPreserveBreaks) sheetBody += `\n[=== PAGE BREAK ===]\n\n`;
               return;
             }
 
@@ -4890,27 +4948,55 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
               const editable = bEl.querySelector('[contenteditable="true"]');
               content = editable ? editable.innerText.trim() : bEl.innerText.trim();
               const sNum = optSceneNum ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
-              exportBody += `\n\n${sNum ? sNum + '. ' : ''}${content}\n\n`;
+              if (content) {
+                sheetBody += `\n\n${sNum ? sNum + '. ' : ''}${content}\n\n`;
+                hasContent = true;
+              }
             } else if (bType === 'character') {
               content = bEl.innerText.trim();
-              exportBody += `\n\t\t\t${content}\n`;
+              if (content) {
+                sheetBody += `\n\t\t\t${content}\n`;
+                hasContent = true;
+              }
             } else if (bType === 'parenthetical') {
               content = bEl.innerText.trim();
-              exportBody += `\t\t${content.startsWith('(') ? content : '(' + content + ')'}\n`;
+              if (content) {
+                sheetBody += `\t\t${content.startsWith('(') ? content : '(' + content + ')'}\n`;
+                hasContent = true;
+              }
             } else if (bType === 'dialogue') {
               content = bEl.innerText.trim();
-              exportBody += `\t${content}\n`;
+              if (content) {
+                sheetBody += `\t${content}\n`;
+                hasContent = true;
+              }
             } else if (bType === 'transition') {
               content = bEl.innerText.trim();
-              exportBody += `\n\t\t\t\t\t\t${content}\n\n`;
+              if (content) {
+                sheetBody += `\n\t\t\t\t\t\t${content}\n\n`;
+                hasContent = true;
+              }
             } else {
               content = bEl.innerText.trim();
-              if (content) exportBody += `${content}\n\n`;
+              if (content) {
+                sheetBody += `${content}\n\n`;
+                hasContent = true;
+              }
             }
           });
 
-          exportBody += `\n\f\n`;
+          if (hasContent) {
+            exportBody += sheetBody + `\n\f\n`;
+          }
         });
+
+        if (!optEmptyPageLast) {
+          exportBody = exportBody.replace(/[\s\f]+$/, '');
+        } else {
+          if (!exportBody.endsWith('\f\n') && !exportBody.endsWith('\f')) {
+            exportBody += `\n\f\n`;
+          }
+        }
 
         let blob;
         if (format === 'pdf') {
@@ -4919,6 +5005,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
             includePageNumbers: optIncludePageNum,
             sceneNumbers: optSceneNum,
             preservePageBreaks: optPreserveBreaks,
+            emptyPageFirst: optEmptyPageFirst,
+            emptyPageLast: optEmptyPageLast,
             pageSheets: pageSheets,
             rangeType: rangeType
           });
@@ -5106,7 +5194,7 @@ function updateTelemetry() {
     });
   });
 
-  const pageSheets = document.querySelectorAll('#screenplay-editor-container .screenplay-page-sheet');
+  const pageSheets = document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)');
   const pageCount = pageSheets.length || 1;
   const pageEl = document.getElementById('telemetry-page-count');
   const wordEl = document.getElementById('telemetry-word-count');
