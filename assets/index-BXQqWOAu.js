@@ -5787,8 +5787,8 @@ ${$}
                     `).join("")}
                   </select>
                 </div>
-                <div class="flex justify-end w-full sm:w-auto shrink-0">
-                  <button id="btn-confirm-assign-scene" class="w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer text-center">
+                <div class="w-full sm:w-auto shrink-0">
+                  <button id="btn-confirm-assign-scene" class="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer text-center">
                     Add to Day
                   </button>
                 </div>
