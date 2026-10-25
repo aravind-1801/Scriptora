@@ -1093,6 +1093,33 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   // 2. Load Screenplay Model
   currentScreenplay = await api.getScreenplay(scriptId);
+
+  // Safeguard: Ensure non-canonical screenplay has no random/placeholder content
+  if (scriptId !== 'chronicles-of-dust' && currentScreenplay) {
+    const hasRandom = (currentScreenplay.scenes || []).some(sc => {
+      const s = (sc.slugline || '').toUpperCase();
+      if (s.includes("WRITER'S ROOM") || s.includes("STUDIO - DAY") || s.includes("NEW SCENE - DAY")) return true;
+      return (sc.blocks || []).some(b => {
+        const c = b.content || '';
+        return c.includes("Sunlight cuts through dust motes") ||
+               c.includes("A blank script page waits") ||
+               c.includes("Type your screenplay action here");
+      });
+    });
+    if (hasRandom) {
+      currentScreenplay.scenes = [
+        {
+          id: 'scene-1',
+          number: 1,
+          slugline: '',
+          blocks: [{ id: `b-${Date.now()}-1`, type: 'scene', content: '' }]
+        }
+      ];
+      currentScreenplay.wordCount = 0;
+      api.saveScreenplay(scriptId, currentScreenplay);
+    }
+  }
+
   renderScreenplayPages();
   populateNavigators();
 

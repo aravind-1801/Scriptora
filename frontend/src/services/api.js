@@ -484,6 +484,7 @@ export async function createScript(scriptData) {
       emptyScreenplay.id = data.script.id;
       emptyScreenplay.title = data.script.title;
       localStorage.setItem(`scriptora_screenplay_${data.script.id}`, JSON.stringify(emptyScreenplay));
+      await saveScreenplay(data.script.id, emptyScreenplay).catch(() => {});
       const scripts = await getScripts();
       const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
       localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
@@ -752,29 +753,60 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
 
 // 3. SCREENPLAY API
 export async function getScreenplay(scriptId) {
+  let screenplay = null;
+
   try {
     const data = await request(`/screenplay/${scriptId}`);
     if (data.screenplay && data.screenplay.scenes) {
-      return data.screenplay;
+      screenplay = data.screenplay;
     }
   } catch {}
 
-  const saved = localStorage.getItem(`scriptora_screenplay_${scriptId}`);
-  if (saved) {
-    try {
-      const sp = JSON.parse(saved);
-      if (sp && sp.scenes) {
-        return sp;
-      }
-    } catch {}
+  if (!screenplay) {
+    const saved = localStorage.getItem(`scriptora_screenplay_${scriptId}`);
+    if (saved) {
+      try {
+        const sp = JSON.parse(saved);
+        if (sp && sp.scenes) {
+          screenplay = sp;
+        }
+      } catch {}
+    }
   }
 
   // Canonical sample screenplay ONLY for chronicles-of-dust
-  if (scriptId === 'chronicles-of-dust') {
-    const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
-    template.id = scriptId;
-    localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
-    return template;
+  const isChronicles = scriptId === 'chronicles-of-dust';
+  if (isChronicles) {
+    if (!screenplay || !screenplay.scenes || screenplay.scenes.length === 0) {
+      const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
+      template.id = scriptId;
+      localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
+      return template;
+    }
+    return screenplay;
+  }
+
+  // Sanitizer: Ensure NO placeholder/random content exists for any non-chronicles script
+  const hasRandomPlaceholder = (sp) => {
+    if (!sp || !Array.isArray(sp.scenes)) return false;
+    return sp.scenes.some(sc => {
+      const slug = (sc.slugline || '').toUpperCase();
+      if (slug.includes("WRITER'S ROOM") || slug.includes("STUDIO - DAY") || slug.includes("NEW SCENE - DAY")) return true;
+      return (sc.blocks || []).some(b => {
+        const text = (b.content || '');
+        return text.includes("Sunlight cuts through dust motes") ||
+               text.includes("A blank script page waits") ||
+               text.includes("Type your screenplay action here");
+      });
+    });
+  };
+
+  if (screenplay && hasRandomPlaceholder(screenplay)) {
+    screenplay = null; // Force reset to clean empty
+  }
+
+  if (screenplay) {
+    return screenplay;
   }
 
   // Pure blank new screenplay for all other scripts
@@ -797,6 +829,7 @@ export async function getScreenplay(scriptId) {
     ]
   };
   localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(emptyTemplate));
+  saveScreenplay(scriptId, emptyTemplate).catch(() => {});
   return emptyTemplate;
 }
 

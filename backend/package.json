@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node app/server.js",
-    "dev": "node app/server.js",
+    "dev": "node --watch app/server.js",
     "test": "node tests/test.js"
   }
 }
