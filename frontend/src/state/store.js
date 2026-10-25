@@ -99,7 +99,9 @@ class Store {
       const unreadCount = await api.getUnreadNotificationCount();
       const settings = await api.getSettings();
 
-      const activeScript = scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0];
+      const activeScript = (scripts && scripts.length > 0)
+        ? (scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0])
+        : null;
 
       this.setState({
         currentUser: user,
@@ -128,8 +130,8 @@ class Store {
 
   async refreshScripts() {
     const scripts = await api.getScripts();
-    const active = scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0];
-    this.setState({ scripts, activeScript: active });
+    const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0]) : null;
+    this.setState({ scripts: scripts || [], activeScript: active });
   }
 }
 

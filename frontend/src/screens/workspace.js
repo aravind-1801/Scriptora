@@ -6,8 +6,9 @@ import { showToast } from '../components/toast.js';
 import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
-  const currentDraft = scripts.find(s => s.isCurrentDraft) || scripts[0];
-  const recentScripts = scripts.slice(0, 3);
+  const hasScripts = scripts.length > 0;
+  // State B: Only display current draft spotlight if a screenplay exists with isCurrentDraft === true
+  const currentDraft = hasScripts ? (scripts.find(s => s && s.isCurrentDraft) || null) : null;
 
   return `
     ${renderHeader('Workspace', 'Your writing space.')}
@@ -27,7 +28,7 @@ export function renderWorkspaceScreen() {
           </div>
         </div>
 
-        <!-- Current Draft Spotlight Card -->
+        <!-- Current Draft Spotlight Card (Only rendered when a valid current draft is available) -->
         ${currentDraft ? `
           <div class="w-full bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
             <div class="flex items-center justify-between">
@@ -57,38 +58,17 @@ export function renderWorkspaceScreen() {
           </div>
         ` : ''}
 
-        <!-- Recent Screenplays -->
-        <div class="flex flex-col">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-sm font-bold text-slate-900 tracking-tight font-heading">Recent</h3>
-            <button type="button" id="btn-new-script" class="inline-flex items-center gap-1 text-blue-600 bg-blue-50 hover:bg-blue-100 active:scale-95 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all">
-              <span class="material-symbols-outlined text-[14px]">add</span>
-              <span>New Script</span>
-            </button>
+        <!-- New Screenplay Creation Card -->
+        <button type="button" id="btn-new-screenplay-card" aria-label="Create New Screenplay" class="w-full group bg-white hover:bg-blue-50/40 active:scale-[0.99] rounded-2xl border-2 border-dashed border-blue-200/90 hover:border-blue-400 p-7 sm:py-9 sm:px-6 flex flex-col items-center justify-center text-center transition-all shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
+          <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5 group-hover:scale-105 group-hover:bg-blue-100 transition-all shadow-xs">
+            <span class="material-symbols-outlined text-[26px] font-bold">add</span>
           </div>
+          <h3 class="font-heading font-bold text-base text-slate-900 tracking-tight">New Screenplay</h3>
+          <p class="text-xs text-slate-500 font-medium mt-1">Start your next story.</p>
+        </button>
 
-          <div class="bg-white rounded-xl border border-slate-100 shadow-sm divide-y divide-slate-100 overflow-hidden" id="recent-scripts-list">
-            ${recentScripts.map(script => `
-              <div data-script-id="${script.id}" class="script-item-row px-3.5 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-                <div class="flex items-center gap-3 min-w-0 pr-2">
-                  <div class="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                    <span class="material-symbols-outlined text-[18px]">description</span>
-                  </div>
-                  <div class="flex flex-col min-w-0">
-                    <div class="flex items-center gap-2">
-                      <span class="text-xs font-semibold text-slate-900 truncate">${script.title}</span>
-                      <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-medium">${script.genre}</span>
-                    </div>
-                    <span class="text-[11px] text-slate-500 truncate mt-0.5">${script.draft} · ${script.pages} pages · Edited ${script.updated}</span>
-                  </div>
-                </div>
-                <span class="material-symbols-outlined text-[16px] text-slate-400 shrink-0">chevron_right</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <!-- All Screenplays -->
+        <!-- All Screenplays (Shown when screenplays exist) -->
+        ${hasScripts ? `
         <div class="flex flex-col">
           <div class="flex items-center justify-between mb-2.5">
             <div class="flex items-center gap-2">
@@ -139,6 +119,7 @@ export function renderWorkspaceScreen() {
             </button>
           </div>
         </div>
+        ` : ''}
 
       </div>
     </main>
@@ -257,6 +238,7 @@ export function attachWorkspaceEvents(navigate) {
   }
 
   // New script modal
+  const newScreenplayCard = document.getElementById('btn-new-screenplay-card');
   const newScriptBtn = document.getElementById('btn-new-script');
   const newScriptModal = document.getElementById('new-script-modal');
   const closeNewScriptModal = document.getElementById('close-new-script-modal');
@@ -273,6 +255,7 @@ export function attachWorkspaceEvents(navigate) {
     }
   }
 
+  if (newScreenplayCard) newScreenplayCard.onclick = () => toggleNewScriptModal(true);
   if (newScriptBtn) newScriptBtn.onclick = () => toggleNewScriptModal(true);
   if (closeNewScriptModal) closeNewScriptModal.onclick = () => toggleNewScriptModal(false);
   if (cancelNewScriptBtn) cancelNewScriptBtn.onclick = () => toggleNewScriptModal(false);

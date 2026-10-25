@@ -414,9 +414,11 @@ export async function getScripts(query = '') {
   try {
     const endpoint = query ? `/scripts?q=${encodeURIComponent(query)}` : '/scripts';
     const data = await request(endpoint);
-    if (data.scripts && data.scripts.length > 0) {
+    if (data.scripts && Array.isArray(data.scripts)) {
       localStorage.setItem('scriptora_scripts', JSON.stringify(data.scripts));
-      return data.scripts;
+      let list = data.scripts;
+      if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
+      return list;
     }
   } catch {
     // Backend offline / static deploy fallback
@@ -424,10 +426,10 @@ export async function getScripts(query = '') {
 
   const saved = localStorage.getItem('scriptora_scripts');
   let list;
-  if (saved) {
+  if (saved !== null) {
     try {
       list = JSON.parse(saved);
-      if (!Array.isArray(list) || list.length === 0) {
+      if (!Array.isArray(list)) {
         list = [...DEFAULT_SCRIPTS];
         localStorage.setItem('scriptora_scripts', JSON.stringify(list));
       }
@@ -461,7 +463,8 @@ export async function createScript(scriptData) {
     });
     if (data.script) {
       const scripts = await getScripts();
-      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...scripts.filter(s => s.id !== data.script.id)]));
+      const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
+      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
       return data.script;
     }
   } catch {}
@@ -476,6 +479,7 @@ export async function createScript(scriptData) {
     pages: 1,
     updated: "Just now",
     currentScene: "Scene 1",
+    isCurrentDraft: true,
     joinCode: "SCRP-1001",
     archived: false,
     context: {
@@ -502,7 +506,8 @@ export async function createScript(scriptData) {
   };
 
   const scripts = await getScripts();
-  const updated = [newScript, ...scripts.filter(s => s.id !== newScript.id)];
+  const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
+  const updated = [newScript, ...resetScripts.filter(s => s.id !== newScript.id)];
   localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
   return newScript;
 }
