@@ -132,7 +132,7 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Unconfigured Provider Honest Error Handling:', unconfGen.status === 400 && unconfGen.body.error?.includes('not configured') ? 'PASS' : (process.env.OPENAI_API_KEY ? 'PASS (Configured)' : 'FAIL'));
 
-    // 14. AI Scene Sequence Generation
+    // 14. AI Scene Sequence Generation (default 4 shots and custom shot count)
     const genSeq = await request('/api/production/chronicles-of-dust/storyboard/generate-sequence', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -142,7 +142,19 @@ server.listen(PORT, async () => {
         aspectRatio: '2.39:1'
       }
     });
-    console.log('✓ AI Scene Sequence Generation:', genSeq.status, genSeq.body.proposedShots?.length === 4 ? 'PASS' : 'FAIL');
+    console.log('✓ AI Scene Sequence Generation (Default 4 Shots):', genSeq.status, genSeq.body.proposedShots?.length === 4 ? 'PASS' : 'FAIL');
+
+    const genSeq2 = await request('/api/production/chronicles-of-dust/storyboard/generate-sequence', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: {
+        sceneId: 'scene-1',
+        visualStyle: 'Cinematic Concept Art',
+        aspectRatio: '2.39:1',
+        shotCount: 2
+      }
+    });
+    console.log('✓ AI Scene Sequence Generation (Custom 2 Shots):', genSeq2.status, genSeq2.body.proposedShots?.length === 2 ? 'PASS' : 'FAIL');
 
     // 15. Sign Out (Session Invalidation)
     const logoutRes = await request('/api/auth/logout', { method: 'POST' });

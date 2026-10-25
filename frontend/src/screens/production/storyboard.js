@@ -281,64 +281,78 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </button>
           </div>
 
-          <form id="ai-generation-form" class="flex flex-col gap-3">
-            <!-- Provider Selector -->
-            <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-700">Image Generation Provider</label>
-              <select id="gen-provider-select" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-900 font-semibold focus:outline-none focus:border-blue-600">
-                <option value="scriptora-concept">SCRIPTORA Concept Engine (Free / Built-in)</option>
-                <option value="openai-dalle3">OpenAI DALL-E 3 (Paid API)</option>
-                <option value="gemini-imagen3">Google Imagen 3 (Paid API)</option>
-                <option value="stability-sdxl">Stability AI SDXL (Paid API)</option>
-              </select>
-              <div id="gen-provider-status" class="text-[11px] text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
-                <span class="material-symbols-outlined text-[14px]">check_circle</span>
-                <span>Configured & Ready</span>
-              </div>
-            </div>
-
-            <!-- Cost Disclosure Banner -->
-            <div id="gen-cost-disclosure" class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-2.5 text-xs text-blue-900 flex items-start gap-2">
-              <span class="material-symbols-outlined text-blue-600 text-[16px] shrink-0 mt-0.5">info</span>
-              <div class="flex-1">
-                <span class="font-semibold">Cost Disclosure: </span>
-                <span id="gen-cost-label">Free (Built-in Engine, no external API charges).</span>
-              </div>
-            </div>
-
-            <!-- Visual Style -->
-            <div class="grid grid-cols-2 gap-2.5">
+          <form id="ai-generation-form" class="flex flex-col gap-3 min-h-0 flex-1 overflow-hidden">
+            <div class="scriptora-modal-body flex-1 overflow-y-auto flex flex-col gap-3 pr-1">
+              <!-- Provider Selector -->
               <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Visual Style Preset</label>
-                <select id="gen-style-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
-                  ${STYLE_PRESETS.map(s => `<option value="${s}">${s}</option>`).join('')}
+                <label class="text-[11px] font-semibold text-slate-700">Image Generation Provider</label>
+                <select id="gen-provider-select" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-900 font-semibold focus:outline-none focus:border-blue-600">
+                  <option value="scriptora-concept">SCRIPTORA Concept Engine (Free / Built-in)</option>
+                  <option value="openai-dalle3">OpenAI DALL-E 3 (Paid API)</option>
+                  <option value="gemini-imagen3">Google Imagen 3 (Paid API)</option>
+                  <option value="stability-sdxl">Stability AI SDXL (Paid API)</option>
+                </select>
+                <div id="gen-provider-status" class="text-[11px] text-emerald-600 font-medium mt-0.5 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                  <span>Configured & Ready</span>
+                </div>
+              </div>
+
+              <!-- Cost Disclosure Banner -->
+              <div id="gen-cost-disclosure" class="bg-blue-50/70 border border-blue-200/80 rounded-xl p-2.5 text-xs text-blue-900 flex items-start gap-2">
+                <span class="material-symbols-outlined text-blue-600 text-[16px] shrink-0 mt-0.5">info</span>
+                <div class="flex-1">
+                  <span class="font-semibold">Cost Disclosure: </span>
+                  <span id="gen-cost-label">Free (Built-in Engine, no external API charges).</span>
+                </div>
+              </div>
+
+              <!-- Shot Sequence Length (Only shown when generating a sequence) -->
+              <div id="gen-shot-count-container" class="flex flex-col gap-1">
+                <label for="gen-shot-count-select" class="text-[11px] font-semibold text-slate-700">Shot Sequence Length</label>
+                <select id="gen-shot-count-select" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-900 font-semibold focus:outline-none focus:border-blue-600">
+                  <option value="1">1 — One-shot sequence</option>
+                  <option value="2">2 — Two-shot sequence</option>
+                  <option value="3">3 — Three-shot sequence</option>
+                  <option value="4" selected>4 — Four-shot sequence</option>
                 </select>
               </div>
+
+              <!-- Visual Style & Aspect Ratio -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-700">Visual Style Preset</label>
+                  <select id="gen-style-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                    ${STYLE_PRESETS.map(s => `<option value="${s}">${s}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-700">Aspect Ratio</label>
+                  <select id="gen-ratio-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                    ${ASPECT_RATIOS.map(r => `<option value="${r}">${r}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+
+              <!-- Custom Creative Prompt -->
               <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Aspect Ratio</label>
-                <select id="gen-ratio-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
-                  ${ASPECT_RATIOS.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
+                <label class="text-[11px] font-semibold text-slate-700">Creative Direction / Prompt</label>
+                <textarea id="gen-prompt-input" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" placeholder="Optional creative guidance for framing, atmosphere, or lighting..."></textarea>
+              </div>
+
+              <!-- Generation Error Callout (if API key missing or provider fails) -->
+              <div id="gen-error-alert" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-xs text-rose-800 flex items-start gap-2">
+                <span class="material-symbols-outlined text-rose-600 text-[16px] shrink-0 mt-0.5">error</span>
+                <div class="flex-1 text-[11px] leading-relaxed" id="gen-error-message">Provider error</div>
               </div>
             </div>
 
-            <!-- Custom Creative Prompt -->
-            <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-700">Creative Direction / Prompt</label>
-              <textarea id="gen-prompt-input" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" placeholder="Optional creative guidance for framing, atmosphere, or lighting..."></textarea>
-            </div>
-
-            <!-- Generation Error Callout (if API key missing or provider fails) -->
-            <div id="gen-error-alert" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-2.5 text-xs text-rose-800 flex items-start gap-2">
-              <span class="material-symbols-outlined text-rose-600 text-[16px] shrink-0 mt-0.5">error</span>
-              <div class="flex-1 text-[11px] leading-relaxed" id="gen-error-message">Provider error</div>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <!-- Fixed Bottom Actions -->
+            <div class="flex items-center justify-end gap-2 pt-2.5 border-t border-slate-100 shrink-0">
               <button type="button" id="gen-modal-cancel" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
               <button type="submit" id="gen-modal-submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
-                <span id="gen-submit-label">Generate Frame</span>
+                <span id="gen-submit-label">Generate 4-Shot Sequence</span>
               </button>
             </div>
           </form>
@@ -388,8 +402,11 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
   const genProviderSelect = document.getElementById('gen-provider-select');
   const genProviderStatus = document.getElementById('gen-provider-status');
   const genCostLabel = document.getElementById('gen-cost-label');
+  const genShotCountContainer = document.getElementById('gen-shot-count-container');
+  const genShotCountSelect = document.getElementById('gen-shot-count-select');
   const genErrorAlert = document.getElementById('gen-error-alert');
   const genErrorMsg = document.getElementById('gen-error-message');
+  let selectedShotCount = 4;
 
   // 1. Load initial scenes and providers
   let allScenes = [];
@@ -636,75 +653,78 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     viewContainer.innerHTML = `
       <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
         <!-- Sequence Toolbar -->
-        <div class="px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between text-xs">
-          <div class="flex items-center gap-2">
-            <span class="font-heading font-bold text-slate-800">${shots.length} Shots in Sequence</span>
-            <span class="text-slate-400">·</span>
-            <span class="text-slate-500 text-[11px]">Use arrows to reorder shots</span>
-          </div>
-          <button id="btn-batch-approve-all" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold cursor-pointer">
+        <div class="px-3.5 sm:px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2 text-xs">
+          <span class="font-heading font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">${shots.length} Shots in Sequence</span>
+          <button id="btn-batch-approve-all" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-[11px] font-semibold cursor-pointer shrink-0 transition-all">
             Approve All Proposed
           </button>
         </div>
 
         <!-- Shots Sequence Table / List -->
         <div class="divide-y divide-slate-100">
-          ${shots.map((s, idx) => `
-            <div class="p-3 sm:p-4 hover:bg-slate-50/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3" data-shot-id="${s.id}">
-              <div class="flex items-start gap-3 min-w-0 flex-1">
-                <!-- Reorder Controls -->
-                <div class="flex sm:flex-col items-center gap-1 shrink-0 pt-1">
-                  <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer" data-shot-id="${s.id}" title="Move up">
-                    <span class="material-symbols-outlined text-[16px]">expand_less</span>
-                  </button>
-                  <span class="font-mono font-bold text-xs text-slate-700">${s.order}</span>
-                  <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer" data-shot-id="${s.id}" title="Move down">
-                    <span class="material-symbols-outlined text-[16px]">expand_more</span>
-                  </button>
+          ${shots.map((s, idx) => {
+            const statusBg = s.approvalStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+              (s.approvalStatus === 'proposed' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                (s.approvalStatus === 'rejected' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'));
+
+            return `
+              <div class="p-3 sm:p-4 hover:bg-slate-50/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 w-full overflow-hidden" data-shot-id="${s.id}">
+                <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 w-full">
+                  <!-- Reorder Controls -->
+                  <div class="flex sm:flex-col items-center gap-0.5 sm:gap-1 shrink-0 pt-0.5">
+                    <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move up">
+                      <span class="material-symbols-outlined text-[16px]">expand_less</span>
+                    </button>
+                    <span class="font-mono font-bold text-xs text-slate-700">${s.order}</span>
+                    <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move down">
+                      <span class="material-symbols-outlined text-[16px]">expand_more</span>
+                    </button>
+                  </div>
+
+                  <!-- Thumbnail Preview -->
+                  <div class="w-16 h-12 sm:w-20 sm:h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center cursor-pointer btn-open-inspector" data-shot-id="${s.id}">
+                    ${s.imageUrl ? `
+                      <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
+                    ` : `
+                      <span class="material-symbols-outlined text-slate-600 text-base sm:text-lg">image</span>
+                    `}
+                  </div>
+
+                  <!-- Shot Summary Info -->
+                  <div class="min-w-0 flex-1 overflow-hidden">
+                    <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+                      <span class="font-mono font-bold text-xs text-blue-600 shrink-0">${s.shotNumber}</span>
+                      <h4 class="font-heading font-semibold text-xs text-slate-900 truncate min-w-0 flex-1" title="${s.title}">${s.title}</h4>
+                      <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold border ${statusBg} capitalize shrink-0">
+                        ${s.approvalStatus || 'Draft'}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-slate-600 mt-0.5 line-clamp-2 leading-relaxed break-words">${s.description || 'No description'}</p>
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500 mt-1.5 min-w-0">
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">${s.shotSize}</span>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">${s.cameraAngle}</span>
+                      <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">${s.focalLength}</span>
+                      ${s.continuity?.screenDirection ? `
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium truncate max-w-full" title="${s.continuity.screenDirection}">
+                          ${s.continuity.screenDirection}
+                        </span>
+                      ` : ''}
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Thumbnail Preview -->
-                <div class="w-20 h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center cursor-pointer btn-open-inspector" data-shot-id="${s.id}">
-                  ${s.imageUrl ? `
-                    <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
-                  ` : `
-                    <span class="material-symbols-outlined text-slate-600 text-lg">image</span>
-                  `}
-                </div>
-
-                <!-- Shot Summary Info -->
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono font-bold text-xs text-blue-600">${s.shotNumber}</span>
-                    <h4 class="font-heading font-semibold text-xs text-slate-900 truncate">${s.title}</h4>
-                    <span class="px-1.5 py-0.2 rounded text-[9px] font-semibold ${s.approvalStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'} capitalize">
-                      ${s.approvalStatus}
-                    </span>
-                  </div>
-                  <p class="text-[11px] text-slate-600 mt-0.5 line-clamp-1 leading-relaxed">${s.description || 'No description'}</p>
-                  <div class="flex items-center gap-2 text-[10px] text-slate-400 mt-1">
-                    <span>${s.shotSize}</span>
-                    <span>·</span>
-                    <span>${s.cameraAngle}</span>
-                    <span>·</span>
-                    <span>${s.focalLength}</span>
-                    <span>·</span>
-                    <span>${s.continuity?.screenDirection || 'Screen Left to Right'}</span>
-                  </div>
+                <!-- Action Controls -->
+                <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center mt-1 sm:mt-0">
+                  <button class="btn-quick-approve p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-emerald-600 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Shot'}">
+                    <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
+                  </button>
+                  <button class="btn-open-inspector px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 text-xs font-semibold cursor-pointer transition-all" data-shot-id="${s.id}">
+                    Edit Details
+                  </button>
                 </div>
               </div>
-
-              <!-- Action Controls -->
-              <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                <button class="btn-quick-approve p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-emerald-600 text-xs cursor-pointer" data-shot-id="${s.id}" title="Toggle approval">
-                  <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
-                </button>
-                <button class="btn-open-inspector px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold cursor-pointer" data-shot-id="${s.id}">
-                  Edit Details
-                </button>
-              </div>
-            </div>
-          `).join('')}
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -930,6 +950,16 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     };
   }
 
+  function updateGenSubmitLabel() {
+    const submitLabel = document.getElementById('gen-submit-label');
+    if (!submitLabel) return;
+    if (generationTargetType === 'sequence') {
+      submitLabel.textContent = `Generate ${selectedShotCount}-Shot Sequence`;
+    } else {
+      submitLabel.textContent = 'Generate Frame';
+    }
+  }
+
   // 6. Open AI Generation Modal
   function openGenerationModal(type = 'sequence', shotId = null) {
     generationTargetType = type;
@@ -939,9 +969,14 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
       ? 'Generate Scene Shot Sequence (AI)'
       : 'Regenerate Frame Visual (AI)';
 
-    document.getElementById('gen-submit-label').textContent = type === 'sequence'
-      ? 'Generate 4-Shot Sequence'
-      : 'Generate Frame';
+    if (genShotCountContainer) {
+      genShotCountContainer.classList.toggle('hidden', type !== 'sequence');
+    }
+    if (genShotCountSelect) {
+      genShotCountSelect.value = String(selectedShotCount);
+    }
+
+    updateGenSubmitLabel();
 
     if (genErrorAlert) genErrorAlert.classList.add('hidden');
     updateProviderCostDisclosure();
@@ -968,7 +1003,8 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
       if (p.pricingType === 'free') {
         genCostLabel.textContent = 'Free (Built-in Concept Engine, no API keys or charges required).';
       } else {
-        const est = generationTargetType === 'sequence' ? `$${(p.costPerImage * 4).toFixed(3)} (4-shot batch)` : `$${p.costPerImage.toFixed(3)}`;
+        const count = selectedShotCount || 4;
+        const est = generationTargetType === 'sequence' ? `$${(p.costPerImage * count).toFixed(3)} (${count}-shot batch)` : `$${p.costPerImage.toFixed(3)}`;
         genCostLabel.textContent = `${p.costLabel} — Estimated: ${est}. Server credentials required.`;
       }
     }
@@ -976,6 +1012,15 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
 
   if (genProviderSelect) {
     genProviderSelect.onchange = updateProviderCostDisclosure;
+  }
+
+  if (genShotCountSelect) {
+    genShotCountSelect.value = String(selectedShotCount);
+    genShotCountSelect.onchange = () => {
+      selectedShotCount = parseInt(genShotCountSelect.value, 10) || 4;
+      updateGenSubmitLabel();
+      updateProviderCostDisclosure();
+    };
   }
 
   if (genClose) genClose.onclick = () => closeModal(genModal);
@@ -1011,11 +1056,13 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
 
       try {
         if (generationTargetType === 'sequence') {
+          const count = parseInt(genShotCountSelect?.value, 10) || selectedShotCount || 4;
           const res = await api.generateStoryboardSequence(scriptId, currentSceneId, {
             provider: pId,
             visualStyle: style,
             aspectRatio: ratio,
-            prompt: userPrompt
+            prompt: userPrompt,
+            shotCount: count
           });
 
           if (res?.proposedShots) {
@@ -1067,7 +1114,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         }
       } finally {
         submitBtn.disabled = false;
-        const currentLabel = generationTargetType === 'sequence' ? 'Generate 4-Shot Sequence' : 'Generate Frame';
+        const currentLabel = generationTargetType === 'sequence' ? `Generate ${selectedShotCount}-Shot Sequence` : 'Generate Frame';
         submitBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">auto_awesome</span><span id="gen-submit-label">${currentLabel}</span>`;
       }
     };

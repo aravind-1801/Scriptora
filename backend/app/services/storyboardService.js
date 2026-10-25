@@ -459,9 +459,12 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
     }
   ];
 
+  const requestedCount = Math.max(1, Math.min(4, Number(params.shotCount || params.count || 4)));
+  const beatsToGenerate = beats.slice(0, requestedCount);
+
   const proposedShots = [];
-  for (let i = 0; i < beats.length; i++) {
-    const b = beats[i];
+  for (let i = 0; i < beatsToGenerate.length; i++) {
+    const b = beatsToGenerate[i];
     let imgData = null;
     try {
       const generated = await generateShotImage({

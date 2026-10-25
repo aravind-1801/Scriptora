@@ -3219,7 +3219,10 @@ export async function generateStoryboardSequence(scriptId, sceneId, params = {})
     { num: `${sceneNum}D`, title: "Critical Action Insert", size: "Extreme Close-Up", angle: "Low Angle", lens: "35mm Macro", desc: `Macro insert of tactile equipment interaction and valve override.` }
   ];
 
-  const proposedShots = beats.map((b, i) => ({
+  const requestedCount = Math.max(1, Math.min(4, Number(params.shotCount || params.count || 4)));
+  const beatsToGenerate = beats.slice(0, requestedCount);
+
+  const proposedShots = beatsToGenerate.map((b, i) => ({
     id: `prop-shot-${Date.now()}-${i}`,
     shotNumber: b.num,
     order: i + 1,

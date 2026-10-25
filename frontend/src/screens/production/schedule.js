@@ -122,7 +122,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
             </div>
 
             <!-- Modal Content (Scene reordering & inline details) -->
-            <div id="modal-day-content" class="scriptora-modal-body flex-1 overflow-y-auto flex flex-col gap-2.5 pr-1 text-xs">
+            <div id="modal-day-content" class="scriptora-modal-body flex-1 overflow-y-auto overflow-x-hidden min-w-0 w-full flex flex-col gap-2.5 pr-1 text-xs">
               <!-- Injected dynamically -->
             </div>
 
@@ -488,23 +488,27 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
         <!-- Inline Scene Assign Selector -->
         ${showAssignSceneDropdown ? `
-          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-2.5 flex flex-col gap-2 animate-in fade-in">
-            <div class="flex items-center justify-between text-xs font-semibold text-blue-900">
-              <span>Add Screenplay Scene to Shoot Day ${day.dayNumber}</span>
-              <button id="btn-close-assign-scene" class="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <span class="material-symbols-outlined text-[15px]">close</span>
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex flex-col gap-2.5 animate-in fade-in w-full min-w-0 box-border">
+            <div class="flex items-center justify-between text-xs font-semibold text-blue-900 gap-2">
+              <span class="truncate">Add Screenplay Scene to Shoot Day ${day.dayNumber}</span>
+              <button id="btn-close-assign-scene" class="p-1 text-slate-400 hover:text-slate-700 rounded cursor-pointer shrink-0" title="Close scene selector">
+                <span class="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
             ${availableScenesToAssign.length > 0 ? `
-              <div class="flex items-center gap-2">
-                <select id="select-scene-to-assign" class="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none cursor-pointer">
-                  ${availableScenesToAssign.map(sc => `
-                    <option value="${sc.sceneNumber}">#${sc.sceneNumber} ${sc.heading} (${sc.pages} pgs)</option>
-                  `).join('')}
-                </select>
-                <button id="btn-confirm-assign-scene" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-2xs transition-colors cursor-pointer shrink-0">
-                  Add to Day
-                </button>
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-2 w-full min-w-0">
+                <div class="min-w-0 flex-1 w-full">
+                  <select id="select-scene-to-assign" class="w-full min-w-0 max-w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 sm:py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer truncate">
+                    ${availableScenesToAssign.map(sc => `
+                      <option value="${sc.sceneNumber}">#${sc.sceneNumber} ${sc.heading} (${sc.pages} pgs)</option>
+                    `).join('')}
+                  </select>
+                </div>
+                <div class="flex justify-end w-full sm:w-auto shrink-0">
+                  <button id="btn-confirm-assign-scene" class="w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer text-center">
+                    Add to Day
+                  </button>
+                </div>
               </div>
             ` : `
               <div class="text-[11px] text-slate-500 py-1">All scenes from this screenplay are already assigned.</div>
