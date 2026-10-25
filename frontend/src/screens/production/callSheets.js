@@ -522,10 +522,11 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
     if (printBtn) {
       printBtn.onclick = () => {
         try {
+          const active = store.state.activeScript || (store.state.scripts || []).find(s => s.id === scriptId);
           exportCallSheetPdf(cs, {
-            title: 'Chronicles of Dust',
-            company: 'Badlands Anthology LLC',
-            draft: 'Draft 4.2'
+            title: active?.title || 'Chronicles of Dust',
+            company: active?.company || 'Badlands Anthology LLC',
+            draft: active?.draft || 'Draft 4.2'
           });
           showToast(`Exported Call Sheet #${cs.callSheetNumber} PDF`);
         } catch (err) {
@@ -643,10 +644,11 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         const id = btn.getAttribute('data-id');
         const sheet = sheets.find(s => s.id === id);
         if (sheet) {
+          const active = store.state.activeScript || (store.state.scripts || []).find(s => s.id === scriptId);
           exportCallSheetPdf(sheet, {
-            title: 'Chronicles of Dust',
-            company: 'Badlands Anthology LLC',
-            draft: 'Draft 4.2'
+            title: active?.title || 'Chronicles of Dust',
+            company: active?.company || 'Badlands Anthology LLC',
+            draft: active?.draft || 'Draft 4.2'
           });
           showToast(`Exported Call Sheet #${sheet.callSheetNumber} PDF`);
         }

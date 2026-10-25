@@ -9,7 +9,17 @@
 function escapePdfText(str) {
   if (!str) return '';
   return String(str)
-    // Replace Unicode typography with clean, universal ASCII equivalents
+    // Replace Unicode typography, fractions, and symbols with clean, universal ASCII equivalents
+    .replace(/\u00B0/g, ' deg ')       // degree sign °
+    .replace(/\u00BD/g, ' 1/2')        // fraction 1/2
+    .replace(/\u00BC/g, ' 1/4')        // fraction 1/4
+    .replace(/\u00BE/g, ' 3/4')        // fraction 3/4
+    .replace(/\u215B/g, ' 1/8')        // fraction 1/8
+    .replace(/\u215C/g, ' 3/8')        // fraction 3/8
+    .replace(/\u215D/g, ' 5/8')        // fraction 5/8
+    .replace(/\u215E/g, ' 7/8')        // fraction 7/8
+    .replace(/\u00A0/g, ' ')           // non-breaking space
+    .replace(/[\t]+/g, ' ')            // tabs
     .replace(/\u2014/g, ' -- ')        // em-dash
     .replace(/\u2013/g, '-')           // en-dash
     .replace(/\u2026/g, '...')         // ellipsis
@@ -26,6 +36,51 @@ function escapePdfText(str) {
     .replace(/\(/g, '\\(')
     .replace(/\)/g, '\\)')
     .replace(/[\r\n]+/g, ' ');
+}
+
+export function getPdfTextWidth(text, size = 10, font = 'F1') {
+  if (!text) return 0;
+  const str = String(text);
+  const factor = (font === 'F2' || font === 'F4') ? 0.56 : (font === 'F3' || font === 'F5') ? 0.60 : 0.52;
+  return str.length * size * factor;
+}
+
+export function truncatePdfText(text, maxWidth, size = 10, font = 'F1') {
+  if (!text) return '';
+  const str = String(text).trim();
+  if (getPdfTextWidth(str, size, font) <= maxWidth) return str;
+  const ell = '...';
+  const ellW = getPdfTextWidth(ell, size, font);
+  let result = str;
+  while (result.length > 0 && (getPdfTextWidth(result, size, font) + ellW) > maxWidth) {
+    result = result.slice(0, -1);
+  }
+  return result ? result.trim() + ell : '';
+}
+
+export function wrapPdfTextByWidth(text, maxWidth, size = 10, font = 'F1') {
+  if (!text) return [];
+  const words = String(text).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const lines = [];
+  let current = '';
+
+  for (const w of words) {
+    const candidate = current ? current + ' ' + w : w;
+    if (getPdfTextWidth(candidate, size, font) <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      if (getPdfTextWidth(w, size, font) > maxWidth) {
+        lines.push(truncatePdfText(w, maxWidth, size, font));
+        current = '';
+      } else {
+        current = w;
+      }
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
 }
 
 function wrapPdfText(text, maxChars) {
@@ -205,126 +260,779 @@ export function compilePdfDocument(pages, options = {}) {
 // =============================================================================
 export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
   const title = scriptInfo.title || 'Chronicles of Dust';
+  const company = scriptInfo.company || 'SCRIPTORA PRODUCTION STUDIO';
   const draft = scriptInfo.draft || 'Draft 4.2 (Pinned)';
+  const dayNum = String(cs.callSheetNumber || '01').padStart(2, '0');
+  const shootDayStr = cs.shootDay || `Day ${parseInt(dayNum, 10) || 1} of 14`;
+  const isConfirmed = cs.status === 'Confirmed' || cs.isPublished;
+
   const pages = [];
+  let currentVectors = [];
+  let currentTexts = [];
 
-  // Page 1 Setup
-  const p1Vectors = [];
-  const p1Texts = [];
+  const MARGIN_LEFT = 36;
+  const MARGIN_RIGHT = 576;
+  const USABLE_WIDTH = 540;
+  const FOOTER_RESERVE_Y = 56;
 
-  // Masthead Header Box
-  p1Vectors.push({ type: 'rect', x: 36, y: 730, w: 540, h: 36, fill: [0.08, 0.12, 0.20] }); // Slate-900 banner
-  p1Texts.push({ text: 'SCRIPTORA -- OFFICIAL PRODUCTION CALL SHEET', x: 46, y: 752, font: 'F2', size: 10, color: [0.9, 0.9, 0.9] });
-  p1Texts.push({ text: `${title.toUpperCase()} -- ${draft}`, x: 46, y: 738, font: 'F1', size: 9, color: [0.7, 0.8, 1.0] });
-  p1Texts.push({ text: `DAY ${cs.callSheetNumber || '01'} OF 14`, x: 495, y: 746, font: 'F2', size: 12, color: [1.0, 1.0, 1.0] });
+  function startNewPage(isContinuation = false) {
+    currentVectors = [];
+    currentTexts = [];
+    pages.push({ vectors: currentVectors, texts: currentTexts });
 
-  // Call Times Summary Box
-  p1Vectors.push({ type: 'rect', x: 36, y: 670, w: 540, h: 50, fill: [0.97, 0.98, 0.99], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
-  
-  // 4 Call Columns
-  p1Texts.push({ text: 'DATE', x: 50, y: 706, font: 'F2', size: 8, color: [0.4, 0.45, 0.5] });
-  p1Texts.push({ text: cs.shootDate || 'Saturday, Oct 24, 2026', x: 50, y: 692, font: 'F2', size: 10, color: [0.1, 0.1, 0.1] });
-  p1Texts.push({ text: cs.shootDay || 'Day 1 of 14', x: 50, y: 680, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
-
-  p1Texts.push({ text: 'CREW CALL', x: 190, y: 706, font: 'F2', size: 8, color: [0.4, 0.45, 0.5] });
-  p1Texts.push({ text: cs.generalCrewCall || '06:00 AM', x: 190, y: 692, font: 'F2', size: 11, color: [0.1, 0.1, 0.1] });
-  p1Texts.push({ text: `Breakfast: ${cs.breakfastTime || '05:15 AM'}`, x: 190, y: 680, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
-
-  p1Texts.push({ text: 'SHOOTING CALL', x: 320, y: 706, font: 'F2', size: 8, color: [0.1, 0.35, 0.85] });
-  p1Texts.push({ text: cs.shootingCall || '06:30 AM', x: 320, y: 692, font: 'F2', size: 11, color: [0.1, 0.35, 0.85] });
-  p1Texts.push({ text: 'First Shot on Set', x: 320, y: 680, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
-
-  p1Texts.push({ text: 'ESTIMATED WRAP', x: 450, y: 706, font: 'F2', size: 8, color: [0.4, 0.45, 0.5] });
-  p1Texts.push({ text: cs.estimatedWrap || '06:30 PM', x: 450, y: 692, font: 'F2', size: 11, color: [0.1, 0.1, 0.1] });
-  p1Texts.push({ text: '12hr Turnaround', x: 450, y: 680, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
-
-  // Location & Medical Notice Box
-  p1Vectors.push({ type: 'rect', x: 36, y: 605, w: 540, h: 55, fill: [1.0, 1.0, 1.0], stroke: [0.85, 0.88, 0.92], lineWidth: 0.8 });
-  p1Texts.push({ text: 'PRIMARY SET LOCATION & BASECAMP:', x: 46, y: 647, font: 'F2', size: 8, color: [0.2, 0.25, 0.3] });
-  p1Texts.push({ text: `${cs.locationName || 'Mojave Outpost Gate 4'} -- ${cs.locationAddress || 'Perimeter Road 9, Cantil, CA'}`, x: 46, y: 635, font: 'F1', size: 9, color: [0.1, 0.1, 0.1] });
-  p1Texts.push({ text: `Parking: ${cs.parkingNotes || 'Basecamp Lot B. Crew shuttle runs every 10 mins.'}`, x: 46, y: 624, font: 'F1', size: 8, color: [0.4, 0.45, 0.5] });
-  p1Texts.push({ text: `Emergency Medical: ${cs.nearestHospital || 'Desert Care Regional Medical Center (Ph: 760-379-2681)'}`, x: 46, y: 613, font: 'F1', size: 8, color: [0.8, 0.2, 0.2] });
-
-  // ---------------------------------------------------------------------------
-  // SECTION 1: DAILY SCENE SCHEDULE TABLE
-  // ---------------------------------------------------------------------------
-  p1Texts.push({ text: 'SCHEDULED SCENES TO SHOOT', x: 36, y: 588, font: 'F2', size: 10, color: [0.1, 0.1, 0.1] });
-
-  // Table Header Row
-  let tableY = 570;
-  p1Vectors.push({ type: 'rect', x: 36, y: tableY, w: 540, h: 18, fill: [0.93, 0.94, 0.96], stroke: [0.8, 0.83, 0.88], lineWidth: 0.8 });
-  p1Texts.push({ text: 'SCENE #', x: 42, y: tableY + 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'SET & SCENE DESCRIPTION', x: 105, y: tableY + 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'D/N', x: 375, y: tableY + 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'PAGES', x: 415, y: tableY + 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'CAST CHARACTERS', x: 465, y: tableY + 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-
-  const scenes = cs.scenes || [
-    { sceneNumber: 1, heading: 'EXT. MOJAVE OUTPOST GATE 4 - DAY', pages: '4 1/8', cast: ['KEVIN', 'MARCUS'], desc: 'Kevin arrives at border gate, inspection.' },
-    { sceneNumber: 2, heading: 'INT. OUTPOST CUSTOMS SHED - DAY', pages: '3 4/8', cast: ['KEVIN', 'MEERA'], desc: 'Kevin discovers telemetry pressure loss.' }
-  ];
-
-  tableY -= 24;
-  for (const sc of scenes) {
-    p1Vectors.push({ type: 'rect', x: 36, y: tableY, w: 540, h: 24, fill: [1.0, 1.0, 1.0], stroke: [0.88, 0.90, 0.93], lineWidth: 0.5 });
-    p1Texts.push({ text: `Scene ${sc.sceneNumber}`, x: 42, y: tableY + 9, font: 'F4', size: 9, color: [0.1, 0.3, 0.8] });
-    p1Texts.push({ text: sc.heading || `Scene ${sc.sceneNumber}`, x: 105, y: tableY + 12, font: 'F2', size: 8, color: [0.1, 0.1, 0.1] });
-    p1Texts.push({ text: sc.desc || '', x: 105, y: tableY + 3, font: 'F1', size: 7.5, color: [0.4, 0.45, 0.5] });
-    p1Texts.push({ text: sc.heading?.includes('NIGHT') ? 'NIGHT' : 'DAY', x: 375, y: tableY + 9, font: 'F1', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: sc.pages || '1.0', x: 415, y: tableY + 9, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: (sc.cast || []).join(', '), x: 465, y: tableY + 9, font: 'F2', size: 8, color: [0.2, 0.2, 0.2] });
-    tableY -= 24;
+    if (isContinuation) {
+      // Continuation Header Banner
+      const bannerH = 26;
+      const topY = 756;
+      currentVectors.push({
+        type: 'rect',
+        x: MARGIN_LEFT,
+        y: topY - bannerH,
+        w: USABLE_WIDTH,
+        h: bannerH,
+        fill: [0.08, 0.12, 0.20]
+      });
+      currentTexts.push({
+        text: 'SCRIPTORA -- OFFICIAL CALL SHEET (CONTINUED)',
+        x: MARGIN_LEFT + 10,
+        y: topY - 17,
+        font: 'F2',
+        size: 9,
+        color: [0.95, 0.95, 0.95]
+      });
+      const contRight = `${title.toUpperCase()} · ${shootDayStr.toUpperCase()}`;
+      currentTexts.push({
+        text: contRight,
+        x: MARGIN_RIGHT - 10 - getPdfTextWidth(contRight, 8, 'F1'),
+        y: topY - 17,
+        font: 'F1',
+        size: 8,
+        color: [0.70, 0.82, 1.0]
+      });
+      return topY - bannerH - 12;
+    }
+    return 756;
   }
 
-  // ---------------------------------------------------------------------------
-  // SECTION 2: CAST & TALENT CALL TABLE
-  // ---------------------------------------------------------------------------
-  tableY -= 15;
-  p1Texts.push({ text: 'CAST & TALENT CALLS', x: 36, y: tableY + 10, font: 'F2', size: 10, color: [0.1, 0.1, 0.1] });
+  let curY = startNewPage(false);
 
-  p1Vectors.push({ type: 'rect', x: 36, y: tableY - 10, w: 540, h: 18, fill: [0.93, 0.94, 0.96], stroke: [0.8, 0.83, 0.88], lineWidth: 0.8 });
-  p1Texts.push({ text: 'CHARACTER', x: 42, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'ACTOR / TALENT', x: 160, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'PICKUP', x: 300, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'H/MU CALL', x: 370, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'ON SET CALL', x: 450, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
-  p1Texts.push({ text: 'STATUS', x: 520, y: tableY - 5, font: 'F2', size: 8, color: [0.3, 0.35, 0.4] });
+  // ---------------------------------------------------------------------------
+  // 1. TOP MASTHEAD BANNER (Page 1 Only)
+  // ---------------------------------------------------------------------------
+  const mastheadH = 44;
+  currentVectors.push({
+    type: 'rect',
+    x: MARGIN_LEFT,
+    y: curY - mastheadH,
+    w: USABLE_WIDTH,
+    h: mastheadH,
+    fill: [0.08, 0.12, 0.20]
+  });
 
-  tableY -= 32;
-  const castCalls = cs.castCalls || [
+  // Left Titles
+  currentTexts.push({
+    text: 'SCRIPTORA -- OFFICIAL PRODUCTION CALL SHEET',
+    x: MARGIN_LEFT + 12,
+    y: curY - 17,
+    font: 'F2',
+    size: 10,
+    color: [0.96, 0.97, 0.98]
+  });
+
+  const subBanner = truncatePdfText(`${company.toUpperCase()} · ${title.toUpperCase()} · ${draft}`, 320, 8.5, 'F1');
+  currentTexts.push({
+    text: subBanner,
+    x: MARGIN_LEFT + 12,
+    y: curY - 32,
+    font: 'F1',
+    size: 8.5,
+    color: [0.65, 0.78, 0.98]
+  });
+
+  // Right Badge
+  const dayBadge = `DAY ${dayNum} CALL SHEET`;
+  currentTexts.push({
+    text: dayBadge,
+    x: MARGIN_RIGHT - 12 - getPdfTextWidth(dayBadge, 11, 'F2'),
+    y: curY - 17,
+    font: 'F2',
+    size: 11,
+    color: [1.0, 1.0, 1.0]
+  });
+
+  const statusBadge = isConfirmed ? 'OFFICIAL PUBLISHED SNAPSHOT' : 'WORKING REVISION DRAFT';
+  const statusColor = isConfirmed ? [0.45, 0.90, 0.55] : [1.0, 0.82, 0.35];
+  currentTexts.push({
+    text: statusBadge,
+    x: MARGIN_RIGHT - 12 - getPdfTextWidth(statusBadge, 7.5, 'F2'),
+    y: curY - 32,
+    font: 'F2',
+    size: 7.5,
+    color: statusColor
+  });
+
+  curY -= (mastheadH + 8);
+
+  // ---------------------------------------------------------------------------
+  // 2. CALL TIMES & KEY SCHEDULE DASHBOARD (4 Equal Columns with Dividers)
+  // ---------------------------------------------------------------------------
+  const timesBoxH = 52;
+  currentVectors.push({
+    type: 'rect',
+    x: MARGIN_LEFT,
+    y: curY - timesBoxH,
+    w: USABLE_WIDTH,
+    h: timesBoxH,
+    fill: [0.975, 0.985, 0.995],
+    stroke: [0.82, 0.86, 0.91],
+    lineWidth: 0.8
+  });
+
+  const colW = 135; // 540 / 4 = 135
+  const colYTop = curY - 14;
+  const colYMid = curY - 29;
+  const colYBot = curY - 43;
+
+  // Column 1: Date & Day
+  currentTexts.push({ text: 'DATE & DAY', x: MARGIN_LEFT + 10, y: colYTop, font: 'F2', size: 7.5, color: [0.42, 0.47, 0.55] });
+  currentTexts.push({
+    text: truncatePdfText(cs.shootDate || 'Saturday, Oct 24, 2026', 118, 9.5, 'F2'),
+    x: MARGIN_LEFT + 10,
+    y: colYMid,
+    font: 'F2',
+    size: 9.5,
+    color: [0.10, 0.12, 0.16]
+  });
+  currentTexts.push({
+    text: truncatePdfText(shootDayStr, 118, 7.5, 'F1'),
+    x: MARGIN_LEFT + 10,
+    y: colYBot,
+    font: 'F1',
+    size: 7.5,
+    color: [0.42, 0.47, 0.55]
+  });
+
+  // Divider 1
+  currentVectors.push({ type: 'line', x1: MARGIN_LEFT + colW, y1: curY - 46, x2: MARGIN_LEFT + colW, y2: curY - 6, stroke: [0.85, 0.88, 0.92], lineWidth: 0.6 });
+
+  // Column 2: Crew Call
+  const col2X = MARGIN_LEFT + colW + 10;
+  currentTexts.push({ text: 'GENERAL CREW CALL', x: col2X, y: colYTop, font: 'F2', size: 7.5, color: [0.42, 0.47, 0.55] });
+  currentTexts.push({
+    text: truncatePdfText(cs.generalCrewCall || '06:00 AM', 118, 11.5, 'F2'),
+    x: col2X,
+    y: colYMid,
+    font: 'F2',
+    size: 11.5,
+    color: [0.10, 0.12, 0.16]
+  });
+  currentTexts.push({
+    text: truncatePdfText(`Breakfast: ${cs.breakfastTime || '05:15 AM'}`, 118, 7.5, 'F1'),
+    x: col2X,
+    y: colYBot,
+    font: 'F1',
+    size: 7.5,
+    color: [0.42, 0.47, 0.55]
+  });
+
+  // Divider 2
+  currentVectors.push({ type: 'line', x1: MARGIN_LEFT + colW * 2, y1: curY - 46, x2: MARGIN_LEFT + colW * 2, y2: curY - 6, stroke: [0.85, 0.88, 0.92], lineWidth: 0.6 });
+
+  // Column 3: Shooting Call
+  const col3X = MARGIN_LEFT + colW * 2 + 10;
+  currentTexts.push({ text: 'SHOOTING CALL', x: col3X, y: colYTop, font: 'F2', size: 7.5, color: [0.10, 0.38, 0.85] });
+  currentTexts.push({
+    text: truncatePdfText(cs.shootingCall || '06:30 AM', 118, 11.5, 'F2'),
+    x: col3X,
+    y: colYMid,
+    font: 'F2',
+    size: 11.5,
+    color: [0.10, 0.38, 0.85]
+  });
+  currentTexts.push({
+    text: 'First Shot on Set',
+    x: col3X,
+    y: colYBot,
+    font: 'F1',
+    size: 7.5,
+    color: [0.42, 0.47, 0.55]
+  });
+
+  // Divider 3
+  currentVectors.push({ type: 'line', x1: MARGIN_LEFT + colW * 3, y1: curY - 46, x2: MARGIN_LEFT + colW * 3, y2: curY - 6, stroke: [0.85, 0.88, 0.92], lineWidth: 0.6 });
+
+  // Column 4: Estimated Wrap
+  const col4X = MARGIN_LEFT + colW * 3 + 10;
+  currentTexts.push({ text: 'ESTIMATED WRAP', x: col4X, y: colYTop, font: 'F2', size: 7.5, color: [0.42, 0.47, 0.55] });
+  currentTexts.push({
+    text: truncatePdfText(cs.estimatedWrap || '06:30 PM', 118, 11.5, 'F2'),
+    x: col4X,
+    y: colYMid,
+    font: 'F2',
+    size: 11.5,
+    color: [0.10, 0.12, 0.16]
+  });
+  currentTexts.push({
+    text: '12-Hr Rest Turnaround',
+    x: col4X,
+    y: colYBot,
+    font: 'F1',
+    size: 7.5,
+    color: [0.42, 0.47, 0.55]
+  });
+
+  curY -= (timesBoxH + 8);
+
+  // ---------------------------------------------------------------------------
+  // 3. SET LOCATION, MEDICAL EMERGENCY & WEATHER BOX
+  // ---------------------------------------------------------------------------
+  const locBoxH = 62;
+  currentVectors.push({
+    type: 'rect',
+    x: MARGIN_LEFT,
+    y: curY - locBoxH,
+    w: USABLE_WIDTH,
+    h: locBoxH,
+    fill: [1.0, 1.0, 1.0],
+    stroke: [0.82, 0.86, 0.91],
+    lineWidth: 0.8
+  });
+
+  // Left side: Location (w = 285)
+  const locX = MARGIN_LEFT + 10;
+  currentTexts.push({
+    text: 'SET LOCATION & BASECAMP ACCESS:',
+    x: locX,
+    y: curY - 13,
+    font: 'F2',
+    size: 7.5,
+    color: [0.25, 0.30, 0.38]
+  });
+  currentTexts.push({
+    text: truncatePdfText(cs.locationName || 'Mojave Outpost Gate 4', 280, 8.5, 'F2'),
+    x: locX,
+    y: curY - 25,
+    font: 'F2',
+    size: 8.5,
+    color: [0.10, 0.12, 0.16]
+  });
+  currentTexts.push({
+    text: truncatePdfText(cs.locationAddress || 'Perimeter Road 9, Cantil, CA', 280, 7.5, 'F1'),
+    x: locX,
+    y: curY - 37,
+    font: 'F1',
+    size: 7.5,
+    color: [0.35, 0.40, 0.48]
+  });
+  currentTexts.push({
+    text: truncatePdfText(`Parking: ${cs.parkingNotes || 'Basecamp Lot B. Crew shuttle runs every 10 mins.'}`, 280, 7, 'F1'),
+    x: locX,
+    y: curY - 49,
+    font: 'F1',
+    size: 7,
+    color: [0.45, 0.50, 0.58]
+  });
+
+  // Divider between Left and Right
+  currentVectors.push({
+    type: 'line',
+    x1: MARGIN_LEFT + 300,
+    y1: curY - 56,
+    x2: MARGIN_LEFT + 300,
+    y2: curY - 6,
+    stroke: [0.85, 0.88, 0.92],
+    lineWidth: 0.6
+  });
+
+  // Right side: Medical & Weather (w = 230)
+  const medX = MARGIN_LEFT + 310;
+  currentTexts.push({
+    text: 'EMERGENCY MEDICAL / NEAREST HOSPITAL:',
+    x: medX,
+    y: curY - 13,
+    font: 'F2',
+    size: 7.5,
+    color: [0.85, 0.15, 0.15]
+  });
+
+  const hospLines = wrapPdfTextByWidth(cs.nearestHospital || 'Desert Care Regional Medical Center (Ph: 760-379-2681)', 220, 7, 'F1');
+  currentTexts.push({
+    text: truncatePdfText(hospLines[0] || 'Local Emergency Center', 220, 7, 'F1'),
+    x: medX,
+    y: curY - 24,
+    font: 'F1',
+    size: 7,
+    color: [0.15, 0.15, 0.15]
+  });
+  if (hospLines[1]) {
+    currentTexts.push({
+      text: truncatePdfText(hospLines[1], 220, 7, 'F1'),
+      x: medX,
+      y: curY - 34,
+      font: 'F1',
+      size: 7,
+      color: [0.15, 0.15, 0.15]
+    });
+  }
+
+  const weatherText = truncatePdfText(`Weather: ${cs.weatherSummary || 'Clear skies, normal stage ambient temperature.'}`, 220, 7, 'F1');
+  currentTexts.push({
+    text: weatherText,
+    x: medX,
+    y: curY - 49,
+    font: 'F1',
+    size: 7,
+    color: [0.20, 0.40, 0.65]
+  });
+
+  curY -= (locBoxH + 10);
+
+  // ---------------------------------------------------------------------------
+  // 4. SECTION 1: DAILY SCENE SCHEDULE TABLE
+  // ---------------------------------------------------------------------------
+  const scenes = (cs.scenes && cs.scenes.length > 0) ? cs.scenes : [
+    { sceneNumber: 1, heading: 'EXT. MOJAVE OUTPOST GATE 4 - DAY', pages: '4 1/8', cast: ['KEVIN', 'MARCUS'], desc: 'Kevin arrives at border gate, inspection with Marcus.' },
+    { sceneNumber: 2, heading: 'INT. OUTPOST CUSTOMS SHED - DAY', pages: '3 4/8', cast: ['KEVIN', 'MEERA'], desc: 'Kevin discovers pressure loss on telemetry terminal.' }
+  ];
+
+  function drawScenesTableHeader() {
+    currentVectors.push({
+      type: 'rect',
+      x: MARGIN_LEFT,
+      y: curY - 17,
+      w: USABLE_WIDTH,
+      h: 17,
+      fill: [0.91, 0.93, 0.96],
+      stroke: [0.78, 0.82, 0.88],
+      lineWidth: 0.8
+    });
+    currentTexts.push({ text: 'SCENE #', x: MARGIN_LEFT + 6, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'SET & SCENE DESCRIPTION', x: MARGIN_LEFT + 56, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'D/N', x: MARGIN_LEFT + 325, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'PAGES', x: MARGIN_LEFT + 368, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'CAST CHARACTERS', x: MARGIN_LEFT + 418, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    curY -= 17;
+  }
+
+  // Section Heading
+  currentTexts.push({
+    text: 'SCHEDULED SCENES TO SHOOT',
+    x: MARGIN_LEFT,
+    y: curY,
+    font: 'F2',
+    size: 9.5,
+    color: [0.10, 0.15, 0.22]
+  });
+  const scenesSummary = `${scenes.length} Scenes Scheduled`;
+  currentTexts.push({
+    text: scenesSummary,
+    x: MARGIN_RIGHT - getPdfTextWidth(scenesSummary, 8, 'F1'),
+    y: curY,
+    font: 'F1',
+    size: 8,
+    color: [0.45, 0.50, 0.58]
+  });
+  curY -= 12;
+
+  drawScenesTableHeader();
+
+  // Render Scene Rows
+  scenes.forEach((sc, idx) => {
+    const headingLines = wrapPdfTextByWidth(sc.heading || `SCENE ${sc.sceneNumber}`, 260, 8, 'F2');
+    const descLines = wrapPdfTextByWidth(sc.desc || '', 260, 7, 'F1');
+    const castArr = Array.isArray(sc.cast) ? sc.cast : (sc.cast ? [sc.cast] : []);
+    const castLines = wrapPdfTextByWidth(castArr.join(', '), 116, 7.5, 'F2');
+
+    const contentHeight = Math.max(headingLines.length * 10 + descLines.length * 9, castLines.length * 9.5, 12);
+    const rowH = Math.max(22, 8 + contentHeight);
+
+    if (curY - rowH < FOOTER_RESERVE_Y) {
+      curY = startNewPage(true);
+      drawScenesTableHeader();
+    }
+
+    currentVectors.push({
+      type: 'rect',
+      x: MARGIN_LEFT,
+      y: curY - rowH,
+      w: USABLE_WIDTH,
+      h: rowH,
+      fill: idx % 2 === 0 ? [1.0, 1.0, 1.0] : [0.985, 0.988, 0.995],
+      stroke: [0.86, 0.89, 0.93],
+      lineWidth: 0.5
+    });
+
+    // Scene number
+    currentTexts.push({
+      text: `Sc. ${sc.sceneNumber}`,
+      x: MARGIN_LEFT + 6,
+      y: curY - 13,
+      font: 'F2',
+      size: 8.5,
+      color: [0.10, 0.35, 0.85]
+    });
+
+    // Heading lines
+    let textY = curY - 10;
+    headingLines.forEach(hl => {
+      currentTexts.push({ text: hl, x: MARGIN_LEFT + 56, y: textY, font: 'F2', size: 8, color: [0.10, 0.12, 0.15] });
+      textY -= 10;
+    });
+
+    // Desc lines
+    descLines.forEach(dl => {
+      currentTexts.push({ text: dl, x: MARGIN_LEFT + 56, y: textY, font: 'F1', size: 7, color: [0.40, 0.45, 0.52] });
+      textY -= 9;
+    });
+
+    // Day / Night
+    const dn = sc.heading?.toUpperCase().includes('NIGHT') ? 'NIGHT' : 'DAY';
+    currentTexts.push({
+      text: dn,
+      x: MARGIN_LEFT + 325,
+      y: curY - 13,
+      font: 'F1',
+      size: 7.5,
+      color: dn === 'NIGHT' ? [0.10, 0.15, 0.45] : [0.80, 0.45, 0.10]
+    });
+
+    // Pages
+    currentTexts.push({
+      text: sc.pages || '1.0',
+      x: MARGIN_LEFT + 368,
+      y: curY - 13,
+      font: 'F2',
+      size: 7.5,
+      color: [0.20, 0.20, 0.20]
+    });
+
+    // Cast characters
+    let castY = curY - 11;
+    castLines.forEach(cl => {
+      currentTexts.push({ text: cl, x: MARGIN_LEFT + 418, y: castY, font: 'F2', size: 7.5, color: [0.15, 0.20, 0.25] });
+      castY -= 9.5;
+    });
+
+    curY -= rowH;
+  });
+
+  curY -= 10;
+
+  // ---------------------------------------------------------------------------
+  // 5. SECTION 2: CAST & TALENT CALL TABLE
+  // ---------------------------------------------------------------------------
+  const castCalls = (cs.castCalls && cs.castCalls.length > 0) ? cs.castCalls : [
     { character: 'KEVIN', actor: 'Dev Patel', pickup: '05:00 AM', hmuCall: '05:30 AM', onSet: '06:30 AM', status: 'Confirmed' },
     { character: 'MARCUS', actor: 'David Chen', pickup: '05:15 AM', hmuCall: '05:45 AM', onSet: '06:30 AM', status: 'Confirmed' },
     { character: 'MEERA', actor: 'Zoe Saldana', pickup: '08:30 AM', hmuCall: '09:00 AM', onSet: '10:30 AM', status: 'Confirmed' }
   ];
 
-  for (const c of castCalls) {
-    p1Vectors.push({ type: 'rect', x: 36, y: tableY, w: 540, h: 20, fill: [1.0, 1.0, 1.0], stroke: [0.88, 0.90, 0.93], lineWidth: 0.5 });
-    p1Texts.push({ text: c.character || 'CHARACTER', x: 42, y: tableY + 6, font: 'F2', size: 8.5, color: [0.1, 0.1, 0.1] });
-    p1Texts.push({ text: c.actor || '', x: 160, y: tableY + 6, font: 'F1', size: 8.5, color: [0.2, 0.2, 0.2] });
-    p1Texts.push({ text: c.pickup || '-', x: 300, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: c.hmuCall || '-', x: 370, y: tableY + 6, font: 'F3', size: 8, color: [0.3, 0.3, 0.3] });
-    p1Texts.push({ text: c.onSet || '-', x: 450, y: tableY + 6, font: 'F4', size: 8.5, color: [0.1, 0.3, 0.8] });
-    p1Texts.push({ text: c.status || 'Confirmed', x: 520, y: tableY + 6, font: 'F1', size: 7.5, color: [0.2, 0.6, 0.3] });
-    tableY -= 20;
+  function drawCastTableHeader() {
+    currentVectors.push({
+      type: 'rect',
+      x: MARGIN_LEFT,
+      y: curY - 17,
+      w: USABLE_WIDTH,
+      h: 17,
+      fill: [0.91, 0.93, 0.96],
+      stroke: [0.78, 0.82, 0.88],
+      lineWidth: 0.8
+    });
+    currentTexts.push({ text: 'ID', x: MARGIN_LEFT + 6, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'CHARACTER', x: MARGIN_LEFT + 32, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'ACTOR / TALENT', x: MARGIN_LEFT + 140, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'STATUS', x: MARGIN_LEFT + 270, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'PICKUP', x: MARGIN_LEFT + 346, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'H/MU CALL', x: MARGIN_LEFT + 406, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    currentTexts.push({ text: 'ON SET CALL', x: MARGIN_LEFT + 472, y: curY - 12, font: 'F2', size: 7.5, color: [0.25, 0.30, 0.38] });
+    curY -= 17;
   }
 
-  // Safety & Special Notes Box
-  tableY -= 15;
-  p1Vectors.push({ type: 'rect', x: 36, y: tableY - 35, w: 540, h: 42, fill: [0.99, 0.98, 0.94], stroke: [0.92, 0.88, 0.75], lineWidth: 0.8 });
-  p1Texts.push({ text: 'SAFETY DIRECTIVES & PRODUCTION INSTRUCTIONS:', x: 46, y: tableY - 5, font: 'F2', size: 8, color: [0.6, 0.4, 0.1] });
-  const noteLines = wrapPdfText(cs.specialInstructions || 'Eye protection mandatory for all perimeter crew during afternoon dust squalls. Hearing protection active in generator bays.', 105);
-  p1Texts.push({ text: noteLines[0] || '', x: 46, y: tableY - 17, font: 'F1', size: 7.5, color: [0.3, 0.25, 0.1] });
-  p1Texts.push({ text: noteLines[1] || '', x: 46, y: tableY - 28, font: 'F1', size: 7.5, color: [0.3, 0.25, 0.1] });
+  // Check budget for cast table start
+  if (curY - 48 < FOOTER_RESERVE_Y) {
+    curY = startNewPage(true);
+  }
 
-  // Footer Rule
-  p1Vectors.push({ type: 'line', x1: 36, y1: 45, x2: 576, y2: 45, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-  p1Texts.push({ text: 'CONFIDENTIAL -- SCRIPTORA PRODUCTION STUDIO -- NOT FOR PUBLIC DISTRIBUTION', x: 36, y: 32, font: 'F1', size: 7.5, color: [0.5, 0.5, 0.5] });
-  p1Texts.push({ text: 'Page 1 of 1', x: 525, y: 32, font: 'F1', size: 7.5, color: [0.5, 0.5, 0.5] });
+  currentTexts.push({
+    text: 'CAST & TALENT CALL SCHEDULE',
+    x: MARGIN_LEFT,
+    y: curY,
+    font: 'F2',
+    size: 9.5,
+    color: [0.10, 0.15, 0.22]
+  });
+  const castSummary = `${castCalls.length} Talent Booked`;
+  currentTexts.push({
+    text: castSummary,
+    x: MARGIN_RIGHT - getPdfTextWidth(castSummary, 8, 'F1'),
+    y: curY,
+    font: 'F1',
+    size: 8,
+    color: [0.45, 0.50, 0.58]
+  });
+  curY -= 12;
 
-  pages.push({ vectors: p1Vectors, texts: p1Texts });
+  drawCastTableHeader();
+
+  castCalls.forEach((c, idx) => {
+    const rowH = 19;
+    if (curY - rowH < FOOTER_RESERVE_Y) {
+      curY = startNewPage(true);
+      drawCastTableHeader();
+    }
+
+    currentVectors.push({
+      type: 'rect',
+      x: MARGIN_LEFT,
+      y: curY - rowH,
+      w: USABLE_WIDTH,
+      h: rowH,
+      fill: idx % 2 === 0 ? [1.0, 1.0, 1.0] : [0.985, 0.988, 0.995],
+      stroke: [0.86, 0.89, 0.93],
+      lineWidth: 0.5
+    });
+
+    // ID
+    currentTexts.push({ text: String(idx + 1), x: MARGIN_LEFT + 6, y: curY - 13, font: 'F1', size: 7.5, color: [0.5, 0.5, 0.5] });
+
+    // Character
+    currentTexts.push({
+      text: truncatePdfText(c.character || 'CHARACTER', 100, 8, 'F2'),
+      x: MARGIN_LEFT + 32,
+      y: curY - 13,
+      font: 'F2',
+      size: 8,
+      color: [0.10, 0.12, 0.16]
+    });
+
+    // Actor
+    currentTexts.push({
+      text: truncatePdfText(c.actor || 'TBD', 120, 8, 'F1'),
+      x: MARGIN_LEFT + 140,
+      y: curY - 13,
+      font: 'F1',
+      size: 8,
+      color: [0.20, 0.22, 0.26]
+    });
+
+    // Status
+    const isConf = (c.status || '').toLowerCase().includes('conf');
+    currentTexts.push({
+      text: truncatePdfText(c.status || 'Confirmed', 68, 7.5, 'F2'),
+      x: MARGIN_LEFT + 270,
+      y: curY - 13,
+      font: 'F2',
+      size: 7.5,
+      color: isConf ? [0.12, 0.55, 0.25] : [0.85, 0.55, 0.10]
+    });
+
+    // Pickup
+    currentTexts.push({
+      text: c.pickup || '-',
+      x: MARGIN_LEFT + 346,
+      y: curY - 13,
+      font: 'F3',
+      size: 7.5,
+      color: [0.35, 0.35, 0.35]
+    });
+
+    // HMU
+    currentTexts.push({
+      text: c.hmuCall || '-',
+      x: MARGIN_LEFT + 406,
+      y: curY - 13,
+      font: 'F3',
+      size: 7.5,
+      color: [0.35, 0.35, 0.35]
+    });
+
+    // On Set Call
+    currentTexts.push({
+      text: c.onSet || '-',
+      x: MARGIN_LEFT + 472,
+      y: curY - 13,
+      font: 'F2',
+      size: 8.5,
+      color: [0.10, 0.35, 0.85]
+    });
+
+    curY -= rowH;
+  });
+
+  curY -= 10;
+
+  // ---------------------------------------------------------------------------
+  // 6. SECTION 3: SAFETY DIRECTIVES & PRODUCTION INSTRUCTIONS
+  // ---------------------------------------------------------------------------
+  const rawSafety = cs.specialInstructions || 'Standard studio health & safety protocols in effect. All crew must report any hazards or equipment anomalies immediately to the 1st AD or Health & Safety Supervisor.';
+  const safetyLines = wrapPdfTextByWidth(rawSafety, 516, 7.5, 'F1');
+  const safetyBoxH = Math.max(38, 18 + safetyLines.length * 10 + 6);
+
+  if (curY - safetyBoxH < FOOTER_RESERVE_Y) {
+    curY = startNewPage(true);
+  }
+
+  currentVectors.push({
+    type: 'rect',
+    x: MARGIN_LEFT,
+    y: curY - safetyBoxH,
+    w: USABLE_WIDTH,
+    h: safetyBoxH,
+    fill: [0.995, 0.985, 0.93],
+    stroke: [0.90, 0.82, 0.65],
+    lineWidth: 0.8
+  });
+
+  currentTexts.push({
+    text: '[SAFETY & PRODUCTION DIRECTIVE] SPECIAL INSTRUCTIONS:',
+    x: MARGIN_LEFT + 10,
+    y: curY - 13,
+    font: 'F2',
+    size: 7.5,
+    color: [0.60, 0.38, 0.05]
+  });
+
+  let sY = curY - 25;
+  safetyLines.forEach(sl => {
+    currentTexts.push({
+      text: sl,
+      x: MARGIN_LEFT + 10,
+      y: sY,
+      font: 'F1',
+      size: 7.5,
+      color: [0.30, 0.25, 0.15]
+    });
+    sY -= 10;
+  });
+
+  curY -= (safetyBoxH + 8);
+
+  // ---------------------------------------------------------------------------
+  // 7. SECTION 4: KEY PRODUCTION CONTACTS & DEPARTMENT RADIO CHANNELS
+  // ---------------------------------------------------------------------------
+  const deptBoxH = 34;
+  if (curY - deptBoxH >= FOOTER_RESERVE_Y) {
+    currentVectors.push({
+      type: 'rect',
+      x: MARGIN_LEFT,
+      y: curY - deptBoxH,
+      w: USABLE_WIDTH,
+      h: deptBoxH,
+      fill: [0.965, 0.975, 0.988],
+      stroke: [0.84, 0.87, 0.92],
+      lineWidth: 0.6
+    });
+
+    // Col 1 (Directing / 1st AD)
+    currentTexts.push({
+      text: 'DIRECTING & SET OPS',
+      x: MARGIN_LEFT + 10,
+      y: curY - 12,
+      font: 'F2',
+      size: 7,
+      color: [0.25, 0.30, 0.38]
+    });
+    currentTexts.push({
+      text: `1st AD: Ready on Set ${cs.shootingCall || '06:30 AM'} · Radio: Ch 1`,
+      x: MARGIN_LEFT + 10,
+      y: curY - 24,
+      font: 'F1',
+      size: 7,
+      color: [0.35, 0.40, 0.48]
+    });
+
+    // Col 2 (Camera / Sound)
+    currentTexts.push({
+      text: 'CAMERA & SOUND TECH',
+      x: MARGIN_LEFT + 195,
+      y: curY - 12,
+      font: 'F2',
+      size: 7,
+      color: [0.25, 0.30, 0.38]
+    });
+    currentTexts.push({
+      text: `DP / Cam: ${cs.generalCrewCall || '06:00 AM'} · Radio: Ch 2 | Sound: Ch 3`,
+      x: MARGIN_LEFT + 195,
+      y: curY - 24,
+      font: 'F1',
+      size: 7,
+      color: [0.35, 0.40, 0.48]
+    });
+
+    // Col 3 (Production Office / Approval)
+    currentTexts.push({
+      text: 'LOGISTICS & SIGN-OFF',
+      x: MARGIN_LEFT + 375,
+      y: curY - 12,
+      font: 'F2',
+      size: 7,
+      color: [0.25, 0.30, 0.38]
+    });
+    const approvedStr = truncatePdfText(`Approved: ${cs.approvedBy || 'Production Office'} · Ch 4`, 160, 7, 'F1');
+    currentTexts.push({
+      text: approvedStr,
+      x: MARGIN_LEFT + 375,
+      y: curY - 24,
+      font: 'F1',
+      size: 7,
+      color: [0.35, 0.40, 0.48]
+    });
+
+    curY -= (deptBoxH + 6);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 8. UNIVERSAL PROFESSIONAL FOOTERS ON ALL PAGES
+  // ---------------------------------------------------------------------------
+  const totalPages = pages.length;
+  pages.forEach((p, pIdx) => {
+    // Divider rule
+    p.vectors.push({
+      type: 'line',
+      x1: MARGIN_LEFT,
+      y1: 44,
+      x2: MARGIN_RIGHT,
+      y2: 44,
+      stroke: [0.80, 0.83, 0.88],
+      lineWidth: 0.7
+    });
+
+    // Confidential disclaimer
+    p.texts.push({
+      text: 'CONFIDENTIAL -- SCRIPTORA PRODUCTION STUDIO -- NOT FOR PUBLIC DISTRIBUTION',
+      x: MARGIN_LEFT,
+      y: 32,
+      font: 'F1',
+      size: 7,
+      color: [0.45, 0.48, 0.52]
+    });
+
+    // Shoot date in center
+    const centerDate = cs.shootDate || 'Production Call Sheet';
+    p.texts.push({
+      text: centerDate,
+      x: 306 - getPdfTextWidth(centerDate, 7, 'F1') / 2,
+      y: 32,
+      font: 'F1',
+      size: 7,
+      color: [0.55, 0.58, 0.62]
+    });
+
+    // Dynamic Page Count
+    const pageStr = `Page ${pIdx + 1} of ${totalPages}`;
+    p.texts.push({
+      text: pageStr,
+      x: MARGIN_RIGHT - getPdfTextWidth(pageStr, 7.5, 'F2'),
+      y: 32,
+      font: 'F2',
+      size: 7.5,
+      color: [0.30, 0.35, 0.40]
+    });
+  });
 
   const blob = compilePdfDocument(pages);
-  const filename = `CallSheet_Day${cs.callSheetNumber || '01'}_${title.replace(/\s+/g, '_')}.pdf`;
+  const cleanTitle = title.replace(/[^a-zA-Z0-9]/g, '_');
+  const filename = `CallSheet_Day${dayNum}_${cleanTitle}.pdf`;
   downloadPdfBlob(blob, filename);
   return blob;
 }
