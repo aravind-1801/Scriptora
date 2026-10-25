@@ -99,13 +99,22 @@ class Store {
       const unreadCount = await api.getUnreadNotificationCount();
       const settings = await api.getSettings();
 
+      let selectedId = localStorage.getItem('scriptora_selected_script');
+      const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
+      if (currentDraft) {
+        selectedId = currentDraft.id;
+      } else if (!selectedId && scripts && scripts.length > 0) {
+        selectedId = scripts[0].id;
+      }
+
       const activeScript = (scripts && scripts.length > 0)
-        ? (scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0])
+        ? (scripts.find(s => s.id === selectedId) || scripts[0])
         : null;
 
       this.setState({
         currentUser: user,
         scripts,
+        selectedScriptId: selectedId,
         activeScript,
         unreadNotifications: unreadCount,
         settings
@@ -116,10 +125,13 @@ class Store {
   }
 
   async selectScript(scriptId) {
-    const script = this.state.scripts.find(s => s.id === scriptId) || (await api.getScript(scriptId));
+    if (!scriptId) return;
+    const updatedScripts = await api.setCurrentDraft(scriptId);
+    const script = (updatedScripts || this.state.scripts).find(s => s.id === scriptId) || (await api.getScript(scriptId));
     this.setState({
       selectedScriptId: scriptId,
-      activeScript: script
+      activeScript: script,
+      scripts: updatedScripts || this.state.scripts
     });
   }
 
@@ -130,8 +142,10 @@ class Store {
 
   async refreshScripts() {
     const scripts = await api.getScripts();
-    const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === this.state.selectedScriptId) || scripts[0]) : null;
-    this.setState({ scripts: scripts || [], activeScript: active });
+    const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
+    const selectedId = currentDraft ? currentDraft.id : this.state.selectedScriptId;
+    const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === selectedId) || scripts[0]) : null;
+    this.setState({ scripts: scripts || [], selectedScriptId: selectedId, activeScript: active });
   }
 }
 

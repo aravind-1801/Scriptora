@@ -453,7 +453,7 @@ class Router {
     if (path.startsWith('/editor/')) {
       const scriptId = path.split('/')[2];
       const targetScene = query.get('scene');
-      store.setState({ selectedScriptId: scriptId });
+      store.selectScript(scriptId);
       const currentScript = store.state.scripts?.find(s => s.id === scriptId) || { title: 'Untitled Screenplay' };
       this.render(
         renderEditorScreen(scriptId, targetScene),

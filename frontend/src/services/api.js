@@ -465,6 +465,7 @@ export async function createScript(scriptData) {
       const scripts = await getScripts();
       const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
       localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
+      localStorage.setItem('scriptora_selected_script', data.script.id);
       return data.script;
     }
   } catch {}
@@ -509,7 +510,36 @@ export async function createScript(scriptData) {
   const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
   const updated = [newScript, ...resetScripts.filter(s => s.id !== newScript.id)];
   localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.setItem('scriptora_selected_script', newScript.id);
   return newScript;
+}
+
+export async function setCurrentDraft(scriptId) {
+  if (!scriptId) return await getScripts();
+  try {
+    const data = await request(`/scripts/${scriptId}/current-draft`, { method: 'POST' });
+    if (data && data.script) {
+      const scripts = await getScripts();
+      const updated = scripts.map(s => ({
+        ...s,
+        isCurrentDraft: s.id === scriptId,
+        updated: s.id === scriptId ? 'Just now' : s.updated
+      }));
+      localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+      localStorage.setItem('scriptora_selected_script', scriptId);
+      return updated;
+    }
+  } catch {}
+
+  const scripts = await getScripts();
+  const updated = scripts.map(s => ({
+    ...s,
+    isCurrentDraft: s.id === scriptId,
+    updated: s.id === scriptId ? 'Just now' : s.updated
+  }));
+  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.setItem('scriptora_selected_script', scriptId);
+  return updated;
 }
 
 export async function updateScript(id, updates) {

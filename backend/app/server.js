@@ -112,6 +112,13 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    const currentDraftMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/current-draft$/);
+    if (currentDraftMatch && method === 'POST') {
+      const script = scriptService.setCurrentDraft(currentDraftMatch[1]);
+      if (!script) return sendJson(res, 404, { error: "Script not found" });
+      return sendJson(res, 200, { script });
+    }
+
     const dupMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/duplicate$/);
     if (dupMatch && method === 'POST') {
       const dup = scriptService.duplicateScript(dupMatch[1]);

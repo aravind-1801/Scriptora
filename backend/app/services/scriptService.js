@@ -94,6 +94,16 @@ export function updateScript(id, updates) {
   return script;
 }
 
+export function setCurrentDraft(id) {
+  const script = db.scripts.find(s => s.id === id);
+  if (!script) return null;
+  db.scripts.forEach(s => {
+    s.isCurrentDraft = (s.id === id);
+  });
+  script.updated = "Just now";
+  return script;
+}
+
 export function duplicateScript(id) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;

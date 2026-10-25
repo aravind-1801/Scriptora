@@ -4,11 +4,55 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
+function getDraftSceneSnippet(draft) {
+  if (!draft) return '';
+  try {
+    const saved = localStorage.getItem(`scriptora_screenplay_${draft.id}`);
+    if (saved) {
+      const sp = JSON.parse(saved);
+      if (sp && Array.isArray(sp.scenes) && sp.scenes.length > 0) {
+        const sceneNum = parseInt((draft.currentScene || '').replace(/\D+/g, ''), 10) || 1;
+        const targetScene = sp.scenes.find(s => s.number === sceneNum) || sp.scenes[0];
+        if (targetScene && Array.isArray(targetScene.blocks)) {
+          const actionBlock = targetScene.blocks.find(b => b.type === 'action') || targetScene.blocks[0];
+          const slug = targetScene.slugline || targetScene.blocks.find(b => b.type === 'scene')?.content || '';
+          const text = actionBlock?.content || '';
+          if (slug && text) {
+            return `"${slug} - ${text.slice(0, 95)}..."`;
+          }
+          if (text) {
+            return `"${text.slice(0, 110)}..."`;
+          }
+        }
+      }
+    }
+  } catch {}
+
+  if (draft.id === 'chronicles-of-dust') {
+    return `"INT. CUSTOMS OFFICE - NIGHT - Kevin kneels over cracked hydro-sensor junction box, static..."`;
+  }
+  if (draft.id === 'the-neon-horizon') {
+    return `"EXT. SECTOR 4 SKYLINE - DUSK - Rain reflects neon advertisements across towering glass spires..."`;
+  }
+  if (draft.id === 'velvet-shadows') {
+    return `"INT. DETECTIVE OFFICE - RAINY NIGHT - A single desk lamp casts long shadows across unread case files..."`;
+  }
+  if (draft.id === 'silent-echoes') {
+    return `"INT. ARCHIVE CELLAR - DAY - Dust motes dance in the amber light filtering through frosted glass..."`;
+  }
+  if (draft.logline) {
+    return `"${draft.logline.slice(0, 110)}..."`;
+  }
+  return `"INT. WRITER'S ROOM - DAY - Sunlight cuts through dust motes across an empty mahogany desk..."`;
+}
+
 export function renderWorkspaceScreen() {
   const scripts = store.state.scripts || [];
   const hasScripts = scripts.length > 0;
   // State B: Only display current draft spotlight if a screenplay exists with isCurrentDraft === true
   const currentDraft = hasScripts ? (scripts.find(s => s && s.isCurrentDraft) || null) : null;
+  const sceneNum = parseInt((currentDraft?.currentScene || '').replace(/\D+/g, ''), 10) || 1;
+  const sceneLabel = currentDraft?.currentScene || `Scene ${sceneNum}`;
 
   return `
     ${renderHeader('Workspace', 'Your writing space.')}
@@ -39,20 +83,20 @@ export function renderWorkspaceScreen() {
               </span>
             </div>
             <h2 class="font-semibold text-base text-slate-900 mt-2 font-heading tracking-tight">${currentDraft.title}</h2>
-            <p class="text-xs text-slate-500 mt-0.5">${currentDraft.draft} · ${currentDraft.currentScene || 'Scene 1'} · ${currentDraft.pages} pages</p>
+            <p class="text-xs text-slate-500 mt-0.5">${currentDraft.draft} · ${sceneLabel} · ${currentDraft.pages || 1} pages</p>
             
             <div class="rounded-xl p-3 mt-3 bg-slate-50 border border-slate-100">
               <div class="flex items-center justify-between text-xs font-bold text-blue-600 uppercase tracking-wider">
-                <span>${currentDraft.currentScene || 'SCENE 1'}</span>
+                <span>${sceneLabel.toUpperCase()}</span>
                 <span class="material-symbols-outlined text-[15px] text-slate-400">movie</span>
               </div>
               <p class="font-mono italic text-[11px] text-slate-600 mt-1 line-clamp-2 leading-relaxed">
-                "INT. CUSTOMS OFFICE - NIGHT - Kevin kneels over cracked hydro-sensor junction box, static..."
+                ${getDraftSceneSnippet(currentDraft)}
               </p>
             </div>
 
-            <button type="button" id="btn-continue-writing" data-script-id="${currentDraft.id}" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-medium text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 mt-3 shadow-xs transition-all">
-              <span>Continue Writing (${currentDraft.currentScene || 'Scene 18'})</span>
+            <button type="button" id="btn-continue-writing" data-script-id="${currentDraft.id}" data-scene="${sceneNum}" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-medium text-xs py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 mt-3 shadow-xs transition-all">
+              <span>Continue Writing (${sceneLabel})</span>
               <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
@@ -221,19 +265,20 @@ export function attachWorkspaceEvents(navigate) {
   // Continue writing button
   const continueBtn = document.getElementById('btn-continue-writing');
   if (continueBtn) {
-    continueBtn.onclick = () => {
+    continueBtn.onclick = async () => {
       const scriptId = continueBtn.getAttribute('data-script-id');
-      store.selectScript(scriptId);
-      navigate(`/editor/${scriptId}?scene=18`);
+      const scene = continueBtn.getAttribute('data-scene') || '1';
+      await store.selectScript(scriptId);
+      navigate(`/editor/${scriptId}?scene=${scene}`);
     };
   }
 
   // Row clicks to open editor
   document.querySelectorAll('.script-item-row').forEach(row => {
-    row.onclick = (e) => {
+    row.onclick = async (e) => {
       if (e.target.closest('.script-more-btn')) return;
       const scriptId = row.getAttribute('data-script-id');
-      store.selectScript(scriptId);
+      await store.selectScript(scriptId);
       navigate(`/editor/${scriptId}`);
     };
   });

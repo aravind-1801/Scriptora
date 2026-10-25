@@ -46,6 +46,10 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Create Script:', create.status, create.body.script?.title === 'Solaris Echo' ? 'PASS' : 'FAIL');
 
+    // 4b. Set Current Draft
+    const currDraft = await request('/api/scripts/chronicles-of-dust/current-draft', { method: 'POST' });
+    console.log('✓ Set Current Draft:', currDraft.status, currDraft.body.script?.isCurrentDraft === true ? 'PASS' : 'FAIL');
+
     // 5. Collaborators
     const collabs = await request('/api/collaborators/chronicles-of-dust');
     console.log('✓ Collaborators:', collabs.status, collabs.body.collaborators?.length === 3 ? 'PASS' : 'FAIL');
