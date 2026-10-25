@@ -66,7 +66,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
     };
   })();
 
-  const totalScripts = store.state.scripts?.length || user.stats?.drafts || 14;
+  const totalScripts = Array.isArray(store.state.scripts) ? store.state.scripts.length : (user.stats?.drafts ?? 0);
   const activeCoAuthors = 3;
   const healthIndex = user.stats?.healthIndex || '98%';
 

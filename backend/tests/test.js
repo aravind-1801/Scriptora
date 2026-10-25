@@ -44,7 +44,10 @@ server.listen(PORT, async () => {
       headers: { 'Content-Type': 'application/json' },
       body: { title: 'Solaris Echo', genre: 'Sci-Fi' }
     });
-    console.log('✓ Create Script:', create.status, create.body.script?.title === 'Solaris Echo' ? 'PASS' : 'FAIL');
+    const solarisScreenplay = await request(`/api/screenplay/${create.body.script?.id}`);
+    const isSolarisScreenplayEmpty = solarisScreenplay.body.screenplay?.wordCount === 0 &&
+      solarisScreenplay.body.screenplay?.scenes?.[0]?.blocks?.[0]?.content === '';
+    console.log('✓ Create Script (Empty Screenplay):', create.status, create.body.script?.title === 'Solaris Echo' && isSolarisScreenplayEmpty ? 'PASS' : 'FAIL');
 
     // 4b. Set Current Draft
     const currDraft = await request('/api/scripts/chronicles-of-dust/current-draft', { method: 'POST' });

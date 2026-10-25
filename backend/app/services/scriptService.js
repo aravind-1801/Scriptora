@@ -56,15 +56,14 @@ export function createScript(data) {
     title: newScript.title,
     draft: "Draft 1.0",
     pageCount: 1,
-    wordCount: 140,
+    wordCount: 0,
     scenes: [
       {
         id: "scene-1",
         number: 1,
-        slugline: "INT. WRITER'S ROOM - DAY",
+        slugline: "",
         blocks: [
-          { type: "scene", content: "INT. WRITER'S ROOM - DAY" },
-          { type: "action", content: "Sunlight cuts through dust motes across an empty mahogany desk. A single typewriter roller stands silent." }
+          { type: "scene", content: "" }
         ]
       }
     ]
@@ -78,7 +77,7 @@ export function createScript(data) {
       tag: "Initial Spec Draft",
       timestamp: "Just now",
       author: db.currentUser?.initials || "AK",
-      stats: "1 page · 140 words",
+      stats: "1 page · 0 words",
       notes: "Project created.",
       isCurrent: true
     }
@@ -144,7 +143,11 @@ export function restoreScript(id) {
 export function deleteScript(id) {
   const idx = db.scripts.findIndex(s => s.id === id);
   if (idx === -1) return false;
+  const wasCurrentDraft = db.scripts[idx].isCurrentDraft;
   db.scripts.splice(idx, 1);
+  if (wasCurrentDraft && db.scripts.length > 0) {
+    db.scripts[0].isCurrentDraft = true;
+  }
   delete db.screenplays[id];
   delete db.collaborators[id];
   delete db.versions[id];

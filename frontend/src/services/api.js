@@ -456,12 +456,34 @@ export async function getScript(id) {
 }
 
 export async function createScript(scriptData) {
+  const newScriptId = (scriptData.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
+  const emptyScreenplay = {
+    id: newScriptId,
+    title: scriptData.title || "Untitled Screenplay",
+    draft: "Draft 1.0",
+    pageCount: 1,
+    wordCount: 0,
+    scenes: [
+      {
+        id: "scene-1",
+        number: 1,
+        slugline: "",
+        blocks: [
+          { id: `b-${Date.now()}-1`, type: "scene", content: "" }
+        ]
+      }
+    ]
+  };
+
   try {
     const data = await request('/scripts', {
       method: 'POST',
       body: JSON.stringify(scriptData)
     });
     if (data.script) {
+      emptyScreenplay.id = data.script.id;
+      emptyScreenplay.title = data.script.title;
+      localStorage.setItem(`scriptora_screenplay_${data.script.id}`, JSON.stringify(emptyScreenplay));
       const scripts = await getScripts();
       const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
       localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
@@ -471,7 +493,7 @@ export async function createScript(scriptData) {
   } catch {}
 
   const newScript = {
-    id: (scriptData.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    id: newScriptId,
     title: scriptData.title || "Untitled Screenplay",
     draft: "Draft 1.0",
     genre: scriptData.genre || "Drama",
@@ -481,7 +503,7 @@ export async function createScript(scriptData) {
     updated: "Just now",
     currentScene: "Scene 1",
     isCurrentDraft: true,
-    joinCode: "SCRP-1001",
+    joinCode: `${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
     archived: false,
     context: {
       format: scriptData.format || "Feature",
@@ -506,6 +528,7 @@ export async function createScript(scriptData) {
     }
   };
 
+  localStorage.setItem(`scriptora_screenplay_${newScript.id}`, JSON.stringify(emptyScreenplay));
   const scripts = await getScripts();
   const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
   const updated = [newScript, ...resetScripts.filter(s => s.id !== newScript.id)];
@@ -568,8 +591,23 @@ export async function deleteScript(id) {
   } catch {}
 
   const scripts = await getScripts();
-  const updated = scripts.filter(s => s.id !== id);
+  const deletedScript = scripts.find(s => s.id === id);
+  const wasCurrentDraft = deletedScript?.isCurrentDraft;
+  let updated = scripts.filter(s => s.id !== id);
+  if (wasCurrentDraft && updated.length > 0) {
+    updated[0].isCurrentDraft = true;
+  }
   localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.removeItem(`scriptora_screenplay_${id}`);
+
+  const currentSelected = localStorage.getItem('scriptora_selected_script');
+  if (currentSelected === id) {
+    if (updated.length > 0) {
+      localStorage.setItem('scriptora_selected_script', updated[0].id);
+    } else {
+      localStorage.removeItem('scriptora_selected_script');
+    }
+  }
   return { success: true };
 }
 
@@ -716,7 +754,7 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
 export async function getScreenplay(scriptId) {
   try {
     const data = await request(`/screenplay/${scriptId}`);
-    if (data.screenplay && data.screenplay.scenes && data.screenplay.scenes.length > 0) {
+    if (data.screenplay && data.screenplay.scenes) {
       return data.screenplay;
     }
   } catch {}
@@ -725,17 +763,41 @@ export async function getScreenplay(scriptId) {
   if (saved) {
     try {
       const sp = JSON.parse(saved);
-      if (sp && sp.scenes && sp.scenes.length > 0) {
+      if (sp && sp.scenes) {
         return sp;
       }
     } catch {}
   }
 
-  // Fallback to fresh starting screenplay from template
-  const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
-  template.id = scriptId || 'script_01';
-  localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
-  return template;
+  // Canonical sample screenplay ONLY for chronicles-of-dust
+  if (scriptId === 'chronicles-of-dust') {
+    const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
+    template.id = scriptId;
+    localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
+    return template;
+  }
+
+  // Pure blank new screenplay for all other scripts
+  const script = await getScript(scriptId);
+  const emptyTemplate = {
+    id: scriptId || 'script_01',
+    title: script?.title || 'Untitled Screenplay',
+    draft: 'Draft 1.0',
+    pageCount: 1,
+    wordCount: 0,
+    scenes: [
+      {
+        id: 'scene-1',
+        number: 1,
+        slugline: '',
+        blocks: [
+          { id: `b-${Date.now()}-1`, type: 'scene', content: '' }
+        ]
+      }
+    ]
+  };
+  localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(emptyTemplate));
+  return emptyTemplate;
 }
 
 export async function saveScreenplay(scriptId, screenplay) {

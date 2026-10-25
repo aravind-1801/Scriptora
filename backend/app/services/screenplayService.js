@@ -5,15 +5,14 @@ export function getScreenplay(scriptId) {
     title: db.scripts.find(s => s.id === scriptId)?.title || "Untitled Screenplay",
     draft: "Draft 1.0",
     pageCount: 1,
-    wordCount: 120,
+    wordCount: 0,
     scenes: [
       {
         id: "scene-1",
         number: 1,
-        slugline: "INT. STUDIO - DAY",
+        slugline: "",
         blocks: [
-          { type: "scene", content: "INT. STUDIO - DAY" },
-          { type: "action", content: "A blank script page waits for inspiration." }
+          { type: "scene", content: "" }
         ]
       }
     ]

@@ -52,8 +52,11 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
             </div>
             <div class="min-w-0 flex-1">
               <select id="prod-script-select" class="w-full font-heading font-semibold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5">
-                <option value="chronicles-of-dust" ${script.id === 'chronicles-of-dust' ? 'selected' : ''}>Chronicles of Dust (Feature)</option>
-                <option value="the-neon-horizon" ${script.id === 'the-neon-horizon' ? 'selected' : ''}>The Neon Horizon (Pilot)</option>
+                ${(store.state.scripts && store.state.scripts.length > 0) ? store.state.scripts.map(s => `
+                  <option value="${s.id}" ${s.id === script.id ? 'selected' : ''}>${s.title} (${s.format || 'Feature'})</option>
+                `).join('') : `
+                  <option value="${script.id}" selected>${script.title}</option>
+                `}
               </select>
               <!-- Pinned source version tracking preserved for underlying system state -->
               <span id="pinned-version-label" class="sr-only">${script.draft || 'Draft 4.2'} (Pinned)</span>

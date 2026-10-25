@@ -1513,16 +1513,10 @@ function renderScreenplayPages() {
       pageNumber: 1,
       items: [
         {
-          block: { id: 'b-1-1', type: 'scene', content: 'INT. NEW SCENE - DAY' },
+          block: { id: `b-${Date.now()}-1`, type: 'scene', content: '' },
           sceneNumber: 1,
           sceneId: 'scene-1',
-          slugline: 'INT. NEW SCENE - DAY'
-        },
-        {
-          block: { id: 'b-1-2', type: 'action', content: 'Type your screenplay action here...' },
-          sceneNumber: 1,
-          sceneId: 'scene-1',
-          slugline: 'INT. NEW SCENE - DAY'
+          slugline: ''
         }
       ]
     });
@@ -1868,7 +1862,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
-        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
+        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled && (block.content || '').trim() ? '' : 'hidden'}">${sceneNumber}</span>
         <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;

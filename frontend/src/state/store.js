@@ -103,8 +103,18 @@ class Store {
       const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
       if (currentDraft) {
         selectedId = currentDraft.id;
-      } else if (!selectedId && scripts && scripts.length > 0) {
-        selectedId = scripts[0].id;
+      } else if (scripts && scripts.length > 0) {
+        if (!selectedId || !scripts.some(s => s.id === selectedId)) {
+          selectedId = scripts[0].id;
+        }
+      } else {
+        selectedId = null;
+      }
+
+      if (selectedId) {
+        localStorage.setItem('scriptora_selected_script', selectedId);
+      } else {
+        localStorage.removeItem('scriptora_selected_script');
       }
 
       const activeScript = (scripts && scripts.length > 0)
@@ -113,7 +123,7 @@ class Store {
 
       this.setState({
         currentUser: user,
-        scripts,
+        scripts: scripts || [],
         selectedScriptId: selectedId,
         activeScript,
         unreadNotifications: unreadCount,
@@ -143,9 +153,22 @@ class Store {
   async refreshScripts() {
     const scripts = await api.getScripts();
     const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
-    const selectedId = currentDraft ? currentDraft.id : this.state.selectedScriptId;
+    let selectedId = currentDraft ? currentDraft.id : this.state.selectedScriptId;
+    if (scripts && scripts.length > 0) {
+      if (!selectedId || !scripts.some(s => s.id === selectedId)) {
+        selectedId = scripts[0].id;
+      }
+    } else {
+      selectedId = null;
+    }
     const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === selectedId) || scripts[0]) : null;
+    if (selectedId) {
+      localStorage.setItem('scriptora_selected_script', selectedId);
+    } else {
+      localStorage.removeItem('scriptora_selected_script');
+    }
     this.setState({ scripts: scripts || [], selectedScriptId: selectedId, activeScript: active });
+    return scripts;
   }
 }
 

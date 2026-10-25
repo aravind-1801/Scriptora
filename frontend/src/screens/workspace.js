@@ -43,7 +43,7 @@ function getDraftSceneSnippet(draft) {
   if (draft.logline) {
     return `"${draft.logline.slice(0, 110)}..."`;
   }
-  return `"INT. WRITER'S ROOM - DAY - Sunlight cuts through dust motes across an empty mahogany desk..."`;
+  return "Empty script — start writing your story.";
 }
 
 export function renderWorkspaceScreen() {
@@ -335,7 +335,7 @@ export function attachWorkspaceEvents(navigate) {
       try {
         const script = await api.createScript({ title, format, genre });
         await store.refreshScripts();
-        store.selectScript(script.id);
+        await store.selectScript(script.id);
         toggleNewScriptModal(false);
         showToast(`Created "${script.title}"`);
         navigate(`/editor/${script.id}`);
