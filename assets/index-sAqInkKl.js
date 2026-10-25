@@ -364,12 +364,14 @@
         `:""}
 
         <!-- New Screenplay Creation Card -->
-        <button type="button" id="btn-new-screenplay-card" aria-label="Create New Screenplay" class="w-full group bg-white hover:bg-blue-50/40 active:scale-[0.99] rounded-2xl border-2 border-dashed border-blue-200/90 hover:border-blue-400 p-7 sm:py-9 sm:px-6 flex flex-col items-center justify-center text-center transition-all shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
-          <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2.5 group-hover:scale-105 group-hover:bg-blue-100 transition-all shadow-xs">
-            <span class="material-symbols-outlined text-[26px] font-bold">add</span>
+        <button type="button" id="btn-new-screenplay-card" aria-label="Create New Screenplay" class="w-full group bg-white hover:bg-blue-50/40 active:scale-[0.99] rounded-2xl border-2 border-dashed border-blue-200/90 hover:border-blue-400 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center gap-3.5 transition-all shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer">
+          <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:bg-blue-100 transition-all shadow-xs">
+            <span class="material-symbols-outlined text-[22px] font-bold">add</span>
           </div>
-          <h3 class="font-heading font-bold text-base text-slate-900 tracking-tight">New Screenplay</h3>
-          <p class="text-xs text-slate-500 font-medium mt-1">Start your next story.</p>
+          <div class="flex flex-col text-left min-w-0 flex-1">
+            <h3 class="font-heading font-bold text-sm sm:text-base text-slate-900 tracking-tight leading-tight">New Screenplay</h3>
+            <p class="text-xs text-slate-500 font-medium mt-0.5 leading-snug">Start your next story.</p>
+          </div>
         </button>
 
         <!-- All Screenplays (Shown when screenplays exist) -->
