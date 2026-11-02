@@ -598,6 +598,16 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    const prodSbRestoreMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/shots\/([a-zA-Z0-9_-]+)\/restore$/);
+    if (prodSbRestoreMatch && method === 'POST') {
+      const scriptId = prodSbRestoreMatch[1];
+      const sceneId = prodSbRestoreMatch[2];
+      const shotId = prodSbRestoreMatch[3];
+      const body = await readBody(req);
+      const result = storyboardService.restoreShotVersion(scriptId, sceneId, shotId, body.historyIndex);
+      return sendJson(res, 200, result);
+    }
+
     const prodSbReorderMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/([a-zA-Z0-9_-]+)\/reorder$/);
     if (prodSbReorderMatch && method === 'POST') {
       const scriptId = prodSbReorderMatch[1];

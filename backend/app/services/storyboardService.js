@@ -143,11 +143,19 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
   const shot = sb.shots.find(s => s.id === shotId);
   if (!shot) throw new Error("Shot not found");
 
+  if (!Array.isArray(shot.history)) {
+    shot.history = [];
+  }
+
   // Track revision history if image or prompt changes
   if ((updates.imageUrl && updates.imageUrl !== shot.imageUrl) || (updates.prompt && updates.prompt !== shot.prompt)) {
     shot.history.push({
       previousImageUrl: shot.imageUrl,
       previousPrompt: shot.prompt,
+      provider: shot.provider || "scriptora-concept",
+      quality: shot.quality || "hd",
+      approvalStatus: shot.approvalStatus || "draft",
+      sourceVersion: sb.sourceVersion || "Draft 4.2",
       timestamp: new Date().toISOString(),
       updatedBy: db.currentUser.name
     });
@@ -160,6 +168,37 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
 
   Object.assign(shot, updates, { updatedAt: new Date().toISOString() });
   sb.updatedAt = new Date().toISOString();
+  return { storyboard: sb, shot };
+}
+
+export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
+  const sb = getStoryboardByScene(scriptId, sceneId);
+  const shot = sb.shots.find(s => s.id === shotId);
+  if (!shot) throw new Error("Shot not found");
+  if (!Array.isArray(shot.history) || !shot.history[historyIndex]) {
+    throw new Error("Historical version not found");
+  }
+
+  const hist = shot.history[historyIndex];
+  // Retain current image before restoring
+  shot.history.push({
+    previousImageUrl: shot.imageUrl,
+    previousPrompt: shot.prompt,
+    provider: shot.provider || "scriptora-concept",
+    quality: shot.quality || "hd",
+    approvalStatus: shot.approvalStatus || "draft",
+    sourceVersion: sb.sourceVersion || "Draft 4.2",
+    timestamp: new Date().toISOString(),
+    updatedBy: db.currentUser.name
+  });
+
+  shot.imageUrl = hist.previousImageUrl;
+  if (hist.previousPrompt) shot.prompt = hist.previousPrompt;
+  if (hist.provider) shot.provider = hist.provider;
+  if (hist.approvalStatus) shot.approvalStatus = hist.approvalStatus;
+  shot.updatedAt = new Date().toISOString();
+  sb.updatedAt = new Date().toISOString();
+
   return { storyboard: sb, shot };
 }
 
@@ -372,6 +411,77 @@ export async function generateShotImage(params = {}) {
     }
   }
 
+  // If Google Imagen 3 is configured
+  if (provider === "gemini-imagen3" && (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY)) {
+    const key = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY;
+    try {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instances: [{
+            prompt: `${visualStyle} cinematic storyboard frame for ${sceneHeading}: ${prompt}. Lens: ${focalLength}, framing: ${shotSize}, camera: ${cameraAngle}, lighting: ${lightingMood}. Aspect ratio ${aspectRatio}.`
+          }],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: aspectRatio === "9:16" ? "9:16" : (aspectRatio === "4:3" ? "4:3" : "16:9")
+          }
+        })
+      });
+      const json = await resp.json();
+      if (json.predictions?.[0]?.bytesBase64Encoded) {
+        return {
+          imageUrl: `data:image/png;base64,${json.predictions[0].bytesBase64Encoded}`,
+          provider: "gemini-imagen3",
+          quality: params.quality || "standard",
+          costEstimate: "$0.030",
+          prompt
+        };
+      } else {
+        throw new Error(json.error?.message || "Failed to generate image with Google Imagen 3");
+      }
+    } catch (err) {
+      throw new Error(`Google Imagen 3 generation failed: ${err.message}`);
+    }
+  }
+
+  // If Stability AI SDXL is configured
+  if (provider === "stability-sdxl" && process.env.STABILITY_API_KEY) {
+    try {
+      const resp = await fetch("https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${process.env.STABILITY_API_KEY}`
+        },
+        body: JSON.stringify({
+          text_prompts: [
+            { text: `${visualStyle} storyboard, ${sceneHeading}: ${prompt}. ${shotSize}, ${cameraAngle}, ${focalLength}, ${lightingMood}`, weight: 1.0 }
+          ],
+          cfg_scale: 7,
+          height: aspectRatio === "9:16" ? 1344 : (aspectRatio === "4:3" ? 896 : 768),
+          width: aspectRatio === "9:16" ? 768 : (aspectRatio === "4:3" ? 1152 : 1344),
+          samples: 1
+        })
+      });
+      const json = await resp.json();
+      if (json.artifacts?.[0]?.base64) {
+        return {
+          imageUrl: `data:image/png;base64,${json.artifacts[0].base64}`,
+          provider: "stability-sdxl",
+          quality: params.quality || "standard",
+          costEstimate: "$0.018",
+          prompt
+        };
+      } else {
+        throw new Error(json.message || "Failed to generate image with Stability AI");
+      }
+    } catch (err) {
+      throw new Error(`Stability AI generation failed: ${err.message}`);
+    }
+  }
+
   // Built-in SCRIPTORA Concept Engine (High-Resolution Procedural SVG Canvas)
   // Generates genuine, tailored storyboard visuals reflecting camera setup, aspect ratio, lens, and lighting
   const svgImage = generateProceduralConceptFrame({
@@ -560,72 +670,149 @@ function generateProceduralConceptFrame(opts) {
   if (aspectRatio === "4:3") height = 900;
   if (aspectRatio === "9:16") { width = 675; height = 1200; }
 
-  const isNight = sceneHeading.includes('NIGHT') || lightingMood.toLowerCase().includes('night') || lightingMood.toLowerCase().includes('shadow') || lightingMood.toLowerCase().includes('strobe');
-  
-  // Palette selection based on lighting & style
-  const bgGradStart = isNight ? "%23090d16" : "%23292524";
-  const bgGradEnd = isNight ? "%23020617" : "%231c1917";
-  const accentColor = isNight ? "%2338bdf8" : "%23f59e0b";
-  const rimColor = isNight ? "%2306b6d4" : "%23fbbf24";
+  const isNight = sceneHeading.toUpperCase().includes('NIGHT') || lightingMood.toLowerCase().includes('night') || lightingMood.toLowerCase().includes('shadow') || lightingMood.toLowerCase().includes('strobe') || lightingMood.toLowerCase().includes('noir');
+  const isPencil = visualStyle.toLowerCase().includes('pencil');
+  const isInk = visualStyle.toLowerCase().includes('ink');
+  const isAnime = visualStyle.toLowerCase().includes('anime') || visualStyle.toLowerCase().includes('illustration');
+  const is3D = visualStyle.toLowerCase().includes('3d');
 
-  // Silhouette scale based on shot size
+  // Palette selection based on style and lighting
+  let bgGradStart = isNight ? "%23090d16" : "%23292524";
+  let bgGradEnd = isNight ? "%23020617" : "%231c1917";
+  let accentColor = isNight ? "%2338bdf8" : "%23f59e0b";
+  let rimColor = isNight ? "%2306b6d4" : "%23fbbf24";
+  let silColor = "%23020617";
+  let gridOpacity = "0.08";
+  let strokeColor = "%23ffffff";
+
+  if (isPencil) {
+    bgGradStart = "%23f5f5f4";
+    bgGradEnd = "%23e7e5e4";
+    accentColor = "%2357534e";
+    rimColor = "%2378716c";
+    silColor = "%2344403c";
+    gridOpacity = "0.15";
+    strokeColor = "%23292524";
+  } else if (isInk) {
+    bgGradStart = "%230a0a0a";
+    bgGradEnd = "%23000000";
+    accentColor = "%23ffffff";
+    rimColor = "%23e2e8f0";
+    silColor = "%230f172a";
+    gridOpacity = "0.12";
+  } else if (isAnime) {
+    bgGradStart = isNight ? "%231e1035" : "%231e293b";
+    bgGradEnd = isNight ? "%230f0728" : "%23090d16";
+    accentColor = "%23ec4899";
+    rimColor = "%2338bdf8";
+  } else if (is3D) {
+    bgGradStart = "%231e1b4b";
+    bgGradEnd = "%230f172a";
+    accentColor = "%23818cf8";
+    rimColor = "%23a5b4fc";
+  }
+
+  // Silhouette scale & positioning based on shot size
   let silH = 260;
   let silY = height - 280;
   let silX = width / 2;
+  const isTwoShot = shotSize.toLowerCase().includes('two-shot');
+  const isOverShoulder = shotSize.toLowerCase().includes('shoulder');
+  const isPOV = shotSize.toLowerCase().includes('pov') || shotSize.toLowerCase().includes('point of view');
+  const isDutch = cameraAngle.toLowerCase().includes('dutch');
 
   if (shotSize.includes("Wide")) {
-    silH = 120;
-    silY = height - 160;
-  } else if (shotSize.includes("Close")) {
-    silH = 420;
-    silY = height - 440;
+    silH = 110;
+    silY = height - 150;
+  } else if (shotSize.includes("Close") && !shotSize.includes("Extreme")) {
+    silH = 430;
+    silY = height - 450;
   } else if (shotSize.includes("Extreme Close")) {
-    silH = 550;
-    silY = height - 560;
+    silH = 560;
+    silY = height - 570;
   }
 
+  // Generate SVG with composition layers
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'>
     <defs>
       <linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'>
         <stop offset='0%' stop-color='${bgGradStart}'/>
         <stop offset='100%' stop-color='${bgGradEnd}'/>
       </linearGradient>
-      <radialGradient id='rimLight' cx='70%' cy='30%' r='60%'>
-        <stop offset='0%' stop-color='${rimColor}' stop-opacity='0.4'/>
+      <radialGradient id='rimLight' cx='70%' cy='30%' r='65%'>
+        <stop offset='0%' stop-color='${rimColor}' stop-opacity='0.45'/>
         <stop offset='100%' stop-color='${bgGradEnd}' stop-opacity='0'/>
       </radialGradient>
       <pattern id='grid' width='40' height='40' patternUnits='userSpaceOnUse'>
-        <path d='M 40 0 L 0 0 0 40' fill='none' stroke='white' stroke-width='0.5' opacity='0.08'/>
+        <path d='M 40 0 L 0 0 0 40' fill='none' stroke='${strokeColor}' stroke-width='0.5' opacity='${gridOpacity}'/>
       </pattern>
     </defs>
     <rect width='${width}' height='${height}' fill='url(%23bg)'/>
     <rect width='${width}' height='${height}' fill='url(%23rimLight)'/>
     <rect width='${width}' height='${height}' fill='url(%23grid)'/>
-    
-    <!-- Horizon Line & Depth Planes -->
-    <line x1='0' y1='${Math.round(height * 0.65)}' x2='${width}' y2='${Math.round(height * 0.65)}' stroke='${accentColor}' stroke-width='1' opacity='0.3' stroke-dasharray='4,4'/>
-    
-    <!-- Stylized Cinematic Silhouette -->
-    <g transform='translate(${Math.round(silX)}, ${Math.round(silY)})'>
-      <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
-      <path d='M ${Math.round(-silH * 0.22)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.28)} ${Math.round(silH * 0.22)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.28)} ${silH} L ${Math.round(-silH * 0.28)} ${silH} Z' fill='%23020617' stroke='${accentColor}' stroke-width='1.2'/>
+
+    <!-- Horizon Line & Depth Planes ${isDutch ? "transform='rotate(4 " + width/2 + " " + height/2 + ")'" : ""} -->
+    <g ${isDutch ? "transform='rotate(4 " + (width/2) + " " + (height/2) + ")'" : ""}>
+      <line x1='0' y1='${Math.round(height * 0.62)}' x2='${width}' y2='${Math.round(height * 0.62)}' stroke='${accentColor}' stroke-width='1.2' opacity='0.35' stroke-dasharray='5,5'/>
+      <line x1='0' y1='${Math.round(height * 0.65)}' x2='${width}' y2='${Math.round(height * 0.65)}' stroke='${rimColor}' stroke-width='0.7' opacity='0.2'/>
     </g>
 
-    <!-- Camera Crosshairs & Rule-of-Thirds Markings -->
-    <line x1='${Math.round(width * 0.33)}' y1='20' x2='${Math.round(width * 0.33)}' y2='${height - 20}' stroke='white' stroke-width='0.5' opacity='0.15'/>
-    <line x1='${Math.round(width * 0.66)}' y1='20' x2='${Math.round(width * 0.66)}' y2='${height - 20}' stroke='white' stroke-width='0.5' opacity='0.15'/>
-    <line x1='20' y1='${Math.round(height * 0.33)}' x2='${width - 20}' y2='${Math.round(height * 0.33)}' stroke='white' stroke-width='0.5' opacity='0.15'/>
-    <line x1='20' y1='${Math.round(height * 0.66)}' x2='${width - 20}' y2='${Math.round(height * 0.66)}' stroke='white' stroke-width='0.5' opacity='0.15'/>
+    <!-- Composition Silhouettes -->
+    ${isTwoShot ? `
+      <!-- Two-Shot Character Blocking -->
+      <g transform='translate(${Math.round(width * 0.35)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.11)}' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${silColor}' stroke='${accentColor}' stroke-width='1.2'/>
+      </g>
+      <g transform='translate(${Math.round(width * 0.65)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.11)}' fill='%230f172a' stroke='${accentColor}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${silColor}' stroke='${rimColor}' stroke-width='1.2'/>
+      </g>
+    ` : (isOverShoulder ? `
+      <!-- Over-the-Shoulder Foreground & Background -->
+      <g transform='translate(${Math.round(width * 0.22)}, ${Math.round(height - 180)})'>
+        <circle cx='0' cy='-120' r='60' fill='%23020617' stroke='${accentColor}' stroke-width='1.5'/>
+        <path d='M -80 -60 Q 0 -80 80 -60 L 140 260 L -100 260 Z' fill='%23020617' opacity='0.9'/>
+      </g>
+      <g transform='translate(${Math.round(width * 0.65)}, ${Math.round(height * 0.45)})'>
+        <circle cx='0' cy='-60' r='28' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
+        <path d='M -40 -30 Q 0 -40 40 -30 L 50 180 L -50 180 Z' fill='${silColor}' stroke='${rimColor}' stroke-width='1'/>
+      </g>
+    ` : (isPOV ? `
+      <!-- POV Focus Reticle & Sightlines -->
+      <g transform='translate(${Math.round(width / 2)}, ${Math.round(height / 2)})'>
+        <circle cx='0' cy='0' r='80' fill='none' stroke='${accentColor}' stroke-width='1.5' stroke-dasharray='12,6'/>
+        <circle cx='0' cy='0' r='8' fill='${accentColor}' opacity='0.8'/>
+        <line x1='-120' y1='0' x2='-90' y2='0' stroke='${rimColor}' stroke-width='1.5'/>
+        <line x1='90' y1='0' x2='120' y2='0' stroke='${rimColor}' stroke-width='1.5'/>
+        <line x1='0' y1='-120' x2='0' y2='-90' stroke='${rimColor}' stroke-width='1.5'/>
+        <line x1='0' y1='90' x2='0' y2='120' stroke='${rimColor}' stroke-width='1.5'/>
+      </g>
+    ` : `
+      <!-- Primary Silhouette -->
+      <g transform='translate(${Math.round(silX)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.22)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.28)} ${Math.round(silH * 0.22)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.28)} ${silH} L ${Math.round(-silH * 0.28)} ${silH} Z' fill='${silColor}' stroke='${accentColor}' stroke-width='1.2'/>
+      </g>
+    `))}
+
+    <!-- Rule-of-Thirds Markings -->
+    <line x1='${Math.round(width * 0.33)}' y1='15' x2='${Math.round(width * 0.33)}' y2='${height - 15}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
+    <line x1='${Math.round(width * 0.66)}' y1='15' x2='${Math.round(width * 0.66)}' y2='${height - 15}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
+    <line x1='15' y1='${Math.round(height * 0.33)}' x2='${width - 15}' y2='${Math.round(height * 0.33)}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
+    <line x1='15' y1='${Math.round(height * 0.66)}' x2='${width - 15}' y2='${Math.round(height * 0.66)}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
 
     <!-- Camera Telemetry Overlay -->
-    <rect x='24' y='24' width='140' height='26' rx='6' fill='black' opacity='0.6'/>
-    <text x='34' y='42' fill='white' font-family='monospace' font-size='12' font-weight='bold'>REC · ${shotNumber}</text>
+    <rect x='24' y='24' width='140' height='26' rx='6' fill='black' opacity='0.7'/>
+    <circle cx='36' cy='37' r='4' fill='%23ef4444'/>
+    <text x='48' y='42' fill='white' font-family='monospace' font-size='11' font-weight='bold'>REC · ${shotNumber}</text>
     
-    <text x='${width - 34}' y='42' text-anchor='end' fill='${accentColor}' font-family='monospace' font-size='12' font-weight='bold'>${aspectRatio} · ${focalLength}</text>
-    <text x='${width - 34}' y='64' text-anchor='end' fill='white' opacity='0.7' font-family='sans-serif' font-size='11'>${shotSize} · ${cameraAngle}</text>
+    <rect x='${width - 240}' y='24' width='216' height='46' rx='6' fill='black' opacity='0.7'/>
+    <text x='${width - 34}' y='41' text-anchor='end' fill='${accentColor}' font-family='monospace' font-size='12' font-weight='bold'>${aspectRatio} · ${focalLength}</text>
+    <text x='${width - 34}' y='60' text-anchor='end' fill='white' opacity='0.85' font-family='sans-serif' font-size='10'>${shotSize} · ${cameraAngle}</text>
 
     <!-- Lower Masthead Bar -->
-    <rect x='0' y='${height - 36}' width='${width}' height='36' fill='black' opacity='0.75'/>
+    <rect x='0' y='${height - 36}' width='${width}' height='36' fill='black' opacity='0.85'/>
     <text x='24' y='${height - 13}' fill='white' font-family='sans-serif' font-size='12' font-weight='bold'>${sceneHeading}</text>
     <text x='${width - 24}' y='${height - 13}' text-anchor='end' fill='${rimColor}' font-family='sans-serif' font-size='11'>SCRIPTORA CONCEPT ENGINE · ${visualStyle.toUpperCase()}</text>
   </svg>`;
@@ -633,7 +820,6 @@ function generateProceduralConceptFrame(opts) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-// Helper to ensure database has initial storyboards
 function ensureStoryboardsInitialized(scriptId) {
   if (!db.storyboards) {
     db.storyboards = [];

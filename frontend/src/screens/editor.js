@@ -2498,7 +2498,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
         try { document.execCommand(cmd, false, null); } catch (_) {}
       }
     });
-    typingOverrides = { bold: null, italic: null, underline: null, strikeThrough: null };
+    Object.assign(typingOverrides, { bold: null, italic: null, underline: null, strikeThrough: null });
   }
 
   // Ctrl+Enter: Insert Page Break

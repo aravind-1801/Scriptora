@@ -498,15 +498,16 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             ${availableScenesToAssign.length > 0 ? `
               <div class="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-2 w-full min-w-0">
                 <div class="min-w-0 flex-1 w-full">
-                  <select id="select-scene-to-assign" class="w-full min-w-0 max-w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 sm:py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 cursor-pointer truncate">
+                  <label for="select-scene-to-assign" class="sr-only">Select scene to assign to shoot day</label>
+                  <select id="select-scene-to-assign" class="w-full min-w-0 max-w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 sm:py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-500 cursor-pointer truncate">
                     ${availableScenesToAssign.map(sc => `
                       <option value="${sc.sceneNumber}">#${sc.sceneNumber} ${sc.heading} (${sc.pages} pgs)</option>
                     `).join('')}
                   </select>
                 </div>
                 <div class="w-full sm:w-auto shrink-0">
-                  <button id="btn-confirm-assign-scene" class="w-full sm:w-auto px-4 py-2 sm:py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer text-center">
-                    Add to Day
+                  <button id="btn-confirm-assign-scene" class="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-semibold text-xs shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 text-center">
+                    <span class="material-symbols-outlined text-[15px]">add</span><span>Add to Day</span>
                   </button>
                 </div>
               </div>

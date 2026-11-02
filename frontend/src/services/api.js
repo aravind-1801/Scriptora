@@ -3396,28 +3396,144 @@ export async function generateStoryboardSequence(scriptId, sceneId, params = {})
   };
 }
 
-function createSvgFrame(shotNum, lensInfo, heading, sizeLabel) {
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 502' width='1200' height='502'>
+function createSvgFrame(shotNum, lensInfo, heading, sizeLabel, style = "Cinematic Concept Art", ratio = "2.39:1") {
+  let width = 1200;
+  let height = 502;
+  if (ratio === "16:9") height = 675;
+  if (ratio === "4:3") height = 900;
+  if (ratio === "9:16") { width = 675; height = 1200; }
+
+  const isNight = heading.toUpperCase().includes('NIGHT');
+  const isPencil = (style || "").toLowerCase().includes('pencil');
+  const isInk = (style || "").toLowerCase().includes('ink');
+  const isAnime = (style || "").toLowerCase().includes('anime') || (style || "").toLowerCase().includes('illustration');
+
+  let bgStart = isNight ? "%23090d16" : "%23292524";
+  let bgEnd = isNight ? "%23020617" : "%231c1917";
+  let accent = isNight ? "%2338bdf8" : "%23f59e0b";
+  let rim = isNight ? "%2306b6d4" : "%23fbbf24";
+  let sil = "%23020617";
+  let stroke = "%23ffffff";
+  let gridOp = "0.08";
+
+  if (isPencil) {
+    bgStart = "%23f5f5f4";
+    bgEnd = "%23e7e5e4";
+    accent = "%2357534e";
+    rim = "%2378716c";
+    sil = "%2344403c";
+    stroke = "%23292524";
+    gridOp = "0.15";
+  } else if (isInk) {
+    bgStart = "%230a0a0a";
+    bgEnd = "%23000000";
+    accent = "%23ffffff";
+    rim = "%23e2e8f0";
+    sil = "%230f172a";
+  } else if (isAnime) {
+    bgStart = "%231e1035";
+    bgEnd = "%230f0728";
+    accent = "%23ec4899";
+    rim = "%2338bdf8";
+  }
+
+  let silH = 240;
+  let silY = height - 260;
+  if (sizeLabel && sizeLabel.includes("Wide")) { silH = 100; silY = height - 140; }
+  else if (sizeLabel && sizeLabel.includes("Close") && !sizeLabel.includes("Extreme")) { silH = 400; silY = height - 420; }
+  else if (sizeLabel && sizeLabel.includes("Extreme")) { silH = 540; silY = height - 550; }
+
+  const isTwoShot = sizeLabel && sizeLabel.includes("Two-Shot");
+
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'>
     <defs>
       <linearGradient id='bg2' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0%' stop-color='%231e293b'/>
-        <stop offset='100%' stop-color='%230f172a'/>
+        <stop offset='0%' stop-color='${bgStart}'/>
+        <stop offset='100%' stop-color='${bgEnd}'/>
       </linearGradient>
+      <radialGradient id='rimLight2' cx='70%' cy='30%' r='65%'>
+        <stop offset='0%' stop-color='${rim}' stop-opacity='0.4'/>
+        <stop offset='100%' stop-color='${bgEnd}' stop-opacity='0'/>
+      </radialGradient>
+      <pattern id='grid2' width='40' height='40' patternUnits='userSpaceOnUse'>
+        <path d='M 40 0 L 0 0 0 40' fill='none' stroke='${stroke}' stroke-width='0.5' opacity='${gridOp}'/>
+      </pattern>
     </defs>
-    <rect width='1200' height='502' fill='url(%23bg2)'/>
-    <line x1='0' y1='320' x2='1200' y2='320' stroke='%2338bdf8' stroke-width='1' opacity='0.3' stroke-dasharray='4,4'/>
-    <circle cx='600' cy='220' r='50' fill='%23020617' stroke='%2338bdf8' stroke-width='2'/>
-    <path d='M 530 350 L 670 350 L 640 260 L 560 260 Z' fill='%23020617' stroke='%23f59e0b' stroke-width='1.5'/>
-    <rect x='24' y='24' width='130' height='26' rx='6' fill='black' opacity='0.6'/>
-    <text x='34' y='42' fill='white' font-family='monospace' font-size='12' font-weight='bold'>REC · ${shotNum}</text>
-    <text x='1166' y='42' text-anchor='end' fill='%2338bdf8' font-family='monospace' font-size='12' font-weight='bold'>${lensInfo}</text>
-    <text x='1166' y='64' text-anchor='end' fill='white' opacity='0.7' font-family='sans-serif' font-size='11'>${sizeLabel}</text>
-    <rect x='0' y='466' width='1200' height='36' fill='black' opacity='0.75'/>
-    <text x='24' y='489' fill='white' font-family='sans-serif' font-size='12' font-weight='bold'>${heading}</text>
-    <text x='1176' y='489' text-anchor='end' fill='%23fbbf24' font-family='sans-serif' font-size='11'>SCRIPTORA CONCEPT ENGINE</text>
+    <rect width='${width}' height='${height}' fill='url(%23bg2)'/>
+    <rect width='${width}' height='${height}' fill='url(%23rimLight2)'/>
+    <rect width='${width}' height='${height}' fill='url(%23grid2)'/>
+    
+    <line x1='0' y1='${Math.round(height * 0.63)}' x2='${width}' y2='${Math.round(height * 0.63)}' stroke='${accent}' stroke-width='1.2' opacity='0.35' stroke-dasharray='5,5'/>
+    
+    ${isTwoShot ? `
+      <g transform='translate(${Math.round(width * 0.35)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${rim}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${sil}' stroke='${accent}' stroke-width='1.2'/>
+      </g>
+      <g transform='translate(${Math.round(width * 0.65)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${accent}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${sil}' stroke='${rim}' stroke-width='1.2'/>
+      </g>
+    ` : `
+      <g transform='translate(${Math.round(width / 2)}, ${Math.round(silY)})'>
+        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${rim}' stroke-width='1.5'/>
+        <path d='M ${Math.round(-silH * 0.22)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.28)} ${Math.round(silH * 0.22)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.28)} ${silH} L ${Math.round(-silH * 0.28)} ${silH} Z' fill='${sil}' stroke='${accent}' stroke-width='1.2'/>
+      </g>
+    `}
+
+    <!-- Telemetry -->
+    <rect x='24' y='24' width='140' height='26' rx='6' fill='black' opacity='0.7'/>
+    <circle cx='36' cy='37' r='4' fill='%23ef4444'/>
+    <text x='48' y='42' fill='white' font-family='monospace' font-size='11' font-weight='bold'>REC · ${shotNum}</text>
+    
+    <rect x='${width - 240}' y='24' width='216' height='46' rx='6' fill='black' opacity='0.7'/>
+    <text x='${width - 34}' y='41' text-anchor='end' fill='${accent}' font-family='monospace' font-size='12' font-weight='bold'>${lensInfo}</text>
+    <text x='${width - 34}' y='60' text-anchor='end' fill='white' opacity='0.85' font-family='sans-serif' font-size='10'>${sizeLabel}</text>
+
+    <rect x='0' y='${height - 36}' width='${width}' height='36' fill='black' opacity='0.85'/>
+    <text x='24' y='${height - 13}' fill='white' font-family='sans-serif' font-size='12' font-weight='bold'>${heading}</text>
+    <text x='${width - 24}' y='${height - 13}' text-anchor='end' fill='${rim}' font-family='sans-serif' font-size='11'>SCRIPTORA CONCEPT ENGINE · ${(style || "CINEMATIC").toUpperCase()}</text>
   </svg>`;
+
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 
+export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, historyIndex) {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/${sceneId}/shots/${shotId}/restore`, {
+      method: 'POST',
+      body: JSON.stringify({ historyIndex })
+    });
+    if (res?.shot) {
+      if (res.storyboard) {
+        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+      }
+      return res;
+    }
+  } catch (e) {}
 
+  const sb = await getStoryboard(scriptId, sceneId);
+  const shot = sb.shots.find(s => s.id === shotId);
+  if (shot && Array.isArray(shot.history) && shot.history[historyIndex]) {
+    const target = shot.history[historyIndex];
+    shot.history.push({
+      previousImageUrl: shot.imageUrl,
+      previousPrompt: shot.prompt,
+      provider: shot.provider || "scriptora-concept",
+      quality: shot.quality || "hd",
+      approvalStatus: shot.approvalStatus || "draft",
+      sourceVersion: sb.sourceVersion || "Draft 4.2",
+      timestamp: new Date().toISOString(),
+      updatedBy: "Arun Kumar (Owner)"
+    });
+    shot.imageUrl = target.previousImageUrl;
+    if (target.previousPrompt) shot.prompt = target.previousPrompt;
+    if (target.provider) shot.provider = target.provider;
+    if (target.approvalStatus) shot.approvalStatus = target.approvalStatus;
+    shot.updatedAt = new Date().toISOString();
+    sb.updatedAt = new Date().toISOString();
+    localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  }
+  return { storyboard: sb, shot };
+}

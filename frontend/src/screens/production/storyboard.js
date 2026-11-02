@@ -365,13 +365,24 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   `;
 }
 
+
 export async function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
   let currentSceneId = urlParams.get('sceneId') || 'scene-1';
-  let currentView = 'contact'; // 'contact' or 'sequence'
+  let currentView = 'contact'; // 'contact' | 'sequence'
   let activeEditingShotId = null;
-  let generationTargetType = 'sequence'; // 'sequence' or 'shot'
+  let activeRegenShotId = null;
+  let activeHistoryShotId = null;
+  let activeLightboxShotIndex = 0;
+  let proposedSequenceShots = [];
+  let selectedShotCount = 4;
+  const sequenceSelectedShotIds = new Set();
+
+  // In-modal shot creation state
+  let currentModalDraftImage = null;
+  let currentModalDraftPrompt = '';
+  let currentModalDraftApproval = 'draft';
 
   // DOM Elements
   const sceneSelect = document.getElementById('storyboard-scene-select');
@@ -392,23 +403,41 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
   const inspectorCancel = document.getElementById('modal-btn-cancel-shot');
   const shotForm = document.getElementById('shot-detail-form');
   const btnDeleteShot = document.getElementById('modal-btn-delete-shot');
-  const btnRegenerate = document.getElementById('modal-btn-regenerate');
-  const fileImport = document.getElementById('modal-file-import');
+  const btnModalGenAction = document.getElementById('modal-btn-generate-action');
+  const modalFileImport = document.getElementById('modal-file-import');
+  const btnModalViewFullscreen = document.getElementById('modal-btn-view-fullscreen');
+  const btnModalToggleApprove = document.getElementById('modal-btn-toggle-approve');
+  const btnModalToggleReject = document.getElementById('modal-btn-toggle-reject');
+  const btnModalOpenHistory = document.getElementById('modal-btn-open-history');
 
   const genModal = document.getElementById('ai-generate-modal');
   const genClose = document.getElementById('gen-modal-close');
   const genCancel = document.getElementById('gen-modal-cancel');
-  const genForm = document.getElementById('ai-generation-form');
+  const genBtnStart = document.getElementById('gen-btn-start');
   const genProviderSelect = document.getElementById('gen-provider-select');
   const genProviderStatus = document.getElementById('gen-provider-status');
   const genCostLabel = document.getElementById('gen-cost-label');
-  const genShotCountContainer = document.getElementById('gen-shot-count-container');
   const genShotCountSelect = document.getElementById('gen-shot-count-select');
   const genErrorAlert = document.getElementById('gen-error-alert');
   const genErrorMsg = document.getElementById('gen-error-message');
-  let selectedShotCount = 4;
 
-  // 1. Load initial scenes and providers
+  const regenModal = document.getElementById('single-regen-modal');
+  const regenClose = document.getElementById('regen-modal-close');
+  const regenCancel = document.getElementById('regen-modal-cancel');
+  const regenConfirm = document.getElementById('regen-modal-confirm');
+
+  const historyModal = document.getElementById('shot-history-modal');
+  const historyClose = document.getElementById('history-modal-close');
+  const historyDone = document.getElementById('history-modal-done');
+
+  const lightboxModal = document.getElementById('lightbox-modal');
+  const lbClose = document.getElementById('lb-close');
+  const lbPrev = document.getElementById('lb-prev');
+  const lbNext = document.getElementById('lb-next');
+  const lbBtnApprove = document.getElementById('lb-btn-approve');
+  const lbBtnReject = document.getElementById('lb-btn-reject');
+
+  // App State
   let allScenes = [];
   let providers = [];
   let currentStoryboard = null;
@@ -417,7 +446,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     allScenes = await api.getProductionScenes(scriptId);
     providers = await api.getAiImageProviders();
   } catch (e) {
-    console.error("Failed loading scenes:", e);
+    console.error("Failed loading initial storyboard data:", e);
   }
 
   // Populate scene dropdown
@@ -430,11 +459,12 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
 
     sceneSelect.onchange = (e) => {
       currentSceneId = e.target.value;
+      sequenceSelectedShotIds.clear();
       loadStoryboardData();
     };
   }
 
-  // 2. Load storyboard data for current scene
+  // Load storyboard data for current scene
   async function loadStoryboardData() {
     if (!viewContainer) return;
     viewContainer.innerHTML = `<div class="p-16 text-center text-slate-400 text-xs">Loading storyboard shots...</div>`;
@@ -465,13 +495,11 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     if (shootDayEl) shootDayEl.textContent = scene.shootDay || 'Day 1 of 7';
     if (snippetEl) snippetEl.textContent = scene.snippet || 'Scene awaiting visual direction.';
 
-    // Update shooting schedule link
     if (btnScheduleLink) {
       const dayNum = String(scene.shootDay || '1').match(/\d+/)?.[0] || '1';
       btnScheduleLink.href = `/production/schedule?scriptId=${scriptId}&day=${dayNum}&sceneId=${scene.id}`;
     }
 
-    // Check version staleness
     if (staleBanner) {
       if (currentStoryboard?.isVersionStale) {
         staleBanner.classList.remove('hidden');
@@ -482,7 +510,6 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
       }
     }
 
-    // Check continuity warnings
     checkContinuityWarnings();
   }
 
@@ -496,7 +523,6 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     for (let i = 0; i < shots.length - 1; i++) {
       const cur = shots[i];
       const next = shots[i + 1];
-      // Eyeline conflict: if two consecutive reverse-angle conversation shots look in identical screen direction
       if (cur.shotSize.includes('Close') && next.shotSize.includes('Close')) {
         const curEye = cur.continuity?.eyeline?.toLowerCase() || '';
         const nextEye = next.continuity?.eyeline?.toLowerCase() || '';
@@ -516,7 +542,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     }
   }
 
-  // 3. Render current view (Contact Sheet or Sequence Editor)
+  // Render current view
   function renderCurrentView() {
     if (!viewContainer) return;
     const shots = currentStoryboard?.shots || [];
@@ -535,7 +561,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
             </p>
           </div>
           <div class="flex items-center gap-2 mt-2">
-            <button id="btn-empty-generate" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer">
+            <button id="btn-empty-generate" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
               <span>Generate Scene Sequence</span>
             </button>
@@ -548,7 +574,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
 
       const emptyGen = document.getElementById('btn-empty-generate');
       const emptyAdd = document.getElementById('btn-empty-add');
-      if (emptyGen) emptyGen.onclick = () => openGenerationModal('sequence');
+      if (emptyGen) emptyGen.onclick = () => openSequenceGenerationModal();
       if (emptyAdd) emptyAdd.onclick = () => openShotInspector(null);
       return;
     }
@@ -560,7 +586,9 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     }
   }
 
-  // Render View A: Contact Sheet Grid
+  // =========================================================================
+  // VIEW A: CONTACT SHEET (Requirement 2.A)
+  // =========================================================================
   function renderContactSheet(shots) {
     viewContainer.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -569,11 +597,13 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
             (s.approvalStatus === 'proposed' ? 'bg-amber-50 text-amber-700 border-amber-200' :
               (s.approvalStatus === 'rejected' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'));
 
+          const historyCount = Array.isArray(s.history) ? s.history.length : 0;
+
           return `
             <div class="storyboard-card bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs hover:border-blue-400 hover:shadow-sm transition-all flex flex-col justify-between" data-shot-id="${s.id}">
               <div>
                 <!-- Top Card Meta Header -->
-                <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/60">
                   <div class="flex items-center gap-1.5">
                     <span class="font-mono font-bold text-xs text-slate-900">${s.shotNumber}</span>
                     <span class="text-[10px] text-slate-400">#${s.order}</span>
@@ -582,60 +612,73 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
                     <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border ${statusBg} capitalize">
                       ${s.approvalStatus || 'Draft'}
                     </span>
-                    <button class="btn-card-quick-menu p-1 text-slate-400 hover:text-slate-600 rounded cursor-pointer" data-shot-id="${s.id}" title="Shot actions">
-                      <span class="material-symbols-outlined text-[15px]">more_vert</span>
-                    </button>
+                    ${historyCount > 0 ? `
+                      <button class="btn-card-history p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="View generation history (${historyCount} previous versions)">
+                        <span class="material-symbols-outlined text-[15px]">history</span>
+                      </button>
+                    ` : ''}
                   </div>
                 </div>
 
-                <!-- Visual Image Canvas -->
-                <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden cursor-pointer btn-open-inspector" data-shot-id="${s.id}">
+                <!-- Primary Visual Image Canvas (Primary visual element) -->
+                <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden cursor-pointer group btn-open-lightbox" data-shot-id="${s.id}">
                   ${s.imageUrl ? `
-                    <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
+                    <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
                   ` : `
                     <div class="flex flex-col items-center justify-center text-slate-500 gap-1 p-4 text-center">
                       <span class="material-symbols-outlined text-2xl text-slate-600">art_track</span>
-                      <span class="text-[10px]">Tap to inspect & generate frame</span>
+                      <span class="text-[10px] font-medium text-slate-400">Tap to inspect & generate frame</span>
                     </div>
                   `}
-                  <!-- In-Canvas Aspect & Lens Badges -->
-                  <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/70 text-white font-mono text-[9px]">
+                  <!-- Badges overlay -->
+                  <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
                     ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
                   </div>
+                  <button class="absolute bottom-2 right-2 p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="View Full Size">
+                    <span class="material-symbols-outlined text-[14px]">fullscreen</span>
+                  </button>
                 </div>
 
-                <!-- Title & Description Details -->
+                <!-- Title & Details Details (No clipping, responsive wrapping) -->
                 <div class="p-3 flex flex-col gap-1.5">
-                  <h4 class="font-heading font-bold text-xs text-slate-900 truncate">${s.title}</h4>
+                  <h4 class="font-heading font-bold text-xs text-slate-900 truncate" title="${s.title}">${s.title}</h4>
                   <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">${s.description || 'No description provided.'}</p>
                   
-                  <!-- Metadata Chips -->
+                  <!-- Metadata Chips (Responsive wrapping) -->
                   <div class="flex items-center gap-1.5 pt-1 text-[10px] text-slate-600 flex-wrap">
-                    <span class="px-1.5 py-0.5 rounded bg-slate-100">${s.shotSize}</span>
-                    <span class="px-1.5 py-0.5 rounded bg-slate-100">${s.cameraAngle}</span>
-                    ${s.cameraMovement !== 'Static' ? `<span class="px-1.5 py-0.5 rounded bg-slate-100">${s.cameraMovement}</span>` : ''}
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.shotSize}</span>
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.cameraAngle}</span>
+                    ${s.cameraMovement !== 'Static' ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.cameraMovement}</span>` : ''}
+                    ${s.continuity?.screenDirection ? `<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium truncate max-w-[140px]">${s.continuity.screenDirection}</span>` : ''}
                   </div>
                 </div>
               </div>
 
               <!-- Card Action Bar -->
-              <div class="px-3 py-2 border-t border-slate-100 bg-slate-50/40 flex items-center justify-between text-xs">
-                <!-- Reorder buttons -->
-                <div class="flex items-center gap-1">
-                  <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer" data-shot-id="${s.id}" title="Move left / up">
+              <div class="px-3 py-2 border-t border-slate-100 bg-slate-50/40 flex items-center justify-between text-xs gap-1">
+                <!-- Reorder arrows -->
+                <div class="flex items-center gap-0.5">
+                  <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move left / up">
                     <span class="material-symbols-outlined text-[16px]">arrow_back</span>
                   </button>
-                  <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer" data-shot-id="${s.id}" title="Move right / down">
+                  <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move right / down">
                     <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
                   </button>
                 </div>
 
-                <div class="flex items-center gap-1.5">
-                  <button class="btn-quick-approve p-1 rounded text-slate-400 hover:text-emerald-600 cursor-pointer" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Frame'}">
-                    <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'radio_button_unchecked'}</span>
+                <!-- Action controls -->
+                <div class="flex items-center gap-1">
+                  <!-- Quick Toggle Approve -->
+                  <button class="btn-quick-approve p-1 rounded ${s.approvalStatus === 'approved' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600'} cursor-pointer transition-colors" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Frame'}">
+                    <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
                   </button>
-                  <button class="btn-open-inspector px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 text-[11px] font-semibold transition-all cursor-pointer" data-shot-id="${s.id}">
-                    Inspect
+                  <!-- Quick Regenerate Frame -->
+                  <button class="btn-card-regen p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Regenerate this frame">
+                    <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                  </button>
+                  <!-- Edit Details -->
+                  <button class="btn-open-inspector px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 text-[11px] font-semibold transition-all cursor-pointer" data-shot-id="${s.id}">
+                    Edit Details
                   </button>
                 </div>
               </div>
@@ -645,44 +688,86 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
       </div>
     `;
 
-    attachCardEventListeners();
+    attachSharedCardEventListeners();
   }
 
-  // Render View B: Sequence Editor View
+  // =========================================================================
+  // VIEW B: SEQUENCE EDITOR (Requirement 2.B)
+  // =========================================================================
   function renderSequenceEditor(shots) {
+    const allSelected = shots.length > 0 && shots.every(s => sequenceSelectedShotIds.has(s.id));
+    const selectedCount = sequenceSelectedShotIds.size;
+
     viewContainer.innerHTML = `
       <div class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
-        <!-- Sequence Toolbar -->
-        <div class="px-3.5 sm:px-4 py-2.5 border-b border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2 text-xs">
-          <span class="font-heading font-bold text-slate-800 text-xs sm:text-sm whitespace-nowrap">${shots.length} Shots in Sequence</span>
-          <button id="btn-batch-approve-all" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-[11px] font-semibold cursor-pointer shrink-0 transition-all">
-            Approve All Proposed
-          </button>
+        <!-- Sequence Toolbar with Batch Selection -->
+        <div class="px-3.5 sm:px-4 py-2.5 border-b border-slate-100 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+          <div class="flex items-center gap-2">
+            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none">
+              <input type="checkbox" id="seq-select-all" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" ${allSelected ? 'checked' : ''} />
+              <span class="font-heading font-bold text-slate-800 text-xs sm:text-sm">${shots.length} Shots in Sequence</span>
+            </label>
+            ${selectedCount > 0 ? `
+              <span class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">
+                ${selectedCount} selected
+              </span>
+            ` : ''}
+          </div>
+
+          <!-- Batch Action Controls -->
+          <div class="flex items-center gap-2 flex-wrap">
+            ${selectedCount > 0 ? `
+              <button id="btn-batch-approve-selected" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">done_all</span>
+                <span>Approve Selected (${selectedCount})</span>
+              </button>
+              <button id="btn-batch-reject-selected" class="px-2.5 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">close</span>
+                <span>Reject</span>
+              </button>
+            ` : `
+              <button id="btn-batch-approve-all" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1">
+                <span class="material-symbols-outlined text-[14px]">done_all</span>
+                <span>Approve All Proposed</span>
+              </button>
+            `}
+            <button id="btn-seq-add-shot" class="px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[11px] font-semibold hover:bg-black cursor-pointer flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">add</span>
+              <span>Add Shot</span>
+            </button>
+          </div>
         </div>
 
         <!-- Shots Sequence Table / List -->
         <div class="divide-y divide-slate-100">
-          ${shots.map((s, idx) => {
+          ${shots.map(s => {
             const statusBg = s.approvalStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
               (s.approvalStatus === 'proposed' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                 (s.approvalStatus === 'rejected' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-600 border-slate-200'));
 
+            const isChecked = sequenceSelectedShotIds.has(s.id);
+
             return `
               <div class="p-3 sm:p-4 hover:bg-slate-50/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 min-w-0 w-full overflow-hidden" data-shot-id="${s.id}">
                 <div class="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1 w-full">
-                  <!-- Reorder Controls -->
+                  <!-- Row selection checkbox -->
+                  <div class="pt-1.5 shrink-0">
+                    <input type="checkbox" class="seq-shot-check rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" data-shot-id="${s.id}" ${isChecked ? 'checked' : ''} />
+                  </div>
+
+                  <!-- Reorder Controls (Accessible Up / Down buttons, NO helper text) -->
                   <div class="flex sm:flex-col items-center gap-0.5 sm:gap-1 shrink-0 pt-0.5">
-                    <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move up">
+                    <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move up in sequence">
                       <span class="material-symbols-outlined text-[16px]">expand_less</span>
                     </button>
                     <span class="font-mono font-bold text-xs text-slate-700">${s.order}</span>
-                    <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move down">
+                    <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move down in sequence">
                       <span class="material-symbols-outlined text-[16px]">expand_more</span>
                     </button>
                   </div>
 
-                  <!-- Thumbnail Preview -->
-                  <div class="w-16 h-12 sm:w-20 sm:h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center cursor-pointer btn-open-inspector" data-shot-id="${s.id}">
+                  <!-- Thumbnail Preview (Clickable to Lightbox) -->
+                  <div class="w-16 h-12 sm:w-20 sm:h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center cursor-pointer btn-open-lightbox" data-shot-id="${s.id}">
                     ${s.imageUrl ? `
                       <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
                     ` : `
@@ -690,7 +775,7 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
                     `}
                   </div>
 
-                  <!-- Shot Summary Info -->
+                  <!-- Shot Summary Info (Responsive wrapping, no horizontal scroll) -->
                   <div class="min-w-0 flex-1 overflow-hidden">
                     <div class="flex items-center gap-1.5 flex-wrap min-w-0">
                       <span class="font-mono font-bold text-xs text-blue-600 shrink-0">${s.shotNumber}</span>
@@ -718,6 +803,9 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
                   <button class="btn-quick-approve p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-emerald-600 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Shot'}">
                     <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
                   </button>
+                  <button class="btn-card-regen p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="Regenerate this frame">
+                    <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                  </button>
                   <button class="btn-open-inspector px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 text-xs font-semibold cursor-pointer transition-all" data-shot-id="${s.id}">
                     Edit Details
                   </button>
@@ -729,11 +817,65 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
       </div>
     `;
 
-    attachCardEventListeners();
+    attachSharedCardEventListeners();
 
-    const btnBatchApprove = document.getElementById('btn-batch-approve-all');
-    if (btnBatchApprove) {
-      btnBatchApprove.onclick = async () => {
+    // Sequence batch checkbox handlers
+    const selectAllCheck = document.getElementById('seq-select-all');
+    if (selectAllCheck) {
+      selectAllCheck.onchange = (e) => {
+        if (e.target.checked) {
+          shots.forEach(s => sequenceSelectedShotIds.add(s.id));
+        } else {
+          sequenceSelectedShotIds.clear();
+        }
+        renderSequenceEditor(shots);
+      };
+    }
+
+    document.querySelectorAll('.seq-shot-check').forEach(chk => {
+      chk.onchange = (e) => {
+        const id = chk.getAttribute('data-shot-id');
+        if (e.target.checked) sequenceSelectedShotIds.add(id);
+        else sequenceSelectedShotIds.delete(id);
+        renderSequenceEditor(shots);
+      };
+    });
+
+    const btnBatchApproveSelected = document.getElementById('btn-batch-approve-selected');
+    if (btnBatchApproveSelected) {
+      btnBatchApproveSelected.onclick = async () => {
+        const ids = Array.from(sequenceSelectedShotIds);
+        if (!ids.length) return;
+        try {
+          await api.batchApproveStoryboardShots(scriptId, currentSceneId, ids, 'approved', 'Batch approved via Sequence Editor');
+          showToast(`Approved ${ids.length} shots.`);
+          sequenceSelectedShotIds.clear();
+          loadStoryboardData();
+        } catch (e) {
+          showToast('Failed batch approval.');
+        }
+      };
+    }
+
+    const btnBatchRejectSelected = document.getElementById('btn-batch-reject-selected');
+    if (btnBatchRejectSelected) {
+      btnBatchRejectSelected.onclick = async () => {
+        const ids = Array.from(sequenceSelectedShotIds);
+        if (!ids.length) return;
+        try {
+          await api.batchApproveStoryboardShots(scriptId, currentSceneId, ids, 'rejected', 'Batch rejected via Sequence Editor');
+          showToast(`Marked ${ids.length} shots as rejected.`);
+          sequenceSelectedShotIds.clear();
+          loadStoryboardData();
+        } catch (e) {
+          showToast('Failed batch rejection.');
+        }
+      };
+    }
+
+    const btnBatchApproveAll = document.getElementById('btn-batch-approve-all');
+    if (btnBatchApproveAll) {
+      btnBatchApproveAll.onclick = async () => {
         try {
           const proposedIds = (currentStoryboard?.shots || [])
             .filter(s => s.approvalStatus === 'proposed' || s.approvalStatus === 'draft')
@@ -750,16 +892,32 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         }
       };
     }
+
+    const btnSeqAdd = document.getElementById('btn-seq-add-shot');
+    if (btnSeqAdd) {
+      btnSeqAdd.onclick = () => openShotInspector(null);
+    }
   }
 
-  // Attach click events on cards & sequence items
-  function attachCardEventListeners() {
-    // Open inspector
+  // Attach shared event listeners for cards and list rows
+  function attachSharedCardEventListeners() {
+    // Open Inspector (Edit Details)
     document.querySelectorAll('.btn-open-inspector').forEach(btn => {
       btn.onclick = (e) => {
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         openShotInspector(shotId);
+      };
+    });
+
+    // Open Lightbox
+    document.querySelectorAll('.btn-open-lightbox').forEach(el => {
+      el.onclick = (e) => {
+        e.stopPropagation();
+        const shotId = el.getAttribute('data-shot-id');
+        const shots = currentStoryboard?.shots || [];
+        const idx = shots.findIndex(s => s.id === shotId);
+        openLightbox(idx !== -1 ? idx : 0);
       };
     });
 
@@ -798,6 +956,24 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         }
       };
     });
+
+    // Single frame regeneration button on card
+    document.querySelectorAll('.btn-card-regen').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        openSingleFrameRegenModal(shotId);
+      };
+    });
+
+    // Open History on card
+    document.querySelectorAll('.btn-card-history').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        openShotHistoryModal(shotId);
+      };
+    });
   }
 
   // Move shot in sequence order
@@ -821,16 +997,22 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     }
   }
 
-  // 4. Open Shot Inspector Modal
+  // =========================================================================
+  // MODAL 1: ADD NEW SHOT / EDIT SHOT INSPECTOR LOGIC (Requirement 3.A, 9.A)
+  // =========================================================================
   function openShotInspector(shotId) {
     activeEditingShotId = shotId;
     const isNew = !shotId;
-    const shot = isNew ? null : currentStoryboard?.shots?.find(s => s.id === shotId);
+    const shots = currentStoryboard?.shots || [];
+    const shot = isNew ? null : shots.find(s => s.id === shotId);
 
-    document.getElementById('modal-shot-pill').textContent = shot?.shotNumber || `${currentStoryboard?.sceneNumber || 1}${String.fromCharCode(65 + ((currentStoryboard?.shots?.length || 0) % 26))}`;
+    const defaultShotLetter = String.fromCharCode(65 + (shots.length % 26));
+    const defaultShotNum = `${currentStoryboard?.sceneNumber || 1}${defaultShotLetter}`;
+
+    document.getElementById('modal-shot-pill').textContent = shot?.shotNumber || defaultShotNum;
     document.getElementById('modal-shot-heading').textContent = isNew ? 'Add New Shot' : `Edit Shot ${shot.shotNumber}`;
-    document.getElementById('input-shot-number').value = shot?.shotNumber || '';
-    document.getElementById('input-shot-title').value = shot?.title || '';
+    document.getElementById('input-shot-number').value = shot?.shotNumber || defaultShotNum;
+    document.getElementById('input-shot-title').value = shot?.title || (isNew ? `Shot ${defaultShotNum}` : '');
     document.getElementById('input-shot-desc').value = shot?.description || '';
     document.getElementById('input-shot-size').value = shot?.shotSize || 'Medium Shot';
     document.getElementById('input-shot-angle').value = shot?.cameraAngle || 'Eye Level';
@@ -838,20 +1020,17 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     document.getElementById('input-shot-focal').value = shot?.focalLength || '50mm Prime';
     document.getElementById('input-shot-ratio').value = shot?.aspectRatio || currentStoryboard?.aspectRatio || '2.39:1';
     document.getElementById('input-shot-lighting').value = shot?.lightingMood || 'Daylight Dust';
+    document.getElementById('input-shot-style').value = shot?.visualStyle || currentStoryboard?.visualStyle || 'Cinematic Concept Art';
+    document.getElementById('input-shot-prompt').value = shot?.prompt || '';
     document.getElementById('input-shot-direction').value = shot?.continuity?.screenDirection || 'Left to Right';
     document.getElementById('input-shot-approval').value = shot?.approvalStatus || 'draft';
     document.getElementById('input-shot-notes').value = shot?.directorNotes || '';
 
-    const imgEl = document.getElementById('modal-shot-image');
-    const placeholderEl = document.getElementById('modal-empty-image-placeholder');
-    if (shot?.imageUrl) {
-      imgEl.src = shot.imageUrl;
-      imgEl.classList.remove('hidden');
-      placeholderEl.classList.add('hidden');
-    } else {
-      imgEl.classList.add('hidden');
-      placeholderEl.classList.remove('hidden');
-    }
+    currentModalDraftImage = shot?.imageUrl || null;
+    currentModalDraftPrompt = shot?.prompt || '';
+    currentModalDraftApproval = shot?.approvalStatus || 'draft';
+
+    updateInspectorImagePreviewUI();
 
     if (btnDeleteShot) {
       btnDeleteShot.classList.toggle('hidden', isNew);
@@ -860,10 +1039,157 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     openModal(inspectorModal);
   }
 
-  // 5. Shot Inspector Modal Events
+  function updateInspectorImagePreviewUI() {
+    const imgEl = document.getElementById('modal-shot-image');
+    const placeholderEl = document.getElementById('modal-empty-image-placeholder');
+    const postGenBar = document.getElementById('modal-post-gen-actions');
+    const fullscreenBtn = document.getElementById('modal-btn-view-fullscreen');
+    const genActionLabel = document.getElementById('modal-generate-action-label');
+    const approveLabel = document.getElementById('modal-approve-toggle-label');
+    const historyCountEl = document.getElementById('modal-history-count');
+
+    if (currentModalDraftImage) {
+      imgEl.src = currentModalDraftImage;
+      imgEl.classList.remove('hidden');
+      placeholderEl.classList.add('hidden');
+      if (postGenBar) postGenBar.classList.remove('hidden');
+      if (fullscreenBtn) fullscreenBtn.classList.remove('hidden');
+      if (genActionLabel) genActionLabel.textContent = 'Regenerate Image';
+    } else {
+      imgEl.classList.add('hidden');
+      placeholderEl.classList.remove('hidden');
+      if (postGenBar) postGenBar.classList.add('hidden');
+      if (fullscreenBtn) fullscreenBtn.classList.add('hidden');
+      if (genActionLabel) genActionLabel.textContent = 'Generate Image';
+    }
+
+    const shot = activeEditingShotId ? currentStoryboard?.shots?.find(s => s.id === activeEditingShotId) : null;
+    const histLen = Array.isArray(shot?.history) ? shot.history.length : 0;
+    if (historyCountEl) historyCountEl.textContent = String(histLen);
+
+    if (approveLabel) {
+      approveLabel.textContent = currentModalDraftApproval === 'approved' ? 'Approved' : 'Approve';
+    }
+  }
+
   if (inspectorClose) inspectorClose.onclick = () => closeModal(inspectorModal);
   if (inspectorCancel) inspectorCancel.onclick = () => closeModal(inspectorModal);
 
+  // In-modal "Generate Image" action
+  if (btnModalGenAction) {
+    btnModalGenAction.onclick = async () => {
+      const loadingEl = document.getElementById('modal-image-loading');
+      const placeholderEl = document.getElementById('modal-empty-image-placeholder');
+      const imgEl = document.getElementById('modal-shot-image');
+
+      if (loadingEl) loadingEl.classList.remove('hidden');
+      if (placeholderEl) placeholderEl.classList.add('hidden');
+      if (imgEl) imgEl.classList.add('hidden');
+      btnModalGenAction.disabled = true;
+
+      const shotNum = document.getElementById('input-shot-number').value.trim() || '1A';
+      const promptVal = document.getElementById('input-shot-prompt').value.trim() || document.getElementById('input-shot-desc').value.trim() || 'Cinematic composition';
+      const sizeVal = document.getElementById('input-shot-size').value;
+      const angleVal = document.getElementById('input-shot-angle').value;
+      const focalVal = document.getElementById('input-shot-focal').value;
+      const ratioVal = document.getElementById('input-shot-ratio').value;
+      const lightingVal = document.getElementById('input-shot-lighting').value;
+      const styleVal = document.getElementById('input-shot-style').value;
+
+      try {
+        const res = await api.generateStoryboardShot(scriptId, {
+          provider: 'scriptora-concept',
+          prompt: promptVal,
+          shotSize: sizeVal,
+          cameraAngle: angleVal,
+          focalLength: focalVal,
+          lightingMood: lightingVal,
+          aspectRatio: ratioVal,
+          visualStyle: styleVal,
+          sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+          shotNumber: shotNum
+        });
+
+        if (res?.imageUrl) {
+          currentModalDraftImage = res.imageUrl;
+          currentModalDraftPrompt = promptVal;
+          showToast('Image generated successfully inside shot preview');
+        }
+      } catch (err) {
+        showToast(err.message || 'Generation failed');
+      } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+        btnModalGenAction.disabled = false;
+        updateInspectorImagePreviewUI();
+      }
+    };
+  }
+
+  // Import photo via file picker inside inspector
+  if (modalFileImport) {
+    modalFileImport.onchange = (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        currentModalDraftImage = event.target.result;
+        updateInspectorImagePreviewUI();
+        showToast('Photo imported into preview canvas');
+      };
+      reader.readAsDataURL(file);
+    };
+  }
+
+  // In-modal post-gen approve / reject toggles
+  if (btnModalToggleApprove) {
+    btnModalToggleApprove.onclick = () => {
+      currentModalDraftApproval = 'approved';
+      document.getElementById('input-shot-approval').value = 'approved';
+      updateInspectorImagePreviewUI();
+      showToast('Frame set to Approved');
+    };
+  }
+
+  if (btnModalToggleReject) {
+    btnModalToggleReject.onclick = () => {
+      currentModalDraftApproval = 'rejected';
+      document.getElementById('input-shot-approval').value = 'rejected';
+      updateInspectorImagePreviewUI();
+      showToast('Frame marked as Rejected');
+    };
+  }
+
+  // Fullscreen button inside modal
+  if (btnModalViewFullscreen) {
+    btnModalViewFullscreen.onclick = () => {
+      if (currentModalDraftImage) {
+        const dummyShot = {
+          shotNumber: document.getElementById('input-shot-number').value.trim() || '1A',
+          title: document.getElementById('input-shot-title').value.trim() || 'Preview',
+          description: document.getElementById('input-shot-desc').value.trim() || '',
+          aspectRatio: document.getElementById('input-shot-ratio').value,
+          focalLength: document.getElementById('input-shot-focal').value,
+          shotSize: document.getElementById('input-shot-size').value,
+          cameraAngle: document.getElementById('input-shot-angle').value,
+          imageUrl: currentModalDraftImage,
+          approvalStatus: currentModalDraftApproval
+        };
+        openLightboxWithShot(dummyShot);
+      }
+    };
+  }
+
+  // Open history from inspector
+  if (btnModalOpenHistory) {
+    btnModalOpenHistory.onclick = () => {
+      if (activeEditingShotId) {
+        openShotHistoryModal(activeEditingShotId);
+      }
+    };
+  }
+
+  // Save shot form submission
   if (shotForm) {
     shotForm.onsubmit = async (e) => {
       e.preventDefault();
@@ -877,8 +1203,12 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         focalLength: document.getElementById('input-shot-focal').value,
         aspectRatio: document.getElementById('input-shot-ratio').value,
         lightingMood: document.getElementById('input-shot-lighting').value,
+        visualStyle: document.getElementById('input-shot-style').value,
+        prompt: document.getElementById('input-shot-prompt').value.trim(),
         approvalStatus: document.getElementById('input-shot-approval').value,
         directorNotes: document.getElementById('input-shot-notes').value.trim(),
+        imageUrl: currentModalDraftImage,
+        imageSource: currentModalDraftImage ? (currentModalDraftImage.startsWith('data:image/svg') ? 'ai' : 'imported') : null,
         continuity: {
           screenDirection: document.getElementById('input-shot-direction').value.trim()
         }
@@ -915,75 +1245,40 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     };
   }
 
-  // Regenerate image for current shot
-  if (btnRegenerate) {
-    btnRegenerate.onclick = () => {
-      closeModal(inspectorModal);
-      openGenerationModal('shot', activeEditingShotId);
-    };
-  }
+  // =========================================================================
+  // MODAL 2: GENERATE ENTIRE SCENE SHOT SEQUENCE (Requirement 3.B, 4, 9.C, 9.F)
+  // =========================================================================
+  function openSequenceGenerationModal() {
+    const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
+    const sceneHeadingDisp = document.getElementById('gen-scene-heading-display');
+    const sceneCastDisp = document.getElementById('gen-scene-cast-display');
+    const sceneSnippetDisp = document.getElementById('gen-scene-snippet-display');
 
-  // Manual image import via file picker
-  if (fileImport) {
-    fileImport.onchange = (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+    if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
+    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
+    if (sceneSnippetDisp) sceneSnippetDisp.textContent = scene.snippet || 'Scene awaiting visual direction.';
 
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const dataUrl = event.target.result;
-        if (activeEditingShotId) {
-          try {
-            await api.updateStoryboardShot(scriptId, currentSceneId, activeEditingShotId, {
-              imageUrl: dataUrl,
-              imageSource: 'imported'
-            });
-            showToast('Imported reference image successfully');
-            loadStoryboardData();
-            openShotInspector(activeEditingShotId);
-          } catch (err) {
-            showToast('Failed importing image');
-          }
-        }
-      };
-      reader.readAsDataURL(file);
-    };
+    // Show config step
+    document.getElementById('gen-step-config').classList.remove('hidden');
+    document.getElementById('gen-step-progress').classList.add('hidden');
+    document.getElementById('gen-step-preview').classList.add('hidden');
+
+    if (genShotCountSelect) {
+      genShotCountSelect.value = String(selectedShotCount);
+    }
+    updateGenSubmitLabel();
+    updateProviderCostDisclosure();
+
+    if (genErrorAlert) genErrorAlert.classList.add('hidden');
+    openModal(genModal);
   }
 
   function updateGenSubmitLabel() {
     const submitLabel = document.getElementById('gen-submit-label');
     if (!submitLabel) return;
-    if (generationTargetType === 'sequence') {
-      submitLabel.textContent = `Generate ${selectedShotCount}-Shot Sequence`;
-    } else {
-      submitLabel.textContent = 'Generate Frame';
-    }
+    submitLabel.textContent = `Generate ${selectedShotCount}-Shot Sequence`;
   }
 
-  // 6. Open AI Generation Modal
-  function openGenerationModal(type = 'sequence', shotId = null) {
-    generationTargetType = type;
-    activeEditingShotId = shotId;
-
-    document.getElementById('gen-modal-title').textContent = type === 'sequence'
-      ? 'Generate Scene Shot Sequence (AI)'
-      : 'Regenerate Frame Visual (AI)';
-
-    if (genShotCountContainer) {
-      genShotCountContainer.classList.toggle('hidden', type !== 'sequence');
-    }
-    if (genShotCountSelect) {
-      genShotCountSelect.value = String(selectedShotCount);
-    }
-
-    updateGenSubmitLabel();
-
-    if (genErrorAlert) genErrorAlert.classList.add('hidden');
-    updateProviderCostDisclosure();
-    openModal(genModal);
-  }
-
-  // Update provider status and pricing disclosure
   function updateProviderCostDisclosure() {
     if (!genProviderSelect) return;
     const pId = genProviderSelect.value;
@@ -1004,18 +1299,15 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         genCostLabel.textContent = 'Free (Built-in Concept Engine, no API keys or charges required).';
       } else {
         const count = selectedShotCount || 4;
-        const est = generationTargetType === 'sequence' ? `$${(p.costPerImage * count).toFixed(3)} (${count}-shot batch)` : `$${p.costPerImage.toFixed(3)}`;
+        const est = `$${(p.costPerImage * count).toFixed(3)} (${count}-shot batch)`;
         genCostLabel.textContent = `${p.costLabel} — Estimated: ${est}. Server credentials required.`;
       }
     }
   }
 
-  if (genProviderSelect) {
-    genProviderSelect.onchange = updateProviderCostDisclosure;
-  }
+  if (genProviderSelect) genProviderSelect.onchange = updateProviderCostDisclosure;
 
   if (genShotCountSelect) {
-    genShotCountSelect.value = String(selectedShotCount);
     genShotCountSelect.onchange = () => {
       selectedShotCount = parseInt(genShotCountSelect.value, 10) || 4;
       updateGenSubmitLabel();
@@ -1026,17 +1318,18 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
   if (genClose) genClose.onclick = () => closeModal(genModal);
   if (genCancel) genCancel.onclick = () => closeModal(genModal);
 
-  // Submit AI Generation
-  if (genForm) {
-    genForm.onsubmit = async (e) => {
-      e.preventDefault();
+  // Start sequence generation
+  if (genBtnStart) {
+    genBtnStart.onclick = async () => {
       const pId = genProviderSelect.value;
       const selectedProv = providers.find(p => p.id === pId) || providers[0];
       const style = document.getElementById('gen-style-select').value;
       const ratio = document.getElementById('gen-ratio-select').value;
+      const quality = document.getElementById('gen-quality-select').value;
       const userPrompt = document.getElementById('gen-prompt-input').value.trim();
+      const count = parseInt(genShotCountSelect?.value, 10) || selectedShotCount || 4;
 
-      // Transparent paid generation check
+      // Transparent paid generation confirmation
       if (selectedProv.pricingType === 'paid') {
         if (!selectedProv.isConfigured) {
           if (genErrorAlert) {
@@ -1050,77 +1343,522 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
         }
       }
 
-      const submitBtn = document.getElementById('gen-modal-submit');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<span class="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin"></span><span>Generating...</span>`;
+      // STEP 2: Transition to generation progress
+      document.getElementById('gen-step-config').classList.add('hidden');
+      const stepProgress = document.getElementById('gen-step-progress');
+      stepProgress.classList.remove('hidden');
+
+      const progressTitle = document.getElementById('gen-progress-title');
+      const progressStatus = document.getElementById('gen-progress-status');
+      const stepperEl = document.getElementById('gen-progress-stepper');
+
+      progressTitle.textContent = `Generating ${count}-Shot Storyboard Sequence`;
+      progressStatus.textContent = 'Preparing screenplay scene context & coverage beats...';
+
+      if (stepperEl) {
+        stepperEl.innerHTML = Array.from({ length: count }, (_, i) => `
+          <span class="w-3 h-3 rounded-full bg-slate-200 transition-colors" data-step="${i + 1}"></span>
+        `).join('');
+      }
 
       try {
-        if (generationTargetType === 'sequence') {
-          const count = parseInt(genShotCountSelect?.value, 10) || selectedShotCount || 4;
-          const res = await api.generateStoryboardSequence(scriptId, currentSceneId, {
-            provider: pId,
-            visualStyle: style,
-            aspectRatio: ratio,
-            prompt: userPrompt,
-            shotCount: count
-          });
-
-          if (res?.proposedShots) {
-            // Save proposed shots into current storyboard
-            const updated = {
-              ...currentStoryboard,
-              shots: res.proposedShots,
-              visualStyle: style,
-              aspectRatio: ratio
-            };
-            await api.saveStoryboard(scriptId, updated);
-            showToast(`Generated ${res.proposedShots.length} proposed shots for review.`);
-            closeModal(genModal);
-            loadStoryboardData();
+        // Sequential progress simulation matching actual generation
+        for (let i = 1; i <= count; i++) {
+          progressStatus.textContent = `Generating shot ${i} of ${count}...`;
+          const dot = stepperEl?.querySelector(`[data-step="${i}"]`);
+          if (dot) {
+            dot.className = 'w-3 h-3 rounded-full bg-blue-600 animate-pulse';
           }
+          await new Promise(r => setTimeout(r, 200));
+        }
+
+        const res = await api.generateStoryboardSequence(scriptId, currentSceneId, {
+          provider: pId,
+          visualStyle: style,
+          aspectRatio: ratio,
+          quality,
+          prompt: userPrompt,
+          shotCount: count
+        });
+
+        if (res?.proposedShots) {
+          proposedSequenceShots = res.proposedShots;
+          // STEP 3 & 4: Transition to preview review workflow
+          renderSequenceReviewGrid();
         } else {
-          // Regenerate single shot
-          const shot = currentStoryboard?.shots?.find(s => s.id === activeEditingShotId);
-          const res = await api.generateStoryboardShot(scriptId, {
-            provider: pId,
-            prompt: userPrompt || shot?.prompt || shot?.description || "Cinematic composition",
-            shotSize: shot?.shotSize || "Medium Shot",
-            cameraAngle: shot?.cameraAngle || "Eye Level",
-            focalLength: shot?.focalLength || "50mm Prime",
-            lightingMood: shot?.lightingMood || "Daylight Dust",
-            aspectRatio: ratio,
-            visualStyle: style,
-            sceneHeading: currentStoryboard?.sceneHeading || "SCENE 1",
-            shotNumber: shot?.shotNumber || "1A"
-          });
-
-          if (res?.imageUrl) {
-            await api.updateStoryboardShot(scriptId, currentSceneId, activeEditingShotId, {
-              imageUrl: res.imageUrl,
-              provider: pId,
-              prompt: userPrompt || shot?.prompt,
-              imageSource: 'ai'
-            });
-            showToast(`Regenerated image for Shot ${shot?.shotNumber}`);
-            closeModal(genModal);
-            loadStoryboardData();
-          }
+          throw new Error('No shots returned from generator');
         }
       } catch (err) {
         console.error(err);
+        stepProgress.classList.add('hidden');
+        document.getElementById('gen-step-config').classList.remove('hidden');
         if (genErrorAlert) {
           genErrorAlert.classList.remove('hidden');
           genErrorMsg.textContent = err.message || 'Generation failed. Please try again.';
         }
-      } finally {
-        submitBtn.disabled = false;
-        const currentLabel = generationTargetType === 'sequence' ? `Generate ${selectedShotCount}-Shot Sequence` : 'Generate Frame';
-        submitBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">auto_awesome</span><span id="gen-submit-label">${currentLabel}</span>`;
       }
     };
   }
 
-  // 7. View Tab Toggle
+  // Render Step 3 & 4 Review Grid inside sequence modal
+  function renderSequenceReviewGrid() {
+    document.getElementById('gen-step-progress').classList.add('hidden');
+    const previewStep = document.getElementById('gen-step-preview');
+    previewStep.classList.remove('hidden');
+
+    const countLabel = document.getElementById('gen-preview-count-label');
+    if (countLabel) countLabel.textContent = `${proposedSequenceShots.length} Shots Proposed`;
+
+    const grid = document.getElementById('gen-preview-grid');
+    if (!grid) return;
+
+    grid.innerHTML = proposedSequenceShots.map((shot, idx) => `
+      <div class="bg-white rounded-xl border border-slate-200 p-2.5 flex flex-col gap-2 shadow-2xs" data-proposed-idx="${idx}">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono font-bold text-blue-600">${shot.shotNumber}</span>
+            <span class="font-semibold text-slate-800 truncate max-w-[140px]">${shot.title}</span>
+          </div>
+          <button type="button" class="btn-toggle-prop-approve px-2 py-0.5 rounded text-[10px] font-semibold border cursor-pointer capitalize ${shot.approvalStatus === 'approved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}" data-proposed-idx="${idx}">
+            ${shot.approvalStatus || 'Proposed'}
+          </button>
+        </div>
+
+        <div class="aspect-video bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center relative cursor-pointer btn-prop-lightbox" data-proposed-idx="${idx}">
+          <img src="${shot.imageUrl}" alt="${shot.title}" class="w-full h-full object-cover" />
+          <div class="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px]">
+            ${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
+          <span>${shot.shotSize} · ${shot.cameraAngle}</span>
+          <button type="button" class="btn-prop-regen text-blue-600 hover:text-blue-800 font-semibold cursor-pointer" data-proposed-idx="${idx}">
+            Regenerate
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    // Toggle approval state for proposed shot
+    grid.querySelectorAll('.btn-toggle-prop-approve').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute('data-proposed-idx'));
+        if (proposedSequenceShots[idx]) {
+          proposedSequenceShots[idx].approvalStatus = proposedSequenceShots[idx].approvalStatus === 'approved' ? 'proposed' : 'approved';
+          renderSequenceReviewGrid();
+        }
+      };
+    });
+
+    // Lightbox for proposed shot
+    grid.querySelectorAll('.btn-prop-lightbox').forEach(el => {
+      el.onclick = () => {
+        const idx = Number(el.getAttribute('data-proposed-idx'));
+        if (proposedSequenceShots[idx]) {
+          openLightboxWithShot(proposedSequenceShots[idx]);
+        }
+      };
+    });
+
+    // Regenerate individual proposed shot
+    grid.querySelectorAll('.btn-prop-regen').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute('data-proposed-idx'));
+        const shot = proposedSequenceShots[idx];
+        if (!shot) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Generating...';
+
+        try {
+          const res = await api.generateStoryboardShot(scriptId, {
+            provider: shot.provider || 'scriptora-concept',
+            prompt: shot.prompt || shot.description || 'Cinematic composition',
+            shotSize: shot.shotSize,
+            cameraAngle: shot.cameraAngle,
+            focalLength: shot.focalLength,
+            lightingMood: shot.lightingMood,
+            aspectRatio: shot.aspectRatio,
+            visualStyle: shot.visualStyle,
+            sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+            shotNumber: shot.shotNumber
+          });
+
+          if (res?.imageUrl) {
+            shot.imageUrl = res.imageUrl;
+            showToast(`Regenerated proposed frame ${shot.shotNumber}`);
+            renderSequenceReviewGrid();
+          }
+        } catch (err) {
+          showToast(err.message || 'Regeneration failed');
+        } finally {
+          btn.disabled = false;
+        }
+      };
+    });
+  }
+
+  // Approve all proposed shots in preview
+  const btnApproveAllProp = document.getElementById('gen-btn-approve-all-proposed');
+  if (btnApproveAllProp) {
+    btnApproveAllProp.onclick = () => {
+      proposedSequenceShots.forEach(s => { s.approvalStatus = 'approved'; });
+      renderSequenceReviewGrid();
+      showToast('All proposed shots marked as Approved');
+    };
+  }
+
+  // Save sequence to storyboard
+  const btnConfirmSave = document.getElementById('gen-btn-confirm-save');
+  if (btnConfirmSave) {
+    btnConfirmSave.onclick = async () => {
+      if (!proposedSequenceShots.length) return;
+      btnConfirmSave.disabled = true;
+      try {
+        const updated = {
+          ...currentStoryboard,
+          shots: proposedSequenceShots,
+          visualStyle: proposedSequenceShots[0]?.visualStyle || currentStoryboard?.visualStyle,
+          aspectRatio: proposedSequenceShots[0]?.aspectRatio || currentStoryboard?.aspectRatio
+        };
+        await api.saveStoryboard(scriptId, updated);
+        showToast(`Saved ${proposedSequenceShots.length} shots to storyboard.`);
+        closeModal(genModal);
+        loadStoryboardData();
+      } catch (err) {
+        showToast('Failed to save sequence');
+      } finally {
+        btnConfirmSave.disabled = false;
+      }
+    };
+  }
+
+  // Save as draft
+  const btnSaveAsDraft = document.getElementById('gen-btn-save-as-draft');
+  if (btnSaveAsDraft) {
+    btnSaveAsDraft.onclick = async () => {
+      if (!proposedSequenceShots.length) return;
+      proposedSequenceShots.forEach(s => { s.approvalStatus = 'draft'; });
+      const updated = {
+        ...currentStoryboard,
+        shots: proposedSequenceShots
+      };
+      await api.saveStoryboard(scriptId, updated);
+      showToast('Saved sequence as draft');
+      closeModal(genModal);
+      loadStoryboardData();
+    };
+  }
+
+  // Discard preview
+  const btnDiscardPrev = document.getElementById('gen-btn-discard-preview');
+  if (btnDiscardPrev) {
+    btnDiscardPrev.onclick = () => {
+      proposedSequenceShots = [];
+      closeModal(genModal);
+    };
+  }
+
+  // =========================================================================
+  // MODAL 3: SINGLE FRAME REGENERATION MODAL LOGIC (Requirement 5)
+  // =========================================================================
+  function openSingleFrameRegenModal(shotId) {
+    activeRegenShotId = shotId;
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    if (!shot) return;
+
+    document.getElementById('regen-shot-pill').textContent = shot.shotNumber;
+    const curImg = document.getElementById('regen-current-image');
+    if (curImg) curImg.src = shot.imageUrl || '';
+    document.getElementById('regen-prompt-input').value = shot.prompt || shot.description || '';
+    document.getElementById('regen-style-select').value = shot.visualStyle || 'Cinematic Concept Art';
+
+    updateRegenCostDisclosure();
+    openModal(regenModal);
+  }
+
+  function updateRegenCostDisclosure() {
+    const provSelect = document.getElementById('regen-provider-select');
+    const costBanner = document.getElementById('regen-cost-banner');
+    if (!provSelect || !costBanner) return;
+    const p = providers.find(prov => prov.id === provSelect.value) || providers[0];
+    if (p.pricingType === 'free') {
+      costBanner.textContent = 'Free (Built-in Concept Engine, no charges).';
+    } else {
+      costBanner.textContent = `Estimated: ${p.costLabel}. Server credentials required.`;
+    }
+  }
+
+  const regenProvSelect = document.getElementById('regen-provider-select');
+  if (regenProvSelect) regenProvSelect.onchange = updateRegenCostDisclosure;
+  if (regenClose) regenClose.onclick = () => closeModal(regenModal);
+  if (regenCancel) regenCancel.onclick = () => closeModal(regenModal);
+
+  if (regenConfirm) {
+    regenConfirm.onclick = async () => {
+      const shot = currentStoryboard?.shots?.find(s => s.id === activeRegenShotId);
+      if (!shot) return;
+
+      const pId = document.getElementById('regen-provider-select').value;
+      const promptVal = document.getElementById('regen-prompt-input').value.trim() || shot.prompt || shot.description;
+      const styleVal = document.getElementById('regen-style-select').value;
+
+      regenConfirm.disabled = true;
+      regenConfirm.innerHTML = `<span class="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin"></span><span>Regenerating...</span>`;
+
+      try {
+        const res = await api.generateStoryboardShot(scriptId, {
+          provider: pId,
+          prompt: promptVal,
+          shotSize: shot.shotSize,
+          cameraAngle: shot.cameraAngle,
+          focalLength: shot.focalLength,
+          lightingMood: shot.lightingMood,
+          aspectRatio: shot.aspectRatio,
+          visualStyle: styleVal,
+          sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+          shotNumber: shot.shotNumber
+        });
+
+        if (res?.imageUrl) {
+          await api.updateStoryboardShot(scriptId, currentSceneId, activeRegenShotId, {
+            imageUrl: res.imageUrl,
+            prompt: promptVal,
+            visualStyle: styleVal,
+            provider: pId,
+            imageSource: 'ai'
+          });
+
+          showToast(`Regenerated Shot ${shot.shotNumber}. Other shots preserved.`);
+          closeModal(regenModal);
+          loadStoryboardData();
+        }
+      } catch (err) {
+        showToast(err.message || 'Regeneration failed');
+      } finally {
+        regenConfirm.disabled = false;
+        regenConfirm.innerHTML = `<span class="material-symbols-outlined text-[15px]">auto_awesome</span><span>Regenerate Frame</span>`;
+      }
+    };
+  }
+
+  // =========================================================================
+  // MODAL 4: SHOT HISTORY & VERSION LOGIC (Requirement 10)
+  // =========================================================================
+  function openShotHistoryModal(shotId) {
+    activeHistoryShotId = shotId;
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    if (!shot) return;
+
+    document.getElementById('history-modal-title').textContent = `History for Shot ${shot.shotNumber}`;
+    const container = document.getElementById('history-items-container');
+    if (!container) return;
+
+    const history = Array.isArray(shot.history) ? shot.history : [];
+
+    if (!history.length) {
+      container.innerHTML = `
+        <div class="p-8 text-center text-slate-400 text-xs">
+          <span class="material-symbols-outlined text-2xl text-slate-400">history</span>
+          <p class="mt-1">No previous versions recorded for this shot.</p>
+        </div>
+      `;
+    } else {
+      container.innerHTML = history.slice().reverse().map((h, revIdx) => {
+        const realIdx = history.length - 1 - revIdx;
+        const dateStr = h.timestamp ? new Date(h.timestamp).toLocaleString() : 'Past Version';
+
+        return `
+          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
+              <span class="font-mono text-blue-600">${dateStr}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-mono">${h.sourceVersion || 'Draft 4.2'}</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="w-20 h-14 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shrink-0 flex items-center justify-center">
+                ${h.previousImageUrl ? `
+                  <img src="${h.previousImageUrl}" alt="Historical version" class="w-full h-full object-cover" />
+                ` : `
+                  <span class="material-symbols-outlined text-slate-600 text-base">image</span>
+                `}
+              </div>
+              <div class="min-w-0 flex-1 text-[11px] text-slate-600">
+                <p class="line-clamp-2 italic">${h.previousPrompt || 'No prompt recorded'}</p>
+                <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                  <span>Provider: ${h.provider || 'scriptora-concept'}</span>
+                  <span>·</span>
+                  <span>By: ${h.updatedBy || 'Director'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end pt-1 border-t border-slate-200/60">
+              <button type="button" class="btn-restore-version px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] transition-colors cursor-pointer" data-hist-idx="${realIdx}">
+                Restore This Version
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.btn-restore-version').forEach(btn => {
+        btn.onclick = async () => {
+          const idx = Number(btn.getAttribute('data-hist-idx'));
+          try {
+            await api.restoreStoryboardShotVersion(scriptId, currentSceneId, activeHistoryShotId, idx);
+            showToast(`Restored past version to Shot ${shot.shotNumber}`);
+            closeModal(historyModal);
+            loadStoryboardData();
+          } catch (e) {
+            showToast('Failed restoring version');
+          }
+        };
+      });
+    }
+
+    openModal(historyModal);
+  }
+
+  if (historyClose) historyClose.onclick = () => closeModal(historyModal);
+  if (historyDone) historyDone.onclick = () => closeModal(historyModal);
+
+  // =========================================================================
+  // MODAL 5: FULL-SCREEN CINEMATIC LIGHTBOX LOGIC (Requirement 4)
+  // =========================================================================
+  function openLightbox(index) {
+    const shots = currentStoryboard?.shots || [];
+    if (!shots.length) return;
+    activeLightboxShotIndex = (index >= 0 && index < shots.length) ? index : 0;
+    updateLightboxUI();
+    lightboxModal.classList.remove('hidden');
+  }
+
+  function openLightboxWithShot(shot) {
+    const imgEl = document.getElementById('lb-image');
+    const numEl = document.getElementById('lb-shot-num');
+    const specsEl = document.getElementById('lb-specs');
+    const titleEl = document.getElementById('lb-title');
+    const descEl = document.getElementById('lb-desc');
+    const approveBtn = document.getElementById('lb-btn-approve');
+    const rejectBtn = document.getElementById('lb-btn-reject');
+    const prevBtn = document.getElementById('lb-prev');
+    const nextBtn = document.getElementById('lb-next');
+
+    if (imgEl) imgEl.src = shot.imageUrl || '';
+    if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
+    if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize || 'Medium'}`;
+    if (titleEl) titleEl.textContent = shot.title;
+    if (descEl) descEl.textContent = shot.description || 'No description provided.';
+    if (prevBtn) prevBtn.classList.add('hidden');
+    if (nextBtn) nextBtn.classList.add('hidden');
+    if (approveBtn) approveBtn.classList.add('hidden');
+    if (rejectBtn) rejectBtn.classList.add('hidden');
+
+    lightboxModal.classList.remove('hidden');
+  }
+
+  function updateLightboxUI() {
+    const shots = currentStoryboard?.shots || [];
+    const shot = shots[activeLightboxShotIndex];
+    if (!shot) return;
+
+    const imgEl = document.getElementById('lb-image');
+    const numEl = document.getElementById('lb-shot-num');
+    const specsEl = document.getElementById('lb-specs');
+    const titleEl = document.getElementById('lb-title');
+    const descEl = document.getElementById('lb-desc');
+    const approveLabel = document.getElementById('lb-approve-label');
+    const prevBtn = document.getElementById('lb-prev');
+    const nextBtn = document.getElementById('lb-next');
+    const approveBtn = document.getElementById('lb-btn-approve');
+    const rejectBtn = document.getElementById('lb-btn-reject');
+
+    if (prevBtn) prevBtn.classList.remove('hidden');
+    if (nextBtn) nextBtn.classList.remove('hidden');
+    if (approveBtn) approveBtn.classList.remove('hidden');
+    if (rejectBtn) rejectBtn.classList.remove('hidden');
+
+    if (imgEl) imgEl.src = shot.imageUrl || '';
+    if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
+    if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize}`;
+    if (titleEl) titleEl.textContent = shot.title;
+    if (descEl) descEl.textContent = shot.description || 'No description provided.';
+
+    if (approveLabel) {
+      approveLabel.textContent = shot.approvalStatus === 'approved' ? 'Approved' : 'Approve';
+    }
+  }
+
+  if (lbClose) lbClose.onclick = () => lightboxModal.classList.add('hidden');
+
+  if (lbPrev) {
+    lbPrev.onclick = () => {
+      const shots = currentStoryboard?.shots || [];
+      if (!shots.length) return;
+      activeLightboxShotIndex = (activeLightboxShotIndex - 1 + shots.length) % shots.length;
+      updateLightboxUI();
+    };
+  }
+
+  if (lbNext) {
+    lbNext.onclick = () => {
+      const shots = currentStoryboard?.shots || [];
+      if (!shots.length) return;
+      activeLightboxShotIndex = (activeLightboxShotIndex + 1) % shots.length;
+      updateLightboxUI();
+    };
+  }
+
+  if (lbBtnApprove) {
+    lbBtnApprove.onclick = async () => {
+      const shots = currentStoryboard?.shots || [];
+      const shot = shots[activeLightboxShotIndex];
+      if (!shot) return;
+      try {
+        await api.approveStoryboardShot(scriptId, currentSceneId, shot.id, 'approved');
+        shot.approvalStatus = 'approved';
+        showToast(`Shot ${shot.shotNumber} approved`);
+        updateLightboxUI();
+        renderCurrentView();
+      } catch (e) {
+        showToast('Failed to approve shot');
+      }
+    };
+  }
+
+  if (lbBtnReject) {
+    lbBtnReject.onclick = async () => {
+      const shots = currentStoryboard?.shots || [];
+      const shot = shots[activeLightboxShotIndex];
+      if (!shot) return;
+      try {
+        await api.approveStoryboardShot(scriptId, currentSceneId, shot.id, 'rejected');
+        shot.approvalStatus = 'rejected';
+        showToast(`Shot ${shot.shotNumber} marked as rejected`);
+        updateLightboxUI();
+        renderCurrentView();
+      } catch (e) {
+        showToast('Failed to reject shot');
+      }
+    };
+  }
+
+  // Keyboard navigation for Lightbox
+  document.addEventListener('keydown', (e) => {
+    if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
+      if (e.key === 'Escape') lightboxModal.classList.add('hidden');
+      if (e.key === 'ArrowLeft' && lbPrev) lbPrev.click();
+      if (e.key === 'ArrowRight' && lbNext) lbNext.click();
+    }
+  });
+
+  // =========================================================================
+  // VIEW SWITCHER (Contact Sheet <-> Sequence Editor)
+  // =========================================================================
   if (viewTabContact && viewTabSequence) {
     viewTabContact.onclick = () => {
       currentView = 'contact';
@@ -1137,16 +1875,16 @@ export async function attachStoryboardEvents(navigate, fromParam = null, scriptP
     };
   }
 
-  // 8. Primary Buttons
+  // Primary Action Buttons
   if (btnGenSequence) {
-    btnGenSequence.onclick = () => openGenerationModal('sequence');
+    btnGenSequence.onclick = () => openSequenceGenerationModal();
   }
 
   if (btnAddShot) {
     btnAddShot.onclick = () => openShotInspector(null);
   }
 
-  // PDF Export using actual saved storyboard
+  // PDF Export
   if (btnExportPdf) {
     btnExportPdf.onclick = () => {
       try {

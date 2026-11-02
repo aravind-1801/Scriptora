@@ -71,12 +71,19 @@ Every core production tool opens as a **dedicated workspace** with stable screen
    - **Draft Tracking & Navigation**: Pinned source draft metadata stamps, dedicated subnav heading with robust multi-stage back navigation, and instantaneous vector PDF export.
 
 5. **Storyboard Studio Workspace (`/production/storyboard`)**:
-   - **Dual Working Views**: Seamless switching between **Contact Sheet** (responsive visual grid) and **Sequence Editor** (chronological ordering timeline with screenplay context).
-   - **Scene-Grounded Source Context**: Direct linkage to actual screenplay scenes (Scenes 1 to 10), displaying INT/EXT, DAY/NIGHT, shoot days, scene snippets, and cast lists with instant navigation to Shooting Schedule contexts.
-   - **AI Shot & Sequence Generation**: Single-shot and 4-shot scene sequence generation with genuine provider configuration checks, cost disclosure ($0.040 DALL-E 3, $0.030 Imagen 3, $0.018 SDXL, Free Built-in Concept Engine), and honest error handling when keys are not configured.
-   - **Camera & Cinematic Controls**: Aspect ratios (2.39:1, 16:9, 4:3, 9:16), lenses (18mm to 105mm, Anamorphic), shot sizes, camera movements, lighting moods, and 7 visual style presets.
-   - **Visual Continuity Tracking**: Screen direction, eyeline, and lighting continuity tracking across consecutive cuts with automated conflict detection.
-   - **Shot Lifecycle & Approval**: Frame inspection drawer, drag/touch reordering, single and batch approval workflows, manual reference photo import, and authentic multi-page vector PDF export.
+   - **Dual Complementary Views**:
+     - **Contact Sheet**: Visually organized grid of image cards where the generated frame is the primary visual element. Features camera telemetry overlays, shot numbers, approval badges, quick approval toggles, direct regeneration, photo replacement, version history, and single-click full-screen cinematic lightbox.
+     - **Sequence Editor**: Chronological screenplay-ordered timeline with multi-select checkboxes for batch operations (Approve All, Approve Selected, Reject Selected, Delete), up/down reordering without distracting helper text, and technical specification chips.
+   - **Two Distinct Generation Workflows**:
+     - **Individual Shot Creation Panel**: Complete shot metadata authoring with two clear image options (Generate Image or Import Photo) plus manual creation without images. Renders the generated frame directly inside the panel with review actions (Full-Size Preview, Regenerate, Approve, Reject, Save Shot) without auto-closing on generation.
+     - **Generate Scene Sequence (1–4 Shots)**: Sequence length selector positioned at the top controlling the exact number of proposed frames (1, 2, 3, or 4 shots max), real-time generation progress ("Preparing scene context...", "Generating shot 1 of N..."), and an interactive sequence review contact sheet to inspect, tweak, and approve frames before saving to the storyboard.
+   - **Individual Frame Regeneration**: Regenerate only a single frame (e.g., Shot 2 of 4) while preserving all other frames, their approval statuses, and their sequence orders. Automatically archives the previous image and prompt in the shot's history.
+   - **Shot History & Version Safety**: Persistent generation history for every shot recording timestamp, prompt, provider, quality, and draft version, with one-click "Restore This Version" capabilities and source screenplay draft staleness warnings.
+   - **Full-Screen Cinematic Lightbox**: Full-bleed high-res preview modal with anamorphic/letterbox framing, camera telemetry overlay (`REC`, shot number, aspect ratio, lens, shot size, camera angle), scene heading, description, previous/next shot keyboard navigation, and quick approval toggles.
+   - **Transparent Provider Architecture**:
+     - **SCRIPTORA Concept Engine (Free / Built-in)**: High-resolution procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 7 visual style presets (Cinematic Concept Art, Storyboard Ink, Pencil Sketch, Photorealistic / Live Action, 3D Animation, Anime / Illustration).
+     - **External Providers**: OpenAI DALL-E 3 (`OPENAI_API_KEY`), Google Imagen 3 (`GEMINI_API_KEY` or `GOOGLE_AI_API_KEY`), and Stability AI SDXL (`STABILITY_API_KEY`), with transparent cost estimates, credential validation, and clear error guidance when unconfigured.
+   - **Android-First Ergonomics**: Zero horizontal page overflow, balanced modals with internal scrolling, mobile-friendly touch targets, and responsive shooting-day assignment select controls.
 
 ---
 
