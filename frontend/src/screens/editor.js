@@ -50,10 +50,32 @@ export const STANDARD_TRANSITIONS = [
 let lastSpaceNavHandledTimestamp = 0;
 const spaceNavHistory = [];
 
+export function cleanScreenplayContent(content) {
+  if (content == null) return '';
+  if (typeof content !== 'string') content = String(content);
+
+  let cleaned = content;
+  // Decode any multi-escaped &amp;nbsp; or &amp;amp;nbsp; to &nbsp;
+  cleaned = cleaned.replace(/&(?:amp;)+nbsp;?/gi, '&nbsp;');
+  cleaned = cleaned.replace(/&#(?:160|xA0);/gi, ' ');
+
+  // Repeatedly remove trailing <br>, &nbsp;, \u00A0, and trailing whitespace from the end of the block
+  let prev;
+  do {
+    prev = cleaned;
+    cleaned = cleaned.replace(/(?:<br\s*\/?>|&nbsp;?|\u00A0|\s)+$/gi, '');
+  } while (cleaned !== prev);
+
+  // Any non-breaking space or &nbsp; remaining in the middle of text becomes a standard space
+  cleaned = cleaned.replace(/(?:&nbsp;?|\u00A0)+/gi, ' ');
+
+  return cleaned;
+}
+
 export function isBlockContentEmpty(editableEl) {
   if (!editableEl) return true;
   const raw = editableEl.innerText || editableEl.textContent || '';
-  const clean = raw.replace(/[\u200B\u00A0\r\n\t ]/g, '').trim();
+  const clean = raw.replace(/&(?:amp;)*nbsp;?/gi, '').replace(/[\u200B\u00A0\r\n\t ]/g, '').trim();
   return clean.length === 0;
 }
 
@@ -1093,6 +1115,19 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   // 2. Load Screenplay Model
   currentScreenplay = await api.getScreenplay(scriptId);
+  if (currentScreenplay?.scenes) {
+    currentScreenplay.scenes.forEach(sc => {
+      if (sc.blocks) {
+        sc.blocks.forEach(b => {
+          if (b.content) b.content = cleanScreenplayContent(b.content);
+          if (b.char1) b.char1 = cleanScreenplayContent(b.char1);
+          if (b.dia1) b.dia1 = cleanScreenplayContent(b.dia1);
+          if (b.char2) b.char2 = cleanScreenplayContent(b.char2);
+          if (b.dia2) b.dia2 = cleanScreenplayContent(b.dia2);
+        });
+      }
+    });
+  }
 
   // Safeguard: Ensure non-canonical screenplay has no random/placeholder content
   if (scriptId !== 'chronicles-of-dust' && currentScreenplay) {
@@ -1889,7 +1924,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
-        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled && (block.content || '').trim() ? '' : 'hidden'}">${sceneNumber}</span>
+        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
         <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
@@ -2009,12 +2044,14 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
 export function renderFormattedContent(text) {
   if (!text) return '';
-  if (!/<[a-z][\s\S]*>/i.test(text)) {
-    return escapeHtml(text);
+  const cleaned = cleanScreenplayContent(text);
+  if (!cleaned) return '';
+  if (!/<[a-z][\s\S]*>/i.test(cleaned)) {
+    return escapeHtml(cleaned);
   }
   try {
     const parser = new DOMParser();
-    const doc = parser.parseFromString(`<body>${text}</body>`, 'text/html');
+    const doc = parser.parseFromString(`<body>${cleaned}</body>`, 'text/html');
     const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'BR', 'SPAN']);
     
     function sanitize(node) {
@@ -2044,9 +2081,9 @@ export function renderFormattedContent(text) {
       }
     }
     sanitize(doc.body);
-    return doc.body.innerHTML;
+    return cleanScreenplayContent(doc.body.innerHTML);
   } catch (_) {
-    return escapeHtml(text);
+    return escapeHtml(cleaned);
   }
 }
 
@@ -2187,7 +2224,13 @@ function attachSingleBlockListeners(block) {
       }
     }
 
-    updateBlockModel(block, editable.innerHTML);
+    // Sanitize any rogue &nbsp; in model while allowing smooth typing
+    let contentToUpdate = editable.innerHTML;
+    contentToUpdate = contentToUpdate.replace(/&(?:amp;)+nbsp;?/gi, ' ');
+    contentToUpdate = contentToUpdate.replace(/&nbsp;?/gi, ' ');
+    contentToUpdate = contentToUpdate.replace(/\u00A0/g, ' ');
+
+    updateBlockModel(block, contentToUpdate);
     updateSaveStatus('Unsaved');
     
     // Auto-save only if enabled (Section 2 & 3)
@@ -2208,13 +2251,17 @@ function attachSingleBlockListeners(block) {
         editable.innerText = formattedText;
       }
     }
-    updateBlockModel(block, editable.innerHTML);
+    const cleaned = cleanScreenplayContent(editable.innerHTML);
+    if (editable.innerHTML !== cleaned) {
+      editable.innerHTML = cleaned;
+    }
+    updateBlockModel(block, cleaned);
 
     // Commit ONLY completed entities upon blur (Prompt 23: 4-8)
     if (type === 'character') {
-      commitCharacterToMemory(editable.innerText);
+      commitCharacterToMemory(cleanScreenplayContent(editable.innerText));
     } else if (type === 'scene') {
-      const parsed = parseSceneHeading(editable.innerText);
+      const parsed = parseSceneHeading(cleanScreenplayContent(editable.innerText));
       if (parsed.location) commitLocationToMemory(parsed.location);
     }
   };
@@ -2232,7 +2279,11 @@ function attachSingleBlockListeners(block) {
           setCaretCharacterOffsetWithin(editable, caretOffset);
         }
       }
-      updateBlockModel(block, editable.innerHTML);
+      const cleaned = cleanScreenplayContent(editable.innerHTML);
+      if (editable.innerHTML !== cleaned) {
+        editable.innerHTML = cleaned;
+      }
+      updateBlockModel(block, cleaned);
     }, 0);
   };
 
@@ -2361,15 +2412,16 @@ function updateBlockModel(blockEl, text) {
   if (!scene) return;
   const b = scene.blocks.find(x => x.id === blockId);
   if (b) {
+    const cleanedText = cleanScreenplayContent(text);
     if (b.type === 'image') {
-      b.caption = text;
+      b.caption = cleanedText;
     } else {
-      b.content = text;
+      b.content = cleanedText;
     }
 
     // Structured metadata for scene heading (Does NOT push keystrokes to memory!)
     if (b.type === 'scene') {
-      const plainText = (text || '').replace(/<[^>]+>/g, '');
+      const plainText = (cleanedText || '').replace(/<[^>]+>/g, '');
       const parsed = parseSceneHeading(plainText);
       b.intExt = parsed.intExt;
       b.location = parsed.location;
@@ -2705,7 +2757,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     // 5. TRANSITION -> NEXT SCENE (Does NOT force a new page!)
     if (type === 'transition') {
       e.preventDefault();
-      createNewSceneAfter(sceneId);
+      createNewSceneAfter(sceneId, blockId);
       return;
     }
 
@@ -2812,11 +2864,20 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
 }
 
 // Create new scene after transition WITHOUT FORCING A NEW PAGE (Section 11 & 23)
-function createNewSceneAfter(sceneId) {
+function createNewSceneAfter(sceneId, fromBlockId = null) {
   const sceneIdx = currentScreenplay.scenes.findIndex(s => s.id === sceneId);
   const nextSceneNum = currentScreenplay.scenes.length + 1;
   const newSceneId = `scene-${Date.now().toString().slice(-5)}`;
   const newHeadingBlockId = `b-${Date.now().toString().slice(-6)}`;
+
+  let trailingBlocks = [];
+  if (fromBlockId && sceneIdx !== -1) {
+    const curScene = currentScreenplay.scenes[sceneIdx];
+    const bIdx = curScene.blocks ? curScene.blocks.findIndex(b => b.id === fromBlockId) : -1;
+    if (bIdx !== -1 && bIdx < curScene.blocks.length - 1) {
+      trailingBlocks = curScene.blocks.splice(bIdx + 1);
+    }
+  }
 
   const newScene = {
     id: newSceneId,
@@ -2824,7 +2885,8 @@ function createNewSceneAfter(sceneId) {
     actId: currentScreenplay.acts?.[0]?.id || 'act-1',
     slugline: '',
     blocks: [
-      { id: newHeadingBlockId, type: 'scene', content: '' }
+      { id: newHeadingBlockId, type: 'scene', content: '' },
+      ...trailingBlocks
     ]
   };
 
@@ -3332,14 +3394,21 @@ async function performSave(isManual = false) {
   isSaving = true;
   updateSaveStatus('Saving...');
 
-  // Ensure all action and dialogue blocks have sentence capitalization before save
+  // Ensure all action and dialogue blocks have sentence capitalization before save, and all blocks are cleaned
   if (currentScreenplay.scenes) {
     currentScreenplay.scenes.forEach(scene => {
       if (scene.blocks) {
         scene.blocks.forEach(b => {
-          if ((b.type === 'action' || b.type === 'dialogue') && b.content) {
-            b.content = capitalizeSentenceStarters(b.content);
+          if (b.content) {
+            b.content = cleanScreenplayContent(b.content);
+            if (b.type === 'action' || b.type === 'dialogue') {
+              b.content = capitalizeSentenceStarters(b.content);
+            }
           }
+          if (b.char1) b.char1 = cleanScreenplayContent(b.char1);
+          if (b.dia1) b.dia1 = cleanScreenplayContent(b.dia1);
+          if (b.char2) b.char2 = cleanScreenplayContent(b.char2);
+          if (b.dia2) b.dia2 = cleanScreenplayContent(b.dia2);
         });
       }
     });

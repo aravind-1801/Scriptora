@@ -15,7 +15,7 @@ export const PRONOUNS_AND_NOISE = new Set([
 export function cleanCharacterName(raw) {
   if (!raw || typeof raw !== 'string') return '';
   // Remove parentheticals (V.O.), (O.S.), (CONT'D), etc.
-  let clean = raw.replace(/\([^)]*\)/g, '').replace(/[^a-zA-Z0-9\s'-]/g, '').trim().toUpperCase();
+  let clean = raw.replace(/\([^)]*\)/g, '').replace(/&(?:amp;)*nbsp;?/gi, ' ').replace(/[\u200B\u00A0]/g, ' ').replace(/[^a-zA-Z0-9\s'-]/g, '').trim().toUpperCase();
 
   // Normalize common typing mistakes / variations
   if (clean === 'ARAF') clean = 'ARAVIND';
