@@ -1643,13 +1643,13 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     };
   }
 
-  // Start sequence generation button
+  // Start sequence generation button with real-time card-by-card streaming
   if (genBtnStart) {
     genBtnStart.onclick = async (e) => {
       e.preventDefault();
       const pId = genProviderSelect ? genProviderSelect.value : 'scriptora-concept';
       const selectedProv = providers.find(p => p.id === pId) || providers[0] || { pricingType: 'free', name: 'Concept Engine' };
-      const style = document.getElementById('gen-style-select')?.value || 'Cinematic Concept Art';
+      const style = document.getElementById('gen-style-select')?.value || 'Storyboard Sketch';
       const ratio = document.getElementById('gen-ratio-select')?.value || '2.39:1';
       const quality = document.getElementById('gen-quality-select')?.value || 'Standard Draft';
       const userPrompt = document.getElementById('gen-prompt-input')?.value.trim() || '';
@@ -1668,56 +1668,171 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         }
       }
 
-      // Transition to progress step
-      document.getElementById('gen-step-config')?.classList.add('hidden');
-      const stepProgress = document.getElementById('gen-step-progress');
-      if (stepProgress) stepProgress.classList.remove('hidden');
+      const sceneNum = Number(String(currentSceneId).replace('scene-', '')) || currentStoryboard?.sceneNumber || 1;
+      const scene = allScenes.find(s => s.id === currentSceneId || s.sceneNumber === sceneNum) || {
+        heading: currentStoryboard?.sceneHeading || `SCENE ${sceneNum}`,
+        snippet: 'Characters in scene confrontation.',
+        cast: ['KEVIN', 'MEERA']
+      };
 
-      const progressTitle = document.getElementById('gen-progress-title');
-      const progressStatus = document.getElementById('gen-progress-status');
-      const stepperEl = document.getElementById('gen-progress-stepper');
+      const baseBeats = [
+        {
+          letter: 'A',
+          title: 'Establishing Spatial Geometry',
+          description: `Wide environmental establishing view of ${scene.heading.toLowerCase()}. Establishes spatial depth, environmental lighting, and visual geography.`,
+          shotSize: 'Wide Shot',
+          cameraAngle: 'High Angle',
+          cameraMovement: 'Crane / Jib',
+          focalLength: '24mm Wide',
+          lightingMood: 'High Contrast Daylight',
+          prompt: `Cinematic wide establishing shot of ${scene.heading}: ${scene.snippet || 'Atmospheric perspective'}. 24mm anamorphic lens.`
+        },
+        {
+          letter: 'B',
+          title: 'Character Blocking & Entry',
+          description: `Medium two-shot tracking ${scene.cast?.[0] || 'protagonist'} navigating the environment with rising tension.`,
+          shotSize: 'Medium Two-Shot',
+          cameraAngle: 'Eye Level',
+          cameraMovement: 'Tracking Dolly',
+          focalLength: '50mm Prime',
+          lightingMood: 'Practical Rim Lighting',
+          prompt: `Medium two-shot tracking ${scene.cast?.join(' and ') || 'character'} in ${scene.heading}: ${scene.snippet || 'Environmental interaction'}. 50mm shallow depth of field.`
+        },
+        {
+          letter: 'C',
+          title: 'Critical Dramatic Focal Beat',
+          description: `Close-up reaction highlighting dramatic urgency, character resolve, and key narrative stakes.`,
+          shotSize: 'Close-Up',
+          cameraAngle: 'Dutch Angle',
+          cameraMovement: 'Static',
+          focalLength: '85mm Portrait',
+          lightingMood: 'Warm Eye Catchlight',
+          prompt: `Dramatic close-up on ${scene.cast?.[0] || 'lead character'} in ${scene.heading}. Intense facial expression, rim lighting, 85mm portrait bokeh.`
+        },
+        {
+          letter: 'D',
+          title: 'Prop & Action Detail Insert',
+          description: `Tight macro insert focusing on critical hand movement, equipment interaction, or tactical telemetry.`,
+          shotSize: 'Extreme Close-Up',
+          cameraAngle: 'Low Angle',
+          cameraMovement: 'Static',
+          focalLength: '35mm Macro',
+          lightingMood: 'Chiaroscuro Beam',
+          prompt: `Extreme close-up macro insert of crucial prop and tactical hand action in ${scene.heading}. Scratched metal textures, focused lighting.`
+        }
+      ];
 
-      if (progressTitle) progressTitle.textContent = `Generating ${count}-Shot Storyboard Sequence`;
-      if (progressStatus) progressStatus.textContent = 'Preparing scene context...';
+      const beatsToCreate = baseBeats.slice(0, count);
+      const newShots = beatsToCreate.map((b, i) => ({
+        id: `shot-${Date.now()}-${i}-${Math.floor(Math.random() * 1000)}`,
+        shotNumber: `${sceneNum}${b.letter}`,
+        order: i + 1,
+        title: b.title,
+        description: b.description,
+        shotSize: b.shotSize,
+        cameraAngle: b.cameraAngle,
+        cameraMovement: b.cameraMovement,
+        focalLength: b.focalLength,
+        lightingMood: b.lightingMood,
+        aspectRatio: ratio,
+        visualStyle: style,
+        prompt: userPrompt ? `${b.prompt} ${userPrompt}` : b.prompt,
+        imageUrl: null,
+        imageSource: 'ai',
+        provider: pId,
+        quality,
+        costEstimate: pId === 'scriptora-concept' ? 'Free (Built-in)' : '$0.040',
+        approvalStatus: 'proposed',
+        approvalNotes: 'AI proposed sequence beat. Review and approve to confirm.',
+        approvedBy: null,
+        approvedAt: null,
+        directorNotes: `Maintain consistent eyeline and framing across ${sceneNum}${b.letter}.`,
+        characters: scene.cast || ['KEVIN'],
+        location: scene.heading,
+        continuity: {
+          characterPosition: i % 2 === 0 ? 'Screen Left' : 'Screen Right',
+          screenDirection: 'Left to Right',
+          eyeline: i % 2 === 0 ? 'Looking Screen Right' : 'Looking Screen Left',
+          lightingContinuity: 'Production matching lighting',
+          costumeState: 'Production baseline',
+          propPlacement: 'Standard staging'
+        },
+        history: [],
+        isGenerating: true,
+        generationError: null
+      }));
 
-      if (stepperEl) {
-        stepperEl.innerHTML = Array.from({ length: count }, (_, i) => `
-          <span class="w-3 h-3 rounded-full bg-slate-200 transition-colors" data-step="${i + 1}"></span>
-        `).join('');
+      // Immediately set shots on storyboard, update visualStyle & aspectRatio
+      if (!currentStoryboard) {
+        currentStoryboard = {
+          scriptId,
+          sceneId: currentSceneId,
+          sceneNumber: sceneNum,
+          sceneHeading: scene.heading,
+          shots: []
+        };
       }
+      currentStoryboard.shots = newShots;
+      currentStoryboard.visualStyle = style;
+      currentStoryboard.aspectRatio = ratio;
 
+      // Close modal immediately and display cards on the storyboard in real time!
+      closeModal(genModal);
+      renderStoryboardView();
+      showToast(`Generating ${count} storyboard shots in real-time...`);
+
+      // Persist initial skeleton state to backend
       try {
-        for (let i = 1; i <= count; i++) {
-          if (progressStatus) progressStatus.textContent = `Generating shot ${i} of ${count}...`;
-          const dot = stepperEl?.querySelector(`[data-step="${i}"]`);
-          if (dot) dot.className = 'w-3 h-3 rounded-full bg-blue-600 animate-pulse';
-          await new Promise(r => setTimeout(r, 180));
-        }
+        await api.saveStoryboard(scriptId, currentStoryboard);
+      } catch (_) {}
 
-        const res = await api.generateStoryboardSequence(scriptId, currentSceneId, {
-          provider: pId,
-          visualStyle: style,
-          aspectRatio: ratio,
-          quality,
-          prompt: userPrompt,
-          shotCount: count
-        });
+      // Asynchronously generate each shot individually in real time without blocking
+      newShots.forEach(async (shot) => {
+        try {
+          const res = await api.generateStoryboardShot(scriptId, {
+            provider: shot.provider,
+            prompt: shot.prompt,
+            shotSize: shot.shotSize,
+            cameraAngle: shot.cameraAngle,
+            cameraMovement: shot.cameraMovement,
+            focalLength: shot.focalLength,
+            lightingMood: shot.lightingMood,
+            aspectRatio: shot.aspectRatio,
+            visualStyle: shot.visualStyle,
+            sceneHeading: currentStoryboard.sceneHeading || scene.heading,
+            shotNumber: shot.shotNumber,
+            description: shot.description,
+            cast: shot.characters,
+            characters: shot.characters,
+            quality: shot.quality
+          });
 
-        if (res?.proposedShots && res.proposedShots.length) {
-          proposedSequenceShots = res.proposedShots;
-          renderSequenceReviewGrid();
-        } else {
-          throw new Error('No shots returned from generator');
+          if (res?.imageUrl) {
+            shot.imageUrl = res.imageUrl;
+            shot.isGenerating = false;
+            shot.generationError = null;
+            if (!shot.history) shot.history = [];
+            shot.history.unshift({
+              imageUrl: res.imageUrl,
+              prompt: shot.prompt,
+              visualStyle: shot.visualStyle,
+              provider: shot.provider,
+              createdAt: new Date().toISOString()
+            });
+
+            await api.saveStoryboard(scriptId, currentStoryboard);
+            renderStoryboardView();
+            showToast(`Shot ${shot.shotNumber} sketch completed!`);
+          } else {
+            throw new Error('Image generation returned empty');
+          }
+        } catch (err) {
+          shot.isGenerating = false;
+          shot.generationError = err.message || 'Generation failed';
+          renderStoryboardView();
+          showToast(`Shot ${shot.shotNumber} failed to generate`);
         }
-      } catch (err) {
-        console.error(err);
-        if (stepProgress) stepProgress.classList.add('hidden');
-        document.getElementById('gen-step-config')?.classList.remove('hidden');
-        if (genErrorAlert) {
-          genErrorAlert.classList.remove('hidden');
-          if (genErrorMsg) genErrorMsg.textContent = err.message || 'Generation failed. Please try again.';
-        }
-      }
+      });
     };
   }
 
@@ -1813,6 +1928,12 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         sceneContext: `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim()
       });
 
+      // Close modal immediately and enter real-time generating state on card
+      closeModal(regenModal);
+      shot.isGenerating = true;
+      shot.generationError = null;
+      renderStoryboardView();
+
       try {
         const res = await api.generateStoryboardShot(scriptId, {
           provider: pId,
@@ -1833,6 +1954,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         });
 
         if (res?.imageUrl) {
+          shot.imageUrl = res.imageUrl;
+          shot.visualStyle = styleVal;
+          shot.isGenerating = false;
+          shot.generationError = null;
+
           await api.updateStoryboardShot(scriptId, currentSceneId, activeRegenShotId, {
             imageUrl: res.imageUrl,
             prompt: structuredPrompt,
@@ -1842,11 +1968,15 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             imageSource: 'ai'
           });
 
+          renderStoryboardView();
           showToast(`Regenerated frame ${shot.shotNumber}. Previous version preserved in history.`);
-          closeModal(regenModal);
-          loadStoryboardData();
+        } else {
+          throw new Error('Image generation returned empty');
         }
       } catch (err) {
+        shot.isGenerating = false;
+        shot.generationError = err.message || 'Regeneration failed';
+        renderStoryboardView();
         showToast(err.message || 'Regeneration failed');
       } finally {
         regenConfirm.disabled = false;
@@ -2660,9 +2790,20 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                     <span class="text-[10px] text-slate-400">#${s.order}</span>
                   </div>
                   <div class="flex items-center gap-1.5">
-                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border ${statusBg} capitalize">
-                      ${s.approvalStatus || 'Draft'}
-                    </span>
+                    ${s.isGenerating ? `
+                      <span class="px-2 py-0.5 rounded text-[10px] font-semibold border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
+                        Generating
+                      </span>
+                    ` : (s.generationError ? `
+                      <span class="px-2 py-0.5 rounded text-[10px] font-semibold border bg-rose-50 text-rose-700 border-rose-200">
+                        Failed
+                      </span>
+                    ` : `
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold border ${statusBg} capitalize">
+                        ${s.approvalStatus || 'Draft'}
+                      </span>
+                    `)}
                     ${historyCount > 0 ? `
                       <button class="btn-card-history p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="View generation history (${historyCount} previous versions)">
                         <span class="material-symbols-outlined text-[15px]">history</span>
@@ -2672,22 +2813,45 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                 </div>
 
                 <!-- Primary Visual Image Canvas -->
-                <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden cursor-pointer group btn-open-lightbox" data-shot-id="${s.id}">
-                  ${s.imageUrl ? `
+                <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden group ${s.isGenerating || s.generationError ? '' : 'cursor-pointer btn-open-lightbox'}" data-shot-id="${s.id}">
+                  ${s.isGenerating ? `
+                    <div class="w-full h-full bg-amber-50/80 border-b border-amber-200/70 flex flex-col items-center justify-center gap-2 p-4 text-center select-none">
+                      <div class="relative flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-full border-2 border-blue-500/20 border-t-blue-600 animate-spin"></div>
+                        <span class="material-symbols-outlined text-blue-600 text-lg absolute animate-pulse">edit</span>
+                      </div>
+                      <div class="flex flex-col items-center gap-0.5">
+                        <span class="text-xs font-bold text-slate-900 tracking-tight">Sketching Shot ${s.shotNumber}...</span>
+                        <span class="text-[10px] text-slate-500 font-medium">${s.shotSize || 'Wide'} · ${s.cameraAngle || 'Eye Level'}</span>
+                      </div>
+                      <div class="w-28 h-1 bg-slate-200 rounded-full overflow-hidden mt-0.5">
+                        <div class="h-full bg-blue-600 rounded-full animate-pulse w-3/4"></div>
+                      </div>
+                    </div>
+                  ` : (s.generationError ? `
+                    <div class="w-full h-full bg-slate-900 flex flex-col items-center justify-center gap-1.5 p-3 text-center">
+                      <span class="material-symbols-outlined text-xl text-rose-400">error_outline</span>
+                      <span class="text-[10px] font-medium text-rose-200 line-clamp-2 px-1">${s.generationError}</span>
+                      <button type="button" class="btn-card-retry-gen mt-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-xs" data-shot-id="${s.id}">
+                        <span class="material-symbols-outlined text-[13px]">refresh</span>
+                        <span>Retry Generation</span>
+                      </button>
+                    </div>
+                  ` : (s.imageUrl ? `
                     <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
+                    <!-- Badges overlay -->
+                    <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
+                      ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
+                    </div>
+                    <button class="absolute bottom-2 right-2 p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="View Full Size">
+                      <span class="material-symbols-outlined text-[14px]">fullscreen</span>
+                    </button>
                   ` : `
                     <div class="flex flex-col items-center justify-center text-slate-500 gap-1 p-4 text-center">
                       <span class="material-symbols-outlined text-2xl text-slate-600">art_track</span>
                       <span class="text-[10px] font-medium text-slate-400">Tap to inspect & generate frame</span>
                     </div>
-                  `}
-                  <!-- Badges overlay -->
-                  <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
-                    ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
-                  </div>
-                  <button class="absolute bottom-2 right-2 p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="View Full Size">
-                    <span class="material-symbols-outlined text-[14px]">fullscreen</span>
-                  </button>
+                  `))}
                 </div>
 
                 <!-- Title & Details -->
@@ -2812,12 +2976,18 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                   </div>
 
                   <!-- Thumbnail Preview -->
-                  <div class="w-16 h-12 sm:w-20 sm:h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center cursor-pointer btn-open-lightbox" data-shot-id="${s.id}">
-                    ${s.imageUrl ? `
+                  <div class="w-16 h-12 sm:w-20 sm:h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center ${s.isGenerating || s.generationError ? '' : 'cursor-pointer btn-open-lightbox'}" data-shot-id="${s.id}">
+                    ${s.isGenerating ? `
+                      <span class="material-symbols-outlined text-blue-500 text-base animate-spin">progress_activity</span>
+                    ` : (s.generationError ? `
+                      <button type="button" class="btn-card-retry-gen p-1 text-rose-400 hover:text-white" data-shot-id="${s.id}" title="Retry Generation">
+                        <span class="material-symbols-outlined text-base">refresh</span>
+                      </button>
+                    ` : (s.imageUrl ? `
                       <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
                     ` : `
                       <span class="material-symbols-outlined text-slate-600 text-base sm:text-lg">image</span>
-                    `}
+                    `))}
                   </div>
 
                   <!-- Shot Summary Info -->
@@ -2944,6 +3114,58 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
+  async function retryShotGeneration(shotId) {
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    if (!shot) return;
+    shot.isGenerating = true;
+    shot.generationError = null;
+    renderStoryboardView();
+
+    try {
+      const res = await api.generateStoryboardShot(scriptId, {
+        provider: shot.provider || 'scriptora-concept',
+        prompt: shot.prompt || shot.description || 'Cinematic composition',
+        shotSize: shot.shotSize,
+        cameraAngle: shot.cameraAngle,
+        cameraMovement: shot.cameraMovement,
+        focalLength: shot.focalLength,
+        lightingMood: shot.lightingMood,
+        aspectRatio: shot.aspectRatio,
+        visualStyle: shot.visualStyle || 'Storyboard Sketch',
+        sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+        shotNumber: shot.shotNumber,
+        description: shot.description,
+        cast: shot.characters,
+        characters: shot.characters,
+        quality: shot.quality || 'standard'
+      });
+
+      if (res?.imageUrl) {
+        shot.imageUrl = res.imageUrl;
+        shot.isGenerating = false;
+        shot.generationError = null;
+        if (!shot.history) shot.history = [];
+        shot.history.unshift({
+          imageUrl: res.imageUrl,
+          prompt: shot.prompt || shot.description,
+          visualStyle: shot.visualStyle,
+          provider: shot.provider,
+          createdAt: new Date().toISOString()
+        });
+        await api.saveStoryboard(scriptId, currentStoryboard);
+        renderStoryboardView();
+        showToast(`Frame ${shot.shotNumber} sketch generated!`);
+      } else {
+        throw new Error('No image returned');
+      }
+    } catch (err) {
+      shot.isGenerating = false;
+      shot.generationError = err.message || 'Generation failed';
+      renderStoryboardView();
+      showToast(`Retry failed for shot ${shot.shotNumber}`);
+    }
+  }
+
   function attachSharedCardEventListeners() {
     // Open Inspector (Edit Details)
     document.querySelectorAll('.btn-open-inspector').forEach(btn => {
@@ -3016,6 +3238,15 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         openShotHistoryModal(shotId);
+      };
+    });
+
+    // Retry Generation for an individual shot
+    document.querySelectorAll('.btn-card-retry-gen').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        retryShotGeneration(shotId);
       };
     });
   }

@@ -39,7 +39,7 @@ export function getStoryboardByScene(scriptId = 'chronicles-of-dust', sceneId = 
       sourceVersion: script?.draft || "Draft 4.2",
       isVersionStale: false,
       aspectRatio: "2.39:1",
-      visualStyle: "Cinematic Concept Art",
+      visualStyle: "Storyboard Sketch",
       shots: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -611,12 +611,17 @@ export async function generateShotImage(params = {}) {
     prompt,
     shotSize,
     cameraAngle,
+    cameraMovement: params.cameraMovement || "Static",
     focalLength,
     lightingMood,
     aspectRatio,
     visualStyle,
     sceneHeading,
-    shotNumber
+    shotNumber,
+    description: params.description || prompt,
+    cast: params.cast || params.characters,
+    characters: params.characters || params.cast,
+    screenDirection: params.screenDirection || "Left to Right"
   });
 
   return {
@@ -720,12 +725,16 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
         prompt: b.prompt,
         shotSize: b.shotSize,
         cameraAngle: b.cameraAngle,
+        cameraMovement: b.cameraMovement,
         focalLength: b.focalLength,
         lightingMood: b.lightingMood,
         aspectRatio: ratio,
         visualStyle: style,
         sceneHeading: scene.heading,
-        shotNumber: b.shotNumber
+        shotNumber: b.shotNumber,
+        description: b.description,
+        cast: scene.cast,
+        characters: scene.cast
       });
     }
 
@@ -775,193 +784,367 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
 }
 
 // Procedural SVG Canvas Generator for SCRIPTORA Concept Engine
-function generateProceduralConceptFrame(opts) {
+function generateProceduralConceptFrame(opts = {}) {
   const {
     shotSize = "Medium Shot",
     cameraAngle = "Eye Level",
+    cameraMovement = "Static",
     focalLength = "50mm Prime",
     lightingMood = "Daylight",
     aspectRatio = "2.39:1",
-    visualStyle = "Cinematic Concept Art",
+    visualStyle = "Storyboard Sketch",
     sceneHeading = "SCENE 1",
-    shotNumber = "1A"
+    shotNumber = "1A",
+    prompt = "",
+    description = "",
+    cast = ["KEVIN", "MEERA"],
+    characters = [],
+    screenDirection = "Left to Right"
   } = opts;
 
   let width = 1200;
-  let height = 502; // 2.39:1
+  let height = 502; // 2.39:1 default
   if (aspectRatio === "16:9") height = 675;
   if (aspectRatio === "4:3") height = 900;
   if (aspectRatio === "9:16") { width = 675; height = 1200; }
 
-  const isNight = sceneHeading.toUpperCase().includes('NIGHT') || lightingMood.toLowerCase().includes('night') || lightingMood.toLowerCase().includes('shadow') || lightingMood.toLowerCase().includes('strobe') || lightingMood.toLowerCase().includes('noir');
-  const vStyle = visualStyle.toLowerCase();
-  const isSketch = vStyle.includes('sketch') || vStyle.includes('ink') || vStyle.includes('pencil');
-  const isCinematic = vStyle.includes('cinematic') || vStyle.includes('film');
-  const isPhoto = vStyle.includes('photo');
-  const isConcept = vStyle.includes('concept') || (!isSketch && !isCinematic && !isPhoto);
-  const isAnime = vStyle.includes('anime') || vStyle.includes('illustration');
-  const is3D = vStyle.includes('3d');
+  const vStyle = (visualStyle || "").toLowerCase();
+  const isSketch = vStyle.includes("sketch") || vStyle.includes("ink") || vStyle.includes("pencil") || vStyle.includes("storyboard");
+  const isCinematic = vStyle.includes("cinematic") || vStyle.includes("realism");
+  const isPhoto = vStyle.includes("photo");
+  const isConcept = vStyle.includes("concept") || (!isSketch && !isCinematic && !isPhoto);
 
-  // Palette selection based on style and lighting
-  let bgGradStart = isNight ? "%23090d16" : "%23292524";
-  let bgGradEnd = isNight ? "%23020617" : "%231c1917";
-  let accentColor = isNight ? "%2338bdf8" : "%23f59e0b";
-  let rimColor = isNight ? "%2306b6d4" : "%23fbbf24";
-  let silColor = "%23020617";
-  let gridOpacity = "0.08";
-  let strokeColor = "%23ffffff";
+  const fullText = `${sceneHeading} ${prompt} ${description}`.toLowerCase();
+  const isNight = fullText.includes("night") || fullText.includes("dusk") || (lightingMood || "").toLowerCase().includes("night");
+  const isDutch = (cameraAngle || "").toLowerCase().includes("dutch");
+  const isLow = (cameraAngle || "").toLowerCase().includes("low");
+  const isHigh = (cameraAngle || "").toLowerCase().includes("high");
+  const isBird = (cameraAngle || "").toLowerCase().includes("bird");
 
-  if (isSketch) {
-    // Black & white hand-drawn storyboard illustration on clean paper
-    bgGradStart = "%23fafaf9";
-    bgGradEnd = "%23f5f5f4";
-    accentColor = "%23292524";
-    rimColor = "%2357534e";
-    silColor = "%231c1917";
-    gridOpacity = "0.18";
-    strokeColor = "%2344403c";
+  // Environmental context detection
+  const isOutpost = fullText.includes("outpost") || fullText.includes("gate") || fullText.includes("desert") || fullText.includes("mojave") || fullText.includes("checkpoint") || fullText.includes("road") || fullText.includes("ext");
+  const isInterior = fullText.includes("shed") || fullText.includes("customs") || fullText.includes("interior") || fullText.includes("int") || fullText.includes("room") || fullText.includes("office");
+  const isReactor = fullText.includes("reactor") || fullText.includes("nuclear") || fullText.includes("core") || fullText.includes("power") || fullText.includes("lab");
+
+  // Shot size detection
+  const sizeLower = (shotSize || "").toLowerCase();
+  const isExtremeClose = sizeLower.includes("extreme close") || sizeLower.includes("macro") || sizeLower.includes("insert");
+  const isClose = !isExtremeClose && (sizeLower.includes("close-up") || sizeLower.includes("close up"));
+  const isTwoShot = !isClose && !isExtremeClose && (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || ((cast && cast.length >= 2) || (characters && characters.length >= 2)));
+
+  // Palette configuration based on style
+  let paperBg = "#fafaf9"; // Off-white clean storyboard artist paper
+  let inkColor = "#18181b"; // Deep black ink
+  let inkMuted = "#52525b"; // Midtone graphite
+  let pencilHatch = "#a1a1aa"; // Soft pencil hatching
+  let accentColor = "#0284c7"; // SCRIPTORA blue for camera director markings
+  let panelBg = "#ffffff";
+
+  if (isConcept) {
+    paperBg = isNight ? "#0f172a" : "#451a03";
+    panelBg = isNight ? "#1e293b" : "#78350f";
+    inkColor = isNight ? "#f8fafc" : "#fef3c7";
+    inkMuted = isNight ? "#94a3b8" : "#fde68a";
+    pencilHatch = isNight ? "#38bdf8" : "#f59e0b";
+    accentColor = "#f59e0b";
   } else if (isCinematic) {
-    // 35mm anamorphic film look with deep blues and warm tungsten rim
-    bgGradStart = "%230a1128";
-    bgGradEnd = "%23000411";
-    accentColor = "%2338bdf8";
-    rimColor = "%23fb923c";
-    silColor = "%23020617";
-    gridOpacity = "0.06";
-    strokeColor = "%2338bdf8";
+    paperBg = "#0a1128";
+    panelBg = "#020617";
+    inkColor = "#f1f5f9";
+    inkMuted = "#64748b";
+    pencilHatch = "#38bdf8";
+    accentColor = "#00d2ff";
   } else if (isPhoto) {
-    // Crisp DSLR daylight documentary grading
-    bgGradStart = isNight ? "%230f172a" : "%23334155";
-    bgGradEnd = isNight ? "%23020617" : "%230f172a";
-    accentColor = "%2338bdf8";
-    rimColor = "%23f8fafc";
-    silColor = "%23020617";
-    gridOpacity = "0.07";
-    strokeColor = "%23ffffff";
-  } else if (isConcept) {
-    // Rich painterly concept art palette
-    bgGradStart = isNight ? "%231e1b4b" : "%23451a03";
-    bgGradEnd = isNight ? "%230f172a" : "%231c1917";
-    accentColor = "%23f59e0b";
-    rimColor = "%23fbbf24";
-    silColor = "%23020617";
-    gridOpacity = "0.08";
-    strokeColor = "%23fbbf24";
-  } else if (isAnime) {
-    bgGradStart = isNight ? "%231e1035" : "%231e293b";
-    bgGradEnd = isNight ? "%230f0728" : "%23090d16";
-    accentColor = "%23ec4899";
-    rimColor = "%2338bdf8";
-  } else if (is3D) {
-    bgGradStart = "%231e1b4b";
-    bgGradEnd = "%230f172a";
-    accentColor = "%23818cf8";
-    rimColor = "%23a5b4fc";
+    paperBg = isNight ? "#090d16" : "#334155";
+    panelBg = isNight ? "#020617" : "#1e293b";
+    inkColor = "#ffffff";
+    inkMuted = "#94a3b8";
+    pencilHatch = "#cbd5e1";
+    accentColor = "#38bdf8";
   }
 
-  // Silhouette scale & positioning based on shot size
-  let silH = 260;
-  let silY = height - 280;
-  let silX = width / 2;
-  const isTwoShot = shotSize.toLowerCase().includes('two-shot');
-  const isOverShoulder = shotSize.toLowerCase().includes('shoulder');
-  const isPOV = shotSize.toLowerCase().includes('pov') || shotSize.toLowerCase().includes('point of view');
-  const isDutch = cameraAngle.toLowerCase().includes('dutch');
+  // Horizon line calculation based on camera angle
+  let horizonY = Math.round(height * 0.55);
+  if (isLow) horizonY = Math.round(height * 0.74);
+  if (isHigh) horizonY = Math.round(height * 0.30);
+  if (isBird) horizonY = Math.round(height * 0.16);
 
-  if (shotSize.includes("Wide")) {
-    silH = 110;
-    silY = height - 150;
-  } else if (shotSize.includes("Close") && !shotSize.includes("Extreme")) {
-    silH = 430;
-    silY = height - 450;
-  } else if (shotSize.includes("Extreme Close")) {
-    silH = 560;
-    silY = height - 570;
+  const dutchTransform = isDutch ? `transform='rotate(4 ${width / 2} ${height / 2})'` : "";
+
+  // Cast characters
+  const allCast = (cast && cast.length) ? cast : ((characters && characters.length) ? characters : ["KEVIN", "MEERA"]);
+  const char1 = allCast[0] || "PROTAGONIST";
+  const char2 = allCast[1] || "SUPPORT";
+
+  // Sub-renderer for Environment
+  function renderEnvironment() {
+    if (isOutpost) {
+      return `
+        <!-- ENVIRONMENT: Desert Outpost & Security Checkpoint -->
+        <!-- Distant Mesas & Mountain Ridge -->
+        <path d='M 16 ${horizonY} Q 140 ${horizonY - 45} 280 ${horizonY - 20} T 600 ${horizonY - 55} T 950 ${horizonY - 30} T ${width - 16} ${horizonY}' fill='none' stroke='${inkColor}' stroke-width='1.5'/>
+        <path d='M 300 ${horizonY} L 360 ${horizonY - 60} L 480 ${horizonY - 60} L 540 ${horizonY}' fill='none' stroke='${inkColor}' stroke-width='1.8'/>
+        <polygon points='360,${horizonY - 60} 480,${horizonY - 60} 540,${horizonY} 300,${horizonY}' fill='url(#pShade)' opacity='0.25'/>
+
+        <!-- Desert Road Leading to Checkpoint -->
+        <polygon points='${Math.round(width * 0.46)},${horizonY} ${Math.round(width * 0.54)},${horizonY} ${Math.round(width * 0.7)},${height - 56} ${Math.round(width * 0.3)},${height - 56}' fill='url(#pDots)' opacity='0.35'/>
+        <line x1='${Math.round(width * 0.3)}' y1='${height - 56}' x2='${Math.round(width * 0.46)}' y2='${horizonY}' stroke='${inkColor}' stroke-width='2'/>
+        <line x1='${Math.round(width * 0.7)}' y1='${height - 56}' x2='${Math.round(width * 0.54)}' y2='${horizonY}' stroke='${inkColor}' stroke-width='2'/>
+        <line x1='${Math.round(width * 0.5)}' y1='${height - 56}' x2='${Math.round(width * 0.5)}' y2='${horizonY}' stroke='${inkColor}' stroke-width='1.5' stroke-dasharray='14,10'/>
+
+        <!-- Guard Tower on Left -->
+        <g stroke='${inkColor}' stroke-width='2' fill='none'>
+          <line x1='${Math.round(width * 0.12)}' y1='${height - 56}' x2='${Math.round(width * 0.16)}' y2='${horizonY - 90}'/>
+          <line x1='${Math.round(width * 0.22)}' y1='${height - 56}' x2='${Math.round(width * 0.19)}' y2='${horizonY - 90}'/>
+          <line x1='${Math.round(width * 0.13)}' y1='${Math.round(height * 0.65)}' x2='${Math.round(width * 0.21)}' y2='${Math.round(height * 0.65)}'/>
+          <line x1='${Math.round(width * 0.14)}' y1='${Math.round(height * 0.5)}' x2='${Math.round(width * 0.2)}' y2='${Math.round(height * 0.5)}'/>
+          <line x1='${Math.round(width * 0.12)}' y1='${height - 56}' x2='${Math.round(width * 0.2)}' y2='${Math.round(height * 0.5)}' stroke-width='1.2' stroke-dasharray='3,3'/>
+          <line x1='${Math.round(width * 0.22)}' y1='${height - 56}' x2='${Math.round(width * 0.14)}' y2='${Math.round(height * 0.5)}' stroke-width='1.2' stroke-dasharray='3,3'/>
+
+          <!-- Observation Cabin & Floodlights -->
+          <rect x='${Math.round(width * 0.15)}' y='${horizonY - 130}' width='${Math.round(width * 0.06)}' height='40' fill='${panelBg}' stroke='${inkColor}' stroke-width='2'/>
+          <polygon points='${Math.round(width * 0.145)},${horizonY - 130} ${Math.round(width * 0.215)},${horizonY - 130} ${Math.round(width * 0.18)},${horizonY - 145}' fill='url(#pShade)'/>
+          <circle cx='${Math.round(width * 0.18)}' cy='${horizonY - 135}' r='4' fill='${inkColor}'/>
+          <line x1='${Math.round(width * 0.18)}' y1='${horizonY - 135}' x2='${Math.round(width * 0.42)}' y2='${height - 120}' stroke='${pencilHatch}' stroke-width='1' stroke-dasharray='5,5'/>
+          <line x1='${Math.round(width * 0.18)}' y1='${horizonY - 135}' x2='${Math.round(width * 0.56)}' y2='${height - 80}' stroke='${pencilHatch}' stroke-width='1' stroke-dasharray='5,5'/>
+        </g>
+
+        <!-- Checkpoint Booth & Boom Arm on Right -->
+        <g stroke='${inkColor}' stroke-width='2'>
+          <rect x='${Math.round(width * 0.65)}' y='${horizonY - 30}' width='${Math.round(width * 0.12)}' height='${height - 56 - (horizonY - 30)}' fill='${panelBg}'/>
+          <polygon points='${Math.round(width * 0.65)},${horizonY - 30} ${Math.round(width * 0.77)},${horizonY - 30} ${Math.round(width * 0.79)},${horizonY - 45} ${Math.round(width * 0.63)},${horizonY - 45}' fill='url(#pShade)'/>
+          <rect x='${Math.round(width * 0.67)}' y='${horizonY + 10}' width='${Math.round(width * 0.08)}' height='${Math.round(height * 0.14)}' fill='none' stroke='${inkColor}' stroke-width='1.5'/>
+          <line x1='${Math.round(width * 0.71)}' y1='${horizonY + 10}' x2='${Math.round(width * 0.71)}' y2='${horizonY + 10 + Math.round(height * 0.14)}' stroke-width='1.2'/>
+
+          <!-- Barrier Post & Boom Arm with stripes -->
+          <rect x='${Math.round(width * 0.62)}' y='${horizonY + 40}' width='14' height='60' fill='${inkColor}'/>
+          <line x1='${Math.round(width * 0.62)}' y1='${horizonY + 50}' x2='${Math.round(width * 0.32)}' y2='${horizonY + 54}' stroke='${inkColor}' stroke-width='5'/>
+          <line x1='${Math.round(width * 0.62)}' y1='${horizonY + 50}' x2='${Math.round(width * 0.32)}' y2='${horizonY + 54}' stroke='${panelBg}' stroke-width='3' stroke-dasharray='16,12'/>
+        </g>
+      `;
+    }
+
+    if (isInterior) {
+      return `
+        <!-- ENVIRONMENT: Interior Customs Shed / Tactical Room -->
+        <!-- Ceiling Truss Rafters & Suspended Tubes -->
+        <line x1='16' y1='36' x2='${width - 16}' y2='36' stroke='${inkColor}' stroke-width='2.5'/>
+        <line x1='${Math.round(width * 0.25)}' y1='36' x2='${Math.round(width * 0.25)}' y2='70' stroke='${inkColor}' stroke-width='1.5'/>
+        <rect x='${Math.round(width * 0.2)}' y='70' width='${Math.round(width * 0.1)}' height='10' fill='${panelBg}' stroke='${inkColor}' stroke-width='1.5'/>
+        <line x1='${Math.round(width * 0.75)}' y1='36' x2='${Math.round(width * 0.75)}' y2='70' stroke='${inkColor}' stroke-width='1.5'/>
+        <rect x='${Math.round(width * 0.7)}' y='70' width='${Math.round(width * 0.1)}' height='10' fill='${panelBg}' stroke='${inkColor}' stroke-width='1.5'/>
+
+        <!-- Doorway Frame in Rear Bulkhead -->
+        <rect x='${Math.round(width * 0.44)}' y='${horizonY - 70}' width='${Math.round(width * 0.12)}' height='${height - 56 - (horizonY - 70)}' fill='none' stroke='${inkColor}' stroke-width='2'/>
+
+        <!-- Holographic Workstation / Tactical Table -->
+        <polygon points='${Math.round(width * 0.35)},${height - 110} ${Math.round(width * 0.65)},${height - 110} ${Math.round(width * 0.7)},${height - 56} ${Math.round(width * 0.3)},${height - 56}' fill='${panelBg}' stroke='${inkColor}' stroke-width='2'/>
+        <ellipse cx='${Math.round(width * 0.5)}' cy='${height - 100}' rx='48' ry='11' fill='none' stroke='${accentColor}' stroke-width='1.8' stroke-dasharray='6,3'/>
+        <ellipse cx='${Math.round(width * 0.5)}' cy='${height - 100}' rx='24' ry='5' fill='none' stroke='${accentColor}' stroke-width='1.2'/>
+        <!-- Hologram Projection Wireframe -->
+        <line x1='${Math.round(width * 0.5)}' y1='${height - 100}' x2='${Math.round(width * 0.42)}' y2='${height - 170}' stroke='${accentColor}' stroke-width='1' stroke-dasharray='4,4'/>
+        <line x1='${Math.round(width * 0.5)}' y1='${height - 100}' x2='${Math.round(width * 0.58)}' y2='${height - 170}' stroke='${accentColor}' stroke-width='1' stroke-dasharray='4,4'/>
+        <rect x='${Math.round(width * 0.42)}' y='${height - 200}' width='${Math.round(width * 0.16)}' height='28' fill='none' stroke='${accentColor}' stroke-width='1.4' stroke-dasharray='5,3'/>
+        <text x='${Math.round(width * 0.5)}' y='${height - 182}' text-anchor='middle' fill='${accentColor}' font-family='monospace' font-size='10' font-weight='bold'>AQUEDUCT SCHEMATIC</text>
+      `;
+    }
+
+    if (isReactor) {
+      return `
+        <!-- ENVIRONMENT: Industrial Reactor Core / Underground Plant -->
+        <rect x='${Math.round(width * 0.38)}' y='${horizonY - 140}' width='${Math.round(width * 0.24)}' height='${height - 56 - (horizonY - 140)}' fill='none' stroke='${inkColor}' stroke-width='2.5'/>
+        <ellipse cx='${Math.round(width * 0.5)}' cy='${horizonY - 140}' rx='${Math.round(width * 0.12)}' ry='20' fill='${panelBg}' stroke='${inkColor}' stroke-width='2'/>
+        <!-- Heavy Coolant Conduits -->
+        <path d='M 16 ${horizonY - 60} Q ${Math.round(width * 0.2)} ${horizonY - 60} ${Math.round(width * 0.38)} ${horizonY - 30}' fill='none' stroke='${inkColor}' stroke-width='6'/>
+        <path d='M ${width - 16} ${horizonY - 60} Q ${Math.round(width * 0.8)} ${horizonY - 60} ${Math.round(width * 0.62)} ${horizonY - 30}' fill='none' stroke='${inkColor}' stroke-width='6'/>
+        <circle cx='${Math.round(width * 0.5)}' cy='${horizonY - 40}' r='30' fill='none' stroke='${accentColor}' stroke-width='2' stroke-dasharray='8,4'/>
+      `;
+    }
+
+    // Default Cinematic Set
+    return `
+      <!-- ENVIRONMENT: General Architectural Set -->
+      <rect x='${Math.round(width * 0.18)}' y='${horizonY - 110}' width='${Math.round(width * 0.25)}' height='${height - 56 - (horizonY - 110)}' fill='${panelBg}' stroke='${inkColor}' stroke-width='2'/>
+      <line x1='${Math.round(width * 0.18)}' y1='${horizonY - 35}' x2='${Math.round(width * 0.43)}' y2='${horizonY - 35}' stroke='${inkColor}' stroke-width='1.5'/>
+      <rect x='${Math.round(width * 0.22)}' y='${horizonY - 90}' width='${Math.round(width * 0.08)}' height='35' fill='none' stroke='${inkColor}' stroke-width='1.5'/>
+    `;
   }
 
-  // Generate SVG with composition layers
+  // Sub-renderer for Character Blocking
+  function renderBlocking() {
+    if (isExtremeClose) {
+      return `
+        <!-- EXTREME CLOSE-UP (Macro / Action Insert / Control Dial) -->
+        <g stroke='${inkColor}' stroke-width='2.4' fill='none'>
+          <circle cx='${Math.round(width * 0.5)}' cy='${Math.round(height * 0.45)}' r='110' stroke='${inkColor}' stroke-width='3' fill='url(#pShade)' opacity='0.25'/>
+          <circle cx='${Math.round(width * 0.5)}' cy='${Math.round(height * 0.45)}' r='70' stroke='${accentColor}' stroke-width='2' stroke-dasharray='10,5'/>
+          <circle cx='${Math.round(width * 0.5)}' cy='${Math.round(height * 0.45)}' r='30' fill='${panelBg}' stroke='${inkColor}' stroke-width='2'/>
+          <!-- Hand Sketch Reaching In -->
+          <path d='M ${Math.round(width * 0.25)} ${height - 56} Q ${Math.round(width * 0.38)} ${Math.round(height * 0.55)} ${Math.round(width * 0.46)} ${Math.round(height * 0.46)}' stroke-width='5' stroke='${inkColor}'/>
+          <path d='M ${Math.round(width * 0.46)} ${Math.round(height * 0.46)} L ${Math.round(width * 0.5)} ${Math.round(height * 0.44)}' stroke-width='3' stroke='${inkColor}'/>
+          <!-- Lens Reticle Crosshairs -->
+          <line x1='${Math.round(width * 0.5) - 130}' y1='${Math.round(height * 0.45)}' x2='${Math.round(width * 0.5) + 130}' y2='${Math.round(height * 0.45)}' stroke='${accentColor}' stroke-width='1' stroke-dasharray='4,4'/>
+          <line x1='${Math.round(width * 0.5)}' y1='${Math.round(height * 0.45) - 130}' x2='${Math.round(width * 0.5)}' y2='${Math.round(height * 0.45) + 130}' stroke='${accentColor}' stroke-width='1' stroke-dasharray='4,4'/>
+          <text x='${Math.round(width * 0.5)}' y='${Math.round(height * 0.45) + 95}' text-anchor='middle' fill='${inkColor}' font-family='sans-serif' font-size='12' font-weight='bold'>[ TIGHT MACRO INSERT ]</text>
+        </g>
+      `;
+    }
+
+    if (isClose) {
+      return `
+        <!-- CLOSE-UP (Dramatic Reaction / Portrait) -->
+        <g stroke='${inkColor}' stroke-width='2.2' fill='none'>
+          <!-- Head Silhouette & Features -->
+          <ellipse cx='${Math.round(width * 0.52)}' cy='${Math.round(height * 0.38)}' rx='75' ry='95' fill='${panelBg}' stroke='${inkColor}' stroke-width='2.5'/>
+          <path d='M ${Math.round(width * 0.45)} ${Math.round(height * 0.26)} Q ${Math.round(width * 0.52)} ${Math.round(height * 0.2)} ${Math.round(width * 0.59)} ${Math.round(height * 0.26)} L ${Math.round(width * 0.6)} ${Math.round(height * 0.34)}' stroke-width='3'/>
+          <polygon points='${Math.round(width * 0.52)},${Math.round(height * 0.24)} ${Math.round(width * 0.58)},${Math.round(height * 0.28)} ${Math.round(width * 0.58)},${Math.round(height * 0.46)} ${Math.round(width * 0.52)},${Math.round(height * 0.46)}' fill='url(#pCrossHatch)' opacity='0.4'/>
+
+          <!-- Facial Construction Cross Guidelines -->
+          <line x1='${Math.round(width * 0.47)}' y1='${Math.round(height * 0.37)}' x2='${Math.round(width * 0.57)}' y2='${Math.round(height * 0.37)}' stroke='${pencilHatch}' stroke-width='1' stroke-dasharray='3,3'/>
+          <line x1='${Math.round(width * 0.52)}' y1='${Math.round(height * 0.3)}' x2='${Math.round(width * 0.52)}' y2='${Math.round(height * 0.48)}' stroke='${pencilHatch}' stroke-width='1' stroke-dasharray='3,3'/>
+
+          <!-- Eyes, Nose, Mouth -->
+          <line x1='${Math.round(width * 0.48)}' y1='${Math.round(height * 0.36)}' x2='${Math.round(width * 0.50)}' y2='${Math.round(height * 0.36)}' stroke-width='2.5'/>
+          <circle cx='${Math.round(width * 0.49)}' cy='${Math.round(height * 0.36)}' r='2.5' fill='${inkColor}'/>
+          <line x1='${Math.round(width * 0.54)}' y1='${Math.round(height * 0.36)}' x2='${Math.round(width * 0.56)}' y2='${Math.round(height * 0.36)}' stroke-width='2.5'/>
+          <circle cx='${Math.round(width * 0.55)}' cy='${Math.round(height * 0.36)}' r='2.5' fill='${inkColor}'/>
+          <path d='M ${Math.round(width * 0.52)} ${Math.round(height * 0.37)} L ${Math.round(width * 0.525)} ${Math.round(height * 0.42)} L ${Math.round(width * 0.515)} ${Math.round(height * 0.42)}' stroke-width='1.8'/>
+          <line x1='${Math.round(width * 0.5)}' y1='${Math.round(height * 0.45)}' x2='${Math.round(width * 0.54)}' y2='${Math.round(height * 0.45)}' stroke-width='2.2'/>
+
+          <!-- Neck & Shoulders -->
+          <path d='M ${Math.round(width * 0.48)} ${Math.round(height * 0.48)} L ${Math.round(width * 0.46)} ${Math.round(height * 0.56)} L ${Math.round(width * 0.32)} ${height - 56}' stroke-width='2.5'/>
+          <path d='M ${Math.round(width * 0.56)} ${Math.round(height * 0.48)} L ${Math.round(width * 0.58)} ${Math.round(height * 0.56)} L ${Math.round(width * 0.72)} ${height - 56}' stroke-width='2.5'/>
+
+          <!-- Character Badge -->
+          <rect x='${Math.round(width * 0.46)}' y='${height - 84}' width='${Math.round(width * 0.12)}' height='20' rx='4' fill='${panelBg}' stroke='${accentColor}' stroke-width='1.2'/>
+          <text x='${Math.round(width * 0.52)}' y='${height - 70}' text-anchor='middle' fill='${accentColor}' font-family='sans-serif' font-size='10' font-weight='bold'>[ ${char1} ]</text>
+        </g>
+      `;
+    }
+
+    if (isTwoShot) {
+      return `
+        <!-- MEDIUM TWO-SHOT (Characters Interacting / Dialogue / Blocking) -->
+        <!-- Character 1 (Left) -->
+        <g stroke='${inkColor}' stroke-width='2' fill='none'>
+          <ellipse cx='${Math.round(width * 0.36)}' cy='${Math.round(height * 0.38)}' rx='36' ry='46' fill='${panelBg}' stroke='${inkColor}' stroke-width='2.2'/>
+          <circle cx='${Math.round(width * 0.38)}' cy='${Math.round(height * 0.37)}' r='2.5' fill='${inkColor}'/>
+          <path d='M ${Math.round(width * 0.34)} ${Math.round(height * 0.43)} L ${Math.round(width * 0.28)} ${Math.round(height * 0.55)} L ${Math.round(width * 0.26)} ${height - 56}' stroke-width='2.2'/>
+          <path d='M ${Math.round(width * 0.38)} ${Math.round(height * 0.43)} L ${Math.round(width * 0.43)} ${Math.round(height * 0.55)} L ${Math.round(width * 0.44)} ${height - 56}' stroke-width='2.2'/>
+          <path d='M ${Math.round(width * 0.4)} ${Math.round(height * 0.52)} Q ${Math.round(width * 0.45)} ${Math.round(height * 0.52)} ${Math.round(width * 0.48)} ${Math.round(height * 0.48)}' stroke-width='2.4'/>
+          <polygon points='${Math.round(width * 0.28)},${Math.round(height * 0.55)} ${Math.round(width * 0.42)},${Math.round(height * 0.55)} ${Math.round(width * 0.43)},${height - 56} ${Math.round(width * 0.27)},${height - 56}' fill='url(#pShade)' opacity='0.25'/>
+          <text x='${Math.round(width * 0.36)}' y='${Math.round(height * 0.3)}' text-anchor='middle' fill='${accentColor}' font-family='sans-serif' font-size='10' font-weight='bold'>${char1}</text>
+        </g>
+
+        <!-- Eyeline Indicator Vector Between Characters -->
+        <line x1='${Math.round(width * 0.39)}' y1='${Math.round(height * 0.37)}' x2='${Math.round(width * 0.59)}' y2='${Math.round(height * 0.37)}' stroke='${accentColor}' stroke-width='1.2' stroke-dasharray='4,4'/>
+        <polygon points='${Math.round(width * 0.59)},${Math.round(height * 0.37)} ${Math.round(width * 0.56)},${Math.round(height * 0.35)} ${Math.round(width * 0.56)},${Math.round(height * 0.39)}' fill='${accentColor}'/>
+
+        <!-- Character 2 (Right) -->
+        <g stroke='${inkColor}' stroke-width='2' fill='none'>
+          <ellipse cx='${Math.round(width * 0.63)}' cy='${Math.round(height * 0.38)}' rx='36' ry='46' fill='${panelBg}' stroke='${inkColor}' stroke-width='2.2'/>
+          <circle cx='${Math.round(width * 0.61)}' cy='${Math.round(height * 0.37)}' r='2.5' fill='${inkColor}'/>
+          <path d='M ${Math.round(width * 0.61)} ${Math.round(height * 0.43)} L ${Math.round(width * 0.56)} ${Math.round(height * 0.55)} L ${Math.round(width * 0.55)} ${height - 56}' stroke-width='2.2'/>
+          <path d='M ${Math.round(width * 0.65)} ${Math.round(height * 0.43)} L ${Math.round(width * 0.71)} ${Math.round(height * 0.55)} L ${Math.round(width * 0.72)} ${height - 56}' stroke-width='2.2'/>
+          <polygon points='${Math.round(width * 0.56)},${Math.round(height * 0.55)} ${Math.round(width * 0.71)},${Math.round(height * 0.55)} ${Math.round(width * 0.72)},${height - 56} ${Math.round(width * 0.55)},${height - 56}' fill='url(#pCrossHatch)' opacity='0.3'/>
+          <text x='${Math.round(width * 0.63)}' y='${Math.round(height * 0.3)}' text-anchor='middle' fill='${accentColor}' font-family='sans-serif' font-size='10' font-weight='bold'>${char2}</text>
+        </g>
+      `;
+    }
+
+    // Default: Wide establishing / full figure blocking
+    return `
+      <!-- WIDE ESTABLISHING FIGURE BLOCKING -->
+      <g stroke='${inkColor}' stroke-width='1.8' fill='${inkColor}'>
+        <circle cx='${Math.round(width * 0.48)}' cy='${horizonY + 20}' r='9'/>
+        <line x1='${Math.round(width * 0.48)}' y1='${horizonY + 29}' x2='${Math.round(width * 0.48)}' y2='${horizonY + 68}' stroke-width='3.5'/>
+        <line x1='${Math.round(width * 0.48)}' y1='${horizonY + 68}' x2='${Math.round(width * 0.46)}' y2='${horizonY + 110}' stroke-width='2.8'/>
+        <line x1='${Math.round(width * 0.48)}' y1='${horizonY + 68}' x2='${Math.round(width * 0.50)}' y2='${horizonY + 110}' stroke-width='2.8'/>
+        <text x='${Math.round(width * 0.48)}' y='${horizonY + 6}' text-anchor='middle' fill='${inkColor}' font-family='sans-serif' font-size='9' font-weight='bold'>${char1}</text>
+      </g>
+
+      <!-- Movement Vector Arrow -->
+      <g stroke='${accentColor}' stroke-width='2' fill='${accentColor}'>
+        <line x1='${Math.round(width * 0.44)}' y1='${horizonY + 120}' x2='${Math.round(width * 0.56)}' y2='${horizonY + 120}' stroke-dasharray='5,3'/>
+        <polygon points='${Math.round(width * 0.56)},${horizonY + 120} ${Math.round(width * 0.53)},${horizonY + 116} ${Math.round(width * 0.53)},${horizonY + 124}'/>
+        <text x='${Math.round(width * 0.5)}' y='${horizonY + 135}' text-anchor='middle' fill='${accentColor}' font-family='sans-serif' font-size='9' font-weight='bold'>WALK VECTOR (${screenDirection})</text>
+      </g>
+    `;
+  }
+
+  // Assemble Master SVG
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'>
     <defs>
-      <linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'>
-        <stop offset='0%' stop-color='${bgGradStart}'/>
-        <stop offset='100%' stop-color='${bgGradEnd}'/>
-      </linearGradient>
-      <radialGradient id='rimLight' cx='70%' cy='30%' r='65%'>
-        <stop offset='0%' stop-color='${rimColor}' stop-opacity='0.45'/>
-        <stop offset='100%' stop-color='${bgGradEnd}' stop-opacity='0'/>
-      </radialGradient>
-      <pattern id='grid' width='40' height='40' patternUnits='userSpaceOnUse'>
-        <path d='M 40 0 L 0 0 0 40' fill='none' stroke='${strokeColor}' stroke-width='0.5' opacity='${gridOpacity}'/>
+      <!-- Pencil cross-hatch pattern -->
+      <pattern id='pCrossHatch' width='10' height='10' patternUnits='userSpaceOnUse'>
+        <line x1='0' y1='0' x2='10' y2='10' stroke='${pencilHatch}' stroke-width='0.7' opacity='0.4'/>
+        <line x1='10' y1='0' x2='0' y2='10' stroke='${pencilHatch}' stroke-width='0.7' opacity='0.4'/>
+      </pattern>
+      <!-- Diagonal shade pattern -->
+      <pattern id='pShade' width='6' height='6' patternUnits='userSpaceOnUse'>
+        <line x1='0' y1='6' x2='6' y2='0' stroke='${inkMuted}' stroke-width='0.8' opacity='0.35'/>
+      </pattern>
+      <!-- Halftone sketch dots -->
+      <pattern id='pDots' width='12' height='12' patternUnits='userSpaceOnUse'>
+        <circle cx='6' cy='6' r='1.2' fill='${pencilHatch}' opacity='0.35'/>
       </pattern>
     </defs>
-    <rect width='${width}' height='${height}' fill='url(%23bg)'/>
-    <rect width='${width}' height='${height}' fill='url(%23rimLight)'/>
-    <rect width='${width}' height='${height}' fill='url(%23grid)'/>
 
-    <!-- Horizon Line & Depth Planes ${isDutch ? "transform='rotate(4 " + width/2 + " " + height/2 + ")'" : ""} -->
-    <g ${isDutch ? "transform='rotate(4 " + (width/2) + " " + (height/2) + ")'" : ""}>
-      <line x1='0' y1='${Math.round(height * 0.62)}' x2='${width}' y2='${Math.round(height * 0.62)}' stroke='${accentColor}' stroke-width='1.2' opacity='0.35' stroke-dasharray='5,5'/>
-      <line x1='0' y1='${Math.round(height * 0.65)}' x2='${width}' y2='${Math.round(height * 0.65)}' stroke='${rimColor}' stroke-width='0.7' opacity='0.2'/>
+    <!-- Canvas Paper Background -->
+    <rect width='${width}' height='${height}' fill='${paperBg}'/>
+
+    <!-- Inner Storyboard Panel Frame -->
+    <rect x='14' y='14' width='${width - 28}' height='${height - 28}' fill='${panelBg}' stroke='${inkColor}' stroke-width='2.2' rx='4'/>
+
+    <!-- Storyboard Registration Crosshairs -->
+    <g stroke='${inkColor}' stroke-width='1.5' opacity='0.6'>
+      <line x1='18' y1='28' x2='38' y2='28'/><line x1='28' y1='18' x2='28' y2='38'/>
+      <line x1='${width - 38}' y1='28' x2='${width - 18}' y2='28'/><line x1='${width - 28}' y1='18' x2='${width - 28}' y2='38'/>
+      <line x1='18' y1='${height - 68}' x2='38' y2='${height - 68}'/><line x1='28' y1='${height - 78}' x2='28' y2='${height - 58}'/>
+      <line x1='${width - 38}' y1='${height - 68}' x2='${width - 18}' y2='${height - 68}'/><line x1='${width - 28}' y1='${height - 78}' x2='${width - 28}' y2='${height - 58}'/>
     </g>
 
-    <!-- Composition Silhouettes -->
-    ${isTwoShot ? `
-      <!-- Two-Shot Character Blocking -->
-      <g transform='translate(${Math.round(width * 0.35)}, ${Math.round(silY)})'>
-        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.11)}' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
-        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${silColor}' stroke='${accentColor}' stroke-width='1.2'/>
-      </g>
-      <g transform='translate(${Math.round(width * 0.65)}, ${Math.round(silY)})'>
-        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.11)}' fill='%230f172a' stroke='${accentColor}' stroke-width='1.5'/>
-        <path d='M ${Math.round(-silH * 0.2)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.26)} ${Math.round(silH * 0.2)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.25)} ${silH} L ${Math.round(-silH * 0.25)} ${silH} Z' fill='${silColor}' stroke='${rimColor}' stroke-width='1.2'/>
-      </g>
-    ` : (isOverShoulder ? `
-      <!-- Over-the-Shoulder Foreground & Background -->
-      <g transform='translate(${Math.round(width * 0.22)}, ${Math.round(height - 180)})'>
-        <circle cx='0' cy='-120' r='60' fill='%23020617' stroke='${accentColor}' stroke-width='1.5'/>
-        <path d='M -80 -60 Q 0 -80 80 -60 L 140 260 L -100 260 Z' fill='%23020617' opacity='0.9'/>
-      </g>
-      <g transform='translate(${Math.round(width * 0.65)}, ${Math.round(height * 0.45)})'>
-        <circle cx='0' cy='-60' r='28' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
-        <path d='M -40 -30 Q 0 -40 40 -30 L 50 180 L -50 180 Z' fill='${silColor}' stroke='${rimColor}' stroke-width='1'/>
-      </g>
-    ` : (isPOV ? `
-      <!-- POV Focus Reticle & Sightlines -->
-      <g transform='translate(${Math.round(width / 2)}, ${Math.round(height / 2)})'>
-        <circle cx='0' cy='0' r='80' fill='none' stroke='${accentColor}' stroke-width='1.5' stroke-dasharray='12,6'/>
-        <circle cx='0' cy='0' r='8' fill='${accentColor}' opacity='0.8'/>
-        <line x1='-120' y1='0' x2='-90' y2='0' stroke='${rimColor}' stroke-width='1.5'/>
-        <line x1='90' y1='0' x2='120' y2='0' stroke='${rimColor}' stroke-width='1.5'/>
-        <line x1='0' y1='-120' x2='0' y2='-90' stroke='${rimColor}' stroke-width='1.5'/>
-        <line x1='0' y1='90' x2='0' y2='120' stroke='${rimColor}' stroke-width='1.5'/>
-      </g>
-    ` : `
-      <!-- Primary Silhouette -->
-      <g transform='translate(${Math.round(silX)}, ${Math.round(silY)})'>
-        <circle cx='0' cy='${Math.round(-silH * 0.35)}' r='${Math.round(silH * 0.12)}' fill='%230f172a' stroke='${rimColor}' stroke-width='1.5'/>
-        <path d='M ${Math.round(-silH * 0.22)} ${Math.round(-silH * 0.2)} Q 0 ${Math.round(-silH * 0.28)} ${Math.round(silH * 0.22)} ${Math.round(-silH * 0.2)} L ${Math.round(silH * 0.28)} ${silH} L ${Math.round(-silH * 0.28)} ${silH} Z' fill='${silColor}' stroke='${accentColor}' stroke-width='1.2'/>
-      </g>
-    `))}
+    <!-- Rule of Thirds Guides -->
+    <g stroke='${pencilHatch}' stroke-width='0.75' stroke-dasharray='4,4' opacity='0.3'>
+      <line x1='${Math.round(width * 0.33)}' y1='16' x2='${Math.round(width * 0.33)}' y2='${height - 56}'/>
+      <line x1='${Math.round(width * 0.66)}' y1='16' x2='${Math.round(width * 0.66)}' y2='${height - 56}'/>
+      <line x1='16' y1='${Math.round(height * 0.33)}' x2='${width - 16}' y2='${Math.round(height * 0.33)}'/>
+      <line x1='16' y1='${Math.round(height * 0.66)}' x2='${width - 16}' y2='${Math.round(height * 0.66)}'/>
+    </g>
 
-    <!-- Rule-of-Thirds Markings -->
-    <line x1='${Math.round(width * 0.33)}' y1='15' x2='${Math.round(width * 0.33)}' y2='${height - 15}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
-    <line x1='${Math.round(width * 0.66)}' y1='15' x2='${Math.round(width * 0.66)}' y2='${height - 15}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
-    <line x1='15' y1='${Math.round(height * 0.33)}' x2='${width - 15}' y2='${Math.round(height * 0.33)}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
-    <line x1='15' y1='${Math.round(height * 0.66)}' x2='${width - 15}' y2='${Math.round(height * 0.66)}' stroke='${strokeColor}' stroke-width='0.5' opacity='0.15'/>
+    <!-- Main Sketch Scene (with perspective & camera angle transform) -->
+    <g ${dutchTransform}>
+      <!-- Perspective Grid Lines converging to horizon -->
+      <g stroke='${pencilHatch}' stroke-width='0.8' opacity='0.35'>
+        <line x1='${Math.round(width * 0.5)}' y1='${horizonY}' x2='0' y2='${height - 56}'/>
+        <line x1='${Math.round(width * 0.5)}' y1='${horizonY}' x2='${Math.round(width * 0.25)}' y2='${height - 56}'/>
+        <line x1='${Math.round(width * 0.5)}' y1='${horizonY}' x2='${Math.round(width * 0.75)}' y2='${height - 56}'/>
+        <line x1='${Math.round(width * 0.5)}' y1='${horizonY}' x2='${width}' y2='${height - 56}'/>
+      </g>
 
-    <!-- Camera Telemetry Overlay -->
-    <rect x='24' y='24' width='140' height='26' rx='6' fill='black' opacity='0.7'/>
-    <circle cx='36' cy='37' r='4' fill='%23ef4444'/>
-    <text x='48' y='42' fill='white' font-family='monospace' font-size='11' font-weight='bold'>REC · ${shotNumber}</text>
-    
-    <rect x='${width - 240}' y='24' width='216' height='46' rx='6' fill='black' opacity='0.7'/>
-    <text x='${width - 34}' y='41' text-anchor='end' fill='${accentColor}' font-family='monospace' font-size='12' font-weight='bold'>${aspectRatio} · ${focalLength}</text>
-    <text x='${width - 34}' y='60' text-anchor='end' fill='white' opacity='0.85' font-family='sans-serif' font-size='10'>${shotSize} · ${cameraAngle}</text>
+      <!-- Horizon line -->
+      <line x1='16' y1='${horizonY}' x2='${width - 16}' y2='${horizonY}' stroke='${inkColor}' stroke-width='1.4' opacity='0.6'/>
 
-    <!-- Lower Masthead Bar -->
-    <rect x='0' y='${height - 36}' width='${width}' height='36' fill='black' opacity='0.85'/>
-    <text x='24' y='${height - 13}' fill='white' font-family='sans-serif' font-size='12' font-weight='bold'>${sceneHeading}</text>
-    <text x='${width - 24}' y='${height - 13}' text-anchor='end' fill='${rimColor}' font-family='sans-serif' font-size='11'>SCRIPTORA CONCEPT ENGINE · ${visualStyle.toUpperCase()}</text>
+      ${renderEnvironment()}
+      ${renderBlocking()}
+    </g>
+
+    <!-- DIRECTOR CAMERA TELEMETRY OVERLAY -->
+    <!-- Top-Left Camera Slate -->
+    <rect x='22' y='22' width='140' height='26' rx='5' fill='${inkColor}' fill-opacity='0.9'/>
+    <circle cx='34' cy='35' r='4' fill='#ef4444'/>
+    <text x='46' y='40' fill='white' font-family='monospace' font-size='11' font-weight='bold'>REC · ${shotNumber}</text>
+
+    <!-- Top-Right Optical Lens Slate -->
+    <rect x='${width - 250}' y='22' width='228' height='44' rx='5' fill='${inkColor}' fill-opacity='0.9'/>
+    <text x='${width - 34}' y='38' text-anchor='end' fill='${accentColor}' font-family='monospace' font-size='11' font-weight='bold'>${aspectRatio} · ${focalLength}</text>
+    <text x='${width - 34}' y='55' text-anchor='end' fill='white' font-family='sans-serif' font-size='9'>${shotSize} · ${cameraAngle}</text>
+
+    <!-- Storyboard Bottom Action Banner -->
+    <rect x='14' y='${height - 48}' width='${width - 28}' height='34' fill='${inkColor}' fill-opacity='0.92' rx='2'/>
+    <text x='26' y='${height - 27}' fill='white' font-family='sans-serif' font-size='11' font-weight='bold'>${sceneHeading}</text>
+    <text x='${Math.round(width * 0.45)}' y='${height - 27}' fill='#e2e8f0' font-family='sans-serif' font-size='10' font-style='italic'>${(description || prompt || "Cinematic composition").slice(0, 55)}...</text>
+    <text x='${width - 26}' y='${height - 27}' text-anchor='end' fill='${accentColor}' font-family='sans-serif' font-size='10' font-weight='bold'>${visualStyle.toUpperCase()}</text>
   </svg>`;
 
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -987,7 +1170,7 @@ function ensureStoryboardsInitialized(scriptId) {
         sourceVersion: "Draft 4.2",
         isVersionStale: false,
         aspectRatio: "2.39:1",
-        visualStyle: "Cinematic Concept Art",
+        visualStyle: "Storyboard Sketch",
         shots: [
           {
             id: "shot-1-1A",
@@ -1001,7 +1184,7 @@ function ensureStoryboardsInitialized(scriptId) {
             focalLength: "24mm Wide",
             lightingMood: "Daylight Dust",
             aspectRatio: "2.39:1",
-            visualStyle: "Cinematic Concept Art",
+            visualStyle: "Storyboard Sketch",
             prompt: "Cinematic wide shot, arid desert outpost gate, dust devils whirling, worn solar patrol rover in foreground, 2.39:1 anamorphic framing, muted earth tones, warm daylight",
             imageUrl: generateProceduralConceptFrame({
               shotSize: "Wide Shot",
@@ -1009,7 +1192,7 @@ function ensureStoryboardsInitialized(scriptId) {
               focalLength: "24mm Wide",
               lightingMood: "Daylight Dust",
               aspectRatio: "2.39:1",
-              visualStyle: "Cinematic Concept Art",
+              visualStyle: "Storyboard Sketch",
               sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
               shotNumber: "1A"
             }),
@@ -1046,7 +1229,7 @@ function ensureStoryboardsInitialized(scriptId) {
             focalLength: "50mm Prime",
             lightingMood: "Harsh Fluorescent Rim",
             aspectRatio: "2.39:1",
-            visualStyle: "Cinematic Concept Art",
+            visualStyle: "Storyboard Sketch",
             prompt: "Medium two-shot, dusty outpost booth, weary hydro-engineer confronting guard over illuminated green holographic terminal, 50mm shallow depth of field",
             imageUrl: generateProceduralConceptFrame({
               shotSize: "Medium Two-Shot",
@@ -1054,7 +1237,7 @@ function ensureStoryboardsInitialized(scriptId) {
               focalLength: "50mm Prime",
               lightingMood: "Harsh Fluorescent Rim",
               aspectRatio: "2.39:1",
-              visualStyle: "Cinematic Concept Art",
+              visualStyle: "Storyboard Sketch",
               sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
               shotNumber: "1B"
             }),
@@ -1091,7 +1274,7 @@ function ensureStoryboardsInitialized(scriptId) {
             focalLength: "85mm Portrait",
             lightingMood: "Cyan Strobe",
             aspectRatio: "2.39:1",
-            visualStyle: "Cinematic Concept Art",
+            visualStyle: "Storyboard Sketch",
             prompt: "Extreme close-up on rugged military diagnostic screen, red warning glyphs, water pressure anomaly curve, scratched glass surface, macro lens bokeh",
             imageUrl: generateProceduralConceptFrame({
               shotSize: "Close-Up",
@@ -1099,7 +1282,7 @@ function ensureStoryboardsInitialized(scriptId) {
               focalLength: "85mm Portrait",
               lightingMood: "Cyan Strobe",
               aspectRatio: "2.39:1",
-              visualStyle: "Cinematic Concept Art",
+              visualStyle: "Storyboard Sketch",
               sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
               shotNumber: "1C"
             }),
@@ -1139,7 +1322,7 @@ function ensureStoryboardsInitialized(scriptId) {
         sourceVersion: "Draft 4.2",
         isVersionStale: false,
         aspectRatio: "2.39:1",
-        visualStyle: "Cinematic Concept Art",
+        visualStyle: "Storyboard Sketch",
         shots: [
           {
             id: "shot-10-10A",
@@ -1153,7 +1336,7 @@ function ensureStoryboardsInitialized(scriptId) {
             focalLength: "85mm Portrait",
             lightingMood: "Cyan Strobe",
             aspectRatio: "2.39:1",
-            visualStyle: "Cinematic Concept Art",
+            visualStyle: "Storyboard Sketch",
             prompt: "Dramatic dutch angle close up, hydro-engineer clamping leaking pressurized valve under red and cyan emergency strobes, 85mm shallow depth of field, water droplets on lens",
             imageUrl: generateProceduralConceptFrame({
               shotSize: "Close-Up",
@@ -1161,7 +1344,7 @@ function ensureStoryboardsInitialized(scriptId) {
               focalLength: "85mm Portrait",
               lightingMood: "Cyan Strobe",
               aspectRatio: "2.39:1",
-              visualStyle: "Cinematic Concept Art",
+              visualStyle: "Storyboard Sketch",
               sceneHeading: "INT. PUMPING STATION CHAMBER B - NIGHT",
               shotNumber: "10A"
             }),
@@ -1198,7 +1381,7 @@ function ensureStoryboardsInitialized(scriptId) {
             focalLength: "24mm Wide",
             lightingMood: "Low-Key Shadow",
             aspectRatio: "2.39:1",
-            visualStyle: "Cinematic Concept Art",
+            visualStyle: "Storyboard Sketch",
             prompt: "Wide high-angle shot of cavernous underground pumping hall, water rushing across metal grating, lone figures in vast industrial labyrinth, 24mm anamorphic",
             imageUrl: generateProceduralConceptFrame({
               shotSize: "Wide Shot",
@@ -1206,7 +1389,7 @@ function ensureStoryboardsInitialized(scriptId) {
               focalLength: "24mm Wide",
               lightingMood: "Low-Key Shadow",
               aspectRatio: "2.39:1",
-              visualStyle: "Cinematic Concept Art",
+              visualStyle: "Storyboard Sketch",
               sceneHeading: "INT. PUMPING STATION CHAMBER B - NIGHT",
               shotNumber: "10B"
             }),
