@@ -507,14 +507,33 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </div>
             </div>
 
-            <!-- Visual Style, Quality, and Aspect Ratio Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Visual Style Preset</label>
-                <select id="gen-style-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
-                  ${STYLE_PRESETS.map(s => `<option value="${s}">${s}</option>`).join('')}
-                </select>
+            <!-- Visual Style Image Preview Cards (4 Styles of SAME Desert Checkpoint Scene) -->
+            <div class="flex flex-col gap-1.5">
+              <div class="flex items-center justify-between">
+                <label class="text-[11px] font-semibold text-slate-700">Visual Style — Select Treatment</label>
+                <span class="text-[10px] text-slate-500">Same scene rendered in 4 visual styles</span>
               </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="gen-style-preview-cards-container">
+                ${VISUAL_STYLE_PREVIEWS.map(style => `
+                  <button type="button" class="gen-style-preview-card text-left p-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative" data-style-id="${style.id}">
+                    <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
+                      <img src="${style.previewImage}" onerror="this.onerror=null; this.src='${style.fallbackSvg}';" alt="${style.name}" class="w-full h-full object-cover" />
+                      <div class="gen-style-check-badge hidden absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                        <span class="material-symbols-outlined text-[11px] font-bold">check</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="text-[11px] font-bold text-slate-900 group-hover:text-blue-600 leading-tight">${style.name}</div>
+                      <div class="text-[9px] text-slate-500 line-clamp-2 leading-tight mt-0.5">${style.description}</div>
+                    </div>
+                  </button>
+                `).join('')}
+              </div>
+              <input type="hidden" id="gen-style-select" value="Concept Art" />
+            </div>
+
+            <!-- Image Quality and Aspect Ratio Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold text-slate-700">Image Quality</label>
                 <select id="gen-quality-select" class="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
@@ -1959,6 +1978,52 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     });
   }
 
+  function selectGenStyleCard(styleName) {
+    const cards = document.querySelectorAll('.gen-style-preview-card');
+    const inputStyle = document.getElementById('gen-style-select');
+    let matchedCard = null;
+
+    cards.forEach(card => {
+      const cardStyle = card.getAttribute('data-style-id') || '';
+      const isMatch = (cardStyle.toLowerCase() === (styleName || '').toLowerCase()) ||
+                      (cardStyle.includes('concept') && (styleName || '').includes('Concept')) ||
+                      (cardStyle.includes('realism') && (styleName || '').includes('Realism')) ||
+                      (cardStyle.includes('sketch') && (styleName || '').includes('Sketch')) ||
+                      (cardStyle.includes('photo') && (styleName || '').includes('Photo'));
+
+      if (isMatch && !matchedCard) {
+        matchedCard = card;
+        card.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+        card.classList.remove('border-slate-200');
+        card.querySelector('.gen-style-check-badge')?.classList.remove('hidden');
+      } else {
+        card.classList.remove('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+        card.classList.add('border-slate-200');
+        card.querySelector('.gen-style-check-badge')?.classList.add('hidden');
+      }
+    });
+
+    if (matchedCard) {
+      if (inputStyle) inputStyle.value = matchedCard.getAttribute('data-style-id') || styleName;
+    } else if (cards.length > 0) {
+      const first = cards[0];
+      first.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+      first.classList.remove('border-slate-200');
+      first.querySelector('.gen-style-check-badge')?.classList.remove('hidden');
+      if (inputStyle) inputStyle.value = first.getAttribute('data-style-id') || 'Concept Art';
+    }
+  }
+
+  function setupGenStylePreviewCards() {
+    const cards = document.querySelectorAll('.gen-style-preview-card');
+    cards.forEach(card => {
+      card.onclick = () => {
+        const styleId = card.getAttribute('data-style-id');
+        selectGenStyleCard(styleId);
+      };
+    });
+  }
+
   async function loadStoryboardPreferences() {
     try {
       cachedPreferences = await api.getStoryboardPreferences();
@@ -2096,6 +2161,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
     updateGenSubmitLabel();
     updateProviderCostDisclosure();
+
+    // Setup and select default visual style card in Sequence Generator modal
+    setupGenStylePreviewCards();
+    const defaultGenStyle = currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Concept Art';
+    selectGenStyleCard(defaultGenStyle);
 
     if (genErrorAlert) genErrorAlert.classList.add('hidden');
     openModal(genModal);
