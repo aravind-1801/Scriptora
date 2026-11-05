@@ -327,7 +327,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                   ${VISUAL_STYLE_PREVIEWS.map(style => `
                     <button type="button" class="style-preview-card text-left p-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative" data-style-id="${style.id}">
                       <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
-                        <img src="${style.previewImage}" alt="${style.name}" class="w-full h-full object-cover" />
+                        <img src="${style.previewImage}" onerror="this.onerror=null; this.src='${style.fallbackSvg}';" alt="${style.name}" class="w-full h-full object-cover" />
                         <div class="style-check-badge hidden absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
                           <span class="material-symbols-outlined text-[11px] font-bold">check</span>
                         </div>
@@ -616,8 +616,25 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </button>
           </div>
 
-          <div class="aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center">
-            <img id="regen-current-image" src="" alt="Current frame" class="w-full h-full object-cover" />
+          <!-- Style Sample Preview Container (Updates dynamically on dropdown change) -->
+          <div class="relative aspect-video bg-slate-950 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center group shadow-inner">
+            <img id="regen-current-image" src="" alt="Style Preview" class="w-full h-full object-cover transition-opacity duration-200" />
+
+            <!-- Clear Distinction Badge: Style Sample Preview -->
+            <div class="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-slate-900/85 backdrop-blur-xs text-[10px] font-semibold text-white flex items-center gap-1.5 border border-white/10 shadow-xs pointer-events-none">
+              <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
+              <span class="text-slate-300">Style Sample Preview:</span>
+              <span id="regen-preview-style-label" class="text-blue-300 font-bold">Concept Art</span>
+            </div>
+
+            <!-- Current Frame Reference Thumbnail (if existing) -->
+            <div id="regen-current-frame-pill" class="hidden absolute bottom-2.5 right-2.5 flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-900/85 backdrop-blur-xs border border-white/10 shadow-xs">
+              <img id="regen-current-frame-thumb" src="" alt="Current frame" class="w-7 h-5 object-cover rounded shrink-0 border border-white/20" />
+              <div class="flex flex-col text-left leading-tight">
+                <span class="text-[9px] text-slate-400">Current Frame</span>
+                <span id="regen-current-frame-pill-num" class="text-[10px] text-white font-mono font-bold">1A</span>
+              </div>
+            </div>
           </div>
 
           <div class="flex flex-col gap-2.5">
@@ -1761,22 +1778,40 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       if (!shot) return;
 
       const pId = document.getElementById('regen-provider-select')?.value || 'scriptora-concept';
-      const promptVal = document.getElementById('regen-prompt-input')?.value.trim() || shot.prompt || shot.description || 'Cinematic composition';
-      const styleVal = document.getElementById('regen-style-select')?.value || shot.visualStyle || 'Cinematic Concept Art';
+      const promptVal = document.getElementById('regen-prompt-input')?.value.trim() || shot.description || shot.prompt || 'Cinematic composition';
+      const styleVal = document.getElementById('regen-style-select')?.value || shot.visualStyle || 'Concept Art';
 
       regenConfirm.disabled = true;
       regenConfirm.innerHTML = `<span class="w-3.5 h-3.5 border-2 border-white/60 border-t-white rounded-full animate-spin"></span><span>Regenerating...</span>`;
 
+      const structuredPrompt = buildStructuredPrompt({
+        description: promptVal,
+        visualStyle: styleVal,
+        shotSize: shot.shotSize,
+        cameraAngle: shot.cameraAngle,
+        aspectRatio: shot.aspectRatio,
+        cameraMovement: shot.cameraMovement,
+        lens: shot.focalLength || shot.lens,
+        lighting: shot.lightingMood || shot.lighting,
+        screenDirection: shot.continuity?.screenDirection,
+        sceneContext: `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim()
+      });
+
       try {
         const res = await api.generateStoryboardShot(scriptId, {
           provider: pId,
-          prompt: promptVal,
+          prompt: structuredPrompt,
+          userDescription: promptVal,
           shotSize: shot.shotSize,
           cameraAngle: shot.cameraAngle,
-          focalLength: shot.focalLength,
-          lightingMood: shot.lightingMood,
+          cameraMovement: shot.cameraMovement,
+          focalLength: shot.focalLength || shot.lens,
+          lens: shot.focalLength || shot.lens,
+          lightingMood: shot.lightingMood || shot.lighting,
+          lighting: shot.lightingMood || shot.lighting,
           aspectRatio: shot.aspectRatio,
           visualStyle: styleVal,
+          screenDirection: shot.continuity?.screenDirection,
           sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
           shotNumber: shot.shotNumber
         });
@@ -1784,13 +1819,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         if (res?.imageUrl) {
           await api.updateStoryboardShot(scriptId, currentSceneId, activeRegenShotId, {
             imageUrl: res.imageUrl,
-            prompt: promptVal,
+            prompt: structuredPrompt,
+            description: shot.description || promptVal,
             visualStyle: styleVal,
             provider: pId,
             imageSource: 'ai'
           });
 
-          showToast(`Regenerated Shot ${shot.shotNumber}. Other shots preserved.`);
+          showToast(`Regenerated frame ${shot.shotNumber}. Previous version preserved in history.`);
           closeModal(regenModal);
           loadStoryboardData();
         }
@@ -2197,20 +2233,62 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     });
   }
 
+  function updateRegenModalStylePreview(styleName) {
+    const curImg = document.getElementById('regen-current-image');
+    const styleLabel = document.getElementById('regen-preview-style-label');
+    const preview = getStylePreview(styleName);
+
+    if (styleLabel) {
+      styleLabel.textContent = preview.name;
+    }
+
+    if (curImg) {
+      curImg.src = preview.previewImage;
+      curImg.onerror = () => {
+        curImg.onerror = null;
+        curImg.src = preview.fallbackSvg;
+      };
+    }
+  }
+
   function openSingleFrameRegenModal(shotId) {
     activeRegenShotId = shotId;
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
 
     const pill = document.getElementById('regen-shot-pill');
-    const curImg = document.getElementById('regen-current-image');
     const promptInput = document.getElementById('regen-prompt-input');
     const styleInput = document.getElementById('regen-style-select');
+    const currentFramePill = document.getElementById('regen-current-frame-pill');
+    const currentFrameThumb = document.getElementById('regen-current-frame-thumb');
+    const currentFramePillNum = document.getElementById('regen-current-frame-pill-num');
 
     if (pill) pill.textContent = shot.shotNumber;
-    if (curImg) curImg.src = shot.imageUrl || '';
-    if (promptInput) promptInput.value = shot.prompt || shot.description || '';
-    if (styleInput) styleInput.value = shot.visualStyle || 'Cinematic Concept Art';
+    if (promptInput) promptInput.value = shot.description || shot.prompt || '';
+
+    // If shot already has an image, display it in the current frame reference thumbnail
+    if (currentFramePill && currentFrameThumb) {
+      if (shot.imageUrl) {
+        currentFrameThumb.src = shot.imageUrl;
+        if (currentFramePillNum) currentFramePillNum.textContent = shot.shotNumber;
+        currentFramePill.classList.remove('hidden');
+      } else {
+        currentFramePill.classList.add('hidden');
+      }
+    }
+
+    // Preserve the visual style from the shot's existing settings, defaulting to Concept Art
+    const activeStyle = shot.visualStyle || 'Concept Art';
+    if (styleInput) {
+      styleInput.value = activeStyle;
+      // Immediately update style preview whenever user changes the dropdown!
+      styleInput.onchange = (e) => {
+        updateRegenModalStylePreview(e.target.value);
+      };
+    }
+
+    // Display the preview corresponding to the currently selected visual style immediately!
+    updateRegenModalStylePreview(activeStyle);
 
     updateRegenCostDisclosure();
     openModal(regenModal);

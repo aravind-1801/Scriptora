@@ -794,10 +794,13 @@ function generateProceduralConceptFrame(opts) {
   if (aspectRatio === "9:16") { width = 675; height = 1200; }
 
   const isNight = sceneHeading.toUpperCase().includes('NIGHT') || lightingMood.toLowerCase().includes('night') || lightingMood.toLowerCase().includes('shadow') || lightingMood.toLowerCase().includes('strobe') || lightingMood.toLowerCase().includes('noir');
-  const isPencil = visualStyle.toLowerCase().includes('pencil');
-  const isInk = visualStyle.toLowerCase().includes('ink');
-  const isAnime = visualStyle.toLowerCase().includes('anime') || visualStyle.toLowerCase().includes('illustration');
-  const is3D = visualStyle.toLowerCase().includes('3d');
+  const vStyle = visualStyle.toLowerCase();
+  const isSketch = vStyle.includes('sketch') || vStyle.includes('ink') || vStyle.includes('pencil');
+  const isCinematic = vStyle.includes('cinematic') || vStyle.includes('film');
+  const isPhoto = vStyle.includes('photo');
+  const isConcept = vStyle.includes('concept') || (!isSketch && !isCinematic && !isPhoto);
+  const isAnime = vStyle.includes('anime') || vStyle.includes('illustration');
+  const is3D = vStyle.includes('3d');
 
   // Palette selection based on style and lighting
   let bgGradStart = isNight ? "%23090d16" : "%23292524";
@@ -808,21 +811,42 @@ function generateProceduralConceptFrame(opts) {
   let gridOpacity = "0.08";
   let strokeColor = "%23ffffff";
 
-  if (isPencil) {
-    bgGradStart = "%23f5f5f4";
-    bgGradEnd = "%23e7e5e4";
-    accentColor = "%2357534e";
-    rimColor = "%2378716c";
-    silColor = "%2344403c";
-    gridOpacity = "0.15";
-    strokeColor = "%23292524";
-  } else if (isInk) {
-    bgGradStart = "%230a0a0a";
-    bgGradEnd = "%23000000";
-    accentColor = "%23ffffff";
-    rimColor = "%23e2e8f0";
-    silColor = "%230f172a";
-    gridOpacity = "0.12";
+  if (isSketch) {
+    // Black & white hand-drawn storyboard illustration on clean paper
+    bgGradStart = "%23fafaf9";
+    bgGradEnd = "%23f5f5f4";
+    accentColor = "%23292524";
+    rimColor = "%2357534e";
+    silColor = "%231c1917";
+    gridOpacity = "0.18";
+    strokeColor = "%2344403c";
+  } else if (isCinematic) {
+    // 35mm anamorphic film look with deep blues and warm tungsten rim
+    bgGradStart = "%230a1128";
+    bgGradEnd = "%23000411";
+    accentColor = "%2338bdf8";
+    rimColor = "%23fb923c";
+    silColor = "%23020617";
+    gridOpacity = "0.06";
+    strokeColor = "%2338bdf8";
+  } else if (isPhoto) {
+    // Crisp DSLR daylight documentary grading
+    bgGradStart = isNight ? "%230f172a" : "%23334155";
+    bgGradEnd = isNight ? "%23020617" : "%230f172a";
+    accentColor = "%2338bdf8";
+    rimColor = "%23f8fafc";
+    silColor = "%23020617";
+    gridOpacity = "0.07";
+    strokeColor = "%23ffffff";
+  } else if (isConcept) {
+    // Rich painterly concept art palette
+    bgGradStart = isNight ? "%231e1b4b" : "%23451a03";
+    bgGradEnd = isNight ? "%230f172a" : "%231c1917";
+    accentColor = "%23f59e0b";
+    rimColor = "%23fbbf24";
+    silColor = "%23020617";
+    gridOpacity = "0.08";
+    strokeColor = "%23fbbf24";
   } else if (isAnime) {
     bgGradStart = isNight ? "%231e1035" : "%231e293b";
     bgGradEnd = isNight ? "%230f0728" : "%23090d16";

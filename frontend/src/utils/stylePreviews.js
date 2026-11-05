@@ -289,31 +289,46 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Concept Art",
     tagline: "Atmospheric & Painterly",
     description: "Rich digital painting with painterly brushwork, volumetric dust haze, and dramatic cinematic lighting.",
-    previewImage: createConceptArtSvg()
+    previewImage: "/assets/styles/concept-art.jpg",
+    fallbackSvg: createConceptArtSvg()
   },
   {
     id: "Cinematic Realism",
     name: "Cinematic Realism",
     tagline: "35mm Film Still",
     description: "35mm anamorphic film look with naturalistic depth-of-field, warm desert palette, and subtle grain.",
-    previewImage: createCinematicRealismSvg()
+    previewImage: "/assets/styles/cinematic-realism.jpg",
+    fallbackSvg: createCinematicRealismSvg()
   },
   {
     id: "Storyboard Sketch",
     name: "Storyboard Sketch",
     tagline: "Charcoal & Ink",
     description: "Classic high-contrast ink and charcoal line art with cross-hatching and framing crosshairs.",
-    previewImage: createStoryboardSketchSvg()
+    previewImage: "/assets/styles/storyboard-sketch.jpg",
+    fallbackSvg: createStoryboardSketchSvg()
   },
   {
     id: "Photorealistic",
     name: "Photorealistic",
     tagline: "Documentary Optics",
     description: "Razor-sharp photographic clarity with physical lens optics, accurate metallic reflections, and crisp daylight.",
-    previewImage: createPhotorealisticSvg()
+    previewImage: "/assets/styles/photorealistic.jpg",
+    fallbackSvg: createPhotorealisticSvg()
   }
 ];
 
 export function getStylePreview(styleId) {
-  return VISUAL_STYLE_PREVIEWS.find(s => s.id.toLowerCase() === (styleId || '').toLowerCase()) || VISUAL_STYLE_PREVIEWS[0];
+  const norm = (styleId || '').trim().toLowerCase();
+  return VISUAL_STYLE_PREVIEWS.find(s => {
+    const sId = s.id.toLowerCase();
+    return sId === norm ||
+      (norm.includes('concept') && sId.includes('concept')) ||
+      (norm.includes('cinematic') && sId.includes('cinematic')) ||
+      (norm.includes('sketch') && sId.includes('sketch')) ||
+      (norm.includes('ink') && sId.includes('sketch')) ||
+      (norm.includes('pencil') && sId.includes('sketch')) ||
+      (norm.includes('photo') && sId.includes('photo'));
+  }) || VISUAL_STYLE_PREVIEWS[0];
 }
+
