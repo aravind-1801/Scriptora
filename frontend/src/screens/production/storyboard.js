@@ -1022,6 +1022,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   let proposedSequenceShots = [];
   let selectedShotCount = 4;
   const sequenceSelectedShotIds = new Set();
+  let activeGenerationMode = 'sequence'; // 'sequence' | 'single'
 
   // In-modal shot creation draft state
   let currentModalDraftImage = null;
@@ -1168,75 +1169,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (inspectorClose) inspectorClose.onclick = () => closeModal(inspectorModal);
   if (inspectorCancel) inspectorCancel.onclick = () => closeModal(inspectorModal);
 
-  // Modal 1: Generate Action
+  // Modal 1: Generate Action -> Opens AI Generate Shot popup
   if (btnModalGenAction) {
-    btnModalGenAction.onclick = async (e) => {
+    btnModalGenAction.onclick = (e) => {
       e.preventDefault();
-      const loadingEl = document.getElementById('modal-image-loading');
-      const placeholderEl = document.getElementById('modal-empty-image-placeholder');
-      const imgEl = document.getElementById('modal-shot-image');
-
-      if (loadingEl) loadingEl.classList.remove('hidden');
-      if (placeholderEl) placeholderEl.classList.add('hidden');
-      if (imgEl) imgEl.classList.add('hidden');
-      btnModalGenAction.disabled = true;
-
-      const shotNum = document.getElementById('input-shot-number')?.value.trim() || '1A';
-      const descVal = document.getElementById('input-shot-desc')?.value.trim() || '';
-      const styleVal = document.getElementById('input-shot-style')?.value || 'Concept Art';
-      const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
-      const angleVal = document.getElementById('input-shot-angle')?.value || 'Eye Level';
-      const ratioVal = document.getElementById('input-shot-ratio')?.value || '2.39:1';
-      const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
-      const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
-      const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
-      const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
-      const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
-
-      const structuredPrompt = buildStructuredPrompt({
-        description: descVal,
-        visualStyle: styleVal,
-        shotSize: sizeVal,
-        cameraAngle: angleVal,
-        aspectRatio: ratioVal,
-        cameraMovement: movementVal,
-        lens: lensVal,
-        lighting: lightingVal,
-        screenDirection: directionVal,
-        sceneContext
-      });
-
-      try {
-        const res = await api.generateStoryboardShot(scriptId, {
-          provider: 'scriptora-concept',
-          prompt: structuredPrompt,
-          userDescription: descVal,
-          shotSize: sizeVal,
-          cameraAngle: angleVal,
-          cameraMovement: movementVal,
-          focalLength: lensVal,
-          lens: lensVal,
-          lightingMood: lightingVal,
-          lighting: lightingVal,
-          aspectRatio: ratioVal,
-          visualStyle: styleVal,
-          screenDirection: directionVal,
-          sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
-          shotNumber: shotNum
-        });
-
-        if (res?.imageUrl) {
-          currentModalDraftImage = res.imageUrl;
-          currentModalDraftPrompt = structuredPrompt;
-          showToast('Image generated successfully');
-        }
-      } catch (err) {
-        showToast(err.message || 'Generation failed');
-      } finally {
-        if (loadingEl) loadingEl.classList.add('hidden');
-        btnModalGenAction.disabled = false;
-        updateInspectorImagePreviewUI();
-      }
+      openSingleShotGenerationModal();
     };
   }
 
@@ -1738,6 +1675,90 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         if (!confirm(`Confirm generation using ${selectedProv.name}? Estimated cost: ${selectedProv.costLabel}.`)) {
           return;
         }
+      }
+
+      // Single shot generation workflow (when opened from Add Shot / Edit Shot Inspector)
+      if (activeGenerationMode === 'single') {
+        const configView = document.getElementById('gen-step-config');
+        const progressView = document.getElementById('gen-step-progress');
+        const progressTitle = document.getElementById('gen-progress-title');
+        const progressStatus = document.getElementById('gen-progress-status');
+
+        if (configView) configView.classList.add('hidden');
+        if (progressView) progressView.classList.remove('hidden');
+        if (progressTitle) progressTitle.textContent = 'Generating Shot Frame';
+        if (progressStatus) progressStatus.textContent = `Rendering with ${selectedProv.name}...`;
+
+        const shotNum = document.getElementById('input-shot-number')?.value.trim() || '1A';
+        const descVal = document.getElementById('input-shot-desc')?.value.trim() || userPrompt;
+        const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
+        const angleVal = document.getElementById('input-shot-angle')?.value || 'Eye Level';
+        const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
+        const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
+        const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
+        const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
+        const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
+
+        const structuredPrompt = buildStructuredPrompt({
+          description: descVal,
+          visualStyle: style,
+          shotSize: sizeVal,
+          cameraAngle: angleVal,
+          aspectRatio: ratio,
+          cameraMovement: movementVal,
+          lens: lensVal,
+          lighting: lightingVal,
+          screenDirection: directionVal,
+          sceneContext
+        });
+
+        try {
+          const res = await api.generateStoryboardShot(scriptId, {
+            provider: pId,
+            prompt: userPrompt ? `${structuredPrompt} ${userPrompt}` : structuredPrompt,
+            userDescription: descVal,
+            shotSize: sizeVal,
+            cameraAngle: angleVal,
+            cameraMovement: movementVal,
+            focalLength: lensVal,
+            lens: lensVal,
+            lightingMood: lightingVal,
+            lighting: lightingVal,
+            aspectRatio: ratio,
+            visualStyle: style,
+            screenDirection: directionVal,
+            sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+            shotNumber: shotNum,
+            quality
+          });
+
+          if (res?.imageUrl) {
+            currentModalDraftImage = res.imageUrl;
+            currentModalDraftPrompt = structuredPrompt;
+
+            const inputStyle = document.getElementById('input-shot-style');
+            if (inputStyle) inputStyle.value = style;
+            selectStyleCard(style);
+
+            const inputRatio = document.getElementById('input-shot-ratio');
+            if (inputRatio) inputRatio.value = ratio;
+
+            updateInspectorImagePreviewUI();
+            closeModal(genModal);
+            showToast('Shot image generated successfully');
+          } else {
+            throw new Error('Image generation returned empty');
+          }
+        } catch (err) {
+          if (progressView) progressView.classList.add('hidden');
+          if (configView) configView.classList.remove('hidden');
+          if (genErrorAlert) {
+            genErrorAlert.classList.remove('hidden');
+            if (genErrorMsg) genErrorMsg.textContent = err.message || 'Generation failed. Please try again.';
+          }
+          showToast(err.message || 'Generation failed');
+        }
+        return;
       }
 
       const sceneNum = Number(String(currentSceneId).replace('scene-', '')) || currentStoryboard?.sceneNumber || 1;
@@ -2417,15 +2438,70 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
-  function openSequenceGenerationModal() {
+  function openSingleShotGenerationModal() {
+    activeGenerationMode = 'single';
     const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
     const sceneHeadingDisp = document.getElementById('gen-scene-heading-display');
     const sceneCastDisp = document.getElementById('gen-scene-cast-display');
     const sceneSnippetDisp = document.getElementById('gen-scene-snippet-display');
+    const modalTitle = document.getElementById('gen-modal-title');
+    const shotCountContainer = document.getElementById('gen-shot-count-container');
+    const promptInput = document.getElementById('gen-prompt-input');
+    const ratioSelect = document.getElementById('gen-ratio-select');
 
+    if (modalTitle) modalTitle.textContent = 'AI Generate Shot';
+    if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
+    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
+    if (sceneSnippetDisp) {
+      const shotDesc = document.getElementById('input-shot-desc')?.value.trim();
+      sceneSnippetDisp.textContent = shotDesc || scene.snippet || 'Shot awaiting visual direction.';
+    }
+
+    // Hide shot sequence length selector (since it comes under add one shot)
+    if (shotCountContainer) shotCountContainer.classList.add('hidden');
+
+    // Pre-fill extra direction / prompt with shot description
+    if (promptInput) {
+      const shotDesc = document.getElementById('input-shot-desc')?.value.trim() || '';
+      promptInput.value = shotDesc;
+    }
+
+    // Match aspect ratio from shot form
+    const currentRatio = document.getElementById('input-shot-ratio')?.value || currentStoryboard?.aspectRatio || '2.39:1';
+    if (ratioSelect) ratioSelect.value = currentRatio;
+
+    document.getElementById('gen-step-config')?.classList.remove('hidden');
+    document.getElementById('gen-step-styles')?.classList.add('hidden');
+    document.getElementById('gen-step-progress')?.classList.add('hidden');
+    document.getElementById('gen-step-preview')?.classList.add('hidden');
+
+    updateGenSubmitLabel();
+    updateProviderCostDisclosure();
+
+    setupVisualArtStylePopup();
+    const shotStyle = document.getElementById('input-shot-style')?.value || currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Soft Pencil';
+    applySelectedVisualArtStyle(shotStyle, false);
+
+    if (genErrorAlert) genErrorAlert.classList.add('hidden');
+    openModal(genModal);
+  }
+
+  function openSequenceGenerationModal() {
+    activeGenerationMode = 'sequence';
+    const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
+    const sceneHeadingDisp = document.getElementById('gen-scene-heading-display');
+    const sceneCastDisp = document.getElementById('gen-scene-cast-display');
+    const sceneSnippetDisp = document.getElementById('gen-scene-snippet-display');
+    const modalTitle = document.getElementById('gen-modal-title');
+    const shotCountContainer = document.getElementById('gen-shot-count-container');
+
+    if (modalTitle) modalTitle.textContent = 'Generate Scene Shot Sequence';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
     if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
     if (sceneSnippetDisp) sceneSnippetDisp.textContent = scene.snippet || 'Scene awaiting visual direction.';
+
+    // Show shot sequence length selector for sequence generation
+    if (shotCountContainer) shotCountContainer.classList.remove('hidden');
 
     document.getElementById('gen-step-config')?.classList.remove('hidden');
     document.getElementById('gen-step-styles')?.classList.add('hidden');
@@ -2450,7 +2526,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   function updateGenSubmitLabel() {
     const submitLabel = document.getElementById('gen-submit-label');
     if (!submitLabel) return;
-    submitLabel.textContent = `Generate ${selectedShotCount}-Shot Sequence`;
+    if (activeGenerationMode === 'single') {
+      submitLabel.textContent = 'Generate Shot Image';
+    } else {
+      submitLabel.textContent = `Generate ${selectedShotCount}-Shot Sequence`;
+    }
   }
 
   function updateProviderCostDisclosure() {
@@ -2472,8 +2552,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       if (p.pricingType === 'free') {
         genCostLabel.textContent = 'Free (Built-in Concept Engine, no API keys or charges required).';
       } else {
-        const count = selectedShotCount || 4;
-        const est = `$${((p.costPerImage || 0.04) * count).toFixed(3)} (${count}-shot batch)`;
+        const count = activeGenerationMode === 'single' ? 1 : (selectedShotCount || 4);
+        const est = `$${((p.costPerImage || 0.04) * count).toFixed(3)} (${count}-shot${count > 1 ? ' batch' : ''})`;
         genCostLabel.textContent = `${p.costLabel || 'Paid API'} — Estimated: ${est}. Server credentials required.`;
       }
     }
