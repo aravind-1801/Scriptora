@@ -2922,18 +2922,117 @@ export async function getStoryboards(scriptId = 'chronicles-of-dust') {
   return [];
 }
 
+
+// =========================================================================
+// Storyboard Storage & Sanitization Infrastructure
+// Prevents QuotaExceededError by eliminating giant base64 payloads from localStorage
+// =========================================================================
+
+export function sanitizeStoryboard(sb) {
+  if (!sb || typeof sb !== 'object') return sb;
+  const copy = { ...sb };
+
+  if (Array.isArray(copy.shots)) {
+    copy.shots = copy.shots.map(shot => {
+      const s = { ...shot };
+      // Resolve clean URL for any bloated base64 or oversized SVG
+      if (typeof s.imageUrl === 'string' && (s.imageUrl.startsWith('data:image/svg') || s.imageUrl.startsWith('data:image/jpeg') || s.imageUrl.length > 5000)) {
+        const num = (s.shotNumber || '').toUpperCase();
+        if (num.includes('1A')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+        else if (num.includes('1B')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
+        else if (num.includes('1C')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
+        else if (num.includes('1D')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
+        else if (num.includes('10A')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_10a_valve_breach.jpg`;
+        else if (num.includes('10B')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_10b_pumping_hall.jpg`;
+        else s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+      }
+
+      // Sanitize version history to preserve metadata without giant base64 binaries
+      if (Array.isArray(s.history)) {
+        s.history = s.history.slice(0, 20).map((h, idx) => {
+          const item = { ...h };
+          const img = item.previousImageUrl || item.imageUrl;
+          if (typeof img === 'string' && (img.startsWith('data:image/svg') || img.startsWith('data:image/jpeg') || img.length > 5000)) {
+            const num = (s.shotNumber || '').toUpperCase();
+            if (num.includes('1A')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+            else if (num.includes('1B')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
+            else if (num.includes('1C')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
+            else item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
+            delete item.imageUrl;
+          }
+          return item;
+        });
+      }
+      return s;
+    });
+  }
+  return copy;
+}
+
+export function cleanupLegacyStoryboardStorage() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const keysToClean = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('scriptora_storyboard_') && !k.includes('_preferences') && !k.includes('_rb_')) {
+        keysToClean.push(k);
+      }
+    }
+    keysToClean.forEach(k => {
+      try {
+        const raw = localStorage.getItem(k);
+        if (raw && (raw.includes('data:image/svg') || raw.includes('data:image/jpeg') || raw.length > 50000)) {
+          const parsed = JSON.parse(raw);
+          const cleaned = sanitizeStoryboard(parsed);
+          localStorage.setItem(k, JSON.stringify(cleaned));
+          console.info(`[SCRIPTORA Storage] Successfully migrated legacy oversized cache: ${k} (${raw.length}b -> ${JSON.stringify(cleaned).length}b)`);
+        }
+      } catch (_) {}
+    });
+  } catch (err) {
+    console.warn('[SCRIPTORA Storage] Legacy cleanup check skipped:', err);
+  }
+}
+
+export function safeStorageSetItem(key, value) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(key, value);
+  } catch (err) {
+    console.warn(`[SCRIPTORA Storage] localStorage.setItem failed for ${key}, running emergency purge:`, err.message);
+    try {
+      cleanupLegacyStoryboardStorage();
+      localStorage.setItem(key, value);
+    } catch (e2) {
+      console.error(`[SCRIPTORA Storage] Quota still exceeded for ${key} after purge. Suppressed.`, e2.message);
+    }
+  }
+}
+
+export function safeSetStoredStoryboard(scriptId, sceneId, storyboard) {
+  if (!storyboard) return;
+  const sanitized = sanitizeStoryboard(storyboard);
+  safeStorageSetItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sanitized));
+}
+
+// Auto-run legacy storage migration on startup
+if (typeof window !== 'undefined') {
+  setTimeout(cleanupLegacyStoryboardStorage, 100);
+}
+
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
   try {
     const data = await request(`/production/${scriptId}/storyboard?sceneId=${sceneId}`);
     if (data?.storyboard) {
-      localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(data.storyboard));
-      return data.storyboard;
+      safeSetStoredStoryboard(scriptId, sceneId, data.storyboard);
+      return sanitizeStoryboard(data.storyboard);
     }
   } catch (e) {}
 
   const cached = localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`);
   if (cached) {
-    try { return JSON.parse(cached); } catch (_) {}
+    try { return sanitizeStoryboard(JSON.parse(cached)); } catch (_) {}
   }
 
   // Fallback defaults for Scene 1 and Scene 10 if offline
@@ -3075,7 +3174,7 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
     updatedAt: new Date().toISOString()
   };
 
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  safeSetStoredStoryboard(scriptId, sceneId, sb);
   return sb;
 }
 
@@ -3086,13 +3185,13 @@ export async function saveStoryboard(scriptId, storyboardData) {
       body: JSON.stringify(storyboardData)
     });
     if (res?.storyboard) {
-      localStorage.setItem(`scriptora_storyboard_${scriptId}_${res.storyboard.sceneId}`, JSON.stringify(res.storyboard));
+      safeSetStoredStoryboard(scriptId, res.storyboard.sceneId, res.storyboard);
       return res.storyboard;
     }
   } catch (e) {}
 
   const sceneId = storyboardData.sceneId || `scene-${storyboardData.sceneNumber || 1}`;
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(storyboardData));
+  safeSetStoredStoryboard(scriptId, sceneId, storyboardData);
   return storyboardData;
 }
 
@@ -3104,7 +3203,7 @@ export async function addStoryboardShot(scriptId, sceneId, shotData) {
     });
     if (res?.shot) {
       if (res.storyboard) {
-        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       }
       return res;
     }
@@ -3157,7 +3256,7 @@ export async function addStoryboardShot(scriptId, sceneId, shotData) {
 
   sb.shots.push(newShot);
   sb.updatedAt = new Date().toISOString();
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  safeSetStoredStoryboard(scriptId, sceneId, sb);
   return { storyboard: sb, shot: newShot };
 }
 
@@ -3169,7 +3268,7 @@ export async function updateStoryboardShot(scriptId, sceneId, shotId, updates) {
     });
     if (res?.shot) {
       if (res.storyboard) {
-        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       }
       return res;
     }
@@ -3184,7 +3283,7 @@ export async function updateStoryboardShot(scriptId, sceneId, shotId, updates) {
   }
   Object.assign(shot, updates, { updatedAt: new Date().toISOString() });
   sb.updatedAt = new Date().toISOString();
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  safeSetStoredStoryboard(scriptId, sceneId, sb);
   return { storyboard: sb, shot };
 }
 
@@ -3195,7 +3294,7 @@ export async function deleteStoryboardShot(scriptId, sceneId, shotId) {
     });
     if (res?.success) {
       if (res.storyboard) {
-        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       }
       return res;
     }
@@ -3207,7 +3306,7 @@ export async function deleteStoryboardShot(scriptId, sceneId, shotId) {
     sb.shots.splice(idx, 1);
     sb.shots.forEach((s, i) => { s.order = i + 1; });
     sb.updatedAt = new Date().toISOString();
-    localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+    safeSetStoredStoryboard(scriptId, sceneId, sb);
   }
   return { success: true, removedId: shotId, storyboard: sb };
 }
@@ -3219,7 +3318,7 @@ export async function reorderStoryboardShots(scriptId, sceneId, shotIds = []) {
       body: JSON.stringify({ shotIds })
     });
     if (res?.storyboard) {
-      localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+      safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       return res;
     }
   } catch (e) {}
@@ -3239,7 +3338,7 @@ export async function reorderStoryboardShots(scriptId, sceneId, shotIds = []) {
   reordered.forEach((s, idx) => { s.order = idx + 1; });
   sb.shots = reordered;
   sb.updatedAt = new Date().toISOString();
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  safeSetStoredStoryboard(scriptId, sceneId, sb);
   return { storyboard: sb };
 }
 
@@ -3251,7 +3350,7 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
     });
     if (res?.shot) {
       if (res.storyboard) {
-        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       }
       return res;
     }
@@ -3266,7 +3365,7 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
     shot.approvedAt = new Date().toISOString();
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
-    localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+    safeSetStoredStoryboard(scriptId, sceneId, sb);
   }
   return { storyboard: sb, shot };
 }
@@ -3278,7 +3377,7 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
       body: JSON.stringify({ shotIds, status, notes })
     });
     if (res?.storyboard) {
-      localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+      safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       return res;
     }
   } catch (e) {}
@@ -3296,7 +3395,7 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
     }
   }
   sb.updatedAt = new Date().toISOString();
-  localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+  safeSetStoredStoryboard(scriptId, sceneId, sb);
   return { storyboard: sb, affectedCount: count };
 }
 
@@ -3546,7 +3645,7 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
     });
     if (res?.shot) {
       if (res.storyboard) {
-        localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(res.storyboard));
+        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
       }
       return res;
     }
@@ -3572,7 +3671,7 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
     if (target.approvalStatus) shot.approvalStatus = target.approvalStatus;
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
-    localStorage.setItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sb));
+    safeSetStoredStoryboard(scriptId, sceneId, sb);
   }
   return { storyboard: sb, shot };
 }

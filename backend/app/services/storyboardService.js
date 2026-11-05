@@ -8,21 +8,9 @@ import { db } from '../models/db.js';
 
 
 function getSketchImageSvg(filename, width = 1200, height = 675) {
-  try {
-    const candidates = [
-      path.resolve('frontend/public/assets/storyboard', filename),
-      path.resolve('assets/storyboard', filename),
-      path.resolve('frontend/dist/assets/storyboard', filename),
-      path.resolve('../frontend/public/assets/storyboard', filename)
-    ];
-    const foundPath = candidates.find(p => fs.existsSync(p));
-    if (foundPath) {
-      const b64 = fs.readFileSync(foundPath).toString('base64');
-      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'><image href='data:image/jpeg;base64,${b64}' width='${width}' height='${height}' preserveAspectRatio='xMidYMid slice'/></svg>`;
-      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-    }
-  } catch (_) {}
-  return `/assets/storyboard/${filename}`;
+  const assetUrl = `/assets/storyboard/${filename}`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'><image href='${assetUrl}' width='${width}' height='${height}' preserveAspectRatio='xMidYMid slice'/></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
 export function getStoryboards(scriptId = 'chronicles-of-dust') {
@@ -174,6 +162,9 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
       previousImageUrl: shot.imageUrl,
       previousPrompt: shot.prompt,
       provider: shot.provider || "scriptora-concept",
+      generationType: updates.isVariation ? 'variation' : (updates.generationType || 'take'),
+      variationType: updates.variationType || null,
+      visualStyle: updates.visualStyle || shot.visualStyle || "Storyboard Sketch",
       quality: shot.quality || "hd",
       approvalStatus: shot.approvalStatus || "draft",
       sourceVersion: sb.sourceVersion || "Draft 4.2",

@@ -1,4 +1,6 @@
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
 import { handleCors } from './middleware/cors.js';
 import { db } from './models/db.js';
 import * as authService from './auth/authService.js';
@@ -707,6 +709,35 @@ export const server = http.createServer(async (req, res) => {
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message, provider: body.provider });
+      }
+    }
+
+    // Static assets serving
+    const cleanAssetPath = pathname.replace(/^\/?(Scriptora\/)?assets\//, '');
+    if (pathname.includes('/assets/')) {
+      const candidates = [
+        path.resolve('frontend/public/assets', cleanAssetPath),
+        path.resolve('assets', cleanAssetPath),
+        path.resolve('frontend/dist/assets', cleanAssetPath)
+      ];
+      const found = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+      if (found) {
+        const ext = path.extname(found).toLowerCase();
+        const mimeTypes = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.svg': 'image/svg+xml',
+          '.webp': 'image/webp',
+          '.gif': 'image/gif',
+          '.css': 'text/css',
+          '.js': 'application/javascript'
+        };
+        res.statusCode = 200;
+        res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        fs.createReadStream(found).pipe(res);
+        return;
       }
     }
 

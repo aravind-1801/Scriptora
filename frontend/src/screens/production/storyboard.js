@@ -916,6 +916,147 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
         </div>
       </div>
 
+      
+      <!-- ===================================================================== -->
+      <!-- MODAL 8: SHOT VARIATION MODAL (Alternative Visual Interpretation) -->
+      <!-- ===================================================================== -->
+      <div id="shot-variation-modal" class="scriptora-modal-overlay fixed inset-0 z-[125] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-lg w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[90vh] overflow-y-auto">
+          <!-- Header -->
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+                <span class="material-symbols-outlined text-lg">auto_awesome</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <h3 class="font-heading font-bold text-sm text-slate-900">Explore Shot Variation</h3>
+                  <span id="variation-shot-pill" class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-100 text-purple-700">1A</span>
+                </div>
+                <p class="text-[11px] text-slate-500">Generate an alternative interpretation preserving narrative context & continuity.</p>
+              </div>
+            </div>
+            <button id="variation-modal-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" title="Close">
+              <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+
+          <!-- Current Shot Context Card -->
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center gap-3">
+            <div class="w-16 h-11 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-slate-800 flex items-center justify-center">
+              <img id="variation-current-thumb" src="" alt="Current take" class="w-full h-full object-cover hidden" />
+              <span id="variation-thumb-placeholder" class="material-symbols-outlined text-slate-600 text-base">image</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                <span id="variation-shot-title" class="truncate font-heading">Shot Title</span>
+                <span id="variation-shot-meta" class="text-[10px] text-slate-400 font-mono">Wide · 24mm</span>
+              </div>
+              <p id="variation-shot-desc" class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">Description...</p>
+            </div>
+          </div>
+
+          <!-- Variation Type Selector -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Variation Creative Focus</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2" id="variation-options-grid">
+              
+              <!-- Option 1: Auto Variation (Recommended) -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border-2 border-purple-600 bg-purple-50/50 cursor-pointer transition-all hover:bg-purple-50 select-none">
+                <input type="radio" name="variation-type" value="auto" checked class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-purple-900">
+                    <span class="material-symbols-outlined text-[15px] text-purple-600">auto_awesome</span>
+                    <span>Auto Variation</span>
+                    <span class="px-1 rounded bg-purple-200 text-purple-800 text-[9px] font-semibold">Recommended</span>
+                  </div>
+                  <span class="text-[10px] text-purple-700 mt-0.5 leading-snug">Intelligently combines angle, lighting, and composition adjustments.</span>
+                </div>
+              </label>
+
+              <!-- Option 2: Composition -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all hover:bg-slate-50 select-none">
+                <input type="radio" name="variation-type" value="composition" class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
+                    <span class="material-symbols-outlined text-[15px] text-blue-600">dashboard_customize</span>
+                    <span>Composition</span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 mt-0.5 leading-snug">Explore a different arrangement of subjects and visual elements.</span>
+                </div>
+              </label>
+
+              <!-- Option 3: Camera Angle -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all hover:bg-slate-50 select-none">
+                <input type="radio" name="variation-type" value="angle" class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
+                    <span class="material-symbols-outlined text-[15px] text-emerald-600">videocam</span>
+                    <span>Camera Angle</span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 mt-0.5 leading-snug">Explore another camera perspective (high, low, reverse, or dutch).</span>
+                </div>
+              </label>
+
+              <!-- Option 4: Lighting -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all hover:bg-slate-50 select-none">
+                <input type="radio" name="variation-type" value="lighting" class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
+                    <span class="material-symbols-outlined text-[15px] text-amber-500">wb_sunny</span>
+                    <span>Lighting</span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 mt-0.5 leading-snug">Explore alternative lighting mood, shadow contrast, or rim glint.</span>
+                </div>
+              </label>
+
+              <!-- Option 5: Framing -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all hover:bg-slate-50 select-none">
+                <input type="radio" name="variation-type" value="framing" class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
+                    <span class="material-symbols-outlined text-[15px] text-indigo-600">crop</span>
+                    <span>Framing</span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 mt-0.5 leading-snug">Alternative focal framing while preserving narrative intention.</span>
+                </div>
+              </label>
+
+              <!-- Option 6: Creative Interpretation -->
+              <label class="variation-option-card relative flex items-start gap-2.5 p-2.5 rounded-xl border border-slate-200 bg-white cursor-pointer transition-all hover:bg-slate-50 select-none">
+                <input type="radio" name="variation-type" value="creative" class="mt-1 text-purple-600 focus:ring-purple-500" />
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-1 text-xs font-bold text-slate-800">
+                    <span class="material-symbols-outlined text-[15px] text-rose-500">brush</span>
+                    <span>Creative Interpretation</span>
+                  </div>
+                  <span class="text-[10px] text-slate-500 mt-0.5 leading-snug">Broader visual reinterpretation of the same screenplay action.</span>
+                </div>
+              </label>
+
+            </div>
+          </div>
+
+          <!-- Additional Guidance / Prompt (Optional) -->
+          <div class="flex flex-col gap-1">
+            <label class="text-[11px] font-semibold text-slate-700">Optional Variation Guidance</label>
+            <textarea id="variation-guidance-input" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-purple-600 bg-white" placeholder="e.g. Lower camera angle, harsh dust-storm rim backlight..."></textarea>
+          </div>
+
+          <!-- Actions Footer -->
+          <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
+            <div class="text-[10px] text-slate-400 font-medium">Preserves previous version in history</div>
+            <div class="flex items-center gap-2">
+              <button type="button" id="variation-modal-cancel" class="px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors cursor-pointer">Cancel</button>
+              <button type="button" id="variation-modal-confirm" class="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 active:scale-95 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer transition-all">
+                <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                <span>Generate Variation</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ===================================================================== -->
       <!-- MODAL 5: FULL-SCREEN CINEMATIC LIGHTBOX -->
       <!-- ===================================================================== -->
@@ -1066,6 +1207,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   const regenConfirm = document.getElementById('regen-modal-confirm');
 
   const historyModal = document.getElementById('shot-history-modal');
+  const variationModal = document.getElementById('shot-variation-modal');
+  const variationClose = document.getElementById('variation-modal-close');
+  const variationCancel = document.getElementById('variation-modal-cancel');
+  const variationConfirm = document.getElementById('variation-modal-confirm');
+  let activeVariationShotId = null;
   const historyClose = document.getElementById('history-modal-close');
   const historyDone = document.getElementById('history-modal-done');
 
@@ -2078,6 +2224,35 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
   // Modal 4 (History)
   if (historyClose) historyClose.onclick = () => closeModal(historyModal);
+  if (variationClose) variationClose.onclick = () => closeModal(variationModal);
+  if (variationCancel) variationCancel.onclick = () => closeModal(variationModal);
+
+  // Variation radio selection styling
+  document.querySelectorAll('#variation-options-grid input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      document.querySelectorAll('.variation-option-card').forEach(card => {
+        card.classList.remove('border-2', 'border-purple-600', 'bg-purple-50/50');
+        card.classList.add('border', 'border-slate-200', 'bg-white');
+      });
+      const parentCard = radio.closest('.variation-option-card');
+      if (parentCard) {
+        parentCard.classList.remove('border', 'border-slate-200', 'bg-white');
+        parentCard.classList.add('border-2', 'border-purple-600', 'bg-purple-50/50');
+      }
+    });
+  });
+
+  if (variationConfirm) {
+    variationConfirm.onclick = () => {
+      const selectedRadio = document.querySelector('#variation-options-grid input[name="variation-type"]:checked');
+      const variationType = selectedRadio ? selectedRadio.value : 'auto';
+      const guidance = document.getElementById('variation-guidance-input')?.value.trim() || '';
+      closeModal(variationModal);
+      if (activeVariationShotId) {
+        executeShotVariation(activeVariationShotId, variationType, guidance);
+      }
+    };
+  }
   if (historyDone) historyDone.onclick = () => closeModal(historyModal);
 
   // Modal 5 (Lightbox)
@@ -2762,52 +2937,84 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (!shot) return;
 
     const titleEl = document.getElementById('history-modal-title');
-    if (titleEl) titleEl.textContent = `History for Shot ${shot.shotNumber}`;
+    if (titleEl) titleEl.textContent = `Image History & Variations — Shot ${shot.shotNumber}`;
     const container = document.getElementById('history-items-container');
     if (!container) return;
 
     const history = Array.isArray(shot.history) ? shot.history : [];
 
+    // Header showing active current frame
+    const currentHeader = `
+      <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-16 h-12 bg-slate-950 rounded-lg overflow-hidden shrink-0 border border-blue-300 flex items-center justify-center">
+            ${shot.imageUrl ? `<img src="${shot.imageUrl}" alt="Active Frame" class="w-full h-full object-cover" />` : `<span class="material-symbols-outlined text-slate-400 text-base">image</span>`}
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <span class="px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold text-[9px] uppercase tracking-wider">Active Frame</span>
+              <span class="font-mono text-xs font-bold text-slate-800">REC · ${shot.shotNumber}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 truncate mt-0.5 font-medium">${shot.title || shot.description || 'Current active frame'}</p>
+          </div>
+        </div>
+        <span class="text-[10px] text-blue-700 font-semibold font-mono shrink-0">In Production</span>
+      </div>
+    `;
+
     if (!history.length) {
-      container.innerHTML = `
+      container.innerHTML = currentHeader + `
         <div class="p-8 text-center text-slate-400 text-xs">
           <span class="material-symbols-outlined text-2xl text-slate-400">history</span>
-          <p class="mt-1">No previous versions recorded for this shot.</p>
+          <p class="mt-1">No previous versions recorded for this shot yet.</p>
+          <p class="text-[10px] text-slate-400 mt-0.5">Use Retry or Variation to create new takes and preserve previous iterations.</p>
         </div>
       `;
     } else {
-      container.innerHTML = history.slice().reverse().map((h, revIdx) => {
-        const realIdx = history.length - 1 - revIdx;
+      container.innerHTML = currentHeader + history.slice().map((h, revIdx) => {
         const dateStr = h.timestamp ? new Date(h.timestamp).toLocaleString() : 'Past Version';
+        const imgUrl = h.previousImageUrl || h.imageUrl;
+
+        let badgeHtml = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-semibold">Take</span>';
+        if (h.generationType === 'variation') {
+          const typeName = (h.variationType || 'Creative').toUpperCase();
+          badgeHtml = `<span class="px-1.5 py-0.5 rounded text-[10px] bg-purple-100 text-purple-800 font-bold border border-purple-200">Variation: ${typeName}</span>`;
+        } else if (h.generationType === 'retry') {
+          badgeHtml = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-800 font-bold border border-amber-200">Retry</span>';
+        }
 
         return `
-          <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 flex flex-col gap-2">
+          <div class="bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-2.5 shadow-2xs hover:border-slate-300 transition-all">
             <div class="flex items-center justify-between text-xs font-semibold text-slate-700">
-              <span class="font-mono text-blue-600">${dateStr}</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-mono">${h.sourceVersion || 'Draft 4.2'}</span>
+              <div class="flex items-center gap-1.5">
+                ${badgeHtml}
+                <span class="font-mono text-[11px] text-slate-500">${dateStr}</span>
+              </div>
+              <span class="text-[10px] text-slate-400 font-mono">${h.visualStyle || 'Storyboard Sketch'}</span>
             </div>
 
             <div class="flex items-center gap-3">
-              <div class="w-20 h-14 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shrink-0 flex items-center justify-center">
-                ${h.previousImageUrl ? `
-                  <img src="${h.previousImageUrl}" alt="Historical version" class="w-full h-full object-cover" />
+              <div class="w-20 h-14 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shrink-0 flex items-center justify-center cursor-pointer group relative">
+                ${imgUrl ? `
+                  <img src="${imgUrl}" alt="Historical version" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 ` : `
                   <span class="material-symbols-outlined text-slate-600 text-base">image</span>
                 `}
               </div>
               <div class="min-w-0 flex-1 text-[11px] text-slate-600">
-                <p class="line-clamp-2 italic">${h.previousPrompt || 'No prompt recorded'}</p>
-                <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                <p class="line-clamp-2 italic">${h.prompt || h.previousPrompt || 'No prompt recorded'}</p>
+                <div class="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
                   <span>Provider: ${h.provider || 'scriptora-concept'}</span>
                   <span>·</span>
-                  <span>By: ${h.updatedBy || 'Director'}</span>
+                  <span>Version #${history.length - revIdx}</span>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-end pt-1 border-t border-slate-200/60">
-              <button type="button" class="btn-restore-version px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] transition-colors cursor-pointer" data-hist-idx="${realIdx}">
-                Restore This Version
+            <div class="flex items-center justify-end pt-1 border-t border-slate-100">
+              <button type="button" class="btn-restore-version px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-[11px] transition-all cursor-pointer flex items-center gap-1 shadow-2xs" data-hist-idx="${revIdx}">
+                <span class="material-symbols-outlined text-[13px]">restore</span>
+                <span>Restore This Take</span>
               </button>
             </div>
           </div>
@@ -2816,15 +3023,44 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
       container.querySelectorAll('.btn-restore-version').forEach(btn => {
         btn.onclick = async () => {
-          const idx = Number(btn.getAttribute('data-hist-idx'));
-          try {
-            await api.restoreStoryboardShotVersion(scriptId, currentSceneId, activeHistoryShotId, idx);
-            showToast(`Restored past version to Shot ${shot.shotNumber}`);
-            closeModal(historyModal);
-            loadStoryboardData();
-          } catch (e) {
-            showToast('Failed restoring version');
+          const revIdx = Number(btn.getAttribute('data-hist-idx'));
+          const selectedVer = history[revIdx];
+          if (!selectedVer) return;
+
+          const restoredImg = selectedVer.previousImageUrl || selectedVer.imageUrl;
+          if (!restoredImg) return;
+
+          // Preserve active image into history before restoring
+          if (shot.imageUrl) {
+            shot.history.unshift({
+              id: `v-${Date.now()}`,
+              imageUrl: shot.imageUrl,
+              previousImageUrl: shot.imageUrl,
+              prompt: shot.prompt || shot.description || 'Current take before restore',
+              generationType: 'restore',
+              visualStyle: shot.visualStyle,
+              timestamp: new Date().toISOString()
+            });
           }
+
+          shot.imageUrl = restoredImg;
+          if (selectedVer.prompt) shot.prompt = selectedVer.prompt;
+          if (selectedVer.visualStyle) shot.visualStyle = selectedVer.visualStyle;
+
+          try {
+            await api.updateStoryboardShot(scriptId, currentSceneId, activeHistoryShotId, {
+              imageUrl: restoredImg,
+              prompt: shot.prompt,
+              visualStyle: shot.visualStyle
+            });
+          } catch (_) {}
+          try {
+            await api.saveStoryboard(scriptId, currentStoryboard);
+          } catch (_) {}
+
+          showToast(`Restored version to Shot ${shot.shotNumber}`);
+          closeModal(historyModal);
+          renderCurrentView();
         };
       });
     }
@@ -3391,19 +3627,79 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
-  async function generateShotVariation(shotId) {
+  function openShotVariationModal(shotId) {
+    activeVariationShotId = shotId;
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    if (!shot) return;
+
+    const pill = document.getElementById('variation-shot-pill');
+    const title = document.getElementById('variation-shot-title');
+    const meta = document.getElementById('variation-shot-meta');
+    const desc = document.getElementById('variation-shot-desc');
+    const thumb = document.getElementById('variation-current-thumb');
+    const thumbPlaceholder = document.getElementById('variation-thumb-placeholder');
+    const guidance = document.getElementById('variation-guidance-input');
+
+    if (pill) pill.textContent = shot.shotNumber;
+    if (title) title.textContent = shot.title || `Shot ${shot.shotNumber}`;
+    if (meta) meta.textContent = `${shot.shotSize || 'Medium'} · ${shot.focalLength || '50mm'} · ${shot.visualStyle || 'Storyboard Sketch'}`;
+    if (desc) desc.textContent = shot.description || 'No description provided.';
+    if (guidance) guidance.value = '';
+
+    if (shot.imageUrl) {
+      if (thumb) {
+        thumb.src = shot.imageUrl;
+        thumb.classList.remove('hidden');
+      }
+      if (thumbPlaceholder) thumbPlaceholder.classList.add('hidden');
+    } else {
+      if (thumb) thumb.classList.add('hidden');
+      if (thumbPlaceholder) thumbPlaceholder.classList.remove('hidden');
+    }
+
+    // Reset to Auto Variation
+    const autoRadio = document.querySelector('#variation-options-grid input[value="auto"]');
+    if (autoRadio) {
+      autoRadio.checked = true;
+      autoRadio.dispatchEvent(new Event('change'));
+    }
+
+    openModal(variationModal);
+  }
+
+  async function executeShotVariation(shotId, variationType, guidance = '') {
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
     if (shot.isGenerating) return;
+
     shot.isGenerating = true;
+    shot.generatingStatus = `Generating ${variationType.toUpperCase()} Variation...`;
     shot.generationError = null;
     renderCurrentView();
 
     try {
       const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
+      let variationPrompt = shot.prompt || shot.description || 'Cinematic composition';
+      if (variationType === 'composition') {
+        variationPrompt += ', alternative compositional staging, rearranged subject placement and background spatial balance';
+      } else if (variationType === 'angle') {
+        variationPrompt += ', dynamic alternative camera angle perspective';
+      } else if (variationType === 'lighting') {
+        variationPrompt += ', alternate lighting mood study, dramatic rim light and deep shadow contrast';
+      } else if (variationType === 'framing') {
+        variationPrompt += ', alternative focal framing and lens perspective';
+      } else if (variationType === 'creative') {
+        variationPrompt += ', bold creative visual reinterpretation while preserving character and screenplay context';
+      } else {
+        variationPrompt += ', dynamic alternative variation with fresh cinematic staging';
+      }
+      if (guidance) {
+        variationPrompt += `. Additional direction: ${guidance}`;
+      }
+
       const res = await api.generateStoryboardShot(scriptId, {
         provider: shot.provider || 'scriptora-concept',
-        prompt: `${shot.prompt || shot.description || 'Cinematic composition'} alternative angle variation, different framing`,
+        prompt: variationPrompt,
         shotSize: shot.shotSize,
         cameraAngle: shot.cameraAngle,
         cameraMovement: shot.cameraMovement,
@@ -3417,37 +3713,57 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         quality: shot.quality || 'standard',
-        isVariation: true
+        isVariation: true,
+        variationType: variationType
       });
 
       if (res?.imageUrl) {
         if (!shot.history) shot.history = [];
         if (shot.imageUrl) {
           shot.history.unshift({
+            id: `v-${Date.now()}`,
             imageUrl: shot.imageUrl,
+            previousImageUrl: shot.imageUrl,
             prompt: shot.prompt || shot.description || 'Original take',
+            generationType: 'variation',
+            variationType: variationType,
             visualStyle: shot.visualStyle || 'Storyboard Sketch',
-            provider: shot.provider || 'scriptora-concept',
-            createdAt: new Date().toISOString()
+            settings: {
+              shotSize: shot.shotSize,
+              cameraAngle: shot.cameraAngle,
+              focalLength: shot.focalLength,
+              lightingMood: shot.lightingMood,
+              aspectRatio: shot.aspectRatio
+            },
+            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 4.2',
+            timestamp: new Date().toISOString()
           });
         }
         shot.imageUrl = res.imageUrl;
         shot.isGenerating = false;
+        shot.generatingStatus = null;
         shot.generationError = null;
+
         try {
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
             imageUrl: res.imageUrl,
-            isVariation: true
+            prompt: variationPrompt,
+            isVariation: true,
+            variationType: variationType
           });
         } catch (_) {}
-        await api.saveStoryboard(scriptId, currentStoryboard);
+        try {
+          await api.saveStoryboard(scriptId, currentStoryboard);
+        } catch (_) {}
+
         renderCurrentView();
-        showToast(`Created variation for Shot ${shot.shotNumber}`);
+        showToast(`Created ${variationType} variation for Shot ${shot.shotNumber}`);
       } else {
         throw new Error('No image returned');
       }
     } catch (err) {
       shot.isGenerating = false;
+      shot.generatingStatus = null;
       shot.generationError = err.message || 'Variation failed';
       renderCurrentView();
       showToast(`Variation failed for shot ${shot.shotNumber}`);
@@ -3458,7 +3774,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
     if (shot.isGenerating) return;
+
     shot.isGenerating = true;
+    shot.generatingStatus = `Retrying Shot ${shot.shotNumber}...`;
     shot.generationError = null;
     renderCurrentView();
 
@@ -3479,36 +3797,53 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         description: shot.description,
         cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
-        quality: shot.quality || 'standard'
+        quality: shot.quality || 'standard',
+        generationType: 'retry'
       });
 
       if (res?.imageUrl) {
         if (!shot.history) shot.history = [];
         if (shot.imageUrl && shot.imageUrl !== res.imageUrl) {
           shot.history.unshift({
+            id: `v-${Date.now()}`,
             imageUrl: shot.imageUrl,
+            previousImageUrl: shot.imageUrl,
             prompt: shot.prompt || shot.description || 'Previous take',
+            generationType: 'retry',
             visualStyle: shot.visualStyle || 'Storyboard Sketch',
-            provider: shot.provider || 'scriptora-concept',
-            createdAt: new Date().toISOString()
+            settings: {
+              shotSize: shot.shotSize,
+              cameraAngle: shot.cameraAngle,
+              focalLength: shot.focalLength,
+              lightingMood: shot.lightingMood,
+              aspectRatio: shot.aspectRatio
+            },
+            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 4.2',
+            timestamp: new Date().toISOString()
           });
         }
         shot.imageUrl = res.imageUrl;
         shot.isGenerating = false;
+        shot.generatingStatus = null;
         shot.generationError = null;
+
         try {
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
             imageUrl: res.imageUrl
           });
         } catch (_) {}
-        await api.saveStoryboard(scriptId, currentStoryboard);
+        try {
+          await api.saveStoryboard(scriptId, currentStoryboard);
+        } catch (_) {}
+
         renderCurrentView();
-        showToast(`Frame ${shot.shotNumber} sketch generated!`);
+        showToast(`Shot ${shot.shotNumber} regenerated successfully!`);
       } else {
         throw new Error('No image returned');
       }
     } catch (err) {
       shot.isGenerating = false;
+      shot.generatingStatus = null;
       shot.generationError = err.message || 'Generation failed';
       renderCurrentView();
       showToast(`Retry failed for shot ${shot.shotNumber}`);
@@ -3606,7 +3941,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         e.preventDefault();
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
-        generateShotVariation(shotId);
+        openShotVariationModal(shotId);
       };
     });
 
