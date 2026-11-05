@@ -538,10 +538,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                   </div>
                   <p id="gen-active-style-desc" class="text-[10px] text-slate-500 line-clamp-1 mt-0.5">Delicate graphite pencil drawing with soft tonal shading</p>
                 </div>
-                <div class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 text-slate-700 font-bold text-[10px] tracking-wide uppercase shadow-2xs flex items-center gap-1">
+                <button type="button" id="btn-change-style-action" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 text-slate-700 font-bold text-[10px] tracking-wide uppercase shadow-2xs flex items-center gap-1 cursor-pointer">
                   <span>Change</span>
                   <span class="material-symbols-outlined text-[12px]">chevron_right</span>
-                </div>
+                </button>
               </div>
               <input type="hidden" id="gen-style-select" value="Soft Pencil" />
             </div>
@@ -580,6 +580,61 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <button type="button" id="gen-btn-start" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
                 <span id="gen-submit-label">Generate 4-Shot Sequence</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ===================================================================== -->
+          <!-- STEP 1B: VISUAL STYLE GALLERY POPUP VIEW (FORWARD & BACKWARD ROUTE)  -->
+          <!-- ===================================================================== -->
+          <div id="gen-step-styles" class="hidden flex flex-col gap-3">
+            <!-- Navigation Header with Back Route -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <button type="button" id="btn-back-to-gen-config" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Back to Settings</span>
+              </button>
+              <div class="text-right">
+                <span class="text-xs font-bold text-slate-900 block">Choose Art Style</span>
+                <span class="text-[10px] text-slate-500">Click any style to select & return</span>
+              </div>
+            </div>
+
+            <!-- 4-Column Responsive Grid matching User Reference Image -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 max-h-[58vh] overflow-y-auto pr-1" id="gen-all-styles-grid">
+              ${VISUAL_STYLE_PREVIEWS.map(style => `
+                <button type="button" class="gen-style-gallery-card text-center p-2 rounded-xl border border-slate-200 hover:border-blue-400 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative shadow-2xs" data-style-id="${style.id}">
+                  <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-200/80 relative">
+                    <img src="${style.previewImage}" onerror="this.onerror=null; this.src='${style.fallbackSvg}';" alt="${style.name}" class="w-full h-full object-cover group-hover:scale-104 transition-transform duration-300" />
+                    <div class="gen-style-gallery-check hidden absolute top-1 right-1 w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                      <span class="material-symbols-outlined text-[13px] font-bold">check</span>
+                    </div>
+                  </div>
+                  <div class="text-[11px] font-bold text-slate-800 group-hover:text-blue-600 truncate px-1">${style.name}</div>
+                </button>
+              `).join('')}
+
+              <!-- Add your own art style (+) Card -->
+              <button type="button" id="btn-custom-style-card" class="text-center p-2 rounded-xl border-2 border-dashed border-slate-300 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/30 transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[115px] group">
+                <div class="w-8 h-8 rounded-full bg-white border border-slate-200 group-hover:border-blue-300 text-slate-500 group-hover:text-blue-600 flex items-center justify-center shadow-2xs">
+                  <span class="material-symbols-outlined text-lg font-bold">add</span>
+                </div>
+                <div class="text-[11px] font-bold text-slate-700 group-hover:text-blue-600 flex items-center gap-0.5 justify-center">
+                  <span>Add your own art style</span>
+                  <span class="material-symbols-outlined text-[12px] text-slate-400">info</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Custom Art Style Input Drawer (Revealed when clicking +) -->
+            <div id="gen-custom-style-drawer" class="hidden bg-blue-50/80 border border-blue-200 rounded-xl p-3 flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-blue-900">Define Custom Art Style</span>
+                <button type="button" id="btn-cancel-custom-style" class="text-slate-500 hover:text-slate-700 text-[11px] font-medium cursor-pointer">Cancel</button>
+              </div>
+              <input type="text" id="input-custom-style-name" class="w-full px-3 py-1.5 text-xs border border-blue-200 rounded-lg bg-white text-slate-900 focus:outline-none focus:border-blue-600" placeholder="e.g. 1970s Vintage Film, Claymation, Cyberpunk Manga, Oil on Canvas..." />
+              <button type="button" id="btn-apply-custom-style" class="self-end px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-2xs">
+                Apply Custom Style
               </button>
             </div>
           </div>
@@ -2166,8 +2221,10 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     // Forward Route: Open Style Gallery
     const btnBrowse = document.getElementById('btn-browse-all-styles');
     const activeCard = document.getElementById('gen-active-style-card');
+    const btnChange = document.getElementById('btn-change-style-action');
     const openGallery = (e) => {
       e?.preventDefault();
+      e?.stopPropagation();
       document.getElementById('gen-step-config')?.classList.add('hidden');
       document.getElementById('gen-step-styles')?.classList.remove('hidden');
       const curStyle = document.getElementById('gen-style-select')?.value || 'Soft Pencil';
@@ -2176,12 +2233,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (btnBrowse) btnBrowse.onclick = openGallery;
     if (activeCard) activeCard.onclick = openGallery;
+    if (btnChange) btnChange.onclick = openGallery;
 
     // Backward Route: Back to Settings
     const btnBack = document.getElementById('btn-back-to-gen-config');
     if (btnBack) {
       btnBack.onclick = (e) => {
         e.preventDefault();
+        e?.stopPropagation();
         document.getElementById('gen-step-styles')?.classList.add('hidden');
         document.getElementById('gen-step-config')?.classList.remove('hidden');
       };
@@ -2189,7 +2248,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     // Gallery cards selection with automatic backward route
     document.querySelectorAll('.gen-style-gallery-card').forEach(card => {
-      card.onclick = () => {
+      card.onclick = (e) => {
+        e.preventDefault();
+        e?.stopPropagation();
         const sId = card.getAttribute('data-style-id');
         applySelectedVisualArtStyle(sId, true);
       };
@@ -2367,6 +2428,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (sceneSnippetDisp) sceneSnippetDisp.textContent = scene.snippet || 'Scene awaiting visual direction.';
 
     document.getElementById('gen-step-config')?.classList.remove('hidden');
+    document.getElementById('gen-step-styles')?.classList.add('hidden');
     document.getElementById('gen-step-progress')?.classList.add('hidden');
     document.getElementById('gen-step-preview')?.classList.add('hidden');
 
