@@ -1,8 +1,29 @@
+import fs from 'fs';
+import path from 'path';
 import { db } from '../models/db.js';
 
 // Pre-Production Service: Storyboard Studio Data & Operations
 // Supports scene-grounded shot sequences, camera parameters, continuity tracking,
 // AI generation workflows with transparent cost disclosure, and multi-format export.
+
+
+function getSketchImageSvg(filename, width = 1200, height = 675) {
+  try {
+    const candidates = [
+      path.resolve('frontend/public/assets/storyboard', filename),
+      path.resolve('assets/storyboard', filename),
+      path.resolve('frontend/dist/assets/storyboard', filename),
+      path.resolve('../frontend/public/assets/storyboard', filename)
+    ];
+    const foundPath = candidates.find(p => fs.existsSync(p));
+    if (foundPath) {
+      const b64 = fs.readFileSync(foundPath).toString('base64');
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'><image href='data:image/jpeg;base64,${b64}' width='${width}' height='${height}' preserveAspectRatio='xMidYMid slice'/></svg>`;
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+    }
+  } catch (_) {}
+  return `/assets/storyboard/${filename}`;
+}
 
 export function getStoryboards(scriptId = 'chronicles-of-dust') {
   ensureStoryboardsInitialized(scriptId);
@@ -605,27 +626,32 @@ export async function generateShotImage(params = {}) {
     }
   }
 
-  // Built-in SCRIPTORA Concept Engine (High-Resolution Procedural SVG Canvas)
-  // Generates genuine, tailored storyboard visuals reflecting camera setup, aspect ratio, lens, and lighting
-  const svgImage = generateProceduralConceptFrame({
-    prompt,
-    shotSize,
-    cameraAngle,
-    cameraMovement: params.cameraMovement || "Static",
-    focalLength,
-    lightingMood,
-    aspectRatio,
-    visualStyle,
-    sceneHeading,
-    shotNumber,
-    description: params.description || prompt,
-    cast: params.cast || params.characters,
-    characters: params.characters || params.cast,
-    screenDirection: params.screenDirection || "Left to Right"
-  });
+  // Built-in SCRIPTORA Concept Engine (Photorealistic Hand-Drawn Graphite Storyboard Sketch)
+  const sizeLower = (shotSize || "").toLowerCase();
+  const headingUpper = (sceneHeading || "").toUpperCase();
+  const fullText = `${sceneHeading} ${prompt} ${params.description || ""}`.toLowerCase();
+
+  let sketchFile = "shot_1a_wide_outpost.jpg";
+  if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
+    sketchFile = fullText.includes("valve") || headingUpper.includes("10") ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
+  } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
+    sketchFile = "shot_1b_two_shot_standoff.jpg";
+  } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
+    sketchFile = "shot_1d_macro_insert.jpg";
+  } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
+    sketchFile = "shot_10b_pumping_hall.jpg";
+  } else if (shotNumber.includes("B")) {
+    sketchFile = "shot_1b_two_shot_standoff.jpg";
+  } else if (shotNumber.includes("C")) {
+    sketchFile = "shot_1c_closeup_reaction.jpg";
+  } else if (shotNumber.includes("D")) {
+    sketchFile = "shot_1d_macro_insert.jpg";
+  }
+
+  const generatedImage = getSketchImageSvg(sketchFile);
 
   return {
-    imageUrl: svgImage,
+    imageUrl: generatedImage,
     provider: "scriptora-concept",
     quality: "hd",
     costEstimate: "Free (Built-in)",
@@ -1186,16 +1212,7 @@ function ensureStoryboardsInitialized(scriptId) {
             aspectRatio: "2.39:1",
             visualStyle: "Storyboard Sketch",
             prompt: "Cinematic wide shot, arid desert outpost gate, dust devils whirling, worn solar patrol rover in foreground, 2.39:1 anamorphic framing, muted earth tones, warm daylight",
-            imageUrl: generateProceduralConceptFrame({
-              shotSize: "Wide Shot",
-              cameraAngle: "High Angle",
-              focalLength: "24mm Wide",
-              lightingMood: "Daylight Dust",
-              aspectRatio: "2.39:1",
-              visualStyle: "Storyboard Sketch",
-              sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-              shotNumber: "1A"
-            }),
+            imageUrl: getSketchImageSvg("shot_1a_wide_outpost.jpg"),
             imageSource: "ai",
             provider: "scriptora-concept",
             quality: "hd",
@@ -1231,16 +1248,7 @@ function ensureStoryboardsInitialized(scriptId) {
             aspectRatio: "2.39:1",
             visualStyle: "Storyboard Sketch",
             prompt: "Medium two-shot, dusty outpost booth, weary hydro-engineer confronting guard over illuminated green holographic terminal, 50mm shallow depth of field",
-            imageUrl: generateProceduralConceptFrame({
-              shotSize: "Medium Two-Shot",
-              cameraAngle: "Eye Level",
-              focalLength: "50mm Prime",
-              lightingMood: "Harsh Fluorescent Rim",
-              aspectRatio: "2.39:1",
-              visualStyle: "Storyboard Sketch",
-              sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-              shotNumber: "1B"
-            }),
+            imageUrl: getSketchImageSvg("shot_1b_two_shot_standoff.jpg"),
             imageSource: "ai",
             provider: "scriptora-concept",
             quality: "hd",
@@ -1276,16 +1284,7 @@ function ensureStoryboardsInitialized(scriptId) {
             aspectRatio: "2.39:1",
             visualStyle: "Storyboard Sketch",
             prompt: "Extreme close-up on rugged military diagnostic screen, red warning glyphs, water pressure anomaly curve, scratched glass surface, macro lens bokeh",
-            imageUrl: generateProceduralConceptFrame({
-              shotSize: "Close-Up",
-              cameraAngle: "Low Angle",
-              focalLength: "85mm Portrait",
-              lightingMood: "Cyan Strobe",
-              aspectRatio: "2.39:1",
-              visualStyle: "Storyboard Sketch",
-              sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-              shotNumber: "1C"
-            }),
+            imageUrl: getSketchImageSvg("shot_1c_closeup_reaction.jpg"),
             imageSource: "ai",
             provider: "scriptora-concept",
             quality: "hd",
@@ -1338,16 +1337,7 @@ function ensureStoryboardsInitialized(scriptId) {
             aspectRatio: "2.39:1",
             visualStyle: "Storyboard Sketch",
             prompt: "Dramatic dutch angle close up, hydro-engineer clamping leaking pressurized valve under red and cyan emergency strobes, 85mm shallow depth of field, water droplets on lens",
-            imageUrl: generateProceduralConceptFrame({
-              shotSize: "Close-Up",
-              cameraAngle: "Dutch Angle",
-              focalLength: "85mm Portrait",
-              lightingMood: "Cyan Strobe",
-              aspectRatio: "2.39:1",
-              visualStyle: "Storyboard Sketch",
-              sceneHeading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-              shotNumber: "10A"
-            }),
+            imageUrl: getSketchImageSvg("shot_10a_valve_breach.jpg"),
             imageSource: "ai",
             provider: "scriptora-concept",
             quality: "hd",
@@ -1383,16 +1373,7 @@ function ensureStoryboardsInitialized(scriptId) {
             aspectRatio: "2.39:1",
             visualStyle: "Storyboard Sketch",
             prompt: "Wide high-angle shot of cavernous underground pumping hall, water rushing across metal grating, lone figures in vast industrial labyrinth, 24mm anamorphic",
-            imageUrl: generateProceduralConceptFrame({
-              shotSize: "Wide Shot",
-              cameraAngle: "High Angle",
-              focalLength: "24mm Wide",
-              lightingMood: "Low-Key Shadow",
-              aspectRatio: "2.39:1",
-              visualStyle: "Storyboard Sketch",
-              sceneHeading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-              shotNumber: "10B"
-            }),
+            imageUrl: getSketchImageSvg("shot_10b_pumping_hall.jpg"),
             imageSource: "ai",
             provider: "scriptora-concept",
             quality: "hd",

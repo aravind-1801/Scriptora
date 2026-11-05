@@ -2770,6 +2770,20 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
+  
+  function formatStoryboardDescription(desc = '', characters = []) {
+    if (!desc) return 'No description provided.';
+    let text = desc;
+    if (Array.isArray(characters)) {
+      characters.forEach(char => {
+        if (!char || char.length < 2) return;
+        const regex = new RegExp(`\\b(${char})\\b`, 'gi');
+        text = text.replace(regex, `<span class="font-semibold text-blue-700">$1<span class="material-symbols-outlined text-[12px] text-blue-600 align-text-bottom ml-0.5">person</span></span>`);
+      });
+    }
+    return text;
+  }
+
   function renderContactSheet(shots) {
     viewContainer.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -2814,6 +2828,10 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
                 <!-- Primary Visual Image Canvas -->
                 <div class="aspect-video bg-slate-950 flex items-center justify-center relative overflow-hidden group ${s.isGenerating || s.generationError ? '' : 'cursor-pointer btn-open-lightbox'}" data-shot-id="${s.id}">
+                  <!-- Camera Icon Badge -->
+                  <div class="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-xs text-white flex items-center justify-center pointer-events-none z-10 shadow-xs" title="Cinematography Frame">
+                    <span class="material-symbols-outlined text-[15px]">videocam</span>
+                  </div>
                   ${s.isGenerating ? `
                     <div class="w-full h-full bg-amber-50/80 border-b border-amber-200/70 flex flex-col items-center justify-center gap-2 p-4 text-center select-none">
                       <div class="relative flex items-center justify-center">
@@ -2856,41 +2874,45 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
                 <!-- Title & Details -->
                 <div class="p-3 flex flex-col gap-1.5">
-                  <h4 class="font-heading font-bold text-xs text-slate-900 truncate" title="${s.title}">${s.title}</h4>
-                  <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">${s.description || 'No description provided.'}</p>
-                  
-                  <!-- Metadata Chips -->
-                  <div class="flex items-center gap-1.5 pt-1 text-[10px] text-slate-600 flex-wrap">
-                    <span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.shotSize || 'Wide'}</span>
-                    <span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.cameraAngle || 'Eye Level'}</span>
-                    ${s.cameraMovement && s.cameraMovement !== 'Static' ? `<span class="px-1.5 py-0.5 rounded bg-slate-100 font-medium">${s.cameraMovement}</span>` : ''}
-                    ${s.continuity?.screenDirection ? `<span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium truncate max-w-[140px]">${s.continuity.screenDirection}</span>` : ''}
+                  <div class="flex items-center justify-between text-xs border-b border-slate-100 pb-1">
+                    <span class="font-bold text-slate-900 tracking-tight">Scene: ${currentStoryboard?.sceneNumber || 1} | Shot: ${s.shotNumber}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">${s.shotSize || 'Wide'}</span>
                   </div>
+                  <p class="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">${formatStoryboardDescription(s.description || s.title || '', s.characters || ['Kevin', 'Marcus', 'Meera'])}</p>
                 </div>
               </div>
 
-              <!-- Card Action Bar -->
-              <div class="px-3 py-2 border-t border-slate-100 bg-slate-50/40 flex items-center justify-between text-xs gap-1">
-                <!-- Reorder arrows -->
-                <div class="flex items-center gap-0.5">
-                  <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move left / up">
-                    <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+              <!-- Card Action Bar: EDIT, RETRY, VARIATION, UPLOAD -->
+              <div class="p-2.5 border-t border-slate-100 bg-slate-50/70 flex flex-col gap-2">
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button type="button" class="btn-open-inspector py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs" data-shot-id="${s.id}">
+                    EDIT
                   </button>
-                  <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move right / down">
-                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                  <button type="button" class="btn-card-retry-gen py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-1 shadow-2xs" data-shot-id="${s.id}">
+                    <span class="material-symbols-outlined text-[13px]">refresh</span> RETRY
                   </button>
+                  <button type="button" class="btn-card-variation py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs" data-shot-id="${s.id}">
+                    VARIATION
+                  </button>
+                  <label class="btn-card-upload-label py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs flex items-center justify-center">
+                    UPLOAD
+                    <input type="file" accept="image/*" class="hidden input-card-upload-file" data-shot-id="${s.id}" />
+                  </label>
                 </div>
 
-                <!-- Action controls -->
-                <div class="flex items-center gap-1">
-                  <button class="btn-quick-approve p-1 rounded ${s.approvalStatus === 'approved' ? 'text-emerald-600 bg-emerald-50' : 'text-slate-400 hover:text-emerald-600'} cursor-pointer transition-colors" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Frame'}">
-                    <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
-                  </button>
-                  <button class="btn-card-regen p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Regenerate this frame">
-                    <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
-                  </button>
-                  <button class="btn-open-inspector px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-300 text-[11px] font-semibold transition-all cursor-pointer" data-shot-id="${s.id}">
-                    Edit Details
+                <!-- Sub-bar: Reorder & Status Approval -->
+                <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200/60">
+                  <div class="flex items-center gap-1">
+                    <button class="btn-move-up p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move left / up">
+                      <span class="material-symbols-outlined text-[15px]">arrow_back</span>
+                    </button>
+                    <button class="btn-move-down p-1 text-slate-400 hover:text-blue-600 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Move right / down">
+                      <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </button>
+                  </div>
+                  <button class="btn-quick-approve px-2 py-0.5 rounded ${s.approvalStatus === 'approved' ? 'text-emerald-700 bg-emerald-50 border border-emerald-200 font-semibold' : 'text-slate-500 hover:text-emerald-600'} cursor-pointer transition-colors flex items-center gap-1" data-shot-id="${s.id}">
+                    <span class="material-symbols-outlined text-[13px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
+                    <span>${s.approvalStatus === 'approved' ? 'Approved' : 'Approve'}</span>
                   </button>
                 </div>
               </div>
@@ -3114,7 +3136,62 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
-  async function retryShotGeneration(shotId) {
+    async function generateShotVariation(shotId) {
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    if (!shot) return;
+    shot.isGenerating = true;
+    shot.generationError = null;
+    renderStoryboardView();
+
+    try {
+      const res = await api.generateStoryboardShot(scriptId, {
+        provider: shot.provider || 'scriptora-concept',
+        prompt: `${shot.prompt || shot.description || 'Cinematic composition'} alternative angle variation`,
+        shotSize: shot.shotSize,
+        cameraAngle: shot.cameraAngle,
+        cameraMovement: shot.cameraMovement,
+        focalLength: shot.focalLength,
+        lightingMood: shot.lightingMood,
+        aspectRatio: shot.aspectRatio,
+        visualStyle: shot.visualStyle || 'Storyboard Sketch',
+        sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+        shotNumber: shot.shotNumber,
+        description: shot.description,
+        cast: shot.characters,
+        characters: shot.characters,
+        quality: shot.quality || 'standard',
+        isVariation: true
+      });
+
+      if (res?.imageUrl) {
+        if (!shot.history) shot.history = [];
+        if (shot.imageUrl) {
+          shot.history.unshift({
+            imageUrl: shot.imageUrl,
+            prompt: shot.prompt || shot.description,
+            visualStyle: shot.visualStyle,
+            provider: shot.provider,
+            createdAt: new Date().toISOString()
+          });
+        }
+        shot.imageUrl = res.imageUrl;
+        shot.isGenerating = false;
+        shot.generationError = null;
+        await api.saveStoryboard(scriptId, currentStoryboard);
+        renderStoryboardView();
+        showToast(`Created variation for Shot ${shot.shotNumber}`);
+      } else {
+        throw new Error('No image returned');
+      }
+    } catch (err) {
+      shot.isGenerating = false;
+      shot.generationError = err.message || 'Variation failed';
+      renderStoryboardView();
+      showToast(`Variation failed for shot ${shot.shotNumber}`);
+    }
+  }
+
+async function retryShotGeneration(shotId) {
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
     shot.isGenerating = true;
@@ -3247,6 +3324,50 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         retryShotGeneration(shotId);
+      };
+    });
+
+    // Variation generation
+    document.querySelectorAll('.btn-card-variation').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        generateShotVariation(shotId);
+      };
+    });
+
+    // Upload custom image directly to card
+    document.querySelectorAll('.input-card-upload-file').forEach(input => {
+      input.onchange = (e) => {
+        const shotId = input.getAttribute('data-shot-id');
+        const file = e.target.files && e.target.files[0];
+        if (!file || !shotId) return;
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+          if (!shot) return;
+          if (!shot.history) shot.history = [];
+          if (shot.imageUrl) {
+            shot.history.unshift({
+              imageUrl: shot.imageUrl,
+              prompt: shot.prompt || shot.description,
+              visualStyle: shot.visualStyle,
+              provider: shot.provider,
+              createdAt: new Date().toISOString()
+            });
+          }
+          shot.imageUrl = ev.target.result;
+          shot.imageSource = 'upload';
+          try {
+            await api.saveStoryboard(scriptId, currentStoryboard);
+            renderStoryboardView();
+            showToast(`Uploaded new frame for Shot ${shot.shotNumber}`);
+          } catch (err) {
+            showToast('Failed to save uploaded image');
+          }
+        };
+        reader.readAsDataURL(file);
       };
     });
   }
