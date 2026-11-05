@@ -163,6 +163,33 @@ server.listen(PORT, async () => {
     });
     console.log('✓ AI Scene Sequence Generation (Custom 2 Shots):', genSeq2.status, genSeq2.body.proposedShots?.length === 2 ? 'PASS' : 'FAIL');
 
+    // 14b. Storyboard Preferences & Recycle Bin Soft-Delete & Restore Workflow
+    const getPrefs = await request('/api/production/storyboard/preferences');
+    console.log('✓ Get Storyboard Preferences:', getPrefs.status, getPrefs.body.preferences?.defaultStyle ? 'PASS' : 'FAIL');
+
+    const updatePrefs = await request('/api/production/storyboard/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: { defaultStyle: 'Concept Art', experienceLevel: 'Intermediate' }
+    });
+    console.log('✓ Update Storyboard Preferences:', updatePrefs.status, updatePrefs.body.preferences?.experienceLevel === 'Intermediate' ? 'PASS' : 'FAIL');
+
+    // Soft-delete shot and check Recycle Bin
+    const delShotRes = await request(`/api/production/chronicles-of-dust/storyboard/scene-1/shots/${newShotId}`, {
+      method: 'DELETE'
+    });
+    const rbList = await request('/api/production/chronicles-of-dust/storyboard/recycle-bin');
+    console.log('✓ Soft Delete to Recycle Bin:', delShotRes.status === 200 && rbList.body.items?.length > 0 ? 'PASS' : 'FAIL');
+
+    // Restore shot from Recycle Bin
+    const rbItem = rbList.body.items.find(i => i.type === 'shot');
+    const restoreShot = await request('/api/production/chronicles-of-dust/storyboard/recycle-bin/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { itemId: rbItem.id }
+    });
+    console.log('✓ Restore Shot from Recycle Bin:', restoreShot.status === 200 && restoreShot.body.success ? 'PASS' : 'FAIL');
+
     // 15. Sign Out (Session Invalidation)
     const logoutRes = await request('/api/auth/logout', { method: 'POST' });
     const meAfterLogout = await request('/api/auth/me');

@@ -1,3 +1,4 @@
+import { VISUAL_STYLE_PREVIEWS, getStylePreview } from '../../utils/stylePreviews.js';
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
 import { renderProdSubNav } from './prodNav.js';
@@ -7,24 +8,73 @@ import { showToast } from '../../components/toast.js';
 import { exportStoryboardPdf } from '../../services/pdfExport.js';
 import { openModal, closeModal } from '../../utils/popupPosition.js';
 
-// Category style & camera presets matching SCRIPTORA design tokens
-const STYLE_PRESETS = [
-  "Cinematic Concept Art",
-  "Storyboard Ink",
-  "Pencil Sketch",
-  "Photorealistic / Live Action",
-  "3D Animation",
-  "Anime / Illustration",
-  "Custom"
+// SCRIPTORA Intermediate Filmmaking & Cinematography Options
+export const SHOT_TYPES = [
+  "Establishing Shot",
+  "Action Shot",
+  "Reaction Shot",
+  "Dialogue Shot",
+  "Insert / Detail Shot",
+  "Transition Shot"
 ];
 
-const ASPECT_RATIOS = ["2.39:1", "16:9", "4:3", "9:16"];
+export const SHOT_SIZES = [
+  "Extreme Wide",
+  "Wide",
+  "Medium",
+  "Close-up",
+  "Extreme Close-up"
+];
+
+export const CAMERA_ANGLES = [
+  "Eye Level",
+  "Low Angle",
+  "High Angle",
+  "Bird's Eye View",
+  "Over-the-Shoulder",
+  "Dutch Angle"
+];
+
+export const ASPECT_RATIOS = ["2.39:1", "16:9", "4:3", "9:16"];
+
+export const CAMERA_MOVEMENTS = [
+  "Static",
+  "Pan",
+  "Tilt",
+  "Tracking",
+  "Dolly"
+];
+
+export const LENS_OPTIONS = [
+  "24mm",
+  "35mm",
+  "50mm",
+  "85mm"
+];
+
+export const LIGHTING_OPTIONS = [
+  "Auto / Scene-based",
+  "Daylight",
+  "Night",
+  "Golden Hour",
+  "Low-key",
+  "Backlit"
+];
+
+export const SCREEN_DIRECTIONS = [
+  "Left to Right",
+  "Right to Left",
+  "Static"
+];
+
+export const STYLE_PRESETS = [
+  "Concept Art",
+  "Cinematic Realism",
+  "Storyboard Sketch",
+  "Photorealistic"
+];
+
 const QUALITY_OPTIONS = ["Standard Draft", "High Definition Production"];
-const SHOT_SIZES = ["Wide Shot", "Medium Shot", "Close-Up", "Extreme Close-Up", "Medium Two-Shot", "Over-the-Shoulder", "Point of View (POV)"];
-const CAMERA_ANGLES = ["Eye Level", "Low Angle", "High Angle", "Dutch Angle", "Bird's Eye"];
-const CAMERA_MOVEMENTS = ["Static", "Pan", "Tilt", "Tracking Dolly", "Crane / Jib", "Handheld"];
-const FOCAL_LENGTHS = ["18mm Ultra-Wide", "24mm Wide", "35mm Standard", "50mm Prime", "85mm Portrait", "105mm Telephoto", "Anamorphic 40mm"];
-const LIGHTING_MOODS = ["Daylight Dust", "Golden Hour Sun", "Harsh Fluorescent Rim", "Low-Key Shadow / Noir", "Cyan Emergency Strobe", "Tungsten Warm Interior"];
 
 export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -42,6 +92,13 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             <button id="btn-export-storyboard-pdf" class="w-8 h-8 sm:w-auto sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0" title="Export genuine Storyboard Studio PDF" aria-label="Export PDF">
               <span class="material-symbols-outlined text-[17px]">download</span>
               <span class="hidden sm:inline">Export PDF</span>
+            </button>
+            <button id="btn-storyboard-preferences" class="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center shadow-2xs transition-all cursor-pointer shrink-0" title="Storyboard Preferences & Defaults" aria-label="Preferences">
+              <span class="material-symbols-outlined text-[18px]">tune</span>
+            </button>
+            <button id="btn-storyboard-recycle-bin" class="w-8 h-8 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center shadow-2xs transition-all cursor-pointer shrink-0 relative" title="Recycle Bin" aria-label="Recycle Bin">
+              <span class="material-symbols-outlined text-[18px]">delete_outline</span>
+              <span id="recycle-bin-badge" class="hidden absolute -top-1 -right-1 px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[9px] font-bold leading-tight">0</span>
             </button>
             <button id="btn-generate-sequence" class="w-8 h-8 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white flex items-center justify-center shadow-2xs transition-all cursor-pointer shrink-0" title="Generate Scene" aria-label="Generate Scene">
               <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
@@ -65,6 +122,12 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                   <select id="storyboard-scene-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5 max-w-full">
                     <option value="scene-1">Loading screenplay scenes...</option>
                   </select>
+                  <button id="btn-delete-scene-storyboard" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0" title="Move scene storyboard to Recycle Bin" aria-label="Delete Scene">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                  <button id="btn-delete-scene-storyboard" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0" title="Move scene storyboard to Recycle Bin" aria-label="Delete Scene">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
                 </div>
                 <div id="scene-context-badges" class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
                   <span id="badge-int-ext" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">INT</span>
@@ -204,104 +267,174 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             </div>
           </div>
 
-          <!-- Form Fields -->
-          <form id="shot-detail-form" class="flex flex-col gap-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Shot Number</label>
-                <input type="text" id="input-shot-number" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 font-mono font-bold" required />
+          <!-- Form Fields (Organized into 3 Structured Sections) -->
+          <form id="shot-detail-form" class="flex flex-col gap-3.5">
+            <!-- SECTION A: SHOT IDENTITY -->
+            <div class="rounded-2xl border border-slate-200/90 p-3.5 bg-slate-50/50 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-200/70 pb-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span>Section A — Shot Identity</span>
+                </div>
+                <div class="flex items-center gap-1.5 font-mono text-[11px] text-slate-600 bg-white px-2 py-0.5 rounded-lg border border-slate-200/80">
+                  <span class="text-slate-400 font-normal">Index:</span>
+                  <span id="display-shot-number" class="font-bold text-blue-600">1A</span>
+                </div>
               </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div class="flex flex-col gap-1 sm:col-span-2">
+                  <label class="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                    <span>Shot Title</span>
+                    <span class="text-rose-500 font-bold">*</span>
+                  </label>
+                  <input type="text" id="input-shot-title" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 bg-white shadow-2xs" placeholder="e.g. Guard tower silhouette at sunset" required />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[11px] font-semibold text-slate-700">Shot Type <span class="text-slate-400 font-normal">(Optional)</span></label>
+                  <select id="input-shot-type" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-none focus:border-blue-600 shadow-2xs">
+                    <option value="">None / Custom</option>
+                    ${SHOT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+              <input type="hidden" id="input-shot-number" value="1A" />
+            </div>
+
+            <!-- SECTION B: VISUAL DIRECTION -->
+            <div class="rounded-2xl border border-slate-200/90 p-3.5 bg-slate-50/50 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-200/70 pb-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span>Section B — Visual Direction</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-medium">Primary Creative Input</span>
+              </div>
+
+              <!-- Visual Description -->
               <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Shot Title</label>
-                <input type="text" id="input-shot-title" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required />
+                <label class="text-[11px] font-semibold text-slate-700">Visual Description</label>
+                <textarea id="input-shot-desc" rows="3" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 bg-white leading-relaxed shadow-2xs" placeholder="Describe framing, blocking, key visual action, lighting, characters, and environmental atmosphere..."></textarea>
+              </div>
+
+              <!-- Visual Style Image Preview Cards (4 Styles of SAME Desert Checkpoint Scene) -->
+              <div class="flex flex-col gap-1.5 mt-0.5">
+                <div class="flex items-center justify-between">
+                  <label class="text-[11px] font-semibold text-slate-700">Visual Style — Select Treatment</label>
+                  <span class="text-[10px] text-slate-500">Same scene rendered in 4 visual styles</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="style-preview-cards-container">
+                  ${VISUAL_STYLE_PREVIEWS.map(style => `
+                    <button type="button" class="style-preview-card text-left p-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative" data-style-id="${style.id}">
+                      <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
+                        <img src="${style.previewImage}" alt="${style.name}" class="w-full h-full object-cover" />
+                        <div class="style-check-badge hidden absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
+                          <span class="material-symbols-outlined text-[11px] font-bold">check</span>
+                        </div>
+                      </div>
+                      <div>
+                        <div class="text-[11px] font-bold text-slate-900 group-hover:text-blue-600 leading-tight">${style.name}</div>
+                        <div class="text-[9px] text-slate-500 line-clamp-2 leading-tight mt-0.5">${style.description}</div>
+                      </div>
+                    </button>
+                  `).join('')}
+                </div>
+                <input type="hidden" id="input-shot-style" value="Concept Art" />
               </div>
             </div>
 
-            <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-700">Description & Visual Action</label>
-              <textarea id="input-shot-desc" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" placeholder="Describe framing, blocking, and key visual beats..."></textarea>
-            </div>
+            <!-- SECTION C: CAMERA & COMPOSITION -->
+            <div class="rounded-2xl border border-slate-200/90 p-3.5 bg-slate-50/50 flex flex-col gap-3">
+              <div class="flex items-center justify-between border-b border-slate-200/70 pb-2">
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                  <span>Section C — Camera & Composition</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-medium">Filmmaking Controls</span>
+              </div>
 
-            <!-- Camera Parameters Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 bg-slate-50/70 p-3 rounded-xl border border-slate-100">
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Shot Size</label>
-                <select id="input-shot-size" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${SHOT_SIZES.map(s => `<option value="${s}">${s}</option>`).join('')}
-                </select>
+              <!-- Primary Camera Controls: Shot Size, Camera Angle, Aspect Ratio -->
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-semibold text-slate-600 uppercase">Shot Size</label>
+                  <select id="input-shot-size" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-none focus:border-blue-600 shadow-2xs">
+                    ${SHOT_SIZES.map(s => `<option value="${s}">${s}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-semibold text-slate-600 uppercase">Camera Angle</label>
+                  <select id="input-shot-angle" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-none focus:border-blue-600 shadow-2xs">
+                    ${CAMERA_ANGLES.map(a => `<option value="${a}">${a}</option>`).join('')}
+                  </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-semibold text-slate-600 uppercase">Aspect Ratio</label>
+                  <select id="input-shot-ratio" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 focus:outline-none focus:border-blue-600 shadow-2xs">
+                    ${ASPECT_RATIOS.map(r => `<option value="${r}">${r}</option>`).join('')}
+                  </select>
+                </div>
               </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Camera Angle</label>
-                <select id="input-shot-angle" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${CAMERA_ANGLES.map(a => `<option value="${a}">${a}</option>`).join('')}
-                </select>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Camera Movement</label>
-                <select id="input-shot-movement" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${CAMERA_MOVEMENTS.map(m => `<option value="${m}">${m}</option>`).join('')}
-                </select>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Focal Length</label>
-                <select id="input-shot-focal" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${FOCAL_LENGTHS.map(f => `<option value="${f}">${f}</option>`).join('')}
-                </select>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Aspect Ratio</label>
-                <select id="input-shot-ratio" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${ASPECT_RATIOS.map(r => `<option value="${r}">${r}</option>`).join('')}
-                </select>
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase">Lighting Mood</label>
-                <select id="input-shot-lighting" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
-                  ${LIGHTING_MOODS.map(l => `<option value="${l}">${l}</option>`).join('')}
-                </select>
-              </div>
-            </div>
 
-            <!-- Visual Style & Creative Prompt -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Visual Style Preset</label>
-                <select id="input-shot-style" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
-                  ${STYLE_PRESETS.map(s => `<option value="${s}">${s}</option>`).join('')}
-                </select>
+              <!-- Collapsible More Camera Settings -->
+              <div class="border border-slate-200/80 rounded-xl overflow-hidden bg-white mt-1 shadow-2xs">
+                <button type="button" id="btn-toggle-more-camera" class="w-full px-3 py-2.5 flex items-center justify-between text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-[16px] text-blue-600">tune</span>
+                    <span>More Camera Settings</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(Movement, Lens, Lighting, Direction)</span>
+                  </div>
+                  <span id="more-camera-chevron" class="material-symbols-outlined text-[18px] text-slate-400 transition-transform">expand_more</span>
+                </button>
+                <div id="more-camera-panel" class="hidden p-3 border-t border-slate-200/60 bg-slate-50/50 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-semibold text-slate-500 uppercase">Camera Movement</label>
+                    <select id="input-shot-movement" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
+                      ${CAMERA_MOVEMENTS.map(m => `<option value="${m}">${m}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-semibold text-slate-500 uppercase">Lens</label>
+                    <select id="input-shot-focal" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
+                      ${LENS_OPTIONS.map(l => `<option value="${l}">${l}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-semibold text-slate-500 uppercase">Lighting</label>
+                    <select id="input-shot-lighting" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
+                      ${LIGHTING_OPTIONS.map(l => `<option value="${l}">${l}</option>`).join('')}
+                    </select>
+                  </div>
+                  <div class="flex flex-col gap-1">
+                    <label class="text-[10px] font-semibold text-slate-500 uppercase">Screen Direction</label>
+                    <select id="input-shot-direction" class="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800">
+                      ${SCREEN_DIRECTIONS.map(d => `<option value="${d}">${d}</option>`).join('')}
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Approval State</label>
-                <select id="input-shot-approval" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 font-semibold">
-                  <option value="draft">Draft</option>
-                  <option value="proposed">Proposed (Needs Review)</option>
-                  <option value="approved">Approved for Production</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-            </div>
 
-            <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-700">Creative Direction / Generation Prompt</label>
-              <textarea id="input-shot-prompt" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" placeholder="Artistic direction, references, key lighting rim..."></textarea>
-            </div>
-
-            <!-- Continuity & Director Notes -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Screen Direction / Eyeline</label>
-                <input type="text" id="input-shot-direction" placeholder="e.g. Left to Right / Looking Screen Right" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" />
-              </div>
-              <div class="flex flex-col gap-1">
-                <label class="text-[11px] font-semibold text-slate-700">Director & Continuity Notes</label>
-                <input type="text" id="input-shot-notes" placeholder="Notes for camera operator or costume state..." class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" />
+              <!-- Notes & Approval -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-0.5">
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-semibold text-slate-600 uppercase">Director & Continuity Notes</label>
+                  <input type="text" id="input-shot-notes" placeholder="Notes for camera operator, props, or costumes..." class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 bg-white" />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-[10px] font-semibold text-slate-600 uppercase">Approval State</label>
+                  <select id="input-shot-approval" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-800 font-semibold">
+                    <option value="draft">Draft</option>
+                    <option value="proposed">Proposed (Needs Review)</option>
+                    <option value="approved">Approved for Production</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
               <button type="button" id="modal-btn-delete-shot" class="px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center gap-1 cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">delete</span>
-                <span>Delete</span>
+                <span>Move to Recycle Bin</span>
               </button>
               <div class="flex items-center gap-2">
                 <button type="button" id="modal-btn-cancel-shot" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">Cancel</button>
@@ -547,6 +680,143 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
         </div>
       </div>
 
+
+      <!-- ===================================================================== -->
+      <!-- MODAL 6: STORYBOARD RECYCLE BIN (SOFT-DELETE & RESTORATION) -->
+      <!-- ===================================================================== -->
+      <div id="recycle-bin-modal" class="scriptora-modal-overlay fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-2xl w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
+                <span class="material-symbols-outlined text-lg">delete_sweep</span>
+              </div>
+              <div>
+                <h3 class="font-heading font-bold text-sm text-slate-900">Storyboard Recycle Bin</h3>
+                <p class="text-[11px] text-slate-500">Soft-deleted shots and scenes can be restored anytime or permanently removed.</p>
+              </div>
+            </div>
+            <button id="rb-modal-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" title="Close">
+              <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+
+          <!-- Filter Tabs & Empty All -->
+          <div class="flex items-center justify-between gap-2">
+            <div class="inline-flex p-0.5 rounded-xl bg-slate-100 text-xs font-medium">
+              <button type="button" id="rb-tab-all" class="px-2.5 py-1 rounded-lg bg-white shadow-2xs font-semibold text-slate-900 cursor-pointer">All Items (<span id="rb-count-all">0</span>)</button>
+              <button type="button" id="rb-tab-shots" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 cursor-pointer">Shots (<span id="rb-count-shots">0</span>)</button>
+              <button type="button" id="rb-tab-scenes" class="px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 cursor-pointer">Scenes (<span id="rb-count-scenes">0</span>)</button>
+            </div>
+            <button type="button" id="rb-btn-empty-bin" class="px-2.5 py-1 rounded-lg text-rose-600 hover:bg-rose-50 text-[11px] font-semibold flex items-center gap-1 cursor-pointer">
+              <span class="material-symbols-outlined text-[14px]">delete_forever</span>
+              <span>Empty Bin</span>
+            </button>
+          </div>
+
+          <!-- Items Container -->
+          <div id="rb-items-container" class="flex flex-col gap-2 min-h-[220px] max-h-[50vh] overflow-y-auto pr-1">
+            <div id="rb-empty-state" class="flex flex-col items-center justify-center py-12 text-slate-400 gap-1.5">
+              <span class="material-symbols-outlined text-4xl text-slate-300">delete_outline</span>
+              <span class="text-xs font-semibold text-slate-600">Recycle Bin is empty</span>
+              <span class="text-[10px] text-slate-400">Deleted shots or scenes will appear here for safe recovery.</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end pt-3 border-t border-slate-100">
+            <button type="button" id="rb-modal-done" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold cursor-pointer">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================================================================== -->
+      <!-- MODAL 7: STORYBOARD PREFERENCES -->
+      <!-- ===================================================================== -->
+      <div id="storyboard-preferences-modal" class="scriptora-modal-overlay fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-lg w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+                <span class="material-symbols-outlined text-lg">tune</span>
+              </div>
+              <div>
+                <h3 class="font-heading font-bold text-sm text-slate-900">Storyboard Preferences</h3>
+                <p class="text-[11px] text-slate-500">Configure default cinematography applied to new shots.</p>
+              </div>
+            </div>
+            <button id="pref-modal-close" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" title="Close">
+              <span class="material-symbols-outlined text-lg">close</span>
+            </button>
+          </div>
+
+          <form id="storyboard-pref-form" class="flex flex-col gap-3 text-xs">
+            <div class="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 border border-blue-100">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600 text-[18px]">verified</span>
+                <div>
+                  <div class="font-bold text-blue-950 text-[11px]">Experience Level</div>
+                  <div class="text-[10px] text-blue-700">Intermediate Storyboard Studio active</div>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-2xs">Intermediate</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Visual Style</label>
+                <select id="pref-default-style" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${STYLE_PRESETS.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Aspect Ratio</label>
+                <select id="pref-default-ratio" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${ASPECT_RATIOS.map(r => `<option value="${r}">${r}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Shot Size</label>
+                <select id="pref-default-size" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${SHOT_SIZES.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Camera Angle</label>
+                <select id="pref-default-angle" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${CAMERA_ANGLES.map(a => `<option value="${a}">${a}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Lens</label>
+                <select id="pref-default-lens" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${LENS_OPTIONS.map(l => `<option value="${l}">${l}</option>`).join('')}
+                </select>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Default Lighting</label>
+                <select id="pref-default-lighting" class="w-full px-2.5 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-800">
+                  ${LIGHTING_OPTIONS.map(l => `<option value="${l}">${l}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-2 mt-2">
+              <button type="button" id="pref-btn-reset" class="px-3 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold cursor-pointer">Reset Defaults</button>
+              <div class="flex items-center gap-2">
+                <button type="button" id="pref-modal-cancel" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">Cancel</button>
+                <button type="submit" id="pref-btn-save" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer">Save Preferences</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- ===================================================================== -->
       <!-- MODAL 5: FULL-SCREEN CINEMATIC LIGHTBOX -->
       <!-- ===================================================================== -->
@@ -600,6 +870,40 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   `;
 }
 
+
+// Helper: Structured generation prompt construction
+function buildStructuredPrompt({
+  description,
+  visualStyle,
+  shotSize,
+  cameraAngle,
+  aspectRatio,
+  cameraMovement,
+  lens,
+  lighting,
+  screenDirection,
+  sceneContext
+}) {
+  const parts = [];
+  if (visualStyle) parts.push(`[Style: ${visualStyle}]`);
+  if (shotSize) parts.push(`[Framing: ${shotSize}]`);
+  if (cameraAngle) parts.push(`[Angle: ${cameraAngle}]`);
+  if (lens) parts.push(`[Lens: ${lens}]`);
+  if (cameraMovement && cameraMovement !== 'Static') parts.push(`[Movement: ${cameraMovement}]`);
+  if (lighting && lighting !== 'Auto / Scene-based') parts.push(`[Lighting: ${lighting}]`);
+  if (screenDirection && screenDirection !== 'Static') parts.push(`[Direction: ${screenDirection}]`);
+  if (aspectRatio) parts.push(`[Aspect: ${aspectRatio}]`);
+  if (sceneContext) parts.push(`[Scene Context: ${sceneContext}]`);
+
+  const desc = (description || '').trim();
+  if (desc) {
+    parts.push(desc);
+  } else {
+    parts.push('Cinematic storyboard composition');
+  }
+
+  return parts.join(' - ');
+}
 
 export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -773,32 +1077,53 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       btnModalGenAction.disabled = true;
 
       const shotNum = document.getElementById('input-shot-number')?.value.trim() || '1A';
-      const promptVal = document.getElementById('input-shot-prompt')?.value.trim() || document.getElementById('input-shot-desc')?.value.trim() || 'Cinematic composition';
-      const sizeVal = document.getElementById('input-shot-size')?.value || 'Wide Shot';
+      const descVal = document.getElementById('input-shot-desc')?.value.trim() || '';
+      const styleVal = document.getElementById('input-shot-style')?.value || 'Concept Art';
+      const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
       const angleVal = document.getElementById('input-shot-angle')?.value || 'Eye Level';
-      const focalVal = document.getElementById('input-shot-focal')?.value || '50mm Prime';
       const ratioVal = document.getElementById('input-shot-ratio')?.value || '2.39:1';
-      const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Daylight Dust';
-      const styleVal = document.getElementById('input-shot-style')?.value || 'Cinematic Concept Art';
+      const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
+      const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
+      const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
+      const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
+      const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
+
+      const structuredPrompt = buildStructuredPrompt({
+        description: descVal,
+        visualStyle: styleVal,
+        shotSize: sizeVal,
+        cameraAngle: angleVal,
+        aspectRatio: ratioVal,
+        cameraMovement: movementVal,
+        lens: lensVal,
+        lighting: lightingVal,
+        screenDirection: directionVal,
+        sceneContext
+      });
 
       try {
         const res = await api.generateStoryboardShot(scriptId, {
           provider: 'scriptora-concept',
-          prompt: promptVal,
+          prompt: structuredPrompt,
+          userDescription: descVal,
           shotSize: sizeVal,
           cameraAngle: angleVal,
-          focalLength: focalVal,
+          cameraMovement: movementVal,
+          focalLength: lensVal,
+          lens: lensVal,
           lightingMood: lightingVal,
+          lighting: lightingVal,
           aspectRatio: ratioVal,
           visualStyle: styleVal,
+          screenDirection: directionVal,
           sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
           shotNumber: shotNum
         });
 
         if (res?.imageUrl) {
           currentModalDraftImage = res.imageUrl;
-          currentModalDraftPrompt = promptVal;
-          showToast('Image generated successfully inside shot preview');
+          currentModalDraftPrompt = structuredPrompt;
+          showToast('Image generated successfully');
         }
       } catch (err) {
         showToast(err.message || 'Generation failed');
@@ -810,7 +1135,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     };
   }
 
-  // Modal 1: File import
+  // Modal 1: File import (Reference image support)
   if (modalFileImport) {
     modalFileImport.onchange = (e) => {
       const file = e.target.files?.[0];
@@ -820,20 +1145,20 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       reader.onload = (event) => {
         currentModalDraftImage = event.target.result;
         updateInspectorImagePreviewUI();
-        showToast('Photo imported into preview canvas');
+        showToast('Reference image imported');
       };
       reader.readAsDataURL(file);
     };
   }
 
-  // Modal 1: Post-gen approval buttons
+  // Modal 1: Quick Status Toggles
   if (btnModalToggleApprove) {
     btnModalToggleApprove.onclick = () => {
       currentModalDraftApproval = 'approved';
       const apprInput = document.getElementById('input-shot-approval');
       if (apprInput) apprInput.value = 'approved';
       updateInspectorImagePreviewUI();
-      showToast('Frame set to Approved');
+      showToast('Frame marked as Approved for Production');
     };
   }
 
@@ -855,8 +1180,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           title: document.getElementById('input-shot-title')?.value.trim() || 'Preview',
           description: document.getElementById('input-shot-desc')?.value.trim() || '',
           aspectRatio: document.getElementById('input-shot-ratio')?.value || '2.39:1',
-          focalLength: document.getElementById('input-shot-focal')?.value || '50mm Prime',
-          shotSize: document.getElementById('input-shot-size')?.value || 'Medium Shot',
+          focalLength: document.getElementById('input-shot-focal')?.value || '50mm',
+          shotSize: document.getElementById('input-shot-size')?.value || 'Medium',
           cameraAngle: document.getElementById('input-shot-angle')?.value || 'Eye Level',
           imageUrl: currentModalDraftImage,
           approvalStatus: currentModalDraftApproval
@@ -878,24 +1203,51 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (shotForm) {
     shotForm.onsubmit = async (e) => {
       e.preventDefault();
+      const descVal = document.getElementById('input-shot-desc')?.value.trim() || '';
+      const styleVal = document.getElementById('input-shot-style')?.value || 'Concept Art';
+      const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
+      const angleVal = document.getElementById('input-shot-angle')?.value || 'Eye Level';
+      const ratioVal = document.getElementById('input-shot-ratio')?.value || '2.39:1';
+      const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
+      const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
+      const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
+      const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
+      const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
+
+      const structuredPrompt = buildStructuredPrompt({
+        description: descVal,
+        visualStyle: styleVal,
+        shotSize: sizeVal,
+        cameraAngle: angleVal,
+        aspectRatio: ratioVal,
+        cameraMovement: movementVal,
+        lens: lensVal,
+        lighting: lightingVal,
+        screenDirection: directionVal,
+        sceneContext
+      });
+
       const updates = {
         shotNumber: document.getElementById('input-shot-number')?.value.trim() || '1A',
         title: document.getElementById('input-shot-title')?.value.trim() || 'Shot',
-        description: document.getElementById('input-shot-desc')?.value.trim() || '',
-        shotSize: document.getElementById('input-shot-size')?.value || 'Medium Shot',
-        cameraAngle: document.getElementById('input-shot-angle')?.value || 'Eye Level',
-        cameraMovement: document.getElementById('input-shot-movement')?.value || 'Static',
-        focalLength: document.getElementById('input-shot-focal')?.value || '50mm Prime',
-        aspectRatio: document.getElementById('input-shot-ratio')?.value || '2.39:1',
-        lightingMood: document.getElementById('input-shot-lighting')?.value || 'Daylight Dust',
-        visualStyle: document.getElementById('input-shot-style')?.value || 'Cinematic Concept Art',
-        prompt: document.getElementById('input-shot-prompt')?.value.trim() || '',
+        shotType: document.getElementById('input-shot-type')?.value || '',
+        description: descVal,
+        shotSize: sizeVal,
+        cameraAngle: angleVal,
+        cameraMovement: movementVal,
+        focalLength: lensVal,
+        lens: lensVal,
+        aspectRatio: ratioVal,
+        lightingMood: lightingVal,
+        lighting: lightingVal,
+        visualStyle: styleVal,
+        prompt: structuredPrompt,
         approvalStatus: document.getElementById('input-shot-approval')?.value || 'draft',
         directorNotes: document.getElementById('input-shot-notes')?.value.trim() || '',
         imageUrl: currentModalDraftImage,
         imageSource: currentModalDraftImage ? (currentModalDraftImage.startsWith('data:image/svg') ? 'ai' : 'imported') : null,
         continuity: {
-          screenDirection: document.getElementById('input-shot-direction')?.value.trim() || 'Left to Right'
+          screenDirection: directionVal
         }
       };
 
@@ -905,24 +1257,26 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           showToast('Updated shot details');
         } else {
           await api.addStoryboardShot(scriptId, currentSceneId, updates);
-          showToast('Added new shot to storyboard');
+          showToast('Added new shot to scene');
         }
         closeModal(inspectorModal);
         loadStoryboardData();
       } catch (err) {
-        showToast('Failed saving shot');
+        showToast('Failed to save shot');
       }
     };
   }
 
+  // Modal 1: Soft-delete shot to Recycle Bin
   if (btnDeleteShot) {
     btnDeleteShot.onclick = async () => {
       if (!activeEditingShotId) return;
-      if (!confirm('Are you sure you want to delete this shot?')) return;
+      if (!confirm('Move this shot to the Storyboard Recycle Bin?')) return;
       try {
         await api.deleteStoryboardShot(scriptId, currentSceneId, activeEditingShotId);
-        showToast('Shot deleted');
+        showToast('Shot moved to Recycle Bin');
         closeModal(inspectorModal);
+        await updateRecycleBinBadge();
         loadStoryboardData();
       } catch (err) {
         showToast('Failed to delete shot');
@@ -930,7 +1284,317 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     };
   }
 
-  // Modal 2 (AI Generation) Close & Cancel
+  // Collapsible More Camera Settings toggle
+  const btnToggleMoreCamera = document.getElementById('btn-toggle-more-camera');
+  const moreCameraPanel = document.getElementById('more-camera-panel');
+  const moreCameraChevron = document.getElementById('more-camera-chevron');
+
+  if (btnToggleMoreCamera && moreCameraPanel) {
+    btnToggleMoreCamera.onclick = () => {
+      const isHidden = moreCameraPanel.classList.toggle('hidden');
+      if (moreCameraChevron) {
+        moreCameraChevron.style.transform = isHidden ? 'rotate(0deg)' : 'rotate(180deg)';
+      }
+    };
+  }
+
+  // Storyboard Preferences Modal Handling
+  const btnStoryboardPreferences = document.getElementById('btn-storyboard-preferences');
+  const prefModal = document.getElementById('storyboard-preferences-modal');
+  const prefForm = document.getElementById('storyboard-pref-form');
+  const prefClose = document.getElementById('pref-modal-close');
+  const prefCancel = document.getElementById('pref-modal-cancel');
+  const prefReset = document.getElementById('pref-btn-reset');
+
+  if (btnStoryboardPreferences && prefModal) {
+    btnStoryboardPreferences.onclick = async () => {
+      const prefs = await loadStoryboardPreferences();
+      const styleEl = document.getElementById('pref-default-style');
+      const ratioEl = document.getElementById('pref-default-ratio');
+      const sizeEl = document.getElementById('pref-default-size');
+      const angleEl = document.getElementById('pref-default-angle');
+      const lensEl = document.getElementById('pref-default-lens');
+      const lightingEl = document.getElementById('pref-default-lighting');
+
+      if (styleEl) styleEl.value = prefs?.visualStyle || 'Concept Art';
+      if (ratioEl) ratioEl.value = prefs?.aspectRatio || '2.39:1';
+      if (sizeEl) sizeEl.value = prefs?.shotSize || 'Medium';
+      if (angleEl) angleEl.value = prefs?.cameraAngle || 'Eye Level';
+      if (lensEl) lensEl.value = prefs?.lens || '50mm';
+      if (lightingEl) lightingEl.value = prefs?.lighting || 'Auto / Scene-based';
+
+      openModal(prefModal);
+    };
+  }
+
+  if (prefClose) prefClose.onclick = () => closeModal(prefModal);
+  if (prefCancel) prefCancel.onclick = () => closeModal(prefModal);
+
+  if (prefReset) {
+    prefReset.onclick = () => {
+      const styleEl = document.getElementById('pref-default-style');
+      const ratioEl = document.getElementById('pref-default-ratio');
+      const sizeEl = document.getElementById('pref-default-size');
+      const angleEl = document.getElementById('pref-default-angle');
+      const lensEl = document.getElementById('pref-default-lens');
+      const lightingEl = document.getElementById('pref-default-lighting');
+
+      if (styleEl) styleEl.value = 'Concept Art';
+      if (ratioEl) ratioEl.value = '2.39:1';
+      if (sizeEl) sizeEl.value = 'Medium';
+      if (angleEl) angleEl.value = 'Eye Level';
+      if (lensEl) lensEl.value = '50mm';
+      if (lightingEl) lightingEl.value = 'Auto / Scene-based';
+      showToast('Reset to default settings');
+    };
+  }
+
+  if (prefForm) {
+    prefForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const payload = {
+        visualStyle: document.getElementById('pref-default-style')?.value || 'Concept Art',
+        aspectRatio: document.getElementById('pref-default-ratio')?.value || '2.39:1',
+        shotSize: document.getElementById('pref-default-size')?.value || 'Medium',
+        cameraAngle: document.getElementById('pref-default-angle')?.value || 'Eye Level',
+        lens: document.getElementById('pref-default-lens')?.value || '50mm',
+        lighting: document.getElementById('pref-default-lighting')?.value || 'Auto / Scene-based',
+        experienceLevel: "Intermediate"
+      };
+
+      try {
+        await api.saveStoryboardPreferences(payload);
+        cachedPreferences = payload;
+        showToast('Storyboard preferences saved');
+        closeModal(prefModal);
+      } catch (err) {
+        showToast('Failed to save preferences');
+      }
+    };
+  }
+
+  // Storyboard Recycle Bin Modal Handling
+  const btnStoryboardRecycleBin = document.getElementById('btn-storyboard-recycle-bin');
+  const recycleBinModal = document.getElementById('recycle-bin-modal');
+  const rbClose = document.getElementById('rb-modal-close');
+  const rbDone = document.getElementById('rb-modal-done');
+  const rbEmptyBtn = document.getElementById('rb-btn-empty-bin');
+  const rbBadge = document.getElementById('recycle-bin-badge');
+
+  async function updateRecycleBinBadge() {
+    try {
+      const items = await api.getStoryboardRecycleBin(scriptId);
+      const count = Array.isArray(items) ? items.length : 0;
+      if (rbBadge) {
+        rbBadge.textContent = count;
+        if (count > 0) {
+          rbBadge.classList.remove('hidden');
+        } else {
+          rbBadge.classList.add('hidden');
+        }
+      }
+      return items || [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  async function reloadScenesList() {
+    try {
+      const fetchedScenes = await api.getProductionScenes(scriptId);
+      allScenes = fetchedScenes || [];
+    } catch (e) {
+      console.warn("Offline fallback for scenes:", e);
+    }
+    if (sceneSelect) {
+      if (allScenes.length) {
+        if (!allScenes.find(s => s.id === currentSceneId)) {
+          currentSceneId = allScenes[0].id;
+        }
+        sceneSelect.innerHTML = allScenes.map(s => `
+          <option value="${s.id}" ${s.id === currentSceneId ? 'selected' : ''}>
+            Scene ${s.sceneNumber}: ${s.heading}
+          </option>
+        `).join('');
+      } else {
+        sceneSelect.innerHTML = `<option value="">No active scenes (all in Recycle Bin)</option>`;
+      }
+    }
+    await loadStoryboardData();
+  }
+
+  async function renderRecycleBinItems() {
+    const container = document.getElementById('rb-items-container');
+    if (!container) return;
+
+    try {
+      const items = await api.getStoryboardRecycleBin(scriptId);
+      const allCount = items.length;
+      const shotCount = items.filter(i => i.itemType === 'shot').length;
+      const sceneCount = items.filter(i => i.itemType === 'scene').length;
+
+      const cAll = document.getElementById('rb-count-all');
+      const cShots = document.getElementById('rb-count-shots');
+      const cScenes = document.getElementById('rb-count-scenes');
+      if (cAll) cAll.textContent = allCount;
+      if (cShots) cShots.textContent = shotCount;
+      if (cScenes) cScenes.textContent = sceneCount;
+
+      const filtered = items.filter(item => {
+        if (activeRecycleFilter === 'shots') return item.itemType === 'shot';
+        if (activeRecycleFilter === 'scenes') return item.itemType === 'scene';
+        return true;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = `
+          <div id="rb-empty-state" class="flex flex-col items-center justify-center py-12 text-slate-400 gap-1.5">
+            <span class="material-symbols-outlined text-4xl text-slate-300">delete_outline</span>
+            <span class="text-xs font-semibold text-slate-600">Recycle Bin is empty</span>
+            <span class="text-[10px] text-slate-400">No deleted items match the selected filter.</span>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const isScene = item.itemType === 'scene';
+        const title = isScene ? `Scene: ${item.data?.sceneHeading || item.title || 'Scene'}` : (item.title || `Shot ${item.shotNumber || ''}`);
+        const subtitle = isScene ? `${item.data?.shots?.length || 0} shots included` : `Original Scene: ${item.originalSceneId || 'Scene'}`;
+        const dateStr = item.deletedAt ? new Date(item.deletedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const thumb = !isScene && item.data?.imageUrl ? item.data.imageUrl : null;
+
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-colors gap-2.5">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 overflow-hidden text-slate-500">
+                ${thumb ? `<img src="${thumb}" alt="" class="w-full h-full object-cover" />` : (isScene ? '<span class="material-symbols-outlined text-lg text-blue-600">movie_filter</span>' : '<span class="material-symbols-outlined text-lg text-slate-400">crop_original</span>')}
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-slate-800 truncate">${title}</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-semibold ${isScene ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-slate-100 text-slate-600'}">${isScene ? 'SCENE' : 'SHOT'}</span>
+                </div>
+                <div class="text-[10px] text-slate-500 truncate">${subtitle} ${dateStr ? `· Deleted ${dateStr}` : ''}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <button type="button" class="rb-item-restore px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors" data-item-id="${item.id}">
+                <span class="material-symbols-outlined text-[14px]">restore_from_trash</span>
+                <span>Restore</span>
+              </button>
+              <button type="button" class="rb-item-delete px-2 py-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 text-[11px] cursor-pointer transition-colors" title="Delete permanently" data-item-id="${item.id}">
+                <span class="material-symbols-outlined text-[15px]">delete_forever</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('.rb-item-restore').forEach(btn => {
+        btn.onclick = async () => {
+          const itemId = btn.getAttribute('data-item-id');
+          try {
+            await api.restoreStoryboardRecycleBinItem(scriptId, itemId);
+            showToast('Item restored successfully');
+            await renderRecycleBinItems();
+            await updateRecycleBinBadge();
+            await reloadScenesList();
+          } catch (err) {
+            showToast('Failed to restore item');
+          }
+        };
+      });
+
+      container.querySelectorAll('.rb-item-delete').forEach(btn => {
+        btn.onclick = async () => {
+          const itemId = btn.getAttribute('data-item-id');
+          if (!confirm('Permanently delete this item? This action cannot be undone.')) return;
+          try {
+            await api.permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId);
+            showToast('Item permanently deleted');
+            await renderRecycleBinItems();
+            await updateRecycleBinBadge();
+          } catch (err) {
+            showToast('Failed to delete item');
+          }
+        };
+      });
+
+    } catch (err) {
+      container.innerHTML = `<div class="p-6 text-center text-xs text-rose-500">Failed to load Recycle Bin items</div>`;
+    }
+  }
+
+  // Recycle Bin Filter Tabs
+  const rbTabAll = document.getElementById('rb-tab-all');
+  const rbTabShots = document.getElementById('rb-tab-shots');
+  const rbTabScenes = document.getElementById('rb-tab-scenes');
+
+  function updateRbTabs(active) {
+    activeRecycleFilter = active;
+    [rbTabAll, rbTabShots, rbTabScenes].forEach(tab => {
+      if (!tab) return;
+      tab.classList.remove('bg-white', 'shadow-2xs', 'font-semibold', 'text-slate-900');
+      tab.classList.add('text-slate-600');
+    });
+    const current = active === 'shots' ? rbTabShots : (active === 'scenes' ? rbTabScenes : rbTabAll);
+    if (current) {
+      current.classList.add('bg-white', 'shadow-2xs', 'font-semibold', 'text-slate-900');
+      current.classList.remove('text-slate-600');
+    }
+    renderRecycleBinItems();
+  }
+
+  if (rbTabAll) rbTabAll.onclick = () => updateRbTabs('all');
+  if (rbTabShots) rbTabShots.onclick = () => updateRbTabs('shots');
+  if (rbTabScenes) rbTabScenes.onclick = () => updateRbTabs('scenes');
+
+  if (btnStoryboardRecycleBin && recycleBinModal) {
+    btnStoryboardRecycleBin.onclick = () => {
+      openModal(recycleBinModal);
+      renderRecycleBinItems();
+    };
+  }
+
+  if (rbClose) rbClose.onclick = () => closeModal(recycleBinModal);
+  if (rbDone) rbDone.onclick = () => closeModal(recycleBinModal);
+
+  if (rbEmptyBtn) {
+    rbEmptyBtn.onclick = async () => {
+      if (!confirm('Empty the entire Storyboard Recycle Bin? All deleted items will be permanently erased.')) return;
+      try {
+        await api.emptyStoryboardRecycleBin(scriptId);
+        showToast('Recycle Bin emptied');
+        await renderRecycleBinItems();
+        await updateRecycleBinBadge();
+      } catch (err) {
+        showToast('Failed to empty Recycle Bin');
+      }
+    };
+  }
+
+  // Scene Soft Delete button
+  const btnDeleteSceneStoryboard = document.getElementById('btn-delete-scene-storyboard');
+  if (btnDeleteSceneStoryboard) {
+    btnDeleteSceneStoryboard.onclick = async () => {
+      if (!currentStoryboard) return;
+      const heading = currentStoryboard.sceneHeading || `Scene ${currentStoryboard.sceneNumber || ''}`;
+      if (!confirm(`Move ${heading} and all its shots to the Storyboard Recycle Bin?`)) return;
+
+      try {
+        await api.deleteStoryboardScene(scriptId, currentSceneId);
+        showToast(`${heading} moved to Recycle Bin`);
+        await updateRecycleBinBadge();
+        await reloadScenesList();
+      } catch (err) {
+        showToast('Failed to delete scene');
+      }
+    };
+  }
+
+// Modal 2 (AI Generation) Close & Cancel
   if (genClose) genClose.onclick = () => closeModal(genModal);
   if (genCancel) genCancel.onclick = () => closeModal(genModal);
 
@@ -1210,49 +1874,124 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   // 2. MODAL HELPER FUNCTIONS
   // =========================================================================
 
-  function openShotInspector(shotId) {
+  let cachedPreferences = null;
+  let activeRecycleFilter = 'all';
+
+  function selectStyleCard(styleName) {
+    const cards = document.querySelectorAll('.style-preview-card');
+    const inputStyle = document.getElementById('input-shot-style');
+    let matchedCard = null;
+
+    cards.forEach(card => {
+      const cardStyle = card.getAttribute('data-style-id') || '';
+      const isMatch = (cardStyle.toLowerCase() === (styleName || '').toLowerCase()) ||
+                      (cardStyle.includes('concept') && (styleName || '').includes('Concept')) ||
+                      (cardStyle.includes('realism') && (styleName || '').includes('Realism')) ||
+                      (cardStyle.includes('sketch') && (styleName || '').includes('Sketch')) ||
+                      (cardStyle.includes('photo') && (styleName || '').includes('Photo'));
+
+      if (isMatch && !matchedCard) {
+        matchedCard = card;
+        card.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+        card.classList.remove('border-slate-200');
+        card.querySelector('.style-check-badge')?.classList.remove('hidden');
+      } else {
+        card.classList.remove('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+        card.classList.add('border-slate-200');
+        card.querySelector('.style-check-badge')?.classList.add('hidden');
+      }
+    });
+
+    if (matchedCard) {
+      if (inputStyle) inputStyle.value = matchedCard.getAttribute('data-style-id') || styleName;
+    } else if (cards.length > 0) {
+      const first = cards[0];
+      first.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+      first.classList.remove('border-slate-200');
+      first.querySelector('.style-check-badge')?.classList.remove('hidden');
+      if (inputStyle) inputStyle.value = first.getAttribute('data-style-id') || 'Concept Art';
+    }
+  }
+
+  function setupStylePreviewCards() {
+    const cards = document.querySelectorAll('.style-preview-card');
+    cards.forEach(card => {
+      card.onclick = () => {
+        const styleId = card.getAttribute('data-style-id');
+        selectStyleCard(styleId);
+      };
+    });
+  }
+
+  async function loadStoryboardPreferences() {
+    try {
+      cachedPreferences = await api.getStoryboardPreferences();
+    } catch (e) {
+      cachedPreferences = {
+        visualStyle: "Concept Art",
+        aspectRatio: "2.39:1",
+        shotSize: "Medium",
+        cameraAngle: "Eye Level",
+        lens: "50mm",
+        lighting: "Auto / Scene-based",
+        experienceLevel: "Intermediate"
+      };
+    }
+    return cachedPreferences;
+  }
+
+  async function openShotInspector(shotId) {
     activeEditingShotId = shotId;
     const isNew = !shotId;
     const shots = currentStoryboard?.shots || [];
     const shot = isNew ? null : shots.find(s => s.id === shotId);
 
+    const prefs = cachedPreferences || (await loadStoryboardPreferences());
+
     const defaultShotLetter = String.fromCharCode(65 + (shots.length % 26));
     const defaultShotNum = `${currentStoryboard?.sceneNumber || 1}${defaultShotLetter}`;
+    const activeNum = shot?.shotNumber || defaultShotNum;
 
     const pill = document.getElementById('modal-shot-pill');
     const heading = document.getElementById('modal-shot-heading');
-    if (pill) pill.textContent = shot?.shotNumber || defaultShotNum;
-    if (heading) heading.textContent = isNew ? 'Add New Shot' : `Edit Shot ${shot?.shotNumber || defaultShotNum}`;
+    const displayNum = document.getElementById('display-shot-number');
+
+    if (pill) pill.textContent = activeNum;
+    if (heading) heading.textContent = isNew ? 'Add New Shot' : `Edit Shot ${activeNum}`;
+    if (displayNum) displayNum.textContent = activeNum;
 
     const numInput = document.getElementById('input-shot-number');
     const titleInput = document.getElementById('input-shot-title');
+    const typeInput = document.getElementById('input-shot-type');
     const descInput = document.getElementById('input-shot-desc');
     const sizeInput = document.getElementById('input-shot-size');
     const angleInput = document.getElementById('input-shot-angle');
+    const ratioInput = document.getElementById('input-shot-ratio');
     const movementInput = document.getElementById('input-shot-movement');
     const focalInput = document.getElementById('input-shot-focal');
-    const ratioInput = document.getElementById('input-shot-ratio');
     const lightingInput = document.getElementById('input-shot-lighting');
-    const styleInput = document.getElementById('input-shot-style');
-    const promptInput = document.getElementById('input-shot-prompt');
     const directionInput = document.getElementById('input-shot-direction');
     const approvalInput = document.getElementById('input-shot-approval');
     const notesInput = document.getElementById('input-shot-notes');
 
-    if (numInput) numInput.value = shot?.shotNumber || defaultShotNum;
-    if (titleInput) titleInput.value = shot?.title || (isNew ? `Shot ${defaultShotNum}` : '');
+    if (numInput) numInput.value = activeNum;
+    if (titleInput) titleInput.value = shot?.title || (isNew ? `Shot ${activeNum}` : '');
+    if (typeInput) typeInput.value = shot?.shotType || '';
     if (descInput) descInput.value = shot?.description || '';
-    if (sizeInput) sizeInput.value = shot?.shotSize || 'Medium Shot';
-    if (angleInput) angleInput.value = shot?.cameraAngle || 'Eye Level';
+    if (sizeInput) sizeInput.value = shot?.shotSize || prefs?.shotSize || 'Medium';
+    if (angleInput) angleInput.value = shot?.cameraAngle || prefs?.cameraAngle || 'Eye Level';
+    if (ratioInput) ratioInput.value = shot?.aspectRatio || currentStoryboard?.aspectRatio || prefs?.aspectRatio || '2.39:1';
     if (movementInput) movementInput.value = shot?.cameraMovement || 'Static';
-    if (focalInput) focalInput.value = shot?.focalLength || '50mm Prime';
-    if (ratioInput) ratioInput.value = shot?.aspectRatio || currentStoryboard?.aspectRatio || '2.39:1';
-    if (lightingInput) lightingInput.value = shot?.lightingMood || 'Daylight Dust';
-    if (styleInput) styleInput.value = shot?.visualStyle || currentStoryboard?.visualStyle || 'Cinematic Concept Art';
-    if (promptInput) promptInput.value = shot?.prompt || '';
+    if (focalInput) focalInput.value = shot?.focalLength || shot?.lens || prefs?.lens || '50mm';
+    if (lightingInput) lightingInput.value = shot?.lightingMood || shot?.lighting || prefs?.lighting || 'Auto / Scene-based';
     if (directionInput) directionInput.value = shot?.continuity?.screenDirection || 'Left to Right';
     if (approvalInput) approvalInput.value = shot?.approvalStatus || 'draft';
     if (notesInput) notesInput.value = shot?.directorNotes || '';
+
+    // Style preview cards selection
+    setupStylePreviewCards();
+    const activeStyle = shot?.visualStyle || currentStoryboard?.visualStyle || prefs?.visualStyle || 'Concept Art';
+    selectStyleCard(activeStyle);
 
     currentModalDraftImage = shot?.imageUrl || null;
     currentModalDraftPrompt = shot?.prompt || '';
@@ -2158,6 +2897,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
   // Self-executing background data initialization (Never blocks button wiring)
   (async function initData() {
+    loadStoryboardPreferences();
+    updateRecycleBinBadge();
     try {
       const [fetchedScenes, fetchedProviders] = await Promise.all([
         api.getProductionScenes(scriptId),

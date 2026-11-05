@@ -213,7 +213,130 @@ export function deleteShot(scriptId, sceneId, shotId) {
     s.order = i + 1;
   });
   sb.updatedAt = new Date().toISOString();
-  return { success: true, removedId: shotId, storyboard: sb };
+  // Soft-delete to Recycle Bin preserving full image version history
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  const recycleItem = {
+    id: `rb-shot-${removed.id}`,
+    type: 'shot',
+    scriptId,
+    sceneId: sb.sceneId,
+    sceneNumber: sb.sceneNumber,
+    sceneHeading: sb.sceneHeading,
+    shot: { ...removed },
+    deletedAt: new Date().toISOString()
+  };
+  db.storyboardRecycleBin.unshift(recycleItem);
+
+  return { success: true, removedId: shotId, storyboard: sb, recycleItem };
+}
+
+export function softDeleteScene(scriptId, sceneId) {
+  ensureStoryboardsInitialized(scriptId);
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  const idx = db.storyboards.findIndex(s => s.scriptId === scriptId && (s.sceneId === sceneId || String(s.sceneNumber) === String(sceneId).replace('scene-', '')));
+  if (idx === -1) throw new Error("Scene storyboard not found");
+
+  const removedSb = db.storyboards.splice(idx, 1)[0];
+  const recycleItem = {
+    id: `rb-scene-${removedSb.sceneId || removedSb.id}`,
+    type: 'scene',
+    scriptId,
+    sceneId: removedSb.sceneId,
+    sceneNumber: removedSb.sceneNumber,
+    sceneHeading: removedSb.sceneHeading,
+    storyboard: { ...removedSb },
+    deletedAt: new Date().toISOString()
+  };
+  db.storyboardRecycleBin.unshift(recycleItem);
+
+  return { success: true, removedId: sceneId, recycleItem };
+}
+
+export function getRecycleBin(scriptId = 'chronicles-of-dust') {
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  return db.storyboardRecycleBin.filter(item => item.scriptId === scriptId);
+}
+
+export function restoreRecycleBinItem(scriptId, itemId) {
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  const idx = db.storyboardRecycleBin.findIndex(item => item.id === itemId && item.scriptId === scriptId);
+  if (idx === -1) throw new Error("Item not found in Recycle Bin");
+
+  const item = db.storyboardRecycleBin.splice(idx, 1)[0];
+
+  if (item.type === 'shot') {
+    const sb = getStoryboardByScene(scriptId, item.sceneId);
+    const restoredShot = { ...item.shot };
+    restoredShot.order = sb.shots.length + 1;
+    sb.shots.push(restoredShot);
+    sb.updatedAt = new Date().toISOString();
+    return { success: true, type: 'shot', restored: restoredShot, storyboard: sb };
+  } else if (item.type === 'scene') {
+    ensureStoryboardsInitialized(scriptId);
+    const restoredSb = { ...item.storyboard, updatedAt: new Date().toISOString() };
+    const existingIdx = db.storyboards.findIndex(s => s.scriptId === scriptId && s.sceneId === restoredSb.sceneId);
+    if (existingIdx !== -1) {
+      db.storyboards[existingIdx] = restoredSb;
+    } else {
+      db.storyboards.push(restoredSb);
+    }
+    return { success: true, type: 'scene', restored: restoredSb, storyboard: restoredSb };
+  }
+
+  throw new Error("Unknown item type in Recycle Bin");
+}
+
+export function permanentlyDeleteRecycleBinItem(scriptId, itemId) {
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  const idx = db.storyboardRecycleBin.findIndex(item => item.id === itemId && item.scriptId === scriptId);
+  if (idx === -1) throw new Error("Item not found in Recycle Bin");
+
+  db.storyboardRecycleBin.splice(idx, 1);
+  return { success: true, removedId: itemId };
+}
+
+export function emptyRecycleBin(scriptId) {
+  if (!Array.isArray(db.storyboardRecycleBin)) {
+    db.storyboardRecycleBin = [];
+  }
+  const countBefore = db.storyboardRecycleBin.length;
+  db.storyboardRecycleBin = db.storyboardRecycleBin.filter(item => item.scriptId !== scriptId);
+  const purgedCount = countBefore - db.storyboardRecycleBin.length;
+  return { success: true, purgedCount };
+}
+
+export function getStoryboardPreferences() {
+  if (!db.settings.storyboard) {
+    db.settings.storyboard = {
+      defaultStyle: "Concept Art",
+      defaultAspectRatio: "2.39:1",
+      defaultShotSize: "Medium Shot",
+      defaultCameraAngle: "Eye Level",
+      defaultLens: "50mm Prime",
+      defaultLighting: "Auto / Scene-based",
+      experienceLevel: "Intermediate"
+    };
+  }
+  return db.settings.storyboard;
+}
+
+export function saveStoryboardPreferences(prefs = {}) {
+  const current = getStoryboardPreferences();
+  db.settings.storyboard = {
+    ...current,
+    ...prefs
+  };
+  return db.settings.storyboard;
 }
 
 export function reorderShots(scriptId, sceneId, shotIds = []) {

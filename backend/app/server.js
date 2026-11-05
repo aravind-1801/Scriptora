@@ -552,6 +552,56 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { providers });
     }
 
+    if (pathname === '/production/storyboard/preferences') {
+      if (method === 'GET') {
+        const preferences = storyboardService.getStoryboardPreferences();
+        return sendJson(res, 200, { preferences });
+      }
+      if (method === 'PUT') {
+        const body = await readBody(req);
+        const preferences = storyboardService.saveStoryboardPreferences(body);
+        return sendJson(res, 200, { preferences });
+      }
+    }
+
+    const prodSbRbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin$/);
+    if (prodSbRbMatch && method === 'GET') {
+      const scriptId = prodSbRbMatch[1];
+      const items = storyboardService.getRecycleBin(scriptId);
+      return sendJson(res, 200, { items });
+    }
+
+    const prodSbRbRestoreMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin\/restore$/);
+    if (prodSbRbRestoreMatch && method === 'POST') {
+      const scriptId = prodSbRbRestoreMatch[1];
+      const body = await readBody(req);
+      const result = storyboardService.restoreRecycleBinItem(scriptId, body.itemId);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbRbEmptyMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin\/empty$/);
+    if (prodSbRbEmptyMatch && method === 'POST') {
+      const scriptId = prodSbRbEmptyMatch[1];
+      const result = storyboardService.emptyRecycleBin(scriptId);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbRbItemMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin\/([a-zA-Z0-9_-]+)$/);
+    if (prodSbRbItemMatch && method === 'DELETE') {
+      const scriptId = prodSbRbItemMatch[1];
+      const itemId = prodSbRbItemMatch[2];
+      const result = storyboardService.permanentlyDeleteRecycleBinItem(scriptId, itemId);
+      return sendJson(res, 200, result);
+    }
+
+    const prodSbSceneDeleteMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/scenes\/([a-zA-Z0-9_-]+)\/soft-delete$/);
+    if (prodSbSceneDeleteMatch && method === 'POST') {
+      const scriptId = prodSbSceneDeleteMatch[1];
+      const sceneId = prodSbSceneDeleteMatch[2];
+      const result = storyboardService.softDeleteScene(scriptId, sceneId);
+      return sendJson(res, 200, result);
+    }
+
     const prodSbListMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboards$/);
     if (prodSbListMatch && method === 'GET') {
       const storyboards = storyboardService.getStoryboards(prodSbListMatch[1]);

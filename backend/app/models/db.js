@@ -41,6 +41,15 @@ export const db = {
     intelligence: {
       querySuggestions: true,
       analysisSuggestions: true
+    },
+    storyboard: {
+      defaultStyle: "Concept Art",
+      defaultAspectRatio: "2.39:1",
+      defaultShotSize: "Medium Shot",
+      defaultCameraAngle: "Eye Level",
+      defaultLens: "50mm Prime",
+      defaultLighting: "Auto / Scene-based",
+      experienceLevel: "Intermediate"
     }
   },
   scripts: [
@@ -1313,6 +1322,7 @@ export const db = {
       targetEntity: "res-1"
     }
   ],
-  storyboards: []
+  storyboards: [],
+  storyboardRecycleBin: []
 };
 

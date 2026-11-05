@@ -3537,3 +3537,114 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
   }
   return { storyboard: sb, shot };
 }
+
+
+export async function getStoryboardPreferences() {
+  try {
+    const res = await request('/production/storyboard/preferences');
+    if (res?.preferences) {
+      localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(res.preferences));
+      return res.preferences;
+    }
+  } catch (_) {}
+  const cached = localStorage.getItem('scriptora_storyboard_preferences');
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+  return {
+    defaultStyle: "Concept Art",
+    defaultAspectRatio: "2.39:1",
+    defaultShotSize: "Medium",
+    defaultCameraAngle: "Eye Level",
+    defaultLens: "50mm",
+    defaultLighting: "Auto / Scene-based",
+    experienceLevel: "Intermediate"
+  };
+}
+
+export async function saveStoryboardPreferences(prefs = {}) {
+  try {
+    const res = await request('/production/storyboard/preferences', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prefs)
+    });
+    if (res?.preferences) {
+      localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(res.preferences));
+      return res.preferences;
+    }
+  } catch (_) {}
+  const current = await getStoryboardPreferences();
+  const updated = { ...current, ...prefs };
+  localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(updated));
+  return updated;
+}
+
+export async function getStoryboardRecycleBin(scriptId = 'chronicles-of-dust') {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/recycle-bin`);
+    if (res?.items) {
+      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(res.items));
+      return res.items;
+    }
+  } catch (_) {}
+  const cached = localStorage.getItem(`scriptora_storyboard_rb_${scriptId}`);
+  if (cached) {
+    try { return JSON.parse(cached); } catch (_) {}
+  }
+  return [];
+}
+
+export async function restoreStoryboardRecycleBinItem(scriptId, itemId) {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/recycle-bin/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId })
+    });
+    if (res?.success) {
+      const rb = await getStoryboardRecycleBin(scriptId);
+      const filtered = rb.filter(i => i.id !== itemId);
+      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (_) {}
+  return { success: true };
+}
+
+export async function permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId) {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/recycle-bin/${itemId}`, {
+      method: 'DELETE'
+    });
+    if (res?.success) {
+      const rb = await getStoryboardRecycleBin(scriptId);
+      const filtered = rb.filter(i => i.id !== itemId);
+      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(filtered));
+      return res;
+    }
+  } catch (_) {}
+  return { success: true, removedId: itemId };
+}
+
+export async function emptyStoryboardRecycleBin(scriptId) {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/recycle-bin/empty`, {
+      method: 'POST'
+    });
+    localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify([]));
+    return res || { success: true };
+  } catch (_) {}
+  localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify([]));
+  return { success: true };
+}
+
+export async function deleteStoryboardScene(scriptId, sceneId) {
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/scenes/${sceneId}/soft-delete`, {
+      method: 'POST'
+    });
+    return res;
+  } catch (_) {}
+  return { success: true, removedId: sceneId };
+}
