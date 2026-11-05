@@ -67,3 +67,111 @@ export function sanitizeCharacterList(rawList) {
 
   return pruned;
 }
+
+// =========================================================================
+// SCREENPLAY CHARACTER EXTENSIONS & PARENTHETICAL CONSTANTS & HELPERS
+// =========================================================================
+
+export const STANDARD_CHARACTER_EXTENSIONS = [
+  { code: 'V.O.', label: 'V.O.', desc: 'Voice Over' },
+  { code: 'O.S.', label: 'O.S.', desc: 'Off Screen' },
+  { code: 'O.C.', label: 'O.C.', desc: 'Off Camera' },
+  { code: "CONT'D", label: "CONT'D", desc: 'Continued' }
+];
+
+export const COMMON_PARENTHETICALS = [
+  'beat',
+  'pause',
+  'whispering',
+  'softly',
+  'angrily',
+  'smiling',
+  'crying',
+  'sadly',
+  'laughing',
+  'screaming',
+  'quietly',
+  'nodding',
+  'shaking head',
+  'shouting',
+  'sarcastic',
+  'aside',
+  'overlapping',
+  'filtered',
+  'into phone',
+  'to himself',
+  'to herself'
+];
+
+export function extractCharacterExtension(raw) {
+  if (!raw || typeof raw !== 'string') return null;
+  const matches = raw.match(/\(([^)]+)\)/g);
+  if (!matches) return null;
+  for (const m of matches) {
+    const inner = m.replace(/[()]/g, '').trim().toUpperCase();
+    if (inner === "CONT'D" || inner === 'CONTD') continue;
+    if (inner === 'V.O.' || inner === 'VO') return 'V.O.';
+    if (inner === 'O.S.' || inner === 'OS') return 'O.S.';
+    if (inner === 'O.C.' || inner === 'OC') return 'O.C.';
+    return inner;
+  }
+  return null;
+}
+
+export function hasContinuationMarker(raw) {
+  if (!raw || typeof raw !== 'string') return false;
+  return /\bCONT'?D\b/i.test(raw);
+}
+
+export function formatCharacterCue(baseName, extension = null, isContinuation = false) {
+  // If baseName contains an embedded extension (e.g. "ARUN (V.O.)"), extract it
+  const embeddedExt = extractCharacterExtension(baseName);
+  const cleanBase = cleanCharacterName(baseName);
+  if (!cleanBase) return baseName ? baseName.trim().toUpperCase() : '';
+  let result = cleanBase;
+
+  const rawExt = extension ? extension.replace(/[()]/g, '').trim().toUpperCase() : null;
+  const isContdOnly = rawExt === "CONT'D" || rawExt === 'CONTD';
+
+  // Determine final extension: explicit non-contd extension takes priority, otherwise embedded extension
+  const extToUse = (!isContdOnly && rawExt) ? rawExt : embeddedExt;
+
+  if (extToUse && extToUse !== "CONT'D" && extToUse !== 'CONTD') {
+    result += ` (${extToUse})`;
+  }
+
+  if (isContinuation || isContdOnly || hasContinuationMarker(baseName)) {
+    result += " (CONT'D)";
+  }
+
+  return result;
+}
+
+export function getPreviousCharacterAppearanceInScene(scenes, sceneId, currentBlockId, rawName) {
+  if (!Array.isArray(scenes)) return null;
+  const scene = scenes.find(s => s.id === sceneId);
+  if (!scene || !Array.isArray(scene.blocks)) return null;
+
+  const targetBase = cleanCharacterName(rawName);
+  if (!targetBase) return null;
+
+  const currentIdx = scene.blocks.findIndex(b => b.id === currentBlockId);
+  const blocksToScan = currentIdx !== -1 ? scene.blocks.slice(0, currentIdx) : scene.blocks;
+
+  // Search reverse from current block upwards within the SAME scene
+  for (let i = blocksToScan.length - 1; i >= 0; i--) {
+    const b = blocksToScan[i];
+    if (b.type === 'character' && b.content) {
+      const prevBase = cleanCharacterName(b.content);
+      if (prevBase === targetBase) {
+        return {
+          baseName: prevBase,
+          extension: extractCharacterExtension(b.content),
+          hasContd: hasContinuationMarker(b.content),
+          fullContent: b.content
+        };
+      }
+    }
+  }
+  return null;
+}

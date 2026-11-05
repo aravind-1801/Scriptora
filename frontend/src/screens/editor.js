@@ -2,7 +2,16 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
-import { isValidCharacterName, cleanCharacterName, sanitizeCharacterList } from '../utils/characters.js';
+import {
+  isValidCharacterName,
+  cleanCharacterName,
+  sanitizeCharacterList,
+  STANDARD_CHARACTER_EXTENSIONS,
+  COMMON_PARENTHETICALS,
+  extractCharacterExtension,
+  hasContinuationMarker,
+  formatCharacterCue
+} from '../utils/characters.js';
 
 // In-memory active screenplay state per editor session
 let currentScreenplay = null;
@@ -2560,6 +2569,26 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     return;
   }
 
+  // Intelligent Parenthesis: Backspace between empty parentheses "()" -> delete both "(" and ")"
+  if (e.key === 'Backspace' && !e.ctrlKey && !e.metaKey) {
+    const rawText = editableEl.innerText;
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    if (sel && sel.isCollapsed && offset > 0 && offset < rawText.length) {
+      if (rawText.charAt(offset - 1) === '(' && rawText.charAt(offset) === ')') {
+        e.preventDefault();
+        const before = rawText.slice(0, offset - 1);
+        const after = rawText.slice(offset + 1);
+        const newText = before + after;
+        editableEl.innerText = newText;
+        updateBlockModel(blockEl, newText);
+        setCaretCharacterOffsetWithin(editableEl, offset - 1);
+        hideAutocomplete();
+        return;
+      }
+    }
+  }
+
   // 1. BACKSPACE AT OFFSET 0: Never trap cursor at start of line! (Prompt 23: 10-14)
   if (e.key === 'Backspace' && !e.ctrlKey && !e.metaKey) {
     const offset = getCaretCharacterOffsetWithin(editableEl);
@@ -2691,12 +2720,63 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // Auto-parenthetical shortcut: Typing "(" in Character or Dialogue (Section 9)
-  if (e.key === '(' && (type === 'character' || type === 'dialogue')) {
+  // Intelligent Parenthesis Auto-pairing & Extension Trigger for "("
+  if (e.key === '(' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const sel = window.getSelection();
-    if (sel && sel.anchorOffset === 0 && editableEl.innerText.trim() === '') {
+    const isCollapsed = !sel || sel.isCollapsed;
+
+    // Case A: Empty character or dialogue line -> convert to parenthetical with ()
+    if ((type === 'character' || type === 'dialogue') && isBlockContentEmpty(editableEl)) {
       e.preventDefault();
       convertBlockType(blockEl, 'parenthetical');
+      return;
+    }
+
+    // Case B: In a parenthetical block -> auto-pair ()
+    if (type === 'parenthetical' && isCollapsed) {
+      const rawText = editableEl.innerText;
+      if (!rawText.includes(')')) {
+        e.preventDefault();
+        const offset = getCaretCharacterOffsetWithin(editableEl);
+        const before = rawText.slice(0, offset);
+        const after = rawText.slice(offset);
+        const newText = before + '()' + after;
+        editableEl.innerText = newText;
+        updateBlockModel(blockEl, newText);
+        setCaretCharacterOffsetWithin(editableEl, offset + 1);
+        triggerAutocomplete(blockEl, editableEl);
+        return;
+      }
+    }
+
+    // Case C: In character block -> user types "(" after character name, e.g. "ARUN("
+    if (type === 'character' && isCollapsed) {
+      const rawText = editableEl.innerText;
+      const offset = getCaretCharacterOffsetWithin(editableEl);
+      if (!rawText.includes('(')) {
+        e.preventDefault();
+        const before = rawText.slice(0, offset).trimEnd();
+        const after = rawText.slice(offset).trimStart();
+        // Insert clean space before "(" and ensure closing ")"
+        const newText = before + ' (' + (after.includes(')') ? after : after + ')');
+        editableEl.innerText = newText;
+        updateBlockModel(blockEl, newText);
+        const parenPos = newText.indexOf('(');
+        setCaretCharacterOffsetWithin(editableEl, parenPos + 1);
+        triggerAutocomplete(blockEl, editableEl);
+        return;
+      }
+    }
+  }
+
+  // Intelligent Parenthesis: Overtype closing parenthesis ")"
+  if (e.key === ')' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const rawText = editableEl.innerText;
+    const offset = getCaretCharacterOffsetWithin(editableEl);
+    const sel = window.getSelection();
+    if (sel && sel.isCollapsed && offset < rawText.length && rawText.charAt(offset) === ')') {
+      e.preventDefault();
+      setCaretCharacterOffsetWithin(editableEl, offset + 1);
       return;
     }
   }
@@ -2726,10 +2806,32 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       return;
     }
 
-    // 2. CHARACTER -> DIALOGUE
+    // 2. CHARACTER -> DIALOGUE (with Automatic Continuation CONT'D - Section 10)
     if (type === 'character') {
       e.preventDefault();
-      commitCharacterToMemory(editableEl.innerText);
+      const rawText = editableEl.innerText.trim();
+      const baseName = cleanCharacterName(rawText);
+      const userExt = extractCharacterExtension(rawText);
+      const userAlreadyHasContd = hasContinuationMarker(rawText);
+
+      // Check for returning appearance in the current scene (Section 10)
+      const priorAppearance = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
+      let finalCue = rawText;
+
+      if (priorAppearance && !userAlreadyHasContd) {
+        // If user typed a specific extension (e.g. O.S.), preserve it;
+        // otherwise, reuse previous appearance's extension (e.g. V.O.)
+        const extToUse = userExt || priorAppearance.extension;
+        finalCue = formatCharacterCue(baseName, extToUse, true);
+      } else if (!priorAppearance && userExt) {
+        finalCue = formatCharacterCue(baseName, userExt, false);
+      } else if (!userAlreadyHasContd && baseName) {
+        finalCue = baseName;
+      }
+
+      editableEl.innerText = finalCue;
+      updateBlockModel(blockEl, finalCue);
+      commitCharacterToMemory(baseName);
       insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       return;
     }
@@ -3207,6 +3309,36 @@ function positionAutocomplete(dropdown, editableEl) {
   dropdown.style.left = `${Math.round(leftPos)}px`;
 }
 
+// Helper to find previous appearance of character within the same scene (Section 10)
+export function getPreviousCharacterAppearanceInScene(sceneId, currentBlockId, rawName) {
+  if (!currentScreenplay?.scenes) return null;
+  const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
+  if (!scene || !Array.isArray(scene.blocks)) return null;
+
+  const targetBase = cleanCharacterName(rawName);
+  if (!targetBase) return null;
+
+  const currentIdx = scene.blocks.findIndex(b => b.id === currentBlockId);
+  const blocksToScan = currentIdx !== -1 ? scene.blocks.slice(0, currentIdx) : scene.blocks;
+
+  // Search reverse from current block upwards within the SAME scene
+  for (let i = blocksToScan.length - 1; i >= 0; i--) {
+    const b = blocksToScan[i];
+    if (b.type === 'character' && b.content) {
+      const prevBase = cleanCharacterName(b.content);
+      if (prevBase === targetBase) {
+        return {
+          baseName: prevBase,
+          extension: extractCharacterExtension(b.content),
+          hasContd: hasContinuationMarker(b.content),
+          fullContent: b.content
+        };
+      }
+    }
+  }
+  return null;
+}
+
 // Helper to get only user-created or active screenplay characters (Prompt 23: 4-8)
 function getKnownCharacters() {
   if (!currentScreenplay) return [];
@@ -3301,17 +3433,98 @@ function triggerAutocomplete(blockEl, editableEl) {
     }
   }
 
-  // 2. CHARACTER AUTOCOMPLETE WITH MEMORY (Zero fake characters, no partial strings!)
+  // 2. CHARACTER AUTOCOMPLETE & EXTENSIONS (Section 1 & 10)
   else if (type === 'character') {
-    const upper = text.trim().toUpperCase();
-    if (upper.length > 0) {
-      const chars = getKnownCharacters();
-      const matches = chars.filter(c => c.startsWith(upper));
-      suggestions = matches.map(c => ({ label: c, val: c }));
+    const parenIdx = text.indexOf('(');
+
+    if (parenIdx !== -1) {
+      // User entered character name followed by "(" -> Character Extension Autocomplete
+      const rawName = text.slice(0, parenIdx).trim();
+      const baseName = cleanCharacterName(rawName);
+      if (baseName && baseName.length >= 1) {
+        const queryAfterParen = text.slice(parenIdx + 1).replace(/\)$/, '').trim().toUpperCase();
+
+        const matchedExtensions = STANDARD_CHARACTER_EXTENSIONS.filter(ext => {
+          if (!queryAfterParen) return true;
+          const normQ = queryAfterParen.replace(/[^A-Z]/g, '');
+          const normCode = ext.code.replace(/[^A-Z]/g, '');
+          return ext.code.toUpperCase().startsWith(queryAfterParen) ||
+                 (normQ.length > 0 && normCode.startsWith(normQ)) ||
+                 ext.desc.toUpperCase().startsWith(queryAfterParen);
+        });
+
+        if (matchedExtensions.length > 0) {
+          const sceneId = blockEl.getAttribute('data-scene-id');
+          const blockId = blockEl.getAttribute('data-block-id');
+          const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
+          const isContd = !!prior;
+
+          suggestions = matchedExtensions.map(ext => {
+            let formattedCue;
+            if (ext.code === "CONT'D") {
+              const extToKeep = prior?.extension || null;
+              formattedCue = formatCharacterCue(baseName, extToKeep, true);
+            } else {
+              formattedCue = formatCharacterCue(baseName, ext.code, isContd);
+            }
+
+            return {
+              type: 'character-extension',
+              extCode: ext.code,
+              baseName: baseName,
+              isContd: isContd,
+              label: `${ext.code} — ${ext.desc}`,
+              shortLabel: ext.code,
+              desc: ext.desc,
+              val: formattedCue
+            };
+          });
+        }
+      }
+    } else {
+      // Normal character name autocomplete with continuation detection (Section 10)
+      const upper = text.trim().toUpperCase();
+      if (upper.length > 0) {
+        const chars = getKnownCharacters();
+        const matches = chars.filter(c => c.startsWith(upper));
+        const sceneId = blockEl.getAttribute('data-scene-id');
+        const blockId = blockEl.getAttribute('data-block-id');
+
+        suggestions = matches.map(c => {
+          const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, c);
+          let val = c;
+          let label = c;
+          if (prior) {
+            val = formatCharacterCue(c, prior.extension, true);
+            label = `${c} ${prior.extension ? `(${prior.extension}) ` : ''}(CONT'D)`;
+          }
+          return {
+            type: 'character-name',
+            baseName: c,
+            label: label,
+            val: val
+          };
+        });
+      }
     }
   }
 
-  // 3. TRANSITION AUTOCOMPLETE (Automatic & Case-Insensitive Letter Search)
+  // 3. PARENTHETICAL AUTOCOMPLETE (Section 2)
+  else if (type === 'parenthetical') {
+    const raw = text.replace(/^\(+|\)+$/g, '').trim().toLowerCase();
+    if (raw.length > 0) {
+      const matches = COMMON_PARENTHETICALS.filter(p => p.startsWith(raw));
+      if (matches.length > 0) {
+        suggestions = matches.map(p => ({
+          type: 'parenthetical',
+          label: `(${p})`,
+          val: `(${p})`
+        }));
+      }
+    }
+  }
+
+  // 4. TRANSITION AUTOCOMPLETE (Automatic & Case-Insensitive Letter Search)
   else if (type === 'transition') {
     const cleanText = (text || '').replace(/[\u200B\u00A0\r\n\t]/g, '').trim();
     const upper = cleanText.toUpperCase();
@@ -3340,10 +3553,33 @@ function triggerAutocomplete(blockEl, editableEl) {
   dropdown.innerHTML = suggestions.map((item, idx) => {
     const label = typeof item === 'object' ? item.label : item;
     const val = typeof item === 'object' ? item.val : item;
-    return `
-      <div class="autocomplete-item px-3 py-2 sm:py-1.5 hover:bg-blue-50 active:bg-blue-100 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono text-xs border-b border-slate-50 last:border-b-0 ${idx === 0 ? 'active bg-blue-50/70 text-blue-700 font-semibold' : ''}" data-val="${val}">
+    const isExt = item.type === 'character-extension';
+    const isParen = item.type === 'parenthetical';
+
+    let innerHtml = '';
+    if (isExt) {
+      innerHtml = `
+        <div class="flex items-center gap-2">
+          <span class="font-bold tracking-wide text-blue-700">${item.shortLabel}</span>
+          <span class="text-[11px] text-slate-500 font-sans">— ${item.desc}</span>
+        </div>
+        <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">Enter ↵</span>
+      `;
+    } else if (isParen) {
+      innerHtml = `
+        <span class="tracking-wide italic text-slate-700 font-mono">${label}</span>
+        <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">Enter ↵</span>
+      `;
+    } else {
+      innerHtml = `
         <span class="tracking-wide">${label}</span>
         <span class="text-[10px] text-slate-400 font-sans hidden sm:inline">Enter ↵</span>
+      `;
+    }
+
+    return `
+      <div class="autocomplete-item px-3 py-2 sm:py-1.5 hover:bg-blue-50 active:bg-blue-100 text-slate-800 hover:text-blue-700 cursor-pointer flex items-center justify-between font-mono text-xs border-b border-slate-50 last:border-b-0 ${idx === 0 ? 'active bg-blue-50/70 text-blue-700 font-semibold' : ''}" data-val="${val}" data-type="${item.type || ''}" data-idx="${idx}">
+        ${innerHtml}
       </div>
     `;
   }).join('');
@@ -3357,17 +3593,41 @@ function triggerAutocomplete(blockEl, editableEl) {
     });
     el.onclick = (ev) => {
       ev.stopPropagation();
+      const idx = parseInt(el.getAttribute('data-idx'), 10);
+      const item = suggestions[idx] || {};
       const val = el.getAttribute('data-val');
+      const itemType = el.getAttribute('data-type');
+
       editableEl.innerText = val;
       updateBlockModel(blockEl, val);
-      if (type === 'character') {
-        commitCharacterToMemory(val);
+
+      if (itemType === 'character-extension') {
+        if (item.baseName) {
+          commitCharacterToMemory(item.baseName);
+        }
+        hideAutocomplete();
+        const sceneId = blockEl.getAttribute('data-scene-id');
+        const blockId = blockEl.getAttribute('data-block-id');
+        // Automatically insert dialogue on next line and position cursor at start
+        insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
+      } else if (itemType === 'parenthetical') {
+        hideAutocomplete();
+        // Position cursor immediately after closing parenthesis
+        setCaretCharacterOffsetWithin(editableEl, val.length);
+      } else if (type === 'character') {
+        commitCharacterToMemory(item.baseName || val);
+        hideAutocomplete();
+        setCursorAtEnd(editableEl);
       } else if (type === 'scene') {
         const parsed = parseSceneHeading(val);
         if (parsed.location) commitLocationToMemory(parsed.location);
+        hideAutocomplete();
+        setCursorAtEnd(editableEl);
+      } else {
+        hideAutocomplete();
+        setCursorAtEnd(editableEl);
       }
-      hideAutocomplete();
-      setCursorAtEnd(editableEl);
+
       hasUnsavedChanges = true;
       if (autoSaveEnabled) scheduleAutosave();
     };
