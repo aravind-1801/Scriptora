@@ -10,7 +10,7 @@ export function renderIntelligenceSelectorScreen() {
   return `
     ${renderHeader('Intelligence', 'Script Selector')}
 
-    <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
+    <main class="flex-1 flex flex-col relative w-full pt-16 pb-44 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4 fade-in">
         
         <!-- Section Header -->
@@ -79,12 +79,14 @@ export function renderIntelligenceSelectorScreen() {
       </div>
 
       <!-- Sticky Bottom Action Tray -->
-      <div class="fixed bottom-14 left-0 right-0 z-40 bg-surface/90 backdrop-blur-md px-4 py-2.5 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto">
+      <div class="fixed left-0 right-0 z-30 bg-surface/90 backdrop-blur-md px-4 pt-2.5 pb-2 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto" style="bottom: calc(3.5rem + 16px + env(safe-area-inset-bottom, 0px));">
         <button type="button" id="submit-continue-analysis-btn" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
           <span class="truncate font-semibold" id="selector-btn-label">Continue to Context (${active.title})</span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </button>
         <span class="text-[10px] text-slate-400 tracking-tight">Establishes selectedScriptId for Script Analysis</span>
+        <!-- One empty line below for visual spacing and professional breathing room -->
+        <div class="h-4 w-full select-none pointer-events-none" aria-hidden="true"></div>
       </div>
 
     </main>

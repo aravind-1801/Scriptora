@@ -1551,7 +1551,7 @@ ${Tt?Tt+". ":""}${Re}
     `).join(""),document.querySelectorAll(".restore-version-btn").forEach(I=>{I.onclick=()=>{const F=I.getAttribute("data-vname");S(`Restored version "${F}"`),document.getElementById("currentVersionTag").textContent=F,Se("versionsModal")}}))}$e&&($e.onclick=()=>ye()),ne&&(ne.onclick=()=>{Se("moreMenu"),ye()}),xe&&(xe.onclick=()=>Se("versionsModal")),G&&(G.onclick=z=>{z.target===G&&Se("versionsModal")});const Te=document.getElementById("newVersionModal"),ie=document.getElementById("openNewVersionPrompt"),ce=document.getElementById("closeNewVersionModal"),j=document.getElementById("cancelNewVersionBtn"),Ae=document.getElementById("saveNewVersionBtn");function Me(){G.classList.add("hidden"),Te.classList.remove("hidden"),Te.classList.add("flex"),Gt({id:"newVersionModal",name:"New Version",close:()=>{Te.classList.add("hidden"),Te.classList.remove("flex")}})}ie&&(ie.onclick=Me),ce&&(ce.onclick=()=>Se("newVersionModal")),j&&(j.onclick=()=>Se("newVersionModal")),Ae&&(Ae.onclick=async()=>{const z=document.getElementById("newVersionNameInput")?.value.trim(),I=document.getElementById("newVersionNotesInput")?.value.trim();z&&(await yo(e,{name:z,notes:I}),S(`Created version snapshot "${z}"`),document.getElementById("currentVersionTag").textContent=z,Se("newVersionModal"))});const le=document.getElementById("compareModal"),Fe=document.getElementById("openCompareBtn"),ue=document.getElementById("menu-btn-compare"),qe=document.getElementById("closeCompareModal"),ze=document.getElementById("closeCompareBtn2");function Pe(){G.classList.add("hidden"),le.classList.remove("hidden"),le.classList.add("flex"),Gt({id:"compareModal",name:"Compare Versions",close:()=>{le.classList.add("hidden"),le.classList.remove("flex")}})}Fe&&(Fe.onclick=Pe),ue&&(ue.onclick=()=>{Se("moreMenu"),Pe()}),qe&&(qe.onclick=()=>Se("compareModal")),ze&&(ze.onclick=()=>Se("compareModal")),le&&(le.onclick=z=>{z.target===le&&Se("compareModal")})}function rn(){if(!H)return;let e=0;H.scenes.forEach(a=>{a.blocks.forEach(i=>{i.content&&(e+=i.content.trim().split(/\s+/).filter(Boolean).length)})});const s=document.querySelectorAll("#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)").length||1,n=document.getElementById("telemetry-page-count"),o=document.getElementById("telemetry-word-count");n&&(n.textContent=`Page 1 of ${s}`),o&&(o.textContent=`${e.toLocaleString()} words`)}function Ol(){const e=$.state.scripts||[],t=$.state.selectedScriptId||"chronicles-of-dust",s=e.find(n=>n.id===t)||e[0]||{title:"Chronicles of Dust"};return`
     ${dt("Intelligence","Script Selector")}
 
-    <main class="flex-1 flex flex-col relative w-full pt-16 pb-28 bg-surface">
+    <main class="flex-1 flex flex-col relative w-full pt-16 pb-44 bg-surface">
       <div class="flex flex-col w-full max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4 fade-in">
         
         <!-- Section Header -->
@@ -1617,12 +1617,14 @@ ${Tt?Tt+". ":""}${Re}
       </div>
 
       <!-- Sticky Bottom Action Tray -->
-      <div class="fixed bottom-14 left-0 right-0 z-40 bg-surface/90 backdrop-blur-md px-4 py-2.5 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto">
+      <div class="fixed left-0 right-0 z-30 bg-surface/90 backdrop-blur-md px-4 pt-2.5 pb-2 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto" style="bottom: calc(3.5rem + 16px + env(safe-area-inset-bottom, 0px));">
         <button type="button" id="submit-continue-analysis-btn" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
           <span class="truncate font-semibold" id="selector-btn-label">Continue to Context (${s.title})</span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </button>
         <span class="text-[10px] text-slate-400 tracking-tight">Establishes selectedScriptId for Script Analysis</span>
+        <!-- One empty line below for visual spacing and professional breathing room -->
+        <div class="h-4 w-full select-none pointer-events-none" aria-hidden="true"></div>
       </div>
 
     </main>
