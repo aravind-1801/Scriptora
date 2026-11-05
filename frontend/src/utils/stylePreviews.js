@@ -520,13 +520,18 @@ function createGraphicNovelSvg() {
 </svg>`);
 }
 
+const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
+  ? import.meta.env.BASE_URL
+  : '/';
+const BASE = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+
 export const VISUAL_STYLE_PREVIEWS = [
   {
     id: "Comic",
     name: "Comic",
     tagline: "Bold Ink & Halftone Dots",
-    description: "Classic action comic illustration with thick outlines, halftone Ben-Day dots, and primary pop colors.",
-    previewImage: "/assets/styles/comic.jpg",
+    description: "Classic action comic illustration with thick outlines, halftone Ben-Day dots, and vibrant desert palette.",
+    previewImage: `${BASE}assets/styles/comic.jpg`,
     fallbackSvg: createComicSvg()
   },
   {
@@ -534,7 +539,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Cinematic",
     tagline: "35mm Film Still",
     description: "Atmospheric 35mm film still with moody natural lighting, shallow depth of field, and filmic grain.",
-    previewImage: "/assets/styles/cinematic-realism.jpg",
+    previewImage: `${BASE}assets/styles/cinematic-realism.jpg`,
     fallbackSvg: createCinematicSvg()
   },
   {
@@ -542,7 +547,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Soft Pencil",
     tagline: "Light Graphite & Fine Shading",
     description: "Delicate graphite pencil drawing on clean off-white paper with soft tonal cross-hatching.",
-    previewImage: "/assets/styles/storyboard-sketch.jpg",
+    previewImage: `${BASE}assets/styles/soft-pencil.jpg`,
     fallbackSvg: createSoftPencilSvg()
   },
   {
@@ -550,7 +555,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Animation 3D",
     tagline: "Pixar / Studio 3D CGI",
     description: "Warm 3D rendered character animation with soft volumetric lighting and expressive stylized anatomy.",
-    previewImage: "/assets/styles/animation-3d.jpg",
+    previewImage: `${BASE}assets/styles/animation-3d.jpg`,
     fallbackSvg: createAnimation3DSvg()
   },
   {
@@ -558,7 +563,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Watercolor Paint",
     tagline: "Pastel Pigments & Fluid Wash",
     description: "Artistic watercolor wash on textured paper with soft bleeding pigments and dreamy translucent hues.",
-    previewImage: "/assets/styles/watercolor-paint.jpg",
+    previewImage: `${BASE}assets/styles/watercolor-paint.jpg`,
     fallbackSvg: createWatercolorSvg()
   },
   {
@@ -566,7 +571,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Photo / Commercial",
     tagline: "Sharp Advertising Photography",
     description: "Commercial editorial photography with razor-sharp lens focus, natural daylight, and bokeh.",
-    previewImage: "/assets/styles/photorealistic.jpg",
+    previewImage: `${BASE}assets/styles/photorealistic.jpg`,
     fallbackSvg: createPhotoCommercialSvg()
   },
   {
@@ -574,7 +579,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Charcoal Sketch",
     tagline: "Smudged Shadows & Rich Charcoal",
     description: "Dramatic expressive charcoal drawing with deep velvety blacks, smudged shadows, and coarse tooth paper.",
-    previewImage: "/assets/styles/charcoal-sketch.jpg",
+    previewImage: `${BASE}assets/styles/charcoal-sketch.jpg`,
     fallbackSvg: createCharcoalSvg()
   },
   {
@@ -582,7 +587,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Dark Anime",
     tagline: "Cyberpunk Cel-Shading",
     description: "Japanese anime aesthetic with sharp cel-shaded lines, intense city backlight, and glowing neon rim.",
-    previewImage: "/assets/styles/dark-anime.jpg",
+    previewImage: `${BASE}assets/styles/dark-anime.jpg`,
     fallbackSvg: createDarkAnimeSvg()
   },
   {
@@ -590,7 +595,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Flat / Vector",
     tagline: "Clean 2D Vector Art",
     description: "Modern editorial 2D vector art with bold flat silhouettes, vibrant solid colors, and clean geometry.",
-    previewImage: "/assets/styles/flat-vector.jpg",
+    previewImage: `${BASE}assets/styles/flat-vector.jpg`,
     fallbackSvg: createFlatVectorSvg()
   },
   {
@@ -598,7 +603,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Noir",
     tagline: "High-Contrast Chiaroscuro",
     description: "Classic black-and-white film noir with stark shadows, dramatic streetlights, and rainy street reflections.",
-    previewImage: "/assets/styles/noir.jpg",
+    previewImage: `${BASE}assets/styles/noir.jpg`,
     fallbackSvg: createNoirSvg()
   },
   {
@@ -606,7 +611,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Stick Figure",
     tagline: "Minimalist Modern Line Art",
     description: "Clean minimalist black line art with whimsical expressive poses and uncluttered white space.",
-    previewImage: "/assets/styles/stick-figure.jpg",
+    previewImage: `${BASE}assets/styles/stick-figure.jpg`,
     fallbackSvg: createStickFigureSvg()
   },
   {
@@ -614,7 +619,7 @@ export const VISUAL_STYLE_PREVIEWS = [
     name: "Graphic Novel",
     tagline: "Gritty Stark Shadow Blocking",
     description: "High-contrast graphic novel panel with heavy ink shadows and dramatic amber and violet duotone.",
-    previewImage: "/assets/styles/graphic-novel.jpg",
+    previewImage: `${BASE}assets/styles/graphic-novel.jpg`,
     fallbackSvg: createGraphicNovelSvg()
   }
 ];

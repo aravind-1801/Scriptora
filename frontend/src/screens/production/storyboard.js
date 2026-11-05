@@ -529,7 +529,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <!-- Active Style Summary Card (Clicking opens style gallery popup) -->
               <div id="gen-active-style-card" class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/80 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer transition-all flex items-center gap-3 group shadow-2xs">
                 <div class="w-20 aspect-video rounded-lg overflow-hidden bg-slate-200 border border-slate-200 shrink-0 relative">
-                  <img id="gen-active-style-img" src="/assets/styles/storyboard-sketch.jpg" alt="Active style" class="w-full h-full object-cover" />
+                  <img id="gen-active-style-img" src="${getStylePreview('Soft Pencil').previewImage}" onerror="this.onerror=null; this.src='${getStylePreview('Soft Pencil').fallbackSvg}';" alt="Active style" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-2">
