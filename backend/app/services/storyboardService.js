@@ -835,10 +835,17 @@ function generateProceduralConceptFrame(opts = {}) {
   if (aspectRatio === "9:16") { width = 675; height = 1200; }
 
   const vStyle = (visualStyle || "").toLowerCase();
-  const isSketch = vStyle.includes("sketch") || vStyle.includes("ink") || vStyle.includes("pencil") || vStyle.includes("storyboard");
+  const isComic = vStyle.includes("comic") || vStyle.includes("graphic novel");
+  const isAnime = vStyle.includes("anime") || vStyle.includes("manga");
+  const isWatercolor = vStyle.includes("water");
+  const isNoir = vStyle.includes("noir");
+  const isStick = vStyle.includes("stick");
+  const isVector = vStyle.includes("vector") || vStyle.includes("flat");
+  const isAnimation3D = vStyle.includes("3d") || vStyle.includes("animation");
+  const isPhoto = vStyle.includes("photo") || vStyle.includes("commercial");
   const isCinematic = vStyle.includes("cinematic") || vStyle.includes("realism");
-  const isPhoto = vStyle.includes("photo");
-  const isConcept = vStyle.includes("concept") || (!isSketch && !isCinematic && !isPhoto);
+  const isSketch = vStyle.includes("sketch") || vStyle.includes("ink") || vStyle.includes("pencil") || vStyle.includes("storyboard") || vStyle.includes("charcoal");
+  const isConcept = vStyle.includes("concept") || (!isSketch && !isCinematic && !isPhoto && !isComic && !isAnime && !isWatercolor && !isNoir && !isStick && !isVector && !isAnimation3D);
 
   const fullText = `${sceneHeading} ${prompt} ${description}`.toLowerCase();
   const isNight = fullText.includes("night") || fullText.includes("dusk") || (lightingMood || "").toLowerCase().includes("night");
@@ -866,7 +873,56 @@ function generateProceduralConceptFrame(opts = {}) {
   let accentColor = "#0284c7"; // SCRIPTORA blue for camera director markings
   let panelBg = "#ffffff";
 
-  if (isConcept) {
+  if (isComic) {
+    paperBg = "#fef08a";
+    panelBg = "#f8fafc";
+    inkColor = "#000000";
+    inkMuted = "#2563eb";
+    pencilHatch = "#dc2626";
+    accentColor = "#e11d48";
+  } else if (isAnime) {
+    paperBg = "#090d16";
+    panelBg = "#030712";
+    inkColor = "#38bdf8";
+    inkMuted = "#818cf8";
+    pencilHatch = "#c084fc";
+    accentColor = "#06b6d4";
+  } else if (isWatercolor) {
+    paperBg = "#fdfbf7";
+    panelBg = "#fefce8";
+    inkColor = "#1e293b";
+    inkMuted = "#0284c7";
+    pencilHatch = "#fb7185";
+    accentColor = "#38bdf8";
+  } else if (isNoir) {
+    paperBg = "#09090b";
+    panelBg = "#000000";
+    inkColor = "#ffffff";
+    inkMuted = "#71717a";
+    pencilHatch = "#a1a1aa";
+    accentColor = "#ffffff";
+  } else if (isStick) {
+    paperBg = "#ffffff";
+    panelBg = "#fafafa";
+    inkColor = "#09090b";
+    inkMuted = "#3f3f46";
+    pencilHatch = "#71717a";
+    accentColor = "#2563eb";
+  } else if (isVector) {
+    paperBg = "#f0fdf4";
+    panelBg = "#e0f2fe";
+    inkColor = "#0f172a";
+    inkMuted = "#0369a1";
+    pencilHatch = "#059669";
+    accentColor = "#10b981";
+  } else if (isAnimation3D) {
+    paperBg = "#1c1917";
+    panelBg = "#292524";
+    inkColor = "#fed7aa";
+    inkMuted = "#f97316";
+    pencilHatch = "#fbbf24";
+    accentColor = "#ea580c";
+  } else if (isConcept) {
     paperBg = isNight ? "#0f172a" : "#451a03";
     panelBg = isNight ? "#1e293b" : "#78350f";
     inkColor = isNight ? "#f8fafc" : "#fef3c7";

@@ -68,6 +68,18 @@ export const SCREEN_DIRECTIONS = [
 ];
 
 export const STYLE_PRESETS = [
+  "Comic",
+  "Cinematic",
+  "Soft Pencil",
+  "Animation 3D",
+  "Watercolor Paint",
+  "Photo / Commercial",
+  "Charcoal Sketch",
+  "Dark Anime",
+  "Flat / Vector",
+  "Noir",
+  "Stick Figure",
+  "Graphic Novel",
   "Concept Art",
   "Cinematic Realism",
   "Storyboard Sketch",
@@ -314,13 +326,13 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                 <textarea id="input-shot-desc" rows="3" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 bg-white leading-relaxed shadow-2xs" placeholder="Describe framing, blocking, key visual action, lighting, characters, and environmental atmosphere..."></textarea>
               </div>
 
-              <!-- Visual Style Image Preview Cards (4 Styles of SAME Desert Checkpoint Scene) -->
+              <!-- Visual Style Image Preview Cards (12 Artistic Styles) -->
               <div class="flex flex-col gap-1.5 mt-0.5">
                 <div class="flex items-center justify-between">
                   <label class="text-[11px] font-semibold text-slate-700">Visual Style — Select Treatment</label>
-                  <span class="text-[10px] text-slate-500">Same scene rendered in 4 visual styles</span>
+                  <span class="text-[10px] text-slate-500">Choose from 12 visual art styles</span>
                 </div>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="style-preview-cards-container">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[260px] overflow-y-auto pr-1" id="style-preview-cards-container">
                   ${VISUAL_STYLE_PREVIEWS.map(style => `
                     <button type="button" class="style-preview-card text-left p-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative" data-style-id="${style.id}">
                       <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
@@ -504,29 +516,34 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </div>
             </div>
 
-            <!-- Visual Style Image Preview Cards (4 Styles of SAME Desert Checkpoint Scene) -->
+            <!-- Visual Style Selection: Selected Style Card with Popup Trigger -->
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center justify-between">
-                <label class="text-[11px] font-semibold text-slate-700">Visual Style — Select Treatment</label>
-                <span class="text-[10px] text-slate-500">Same scene rendered in 4 visual styles</span>
+                <label class="text-[11px] font-semibold text-slate-700">Visual Art Style</label>
+                <button type="button" id="btn-browse-all-styles" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer transition-colors">
+                  <span>Browse All Styles (${VISUAL_STYLE_PREVIEWS.length})</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
               </div>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="gen-style-preview-cards-container">
-                ${VISUAL_STYLE_PREVIEWS.map(style => `
-                  <button type="button" class="gen-style-preview-card text-left p-2 rounded-xl border border-slate-200 hover:border-slate-300 bg-white transition-all cursor-pointer flex flex-col gap-1.5 group relative" data-style-id="${style.id}">
-                    <div class="w-full aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-100 relative">
-                      <img src="${style.previewImage}" onerror="this.onerror=null; this.src='${style.fallbackSvg}';" alt="${style.name}" class="w-full h-full object-cover" />
-                      <div class="gen-style-check-badge hidden absolute top-1 right-1 w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-xs">
-                        <span class="material-symbols-outlined text-[11px] font-bold">check</span>
-                      </div>
-                    </div>
-                    <div>
-                      <div class="text-[11px] font-bold text-slate-900 group-hover:text-blue-600 leading-tight">${style.name}</div>
-                      <div class="text-[9px] text-slate-500 line-clamp-2 leading-tight mt-0.5">${style.description}</div>
-                    </div>
-                  </button>
-                `).join('')}
+              
+              <!-- Active Style Summary Card (Clicking opens style gallery popup) -->
+              <div id="gen-active-style-card" class="p-2.5 rounded-xl border border-slate-200 bg-slate-50/80 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer transition-all flex items-center gap-3 group shadow-2xs">
+                <div class="w-20 aspect-video rounded-lg overflow-hidden bg-slate-200 border border-slate-200 shrink-0 relative">
+                  <img id="gen-active-style-img" src="/assets/styles/storyboard-sketch.jpg" alt="Active style" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span id="gen-active-style-name" class="text-xs font-bold text-slate-900 group-hover:text-blue-600">Soft Pencil</span>
+                    <span class="px-1.5 py-0.2 rounded bg-blue-100 text-blue-700 font-semibold text-[9px]">Active</span>
+                  </div>
+                  <p id="gen-active-style-desc" class="text-[10px] text-slate-500 line-clamp-1 mt-0.5">Delicate graphite pencil drawing with soft tonal shading</p>
+                </div>
+                <div class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 group-hover:border-blue-400 group-hover:text-blue-600 text-slate-700 font-bold text-[10px] tracking-wide uppercase shadow-2xs flex items-center gap-1">
+                  <span>Change</span>
+                  <span class="material-symbols-outlined text-[12px]">chevron_right</span>
+                </div>
               </div>
-              <input type="hidden" id="gen-style-select" value="Concept Art" />
+              <input type="hidden" id="gen-style-select" value="Soft Pencil" />
             </div>
 
             <!-- Image Quality and Aspect Ratio Grid -->
@@ -2063,14 +2080,12 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const cards = document.querySelectorAll('.style-preview-card');
     const inputStyle = document.getElementById('input-shot-style');
     let matchedCard = null;
+    const styleObj = getStylePreview(styleName);
 
     cards.forEach(card => {
       const cardStyle = card.getAttribute('data-style-id') || '';
       const isMatch = (cardStyle.toLowerCase() === (styleName || '').toLowerCase()) ||
-                      (cardStyle.includes('concept') && (styleName || '').includes('Concept')) ||
-                      (cardStyle.includes('realism') && (styleName || '').includes('Realism')) ||
-                      (cardStyle.includes('sketch') && (styleName || '').includes('Sketch')) ||
-                      (cardStyle.includes('photo') && (styleName || '').includes('Photo'));
+                      (cardStyle === styleObj.id);
 
       if (isMatch && !matchedCard) {
         matchedCard = card;
@@ -2091,7 +2106,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       first.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
       first.classList.remove('border-slate-200');
       first.querySelector('.style-check-badge')?.classList.remove('hidden');
-      if (inputStyle) inputStyle.value = first.getAttribute('data-style-id') || 'Concept Art';
+      if (inputStyle) inputStyle.value = first.getAttribute('data-style-id') || 'Comic';
     }
   }
 
@@ -2105,50 +2120,122 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     });
   }
 
-  function selectGenStyleCard(styleName) {
-    const cards = document.querySelectorAll('.gen-style-preview-card');
+  function applySelectedVisualArtStyle(styleName, returnToConfig = false) {
+    const styleObj = getStylePreview(styleName);
+    const styleId = styleObj.id;
     const inputStyle = document.getElementById('gen-style-select');
-    let matchedCard = null;
+    const nameEl = document.getElementById('gen-active-style-name');
+    const descEl = document.getElementById('gen-active-style-desc');
+    const imgEl = document.getElementById('gen-active-style-img');
 
-    cards.forEach(card => {
-      const cardStyle = card.getAttribute('data-style-id') || '';
-      const isMatch = (cardStyle.toLowerCase() === (styleName || '').toLowerCase()) ||
-                      (cardStyle.includes('concept') && (styleName || '').includes('Concept')) ||
-                      (cardStyle.includes('realism') && (styleName || '').includes('Realism')) ||
-                      (cardStyle.includes('sketch') && (styleName || '').includes('Sketch')) ||
-                      (cardStyle.includes('photo') && (styleName || '').includes('Photo'));
+    if (inputStyle) inputStyle.value = styleId;
+    if (nameEl) nameEl.textContent = styleObj.name;
+    if (descEl) descEl.textContent = styleObj.description || styleObj.tagline;
+    if (imgEl) {
+      imgEl.src = styleObj.previewImage;
+      imgEl.onerror = () => {
+        imgEl.onerror = null;
+        imgEl.src = styleObj.fallbackSvg;
+      };
+    }
 
-      if (isMatch && !matchedCard) {
-        matchedCard = card;
-        card.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+    // Highlight card in gallery
+    document.querySelectorAll('.gen-style-gallery-card').forEach(card => {
+      const cId = card.getAttribute('data-style-id');
+      const badge = card.querySelector('.gen-style-gallery-check');
+      if (cId === styleId) {
+        card.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/30');
         card.classList.remove('border-slate-200');
-        card.querySelector('.gen-style-check-badge')?.classList.remove('hidden');
+        badge?.classList.remove('hidden');
       } else {
-        card.classList.remove('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
+        card.classList.remove('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/30');
         card.classList.add('border-slate-200');
-        card.querySelector('.gen-style-check-badge')?.classList.add('hidden');
+        badge?.classList.add('hidden');
       }
     });
 
-    if (matchedCard) {
-      if (inputStyle) inputStyle.value = matchedCard.getAttribute('data-style-id') || styleName;
-    } else if (cards.length > 0) {
-      const first = cards[0];
-      first.classList.add('border-blue-600', 'ring-2', 'ring-blue-500/30', 'bg-blue-50/20');
-      first.classList.remove('border-slate-200');
-      first.querySelector('.gen-style-check-badge')?.classList.remove('hidden');
-      if (inputStyle) inputStyle.value = first.getAttribute('data-style-id') || 'Concept Art';
+    if (returnToConfig) {
+      // Route backward to settings
+      document.getElementById('gen-step-styles')?.classList.add('hidden');
+      document.getElementById('gen-step-config')?.classList.remove('hidden');
+      showToast(`Art style set to ${styleObj.name}`);
     }
   }
 
-  function setupGenStylePreviewCards() {
-    const cards = document.querySelectorAll('.gen-style-preview-card');
-    cards.forEach(card => {
+  function setupVisualArtStylePopup() {
+    // Forward Route: Open Style Gallery
+    const btnBrowse = document.getElementById('btn-browse-all-styles');
+    const activeCard = document.getElementById('gen-active-style-card');
+    const openGallery = (e) => {
+      e?.preventDefault();
+      document.getElementById('gen-step-config')?.classList.add('hidden');
+      document.getElementById('gen-step-styles')?.classList.remove('hidden');
+      const curStyle = document.getElementById('gen-style-select')?.value || 'Soft Pencil';
+      applySelectedVisualArtStyle(curStyle, false);
+    };
+
+    if (btnBrowse) btnBrowse.onclick = openGallery;
+    if (activeCard) activeCard.onclick = openGallery;
+
+    // Backward Route: Back to Settings
+    const btnBack = document.getElementById('btn-back-to-gen-config');
+    if (btnBack) {
+      btnBack.onclick = (e) => {
+        e.preventDefault();
+        document.getElementById('gen-step-styles')?.classList.add('hidden');
+        document.getElementById('gen-step-config')?.classList.remove('hidden');
+      };
+    }
+
+    // Gallery cards selection with automatic backward route
+    document.querySelectorAll('.gen-style-gallery-card').forEach(card => {
       card.onclick = () => {
-        const styleId = card.getAttribute('data-style-id');
-        selectGenStyleCard(styleId);
+        const sId = card.getAttribute('data-style-id');
+        applySelectedVisualArtStyle(sId, true);
       };
     });
+
+    // Custom Art Style Drawer (+)
+    const btnCustomCard = document.getElementById('btn-custom-style-card');
+    const customDrawer = document.getElementById('gen-custom-style-drawer');
+    const btnCancelCustom = document.getElementById('btn-cancel-custom-style');
+    const btnApplyCustom = document.getElementById('btn-apply-custom-style');
+    const inputCustom = document.getElementById('input-custom-style-name');
+
+    if (btnCustomCard && customDrawer) {
+      btnCustomCard.onclick = () => {
+        customDrawer.classList.remove('hidden');
+        inputCustom?.focus();
+      };
+    }
+
+    if (btnCancelCustom && customDrawer) {
+      btnCancelCustom.onclick = () => {
+        customDrawer.classList.add('hidden');
+      };
+    }
+
+    if (btnApplyCustom && inputCustom) {
+      btnApplyCustom.onclick = () => {
+        const customVal = inputCustom.value.trim();
+        if (!customVal) {
+          showToast('Please enter an art style name');
+          return;
+        }
+        const inputStyle = document.getElementById('gen-style-select');
+        const nameEl = document.getElementById('gen-active-style-name');
+        const descEl = document.getElementById('gen-active-style-desc');
+
+        if (inputStyle) inputStyle.value = customVal;
+        if (nameEl) nameEl.textContent = customVal;
+        if (descEl) descEl.textContent = 'Custom user-defined art style';
+
+        customDrawer.classList.add('hidden');
+        document.getElementById('gen-step-styles')?.classList.add('hidden');
+        document.getElementById('gen-step-config')?.classList.remove('hidden');
+        showToast(`Art style set to "${customVal}"`);
+      };
+    }
   }
 
   async function loadStoryboardPreferences() {
@@ -2289,10 +2376,10 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     updateGenSubmitLabel();
     updateProviderCostDisclosure();
 
-    // Setup and select default visual style card in Sequence Generator modal
-    setupGenStylePreviewCards();
-    const defaultGenStyle = currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Concept Art';
-    selectGenStyleCard(defaultGenStyle);
+    // Setup style popup and select active visual style
+    setupVisualArtStylePopup();
+    const defaultGenStyle = currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Soft Pencil';
+    applySelectedVisualArtStyle(defaultGenStyle, false);
 
     if (genErrorAlert) genErrorAlert.classList.add('hidden');
     openModal(genModal);
