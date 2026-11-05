@@ -2928,6 +2928,48 @@ export async function getStoryboards(scriptId = 'chronicles-of-dust') {
 // Prevents QuotaExceededError by eliminating giant base64 payloads from localStorage
 // =========================================================================
 
+export function resolveStoryboardAssetUrl(url, shotNumber = '') {
+  if (!url || typeof url !== 'string') {
+    return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+  }
+
+  // 1. If it's an SVG data URI wrapping a storyboard asset
+  if (url.startsWith('data:image/svg+xml') && (url.includes('assets/storyboard') || url.includes('assets%2Fstoryboard'))) {
+    try {
+      const decoded = decodeURIComponent(url);
+      const m = decoded.match(/assets\/storyboard\/([a-zA-Z0-9_.-]+)/);
+      if (m && m[1]) {
+        return `${BASE_ASSET_URL}assets/storyboard/${m[1]}`;
+      }
+    } catch (_) {}
+  }
+
+  // 2. If it's a legacy procedural SVG or oversized base64
+  if (url.startsWith('data:image/svg') || (url.startsWith('data:image/') && url.length > 50000)) {
+    const num = (shotNumber || '').toUpperCase();
+    if (num.includes('1A')) return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+    if (num.includes('1B')) return `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
+    if (num.includes('1C')) return `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
+    if (num.includes('1D')) return `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
+    if (num.includes('10A')) return `${BASE_ASSET_URL}assets/storyboard/shot_10a_valve_breach.jpg`;
+    if (num.includes('10B')) return `${BASE_ASSET_URL}assets/storyboard/shot_10b_pumping_hall.jpg`;
+    return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+  }
+
+  // 3. If it starts with http / https or small data URI (e.g. user upload)
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
+    return url;
+  }
+
+  // 4. If it's a path like /assets/... or assets/...
+  if (url.includes('assets/storyboard/') || url.includes('assets/styles/')) {
+    const clean = url.replace(/^\/?(Scriptora\/)?/, '');
+    return `${BASE_ASSET_URL}${clean}`;
+  }
+
+  return url;
+}
+
 export function sanitizeStoryboard(sb) {
   if (!sb || typeof sb !== 'object') return sb;
   const copy = { ...sb };
@@ -2935,31 +2977,15 @@ export function sanitizeStoryboard(sb) {
   if (Array.isArray(copy.shots)) {
     copy.shots = copy.shots.map(shot => {
       const s = { ...shot };
-      // Resolve clean URL for any bloated base64 or oversized SVG
-      if (typeof s.imageUrl === 'string' && (s.imageUrl.startsWith('data:image/svg') || s.imageUrl.startsWith('data:image/jpeg') || s.imageUrl.length > 5000)) {
-        const num = (s.shotNumber || '').toUpperCase();
-        if (num.includes('1A')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
-        else if (num.includes('1B')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
-        else if (num.includes('1C')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
-        else if (num.includes('1D')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
-        else if (num.includes('10A')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_10a_valve_breach.jpg`;
-        else if (num.includes('10B')) s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_10b_pumping_hall.jpg`;
-        else s.imageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
-      }
+      s.imageUrl = resolveStoryboardAssetUrl(s.imageUrl, s.shotNumber);
 
       // Sanitize version history to preserve metadata without giant base64 binaries
       if (Array.isArray(s.history)) {
-        s.history = s.history.slice(0, 20).map((h, idx) => {
+        s.history = s.history.slice(0, 20).map((h) => {
           const item = { ...h };
           const img = item.previousImageUrl || item.imageUrl;
-          if (typeof img === 'string' && (img.startsWith('data:image/svg') || img.startsWith('data:image/jpeg') || img.length > 5000)) {
-            const num = (s.shotNumber || '').toUpperCase();
-            if (num.includes('1A')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
-            else if (num.includes('1B')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
-            else if (num.includes('1C')) item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
-            else item.previousImageUrl = `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
-            delete item.imageUrl;
-          }
+          item.previousImageUrl = resolveStoryboardAssetUrl(img, s.shotNumber);
+          delete item.imageUrl;
           return item;
         });
       }
@@ -3405,7 +3431,10 @@ export async function generateStoryboardShot(scriptId, params = {}) {
       method: 'POST',
       body: JSON.stringify(params)
     });
-    if (res?.imageUrl) return res;
+    if (res?.imageUrl) {
+      res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
+      return res;
+    }
   } catch (e) {
     // If backend returns a provider unconfigured error, re-throw it so caller displays clear honest guidance
     if (e.message && e.message.includes('not configured')) {
@@ -3418,10 +3447,17 @@ export async function generateStoryboardShot(scriptId, params = {}) {
   const headingUpper = (params.sceneHeading || "").toUpperCase();
   const fullText = `${params.sceneHeading || ''} ${params.prompt || ''} ${params.description || ""}`.toLowerCase();
   const shotNum = (params.shotNumber || "1A").toUpperCase();
+  const varType = (params.variationType || "").toLowerCase();
 
   let sketchFile = "shot_1a_wide_outpost.jpg";
   if (params.isVariation) {
-    if (shotNum.includes("A") || sizeLower.includes("wide")) {
+    if (varType === 'angle' || varType === 'framing') {
+      sketchFile = "shot_10a_valve_breach.jpg";
+    } else if (varType === 'lighting') {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (varType === 'composition') {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNum.includes("A") || sizeLower.includes("wide")) {
       sketchFile = "shot_10b_pumping_hall.jpg";
     } else if (shotNum.includes("B") || sizeLower.includes("two")) {
       sketchFile = "shot_1c_closeup_reaction.jpg";

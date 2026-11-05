@@ -624,6 +624,59 @@ export const VISUAL_STYLE_PREVIEWS = [
   }
 ];
 
+export { BASE };
+
+export function resolveAssetUrl(url, fallbackNum = '') {
+  if (!url || typeof url !== 'string') {
+    return `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`;
+  }
+
+  // 1. If it's an SVG data URI wrapping a storyboard asset or file
+  if (url.startsWith('data:image/svg+xml') && (url.includes('assets/storyboard') || url.includes('assets%2Fstoryboard'))) {
+    try {
+      const decoded = decodeURIComponent(url);
+      const match = decoded.match(/assets\/storyboard\/([a-zA-Z0-9_.-]+)/);
+      if (match && match[1]) {
+        return `${BASE}assets/storyboard/${match[1]}`;
+      }
+    } catch (_) {}
+  }
+
+  // 2. If it's a legacy procedural SVG or dark silhouette SVG
+  if (url.startsWith('data:image/svg+xml') && (url.includes('<rect') || url.includes('<svg') || url.includes('fill=')) && !url.includes('<image')) {
+    const check = `${url} ${fallbackNum}`.toUpperCase();
+    if (check.includes('1B') || check.includes('TWO-SHOT') || check.includes('TWO SHOT')) {
+      return `${BASE}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
+    }
+    if (check.includes('1C') || check.includes('CLOSE-UP') || check.includes('CLOSE UP')) {
+      return `${BASE}assets/storyboard/shot_1c_closeup_reaction.jpg`;
+    }
+    if (check.includes('1D') || check.includes('MACRO') || check.includes('INSERT')) {
+      return `${BASE}assets/storyboard/shot_1d_macro_insert.jpg`;
+    }
+    if (check.includes('10A') || check.includes('VALVE')) {
+      return `${BASE}assets/storyboard/shot_10a_valve_breach.jpg`;
+    }
+    if (check.includes('10B') || check.includes('PUMPING') || check.includes('HALL')) {
+      return `${BASE}assets/storyboard/shot_10b_pumping_hall.jpg`;
+    }
+    return `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`;
+  }
+
+  // 3. If it's an external URL (http / https) or base64 data URL
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/png') || url.startsWith('data:image/jpeg')) {
+    return url;
+  }
+
+  // 4. If it's a path like /assets/storyboard/... or assets/storyboard/...
+  if (url.includes('assets/storyboard/') || url.includes('assets/styles/')) {
+    const clean = url.replace(/^\/?(Scriptora\/)?/, '');
+    return `${BASE}${clean}`;
+  }
+
+  return url;
+}
+
 export function getStylePreview(styleId) {
   const norm = (styleId || '').trim().toLowerCase();
   return VISUAL_STYLE_PREVIEWS.find(s => {

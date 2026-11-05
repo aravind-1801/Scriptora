@@ -624,7 +624,14 @@ export async function generateShotImage(params = {}) {
 
   let sketchFile = "shot_1a_wide_outpost.jpg";
   if (params.isVariation) {
-    if (shotNumber.includes("A") || sizeLower.includes("wide")) {
+    const varType = (params.variationType || "").toLowerCase();
+    if (varType === 'angle' || varType === 'framing') {
+      sketchFile = "shot_10a_valve_breach.jpg";
+    } else if (varType === 'lighting') {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (varType === 'composition') {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNumber.includes("A") || sizeLower.includes("wide")) {
       sketchFile = "shot_10b_pumping_hall.jpg";
     } else if (shotNumber.includes("B") || sizeLower.includes("two")) {
       sketchFile = "shot_1c_closeup_reaction.jpg";

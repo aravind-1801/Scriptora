@@ -1,4 +1,4 @@
-import { VISUAL_STYLE_PREVIEWS, getStylePreview } from '../../utils/stylePreviews.js';
+import { VISUAL_STYLE_PREVIEWS, getStylePreview, resolveAssetUrl, BASE } from '../../utils/stylePreviews.js';
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
 import { renderProdSubNav } from './prodNav.js';
@@ -2563,7 +2563,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const activeStyle = shot?.visualStyle || currentStoryboard?.visualStyle || prefs?.visualStyle || 'Concept Art';
     selectStyleCard(activeStyle);
 
-    currentModalDraftImage = shot?.imageUrl || null;
+    currentModalDraftImage = shot?.imageUrl ? resolveAssetUrl(shot.imageUrl, shot.shotNumber) : null;
     currentModalDraftPrompt = shot?.prompt || '';
     currentModalDraftApproval = shot?.approvalStatus || 'draft';
 
@@ -2590,7 +2590,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (currentModalDraftImage) {
       if (imgEl) {
-        imgEl.src = currentModalDraftImage;
+        imgEl.src = resolveAssetUrl(currentModalDraftImage, activeEditingShotId);
+        imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
         imgEl.classList.remove('hidden');
       }
       if (placeholderEl) placeholderEl.classList.add('hidden');
@@ -2973,7 +2974,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     } else {
       container.innerHTML = currentHeader + history.slice().map((h, revIdx) => {
         const dateStr = h.timestamp ? new Date(h.timestamp).toLocaleString() : 'Past Version';
-        const imgUrl = h.previousImageUrl || h.imageUrl;
+        const rawImg = h.previousImageUrl || h.imageUrl;
+        const imgUrl = rawImg ? resolveAssetUrl(rawImg, shot?.shotNumber) : '';
 
         let badgeHtml = '<span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-200 text-slate-700 font-semibold">Take</span>';
         if (h.generationType === 'variation') {
@@ -2996,7 +2998,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             <div class="flex items-center gap-3">
               <div class="w-20 h-14 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shrink-0 flex items-center justify-center cursor-pointer group relative">
                 ${imgUrl ? `
-                  <img src="${imgUrl}" alt="Historical version" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src="${imgUrl}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="Historical version" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 ` : `
                   <span class="material-symbols-outlined text-slate-600 text-base">image</span>
                 `}
@@ -3087,7 +3089,10 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const prevBtn = document.getElementById('lb-prev');
     const nextBtn = document.getElementById('lb-next');
 
-    if (imgEl) imgEl.src = shot.imageUrl || '';
+    if (imgEl) {
+      imgEl.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
+      imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+    }
     if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
     if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize || 'Medium'}`;
     if (titleEl) titleEl.textContent = shot.title;
@@ -3121,7 +3126,10 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (approveBtn) approveBtn.classList.remove('hidden');
     if (rejectBtn) rejectBtn.classList.remove('hidden');
 
-    if (imgEl) imgEl.src = shot.imageUrl || '';
+    if (imgEl) {
+      imgEl.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
+      imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+    }
     if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
     if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize || 'Medium'}`;
     if (titleEl) titleEl.textContent = shot.title;
@@ -3347,7 +3355,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                       </button>
                     </div>
                   ` : (s.imageUrl ? `
-                    <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
+                    <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
                     <!-- Badges overlay -->
                     <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
                       ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
@@ -3497,7 +3505,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                         <span class="material-symbols-outlined text-base">refresh</span>
                       </button>
                     ` : (s.imageUrl ? `
-                      <img src="${s.imageUrl}" alt="${s.title}" class="w-full h-full object-cover" />
+                      <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="${s.title}" class="w-full h-full object-cover" />
                     ` : `
                       <span class="material-symbols-outlined text-slate-600 text-base sm:text-lg">image</span>
                     `))}
@@ -3648,7 +3656,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (shot.imageUrl) {
       if (thumb) {
-        thumb.src = shot.imageUrl;
+        thumb.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
+        thumb.onerror = () => { thumb.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
         thumb.classList.remove('hidden');
       }
       if (thumbPlaceholder) thumbPlaceholder.classList.add('hidden');
@@ -3718,12 +3727,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       });
 
       if (res?.imageUrl) {
+        const resolvedUrl = resolveAssetUrl(res.imageUrl, shot.shotNumber);
         if (!shot.history) shot.history = [];
         if (shot.imageUrl) {
+          const prevResolved = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
           shot.history.unshift({
             id: `v-${Date.now()}`,
-            imageUrl: shot.imageUrl,
-            previousImageUrl: shot.imageUrl,
+            imageUrl: prevResolved,
+            previousImageUrl: prevResolved,
             prompt: shot.prompt || shot.description || 'Original take',
             generationType: 'variation',
             variationType: variationType,
@@ -3739,14 +3750,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             timestamp: new Date().toISOString()
           });
         }
-        shot.imageUrl = res.imageUrl;
+        shot.imageUrl = resolvedUrl;
         shot.isGenerating = false;
         shot.generatingStatus = null;
         shot.generationError = null;
 
         try {
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
-            imageUrl: res.imageUrl,
+            imageUrl: resolvedUrl,
             prompt: variationPrompt,
             isVariation: true,
             variationType: variationType
@@ -3802,12 +3813,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       });
 
       if (res?.imageUrl) {
+        const resolvedUrl = resolveAssetUrl(res.imageUrl, shot.shotNumber);
         if (!shot.history) shot.history = [];
-        if (shot.imageUrl && shot.imageUrl !== res.imageUrl) {
+        if (shot.imageUrl && shot.imageUrl !== resolvedUrl) {
+          const prevResolved = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
           shot.history.unshift({
             id: `v-${Date.now()}`,
-            imageUrl: shot.imageUrl,
-            previousImageUrl: shot.imageUrl,
+            imageUrl: prevResolved,
+            previousImageUrl: prevResolved,
             prompt: shot.prompt || shot.description || 'Previous take',
             generationType: 'retry',
             visualStyle: shot.visualStyle || 'Storyboard Sketch',
@@ -3822,14 +3835,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             timestamp: new Date().toISOString()
           });
         }
-        shot.imageUrl = res.imageUrl;
+        shot.imageUrl = resolvedUrl;
         shot.isGenerating = false;
         shot.generatingStatus = null;
         shot.generationError = null;
 
         try {
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
-            imageUrl: res.imageUrl
+            imageUrl: resolvedUrl
           });
         } catch (_) {}
         try {
