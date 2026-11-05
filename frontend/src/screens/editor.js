@@ -2818,13 +2818,17 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       const priorAppearance = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
       let finalCue = rawText;
 
+      // Extensions (V.O., O.S., etc.) apply ONLY if explicitly entered by the user on THIS line.
+      // Never inherit extensions from previous dialogue blocks.
+      const extToUse = userExt || null;
+
       if (priorAppearance && !userAlreadyHasContd) {
-        // If user typed a specific extension (e.g. O.S.), preserve it;
-        // otherwise, reuse previous appearance's extension (e.g. V.O.)
-        const extToUse = userExt || priorAppearance.extension;
+        // Character is returning in the scene: append (CONT'D).
+        // If the user explicitly entered an extension (e.g. V.O.), it becomes NAME (V.O.) (CONT'D).
+        // Otherwise, it is simply NAME (CONT'D).
         finalCue = formatCharacterCue(baseName, extToUse, true);
-      } else if (!priorAppearance && userExt) {
-        finalCue = formatCharacterCue(baseName, userExt, false);
+      } else if (!priorAppearance && extToUse) {
+        finalCue = formatCharacterCue(baseName, extToUse, false);
       } else if (!userAlreadyHasContd && baseName) {
         finalCue = baseName;
       }
@@ -3462,9 +3466,10 @@ function triggerAutocomplete(blockEl, editableEl) {
           suggestions = matchedExtensions.map(ext => {
             let formattedCue;
             if (ext.code === "CONT'D") {
-              const extToKeep = prior?.extension || null;
-              formattedCue = formatCharacterCue(baseName, extToKeep, true);
+              // User explicitly selected CONT'D: format as NAME (CONT'D) without inheriting any prior extension
+              formattedCue = formatCharacterCue(baseName, null, true);
             } else {
+              // User explicitly selected an extension (e.g. V.O.): format as NAME (V.O.) [(CONT'D) if returning]
               formattedCue = formatCharacterCue(baseName, ext.code, isContd);
             }
 
@@ -3482,27 +3487,18 @@ function triggerAutocomplete(blockEl, editableEl) {
         }
       }
     } else {
-      // Normal character name autocomplete with continuation detection (Section 10)
+      // Normal character name autocomplete: suggest only clean character names (Section 10)
       const upper = text.trim().toUpperCase();
       if (upper.length > 0) {
         const chars = getKnownCharacters();
         const matches = chars.filter(c => c.startsWith(upper));
-        const sceneId = blockEl.getAttribute('data-scene-id');
-        const blockId = blockEl.getAttribute('data-block-id');
 
         suggestions = matches.map(c => {
-          const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, c);
-          let val = c;
-          let label = c;
-          if (prior) {
-            val = formatCharacterCue(c, prior.extension, true);
-            label = `${c} ${prior.extension ? `(${prior.extension}) ` : ''}(CONT'D)`;
-          }
           return {
             type: 'character-name',
             baseName: c,
-            label: label,
-            val: val
+            label: c,
+            val: c
           };
         });
       }
