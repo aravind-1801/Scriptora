@@ -118,12 +118,12 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                 <span class="material-symbols-outlined text-[19px]">movie_filter</span>
               </div>
               <div class="min-w-0 flex-1">
-                <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
                   <select id="storyboard-scene-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5 max-w-full">
                     <option value="scene-1">Loading screenplay scenes...</option>
                   </select>
-                  <button id="btn-delete-scene-storyboard" class="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0" title="Move scene storyboard to Recycle Bin" aria-label="Delete Scene">
-                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                  <button id="btn-delete-scene-storyboard" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0" title="Move scene storyboard to Recycle Bin" aria-label="Delete Scene">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                 </div>
                 <div id="scene-context-badges" class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
