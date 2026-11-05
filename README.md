@@ -20,6 +20,8 @@
 - **Smart Formatting Automation**:
   - Sentence auto-capitalization for Action lines and Dialogue (at start of line and after periods).
   - Dynamic Character Name memory and suggestion dropdown.
+  - **Smart Character Extensions Autocomplete**: Type `(` after a character cue (e.g. `ARUN(`) to trigger an immediate, keyboard-navigable dropdown with standard industry extensions (`V.O.` Voice Over, `O.S.` Off Screen, `O.C.` Off Camera, and `CONT'D` Continued). Automatically formats the cue (e.g. `ARUN (V.O.)`), auto-pairs closing parentheses, inserts a new Dialogue block, and positions the cursor seamlessly without breaking writer flow. Features scene-aware character cue memory to prioritize `CONT'D` when the character previously spoke.
+  - **Parenthetical Autocomplete & Auto-Pairing**: Contextual emotional notes and acting directions (`(sadly)`, `(angrily)`, `(whispering)`, `(smiling)`, `(crying)`, `(softly)`) triggered instantly upon typing `(` inside dialogue, with overtyping protection and auto-positioning.
   - Scene Heading autocomplete for time/lighting (`- DAY`, `- NIGHT`, `- CONTINUOUS`, etc.).
   - Automatic parenthetical cursor placement directly inside `()`.
   - **Complete Tab Navigation Cycle**: Full, predictable industry screenplay cycle using Tab (`Scene Heading → Character → Dialogue → Transition → Scene Heading`) and Shift+Tab (reverse cycle), preserving existing Action-to-Character flow, block contents, and cursor positioning across both empty and populated blocks.
@@ -72,18 +74,27 @@ Every core production tool opens as a **dedicated workspace** with stable screen
 
 5. **Storyboard Studio Workspace (`/production/storyboard`)**:
    - **Dual Complementary Views**:
-     - **Contact Sheet**: Visually organized grid of image cards where the generated frame is the primary visual element. Features camera telemetry overlays, shot numbers, approval badges, quick approval toggles, direct regeneration, photo replacement, version history, and single-click full-screen cinematic lightbox.
+     - **Contact Sheet**: Visually organized grid of image cards where the generated frame is the primary visual element. Features camera telemetry overlays, shot numbers, approval badges, quick approval toggles, direct regeneration, photo replacement, version history, card-level shot deletion, and single-click full-screen cinematic lightbox.
      - **Sequence Editor**: Chronological screenplay-ordered timeline with multi-select checkboxes for batch operations (Approve All, Approve Selected, Reject Selected, Delete), up/down reordering without distracting helper text, and technical specification chips.
+   - **Genuine 12 Visual Style Reference System**: Authentic visual reference stills across all 12 supported artistic styles demonstrating a consistent cinematic desert checkpoint scene (*Mojave Outpost Gate 4*):
+     - Cinematic Concept Art, Storyboard Ink, Pencil Sketch, Photorealistic / Live Action, 3D Animation, Anime / Illustration, Cyberpunk, Film Noir, Watercolor, Graphic Novel / Comic, Soft Pastel, and Monochrome Charcoal.
    - **Two Distinct Generation Workflows**:
      - **Individual Shot Creation Panel**: Complete shot metadata authoring with two clear image options (Generate Image or Import Photo) plus manual creation without images. Renders the generated frame directly inside the panel with review actions (Full-Size Preview, Regenerate, Approve, Reject, Save Shot) without auto-closing on generation.
      - **Generate Scene Sequence (1–4 Shots)**: Sequence length selector positioned at the top controlling the exact number of proposed frames (1, 2, 3, or 4 shots max), real-time generation progress ("Preparing scene context...", "Generating shot 1 of N..."), and an interactive sequence review contact sheet to inspect, tweak, and approve frames before saving to the storyboard.
+   - **Functional Retry & Variation Engine**:
+     - **Retry Generation**: Re-executes the exact shot prompt, camera parameters, and creative context with visual progress and output updates.
+     - **Shot Variation**: Generates alternative interpretations and compositions while tracking version history.
+   - **Shot-Level Soft Deletion & Storyboard Recycle Bin**:
+     - Direct shot deletion button on each shot card in Contact Sheet and Sequence views.
+     - Centralized Storyboard Recycle Bin with multi-tab filtering (All Items, Shots, Scenes) and one-click recovery or permanent emptying.
    - **Individual Frame Regeneration**: Regenerate only a single frame (e.g., Shot 2 of 4) while preserving all other frames, their approval statuses, and their sequence orders. Automatically archives the previous image and prompt in the shot's history.
    - **Shot History & Version Safety**: Persistent generation history for every shot recording timestamp, prompt, provider, quality, and draft version, with one-click "Restore This Version" capabilities and source screenplay draft staleness warnings.
    - **Full-Screen Cinematic Lightbox**: Full-bleed high-res preview modal with anamorphic/letterbox framing, camera telemetry overlay (`REC`, shot number, aspect ratio, lens, shot size, camera angle), scene heading, description, previous/next shot keyboard navigation, and quick approval toggles.
    - **Transparent Provider Architecture**:
-     - **SCRIPTORA Concept Engine (Free / Built-in)**: High-resolution procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 7 visual style presets (Cinematic Concept Art, Storyboard Ink, Pencil Sketch, Photorealistic / Live Action, 3D Animation, Anime / Illustration).
+     - **SCRIPTORA Concept Engine (Free / Built-in)**: High-resolution procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 12 visual style presets.
      - **External Providers**: OpenAI DALL-E 3 (`OPENAI_API_KEY`), Google Imagen 3 (`GEMINI_API_KEY` or `GOOGLE_AI_API_KEY`), and Stability AI SDXL (`STABILITY_API_KEY`), with transparent cost estimates, credential validation, and clear error guidance when unconfigured.
-   - **Android-First Ergonomics**: Zero horizontal page overflow, balanced modals with internal scrolling, mobile-friendly touch targets, and responsive shooting-day assignment select controls.
+   - **Android-First Ergonomics & Compact Modal Architecture**:
+     - Zero horizontal page overflow, balanced modals with natural content wrapping (`height: auto`, eliminating artificial vertical blank space), mobile-friendly touch targets, and responsive shooting-day assignment select controls.
 
 ---
 
@@ -117,7 +128,7 @@ Every core production tool opens as a **dedicated workspace** with stable screen
 ---
 
 ### 🧠 Narrative Intelligence Engine
-- **Script Selector & Context Setup**: Canonical multi-step narrative intelligence flow (`/intelligence` → `/intelligence/context` → `/intelligence/dashboard`).
+- **Script Selector & Context Setup**: Canonical multi-step narrative intelligence flow (`/intelligence` → `/intelligence/context` → `/intelligence/dashboard`) with persistent selected script tracking and mobile-optimized clearance above the global navigation bar.
 - **Script Analysis Dashboard**: Deep narrative breakdown including Pacing Analysis, Character Arc Trajectories, Dialogue Density, Scene Transitions, Emotional Resonance, and Structure Progression.
 - **Individual Deep-Dive Analysis**: Dedicated views for Pacing, Emotion, Character, Structure, and Dialogue with direct links to open corresponding scenes in the editor.
 
