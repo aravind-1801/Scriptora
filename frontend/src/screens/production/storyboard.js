@@ -251,28 +251,22 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </label>
             </div>
 
-            <!-- Post-Generation Review & History Actions Bar -->
-            <div id="modal-post-gen-actions" class="hidden flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs">
-              <div class="flex items-center gap-1.5">
-                <button type="button" id="modal-btn-view-fullscreen" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 text-[11px] font-semibold flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[14px]">fullscreen</span>
-                  <span>Inspect Fullscreen</span>
-                </button>
-                <button type="button" id="modal-btn-open-history" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 text-[11px] font-semibold flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[14px]">history</span>
-                  <span>Versions (<span id="modal-history-count">0</span>)</span>
-                </button>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <button type="button" id="modal-btn-toggle-approve" class="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[14px]">check</span>
-                  <span id="modal-approve-toggle-label">Approve</span>
-                </button>
-                <button type="button" id="modal-btn-toggle-reject" class="px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 text-[11px] font-semibold flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined text-[14px]">close</span>
-                  <span>Reject</span>
-                </button>
-              </div>
+            <!-- Post-Generation Review & History Actions Bar (4 Icon Buttons, No Text to Prevent Overflow) -->
+            <div id="modal-post-gen-actions" class="hidden grid grid-cols-4 gap-2 p-1.5 rounded-xl bg-slate-50 border border-slate-200/70">
+              <button type="button" id="modal-btn-view-fullscreen" title="Inspect Fullscreen" aria-label="Inspect Fullscreen" class="h-9 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:bg-slate-50 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[18px]">fullscreen</span>
+              </button>
+              <button type="button" id="modal-btn-open-history" title="Version History" aria-label="Version History" class="h-9 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:bg-slate-50 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs relative">
+                <span class="material-symbols-outlined text-[18px]">history</span>
+                <span id="modal-history-count" class="sr-only">0</span>
+              </button>
+              <button type="button" id="modal-btn-toggle-approve" title="Approve Frame" aria-label="Approve Frame" class="h-9 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[18px]">check</span>
+                <span id="modal-approve-toggle-label" class="sr-only">Approve</span>
+              </button>
+              <button type="button" id="modal-btn-toggle-reject" title="Reject Frame" aria-label="Reject Frame" class="h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
             </div>
           </div>
 
@@ -1196,21 +1190,21 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   // Modal 1: Quick Status Toggles
   if (btnModalToggleApprove) {
     btnModalToggleApprove.onclick = () => {
-      currentModalDraftApproval = 'approved';
+      currentModalDraftApproval = currentModalDraftApproval === 'approved' ? 'draft' : 'approved';
       const apprInput = document.getElementById('input-shot-approval');
-      if (apprInput) apprInput.value = 'approved';
+      if (apprInput) apprInput.value = currentModalDraftApproval;
       updateInspectorImagePreviewUI();
-      showToast('Frame marked as Approved for Production');
+      showToast(currentModalDraftApproval === 'approved' ? 'Frame marked as Approved for Production' : 'Approval cleared (Draft)');
     };
   }
 
   if (btnModalToggleReject) {
     btnModalToggleReject.onclick = () => {
-      currentModalDraftApproval = 'rejected';
+      currentModalDraftApproval = currentModalDraftApproval === 'rejected' ? 'draft' : 'rejected';
       const apprInput = document.getElementById('input-shot-approval');
-      if (apprInput) apprInput.value = 'rejected';
+      if (apprInput) apprInput.value = currentModalDraftApproval;
       updateInspectorImagePreviewUI();
-      showToast('Frame marked as Rejected');
+      showToast(currentModalDraftApproval === 'rejected' ? 'Frame marked as Rejected' : 'Rejection cleared (Draft)');
     };
   }
 
@@ -1229,6 +1223,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           approvalStatus: currentModalDraftApproval
         };
         openLightboxWithShot(dummyShot);
+      } else {
+        showToast('No image available to inspect fullscreen');
       }
     };
   }
@@ -1237,6 +1233,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     btnModalOpenHistory.onclick = () => {
       if (activeEditingShotId) {
         openShotHistoryModal(activeEditingShotId);
+      } else {
+        showToast('No previous versions available for this new shot');
       }
     };
   }
@@ -2409,6 +2407,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const postGenBar = document.getElementById('modal-post-gen-actions');
     const fullscreenBtn = document.getElementById('modal-btn-view-fullscreen');
     const genActionLabel = document.getElementById('modal-generate-action-label');
+    const approveBtn = document.getElementById('modal-btn-toggle-approve');
+    const rejectBtn = document.getElementById('modal-btn-toggle-reject');
+    const historyBtn = document.getElementById('modal-btn-open-history');
     const approveLabel = document.getElementById('modal-approve-toggle-label');
     const historyCountEl = document.getElementById('modal-history-count');
 
@@ -2432,6 +2433,29 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const shot = activeEditingShotId ? currentStoryboard?.shots?.find(s => s.id === activeEditingShotId) : null;
     const histLen = Array.isArray(shot?.history) ? shot.history.length : 0;
     if (historyCountEl) historyCountEl.textContent = String(histLen);
+
+    if (historyBtn) {
+      historyBtn.title = histLen > 0 ? `Version History (${histLen} version${histLen > 1 ? 's' : ''})` : 'Version History (0)';
+    }
+
+    if (approveBtn && rejectBtn) {
+      if (currentModalDraftApproval === 'approved') {
+        approveBtn.className = 'h-9 rounded-lg bg-emerald-600 text-white border border-emerald-600 ring-2 ring-emerald-400/40 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-xs';
+        approveBtn.title = 'Approved for Production (Click to toggle)';
+        rejectBtn.className = 'h-9 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs';
+        rejectBtn.title = 'Reject Frame';
+      } else if (currentModalDraftApproval === 'rejected') {
+        rejectBtn.className = 'h-9 rounded-lg bg-rose-600 text-white border border-rose-600 ring-2 ring-rose-400/40 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-xs';
+        rejectBtn.title = 'Rejected (Click to toggle)';
+        approveBtn.className = 'h-9 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs';
+        approveBtn.title = 'Approve Frame';
+      } else {
+        approveBtn.className = 'h-9 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs';
+        approveBtn.title = 'Approve Frame';
+        rejectBtn.className = 'h-9 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs';
+        rejectBtn.title = 'Reject Frame';
+      }
+    }
 
     if (approveLabel) {
       approveLabel.textContent = currentModalDraftApproval === 'approved' ? 'Approved' : 'Approve';
