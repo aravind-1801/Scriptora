@@ -3,6 +3,11 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
 
+const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
+  ? import.meta.env.BASE_URL
+  : '/';
+const BASE_ASSET_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const config = {
@@ -2957,7 +2962,7 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
       aspectRatio: "2.39:1",
       visualStyle: "Cinematic Concept Art",
       prompt: "Cinematic wide shot, arid desert outpost gate, dust devils whirling, 2.39:1 anamorphic",
-      imageUrl: createSvgFrame("1A", "2.39:1 · 24mm Wide", "EXT. MOJAVE OUTPOST GATE 4 - DAY", "Wide Shot"),
+      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`,
       imageSource: "ai",
       provider: "scriptora-concept",
       quality: "hd",
@@ -2993,7 +2998,7 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
       aspectRatio: "2.39:1",
       visualStyle: "Cinematic Concept Art",
       prompt: "Medium two-shot, dusty outpost booth, weary hydro-engineer confronting guard, 50mm",
-      imageUrl: createSvgFrame("1B", "2.39:1 · 50mm Prime", "EXT. MOJAVE OUTPOST GATE 4 - DAY", "Medium Two-Shot"),
+      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`,
       imageSource: "ai",
       provider: "scriptora-concept",
       quality: "hd",
@@ -3029,7 +3034,7 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
       aspectRatio: "2.39:1",
       visualStyle: "Cinematic Concept Art",
       prompt: "Extreme close-up on rugged military diagnostic screen, red warning glyphs, 85mm",
-      imageUrl: createSvgFrame("1C", "2.39:1 · 85mm Close-Up", "EXT. MOJAVE OUTPOST GATE 4 - DAY", "Close-Up"),
+      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`,
       imageSource: "ai",
       provider: "scriptora-concept",
       quality: "hd",
@@ -3309,12 +3314,46 @@ export async function generateStoryboardShot(scriptId, params = {}) {
     }
   }
 
-  // Fallback to client-side procedural concept frame
-  const img = createSvgFrame(params.shotNumber || "1A", `${params.aspectRatio || '2.39:1'} · ${params.focalLength || '50mm'}`, params.sceneHeading || "SCENE 1", params.shotSize || "Medium Shot");
+  // Fallback to client-side authentic storyboard concept sketch
+  const sizeLower = (params.shotSize || "").toLowerCase();
+  const headingUpper = (params.sceneHeading || "").toUpperCase();
+  const fullText = `${params.sceneHeading || ''} ${params.prompt || ''} ${params.description || ""}`.toLowerCase();
+  const shotNum = (params.shotNumber || "1A").toUpperCase();
+
+  let sketchFile = "shot_1a_wide_outpost.jpg";
+  if (params.isVariation) {
+    if (shotNum.includes("A") || sizeLower.includes("wide")) {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (shotNum.includes("B") || sizeLower.includes("two")) {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNum.includes("C") || sizeLower.includes("close")) {
+      sketchFile = "shot_10a_valve_breach.jpg";
+    } else {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    }
+  } else {
+    if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
+      sketchFile = (fullText.includes("valve") || headingUpper.includes("10")) ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
+    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
+      sketchFile = "shot_1b_two_shot_standoff.jpg";
+    } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (shotNum.includes("B")) {
+      sketchFile = "shot_1b_two_shot_standoff.jpg";
+    } else if (shotNum.includes("C")) {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNum.includes("D")) {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    }
+  }
+
+  const img = `${BASE_ASSET_URL}assets/storyboard/${sketchFile}`;
   return {
     imageUrl: img,
-    provider: "scriptora-concept",
-    quality: "hd",
+    provider: params.provider || "scriptora-concept",
+    quality: params.quality || "hd",
     costEstimate: "Free (Built-in)",
     prompt: params.prompt || ""
   };

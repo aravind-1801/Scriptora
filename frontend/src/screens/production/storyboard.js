@@ -3023,6 +3023,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
+  const renderStoryboardView = () => renderCurrentView();
+
   
   function formatStoryboardDescription(desc = '', characters = []) {
     if (!desc) return 'No description provided.';
@@ -3389,29 +3391,31 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
-    async function generateShotVariation(shotId) {
+  async function generateShotVariation(shotId) {
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
+    if (shot.isGenerating) return;
     shot.isGenerating = true;
     shot.generationError = null;
-    renderStoryboardView();
+    renderCurrentView();
 
     try {
+      const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
       const res = await api.generateStoryboardShot(scriptId, {
         provider: shot.provider || 'scriptora-concept',
-        prompt: `${shot.prompt || shot.description || 'Cinematic composition'} alternative angle variation`,
+        prompt: `${shot.prompt || shot.description || 'Cinematic composition'} alternative angle variation, different framing`,
         shotSize: shot.shotSize,
         cameraAngle: shot.cameraAngle,
         cameraMovement: shot.cameraMovement,
         focalLength: shot.focalLength,
         lightingMood: shot.lightingMood,
         aspectRatio: shot.aspectRatio,
-        visualStyle: shot.visualStyle || 'Storyboard Sketch',
-        sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+        visualStyle: shot.visualStyle || currentStoryboard?.visualStyle || 'Soft Pencil',
+        sceneHeading: currentStoryboard?.sceneHeading || scene.heading || 'SCENE 1',
         shotNumber: shot.shotNumber,
         description: shot.description,
-        cast: shot.characters,
-        characters: shot.characters,
+        cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
+        characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         quality: shot.quality || 'standard',
         isVariation: true
       });
@@ -3421,17 +3425,23 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         if (shot.imageUrl) {
           shot.history.unshift({
             imageUrl: shot.imageUrl,
-            prompt: shot.prompt || shot.description,
-            visualStyle: shot.visualStyle,
-            provider: shot.provider,
+            prompt: shot.prompt || shot.description || 'Original take',
+            visualStyle: shot.visualStyle || 'Storyboard Sketch',
+            provider: shot.provider || 'scriptora-concept',
             createdAt: new Date().toISOString()
           });
         }
         shot.imageUrl = res.imageUrl;
         shot.isGenerating = false;
         shot.generationError = null;
+        try {
+          await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
+            imageUrl: res.imageUrl,
+            isVariation: true
+          });
+        } catch (_) {}
         await api.saveStoryboard(scriptId, currentStoryboard);
-        renderStoryboardView();
+        renderCurrentView();
         showToast(`Created variation for Shot ${shot.shotNumber}`);
       } else {
         throw new Error('No image returned');
@@ -3439,19 +3449,21 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     } catch (err) {
       shot.isGenerating = false;
       shot.generationError = err.message || 'Variation failed';
-      renderStoryboardView();
+      renderCurrentView();
       showToast(`Variation failed for shot ${shot.shotNumber}`);
     }
   }
 
-async function retryShotGeneration(shotId) {
+  async function retryShotGeneration(shotId) {
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
+    if (shot.isGenerating) return;
     shot.isGenerating = true;
     shot.generationError = null;
-    renderStoryboardView();
+    renderCurrentView();
 
     try {
+      const scene = allScenes.find(s => s.id === currentSceneId) || allScenes[0] || {};
       const res = await api.generateStoryboardShot(scriptId, {
         provider: shot.provider || 'scriptora-concept',
         prompt: shot.prompt || shot.description || 'Cinematic composition',
@@ -3461,29 +3473,36 @@ async function retryShotGeneration(shotId) {
         focalLength: shot.focalLength,
         lightingMood: shot.lightingMood,
         aspectRatio: shot.aspectRatio,
-        visualStyle: shot.visualStyle || 'Storyboard Sketch',
-        sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
+        visualStyle: shot.visualStyle || currentStoryboard?.visualStyle || 'Soft Pencil',
+        sceneHeading: currentStoryboard?.sceneHeading || scene.heading || 'SCENE 1',
         shotNumber: shot.shotNumber,
         description: shot.description,
-        cast: shot.characters,
-        characters: shot.characters,
+        cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
+        characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         quality: shot.quality || 'standard'
       });
 
       if (res?.imageUrl) {
+        if (!shot.history) shot.history = [];
+        if (shot.imageUrl && shot.imageUrl !== res.imageUrl) {
+          shot.history.unshift({
+            imageUrl: shot.imageUrl,
+            prompt: shot.prompt || shot.description || 'Previous take',
+            visualStyle: shot.visualStyle || 'Storyboard Sketch',
+            provider: shot.provider || 'scriptora-concept',
+            createdAt: new Date().toISOString()
+          });
+        }
         shot.imageUrl = res.imageUrl;
         shot.isGenerating = false;
         shot.generationError = null;
-        if (!shot.history) shot.history = [];
-        shot.history.unshift({
-          imageUrl: res.imageUrl,
-          prompt: shot.prompt || shot.description,
-          visualStyle: shot.visualStyle,
-          provider: shot.provider,
-          createdAt: new Date().toISOString()
-        });
+        try {
+          await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
+            imageUrl: res.imageUrl
+          });
+        } catch (_) {}
         await api.saveStoryboard(scriptId, currentStoryboard);
-        renderStoryboardView();
+        renderCurrentView();
         showToast(`Frame ${shot.shotNumber} sketch generated!`);
       } else {
         throw new Error('No image returned');
@@ -3491,7 +3510,7 @@ async function retryShotGeneration(shotId) {
     } catch (err) {
       shot.isGenerating = false;
       shot.generationError = err.message || 'Generation failed';
-      renderStoryboardView();
+      renderCurrentView();
       showToast(`Retry failed for shot ${shot.shotNumber}`);
     }
   }
@@ -3574,6 +3593,7 @@ async function retryShotGeneration(shotId) {
     // Retry Generation for an individual shot
     document.querySelectorAll('.btn-card-retry-gen').forEach(btn => {
       btn.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         retryShotGeneration(shotId);
@@ -3583,6 +3603,7 @@ async function retryShotGeneration(shotId) {
     // Variation generation
     document.querySelectorAll('.btn-card-variation').forEach(btn => {
       btn.onclick = (e) => {
+        e.preventDefault();
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         generateShotVariation(shotId);

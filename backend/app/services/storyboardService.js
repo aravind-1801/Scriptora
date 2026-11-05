@@ -632,20 +632,32 @@ export async function generateShotImage(params = {}) {
   const fullText = `${sceneHeading} ${prompt} ${params.description || ""}`.toLowerCase();
 
   let sketchFile = "shot_1a_wide_outpost.jpg";
-  if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
-    sketchFile = fullText.includes("valve") || headingUpper.includes("10") ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
-  } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
-    sketchFile = "shot_1b_two_shot_standoff.jpg";
-  } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
-    sketchFile = "shot_1d_macro_insert.jpg";
-  } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
-    sketchFile = "shot_10b_pumping_hall.jpg";
-  } else if (shotNumber.includes("B")) {
-    sketchFile = "shot_1b_two_shot_standoff.jpg";
-  } else if (shotNumber.includes("C")) {
-    sketchFile = "shot_1c_closeup_reaction.jpg";
-  } else if (shotNumber.includes("D")) {
-    sketchFile = "shot_1d_macro_insert.jpg";
+  if (params.isVariation) {
+    if (shotNumber.includes("A") || sizeLower.includes("wide")) {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (shotNumber.includes("B") || sizeLower.includes("two")) {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNumber.includes("C") || sizeLower.includes("close")) {
+      sketchFile = "shot_10a_valve_breach.jpg";
+    } else {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    }
+  } else {
+    if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
+      sketchFile = fullText.includes("valve") || headingUpper.includes("10") ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
+    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
+      sketchFile = "shot_1b_two_shot_standoff.jpg";
+    } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
+      sketchFile = "shot_10b_pumping_hall.jpg";
+    } else if (shotNumber.includes("B")) {
+      sketchFile = "shot_1b_two_shot_standoff.jpg";
+    } else if (shotNumber.includes("C")) {
+      sketchFile = "shot_1c_closeup_reaction.jpg";
+    } else if (shotNumber.includes("D")) {
+      sketchFile = "shot_1d_macro_insert.jpg";
+    }
   }
 
   const generatedImage = getSketchImageSvg(sketchFile);
