@@ -115,6 +115,8 @@ button, a {
   max-width: 36rem;
   max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px) !important;
   max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px) !important;
+  height: auto !important;
+  flex: 0 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -136,9 +138,15 @@ button, a {
   }
 }
 
+/* If card itself has overflow-y-auto, let it scroll when content reaches max-height without artificially stretching */
+.scriptora-modal-card.overflow-y-auto {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain !important;
+}
+
 /* Internal scroll container inside modal card */
 .scriptora-modal-body,
-.scriptora-modal-card.overflow-y-auto,
 .scriptora-modal-card > .overflow-y-auto {
   flex: 1 1 auto !important;
   min-height: 0 !important;

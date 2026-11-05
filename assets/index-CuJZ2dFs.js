@@ -7198,7 +7198,7 @@ ${L}
       <!-- MODAL 6: STORYBOARD RECYCLE BIN (SOFT-DELETE & RESTORATION) -->
       <!-- ===================================================================== -->
       <div id="recycle-bin-modal" class="scriptora-modal-overlay fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-2xl w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
+        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-lg w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center border border-rose-100">
@@ -7228,9 +7228,9 @@ ${L}
           </div>
 
           <!-- Items Container -->
-          <div id="rb-items-container" class="flex flex-col gap-2 min-h-[220px] max-h-[50vh] overflow-y-auto pr-1">
-            <div id="rb-empty-state" class="flex flex-col items-center justify-center py-12 text-slate-400 gap-1.5">
-              <span class="material-symbols-outlined text-4xl text-slate-300">delete_outline</span>
+          <div id="rb-items-container" class="flex flex-col gap-2 max-h-[50vh] overflow-y-auto pr-1">
+            <div id="rb-empty-state" class="flex flex-col items-center justify-center py-6 text-slate-400 gap-1.5">
+              <span class="material-symbols-outlined text-3xl text-slate-300">delete_outline</span>
               <span class="text-xs font-semibold text-slate-600">Recycle Bin is empty</span>
               <span class="text-[10px] text-slate-400">Deleted shots or scenes will appear here for safe recovery.</span>
             </div>
@@ -7246,7 +7246,7 @@ ${L}
       <!-- MODAL 7: STORYBOARD PREFERENCES -->
       <!-- ===================================================================== -->
       <div id="storyboard-preferences-modal" class="scriptora-modal-overlay fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 hidden">
-        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-lg w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
+        <div class="scriptora-modal-card bg-white rounded-2xl border border-slate-200/90 shadow-2xl max-w-md sm:max-w-lg w-full p-4 sm:p-5 flex flex-col gap-3.5 max-h-[88vh] overflow-y-auto">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
               <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
