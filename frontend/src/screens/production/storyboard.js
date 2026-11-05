@@ -134,9 +134,6 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                   <select id="storyboard-scene-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5 max-w-full">
                     <option value="scene-1">Loading screenplay scenes...</option>
                   </select>
-                  <button id="btn-delete-scene-storyboard" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0" title="Move scene storyboard to Recycle Bin" aria-label="Delete Scene">
-                    <span class="material-symbols-outlined text-[16px]">delete</span>
-                  </button>
                 </div>
                 <div id="scene-context-badges" class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
                   <span id="badge-int-ext" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">INT</span>
@@ -1457,16 +1454,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (btnDeleteShot) {
     btnDeleteShot.onclick = async () => {
       if (!activeEditingShotId) return;
-      if (!confirm('Move this shot to the Storyboard Recycle Bin?')) return;
-      try {
-        await api.deleteStoryboardShot(scriptId, currentSceneId, activeEditingShotId);
-        showToast('Shot moved to Recycle Bin');
-        closeModal(inspectorModal);
-        await updateRecycleBinBadge();
-        loadStoryboardData();
-      } catch (err) {
-        showToast('Failed to delete shot');
-      }
+      await deleteShot(activeEditingShotId);
     };
   }
 
@@ -3303,6 +3291,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                     <span class="text-[10px] text-slate-400">#${s.order}</span>
                   </div>
                   <div class="flex items-center gap-1.5">
+                    <button type="button" class="btn-card-delete-shot p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded cursor-pointer transition-colors" data-shot-id="${s.id}" title="Delete Shot (Move to Recycle Bin)" aria-label="Delete Shot ${s.shotNumber}">
+                      <span class="material-symbols-outlined text-[15px]">delete</span>
+                    </button>
                     ${s.isGenerating ? `
                       <span class="px-2 py-0.5 rounded text-[10px] font-semibold border bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
                         <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
@@ -3541,6 +3532,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                   </button>
                   <button class="btn-card-regen p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="Regenerate this frame">
                     <span class="material-symbols-outlined text-[16px]">auto_awesome</span>
+                  </button>
+                  <button type="button" class="btn-card-delete-shot p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="Delete Shot (Move to Recycle Bin)" aria-label="Delete Shot ${s.shotNumber}">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>
                   </button>
                   <button class="btn-open-inspector px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-800 text-xs font-semibold cursor-pointer transition-all" data-shot-id="${s.id}">
                     Edit Details
@@ -3781,6 +3775,25 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     }
   }
 
+  async function deleteShot(shotId) {
+    if (!shotId) return;
+    const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+    const label = shot ? `Shot ${shot.shotNumber}` : 'this shot';
+    if (!confirm(`Move ${label} to the Storyboard Recycle Bin?`)) return;
+
+    try {
+      await api.deleteStoryboardShot(scriptId, currentSceneId, shotId);
+      showToast(`${label} moved to Recycle Bin`);
+      if (inspectorModal && !inspectorModal.classList.contains('hidden')) {
+        closeModal(inspectorModal);
+      }
+      await updateRecycleBinBadge();
+      loadStoryboardData();
+    } catch (err) {
+      showToast('Failed to delete shot');
+    }
+  }
+
   async function retryShotGeneration(shotId) {
     const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
     if (!shot) return;
@@ -3935,6 +3948,16 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         e.stopPropagation();
         const shotId = btn.getAttribute('data-shot-id');
         openShotHistoryModal(shotId);
+      };
+    });
+
+    // Delete Shot button on card & sequence table
+    document.querySelectorAll('.btn-card-delete-shot').forEach(btn => {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        deleteShot(shotId);
       };
     });
 
