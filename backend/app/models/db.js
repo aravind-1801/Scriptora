@@ -374,6 +374,89 @@ export const db = {
       }
     ]
   },
+  joinCodes: {
+    "chronicles-of-dust": {
+      code: "A7K9-XP42",
+      status: "active",
+      allowedRoles: ["Viewer", "Editor", "Script Doctor", "Producer"],
+      createdAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 11 * 24 * 3600 * 1000).toISOString()
+    }
+  },
+  accessRequests: {
+    "chronicles-of-dust": [
+      {
+        id: "req-1",
+        userId: "user-sarah",
+        userName: "Sarah Jenkins",
+        userEmail: "sarah.j@narrative.io",
+        initials: "SJ",
+        requestedRole: "Script Doctor",
+        note: "Reviewing act two pacing and dialogue flow for festival submission.",
+        status: "pending",
+        createdAt: new Date(Date.now() - 4 * 3600 * 1000).toISOString()
+      }
+    ]
+  },
+  invitations: {
+    "chronicles-of-dust": [
+      {
+        id: "inv-1",
+        email: "david.cinematics@paramount.com",
+        role: "Producer",
+        token: "tok_paramount_7749",
+        message: "Inviting you to review production breakdown and budget notes.",
+        status: "pending",
+        createdAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 6 * 24 * 3600 * 1000).toISOString()
+      }
+    ]
+  },
+  securityActivity: {
+    "chronicles-of-dust": [
+      {
+        id: "sec-1",
+        type: "role_changed",
+        title: "Role Updated",
+        actor: { name: "Arun Kumar", email: "arun.kumar@scriptora.studio" },
+        target: { name: "Marcus Vance", email: "vance.prod@paramount.com", role: "Producer" },
+        details: "Changed role to Producer",
+        timestamp: "2d ago",
+        outcome: "success"
+      },
+      {
+        id: "sec-2",
+        type: "collaborator_invited",
+        title: "Invitation Dispatched",
+        actor: { name: "Arun Kumar", email: "arun.kumar@scriptora.studio" },
+        target: { name: "David Cinematics", email: "david.cinematics@paramount.com", role: "Producer" },
+        details: "Pending invitation sent with 7-day token",
+        timestamp: "1d ago",
+        outcome: "success"
+      },
+      {
+        id: "sec-3",
+        type: "join_code_regenerated",
+        title: "Join Code Rotated",
+        actor: { name: "Arun Kumar", email: "arun.kumar@scriptora.studio" },
+        target: null,
+        details: "Regenerated screenplay join code A7K9-XP42",
+        timestamp: "3d ago",
+        outcome: "success"
+      }
+    ]
+  },
+  e2ee: {
+    "chronicles-of-dust": {
+      enabled: false,
+      algorithm: "AES-GCM-256",
+      keyVersion: 1,
+      keyFingerprint: null,
+      lastRotated: null,
+      wrappedKeys: {}
+    }
+  },
+  userKeys: {},
   notifications: [
     {
       id: "notif-1",

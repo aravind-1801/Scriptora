@@ -916,7 +916,7 @@ export async function createVersion(scriptId, versionData) {
 export async function getCollaborators(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}`);
-    return data.collaborators;
+    return data.collaborators || [];
   } catch {
     return [
       {
@@ -946,104 +946,209 @@ export async function getCollaborators(scriptId) {
         initials: "MV",
         role: "Producer",
         avatarBg: "bg-purple-100 text-purple-700",
-        status: "Viewer",
+        status: "Active",
         added: "2w ago"
       }
     ];
   }
 }
 
-export async function inviteCollaborator(scriptId, inviteData) {
+export async function getUserPermissions(scriptId) {
   try {
-    const data = await request(`/collaborators/${scriptId}/invite`, {
-      method: 'POST',
-      body: JSON.stringify(inviteData)
-    });
-    return data.collaborator;
+    const data = await request(`/collaborators/${scriptId}/permissions`);
+    return data;
   } catch {
     return {
-      id: `c-${Date.now()}`,
-      name: inviteData.email.split('@')[0],
-      email: inviteData.email,
-      initials: inviteData.email.substring(0, 2).toUpperCase(),
-      role: inviteData.role === 'editor' ? 'Editor' : 'Viewer',
-      avatarBg: "bg-emerald-100 text-emerald-700",
-      status: "Active",
-      added: "Just now"
+      role: 'Owner',
+      permissions: {
+        'screenplay.read': true,
+        'screenplay.edit': true,
+        'scene.create': true,
+        'scene.delete': true,
+        'character.manage': true,
+        'dialogue.edit': true,
+        'storyboard.view': true,
+        'storyboard.edit': true,
+        'analysis.run': true,
+        'comments.create': true,
+        'production.view': true,
+        'production.manage': true,
+        'collaborators.invite': true,
+        'collaborators.manage': true,
+        'screenplay.export': true,
+        'security.manage': true
+      }
     };
   }
 }
 
-export async function changeCollaboratorRole(scriptId, memberId, newRole) {
+export async function inviteCollaborator(scriptId, inviteData) {
+  const data = await request(`/collaborators/${scriptId}/invite`, {
+    method: 'POST',
+    body: JSON.stringify(inviteData)
+  });
+  return data.collaborator;
+}
+
+export async function getPendingInvitations(scriptId) {
   try {
-    return await request(`/collaborators/${scriptId}/${memberId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ role: newRole })
-    });
+    const data = await request(`/collaborators/${scriptId}/invitations`);
+    return data.invitations || [];
   } catch {
-    return { success: true };
+    return [];
   }
+}
+
+export async function revokeInvitation(scriptId, inviteId) {
+  return await request(`/collaborators/${scriptId}/invitations/${inviteId}`, {
+    method: 'DELETE'
+  });
+}
+
+export async function changeCollaboratorRole(scriptId, memberId, newRole) {
+  const data = await request(`/collaborators/${scriptId}/${memberId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ role: newRole })
+  });
+  return data.collaborator;
 }
 
 export async function removeCollaborator(scriptId, memberId) {
+  return await request(`/collaborators/${scriptId}/${memberId}`, {
+    method: 'DELETE'
+  });
+}
+
+// 6. JOIN CODE & ACCESS REQUEST API
+export async function getJoinCodeConfig(scriptId) {
   try {
-    return await request(`/collaborators/${scriptId}/${memberId}`, {
-      method: 'DELETE'
-    });
+    const data = await request(`/join-code/config/${scriptId}`);
+    return data.config;
   } catch {
-    return { success: true };
+    return {
+      code: 'A7K9-XP42',
+      status: 'active',
+      allowedRoles: ['Viewer', 'Editor', 'Script Doctor', 'Producer'],
+      expiresAt: new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString()
+    };
   }
 }
 
-// 6. JOIN CODE API
 export async function generateJoinCode(scriptId) {
   try {
-    const data = await request('/join-code/generate', {
-      method: 'POST',
-      body: JSON.stringify({ scriptId })
+    const data = await request(`/join-code/generate/${scriptId}`, {
+      method: 'POST'
     });
     return data.joinCode;
   } catch {
-    const code = Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-    return code;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let p1 = '', p2 = '';
+    for (let i = 0; i < 4; i++) p1 += chars[Math.floor(Math.random() * chars.length)];
+    for (let i = 0; i < 4; i++) p2 += chars[Math.floor(Math.random() * chars.length)];
+    return `${p1}-${p2}`;
   }
+}
+
+export async function revokeJoinCode(scriptId) {
+  return await request(`/join-code/revoke/${scriptId}`, {
+    method: 'POST'
+  });
 }
 
 export async function validateJoinCode(code) {
+  return await request('/join-code/validate', {
+    method: 'POST',
+    body: JSON.stringify({ code })
+  });
+}
+
+export async function requestJoinAccess(code, requestData) {
+  return await request('/join-code/request-access', {
+    method: 'POST',
+    body: JSON.stringify({ code, ...requestData })
+  });
+}
+
+export async function getAccessRequests(scriptId) {
   try {
-    const data = await request('/join-code/validate', {
-      method: 'POST',
-      body: JSON.stringify({ code })
-    });
-    return data;
+    const data = await request(`/collaborators/${scriptId}/requests`);
+    return data.requests || [];
   } catch {
-    const upper = (code || '').toUpperCase().trim();
-    if (upper === 'A7K9-XP42') {
-      return {
-        valid: true,
-        script: {
-          id: 'chronicles-of-dust',
-          title: 'Chronicles of Dust',
-          draft: 'Draft 4.2',
-          genre: 'Drama',
-          format: 'Feature',
-          pages: 96,
-          collaboratorCount: 3
-        }
-      };
-    }
-    return { valid: false, error: "Invalid or expired join code" };
+    return [];
   }
 }
 
+export async function approveAccessRequest(scriptId, requestId, assignedRole) {
+  return await request(`/collaborators/${scriptId}/requests/${requestId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify({ role: assignedRole })
+  });
+}
+
+export async function rejectAccessRequest(scriptId, requestId) {
+  return await request(`/collaborators/${scriptId}/requests/${requestId}/reject`, {
+    method: 'POST'
+  });
+}
+
 export async function joinWithCode(code) {
+  return await requestJoinAccess(code, { requestedRole: 'Viewer' });
+}
+
+// 6b. SECURITY ACTIVITY LOG API
+export async function getSecurityActivity(scriptId) {
   try {
-    return await request('/join-code/redeem', {
-      method: 'POST',
-      body: JSON.stringify({ code })
-    });
+    const data = await request(`/collaborators/${scriptId}/security-activity`);
+    return data.activity || [];
   } catch {
-    return { success: true, scriptId: 'chronicles-of-dust', title: 'Chronicles of Dust' };
+    return [];
+  }
+}
+
+// 6c. END-TO-END ENCRYPTION (E2EE) API
+export async function getE2EESettings(scriptId) {
+  try {
+    const data = await request(`/collaborators/${scriptId}/e2ee`);
+    return data.e2ee;
+  } catch {
+    return {
+      enabled: false,
+      algorithm: 'AES-GCM-256',
+      keyVersion: 1,
+      keyFingerprint: null,
+      lastRotated: null,
+      wrappedKeys: {}
+    };
+  }
+}
+
+export async function enableE2EE(scriptId, payload) {
+  return await request(`/collaborators/${scriptId}/e2ee/enable`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function rotateE2EEKey(scriptId, payload) {
+  return await request(`/collaborators/${scriptId}/e2ee/rotate`, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function registerUserPublicKey(publicKeyJwk) {
+  return await request('/e2ee/public-key', {
+    method: 'POST',
+    body: JSON.stringify({ publicKeyJwk })
+  });
+}
+
+export async function getUserPublicKey(email) {
+  try {
+    const data = await request(`/e2ee/public-key/${encodeURIComponent(email)}`);
+    return data.keyRecord;
+  } catch {
+    return null;
   }
 }
 

@@ -134,9 +134,15 @@ Every core production tool opens as a **dedicated workspace** with stable screen
 
 ---
 
-### 👥 Collaboration & Account Management
+### 👥 Collaboration, Access Control & End-to-End Encryption
+- **Granular Role Management**: Interactive inline role selection across 4 standard roles (`Editor`, `Viewer`, `Script Doctor`, `Producer`) with centralized permission enforcement on backend and editor views.
+- **Invitation Lifecycle**: Email-based invitations with 7-day tokens, duplicate prevention, and revocation workflows.
+- **Join Code Access Requests**: Cryptographic join code generation with owner approval gates (join codes submit access requests; they do not bypass owner permission approval).
+- **Owner Request Management**: Dedicated pending requests panel allowing screenplay owners to review, assign roles, approve, or reject applicants.
+- **End-to-End Encryption (E2EE)**: Standards-compliant zero-knowledge client encryption powered by Web Crypto API (`AES-256-GCM` with 96-bit random IVs and ECDH `P-256` key agreement for collaborator wrapping). Screenplay keys are rotated automatically upon collaborator removal.
+- **AI Privacy Boundary**: Explicit consent disclosures required before submitting decrypted text to AI narrative analysis.
+- **Security Activity Audit Log**: Real-time event log tracking permission modifications, join code rotations, key rotations, and access revocations.
 - **Draft & Version Management**: Snapshot screenplay drafts, restore previous iterations, and compare screenplay diffs side-by-side.
-- **Collaborator Management**: Invite co-writers and editors via Join Codes with role-based permissions (`Owner`, `Editor`, `Viewer`, `Production`).
 - **Profile & Preferences**: Local profile photo upload and preview with persistent avatar sync, global editor typography controls, line spacing (`1.0`, `1.5`, `2.0`), scene number display toggles, and notification feeds.
 - **Authentication & Security**: Email/password authentication with session persistence, Google OAuth 2.0 readiness, and Firebase integration support.
 

@@ -146,7 +146,13 @@ export const server = http.createServer(async (req, res) => {
       if (method === 'GET') {
         return sendJson(res, 200, { screenplay: screenplayService.getScreenplay(id) });
       }
-      if (method === 'PUT') {
+      if (method === 'PUT' || method === 'POST') {
+        // Enforce backend permission: screenplay.edit
+        if (!collaborationService.checkPermission(id, 'screenplay.edit', db.currentUser)) {
+          return sendJson(res, 403, {
+            error: 'Permission denied: Your assigned collaborator role does not permit modifying screenplay content.'
+          });
+        }
         const body = await readBody(req);
         const updated = screenplayService.saveScreenplay(id, body);
         return sendJson(res, 200, { success: true, screenplay: updated });
@@ -179,9 +185,100 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
-    // 5. COLLABORATORS
+    // 5. COLLABORATORS & ROLE MANAGEMENT
     if (pathname === '/collaborators' && method === 'GET') {
       return sendJson(res, 200, { collaborators: collaborationService.getCollaborators() });
+    }
+
+    // Collaborator permissions for current user
+    const collabPermMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/permissions$/);
+    if (collabPermMatch && method === 'GET') {
+      const data = collaborationService.getUserPermissions(collabPermMatch[1], db.currentUser);
+      return sendJson(res, 200, data);
+    }
+
+    // Security Activity Audit Log
+    const collabSecLogMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/security-activity$/);
+    if (collabSecLogMatch && method === 'GET') {
+      const activity = collaborationService.getSecurityActivity(collabSecLogMatch[1]);
+      return sendJson(res, 200, { activity });
+    }
+
+    // Pending Invitations
+    const collabInvitesMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations$/);
+    if (collabInvitesMatch && method === 'GET') {
+      const invitations = collaborationService.getInvitations(collabInvitesMatch[1]);
+      return sendJson(res, 200, { invitations });
+    }
+
+    const revokeInviteMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)$/);
+    if (revokeInviteMatch && method === 'DELETE') {
+      const [, scriptId, inviteId] = revokeInviteMatch;
+      try {
+        collaborationService.revokeInvitation(scriptId, inviteId, db.currentUser);
+        return sendJson(res, 200, { success: true });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    // Pending Join Requests
+    const collabReqsMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests$/);
+    if (collabReqsMatch && method === 'GET') {
+      const requests = collaborationService.getAccessRequests(collabReqsMatch[1]);
+      return sendJson(res, 200, { requests });
+    }
+
+    const approveReqMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests\/([a-zA-Z0-9_-]+)\/approve$/);
+    if (approveReqMatch && method === 'POST') {
+      const [, scriptId, requestId] = approveReqMatch;
+      const body = await readBody(req);
+      try {
+        const result = collaborationService.approveAccessRequest(scriptId, requestId, body.role, db.currentUser);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const rejectReqMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests\/([a-zA-Z0-9_-]+)\/reject$/);
+    if (rejectReqMatch && method === 'POST') {
+      const [, scriptId, requestId] = rejectReqMatch;
+      try {
+        const result = collaborationService.rejectAccessRequest(scriptId, requestId, db.currentUser);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    // End-to-End Encryption (E2EE) settings & key rotation
+    const e2eeMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee$/);
+    if (e2eeMatch && method === 'GET') {
+      const settings = collaborationService.getE2EESettings(e2eeMatch[1], db.currentUser);
+      return sendJson(res, 200, { e2ee: settings });
+    }
+
+    const e2eeEnableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/enable$/);
+    if (e2eeEnableMatch && method === 'POST') {
+      const body = await readBody(req);
+      try {
+        const result = collaborationService.enableE2EE(e2eeEnableMatch[1], body, db.currentUser);
+        return sendJson(res, 200, { success: true, e2ee: result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const e2eeRotateMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/rotate$/);
+    if (e2eeRotateMatch && method === 'POST') {
+      const body = await readBody(req);
+      try {
+        const result = collaborationService.rotateE2EEKey(e2eeRotateMatch[1], body, db.currentUser);
+        return sendJson(res, 200, { success: true, e2ee: result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
     }
 
     const collabMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)$/);
@@ -191,30 +288,62 @@ export const server = http.createServer(async (req, res) => {
 
     const inviteMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invite$/);
     if (inviteMatch && method === 'POST') {
-      const body = await readBody(req);
-      const newCollab = collaborationService.inviteCollaborator(inviteMatch[1], body);
-      return sendJson(res, 201, { collaborator: newCollab });
+      try {
+        const body = await readBody(req);
+        const newCollab = collaborationService.inviteCollaborator(inviteMatch[1], body, db.currentUser);
+        return sendJson(res, 201, { collaborator: newCollab });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
     }
 
     const collabMemberMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)$/);
     if (collabMemberMatch) {
       const [, scriptId, memberId] = collabMemberMatch;
       if (method === 'DELETE') {
-        collaborationService.removeCollaborator(scriptId, memberId);
-        return sendJson(res, 200, { success: true });
+        try {
+          const result = collaborationService.removeCollaborator(scriptId, memberId, db.currentUser);
+          return sendJson(res, 200, result);
+        } catch (err) {
+          return sendJson(res, 400, { error: err.message });
+        }
       }
       if (method === 'PUT') {
-        const body = await readBody(req);
-        const updated = collaborationService.updateRole(scriptId, memberId, body.role);
-        return sendJson(res, 200, { collaborator: updated });
+        try {
+          const body = await readBody(req);
+          const updated = collaborationService.updateRole(scriptId, memberId, body.role, db.currentUser);
+          return sendJson(res, 200, { collaborator: updated });
+        } catch (err) {
+          return sendJson(res, 400, { error: err.message });
+        }
       }
     }
 
-    // 6. JOIN CODES
+    // 6. JOIN CODES & ACCESS REQUESTS
     const genCodeMatch = pathname.match(/^\/join-code\/generate\/([a-zA-Z0-9_-]+)$/);
     if (genCodeMatch && method === 'POST') {
-      const code = collaborationService.generateJoinCode(genCodeMatch[1]);
-      return sendJson(res, 200, { joinCode: code });
+      try {
+        const code = collaborationService.generateJoinCode(genCodeMatch[1], db.currentUser);
+        return sendJson(res, 200, { joinCode: code });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const revokeCodeMatch = pathname.match(/^\/join-code\/revoke\/([a-zA-Z0-9_-]+)$/);
+    if (revokeCodeMatch && method === 'POST') {
+      try {
+        const result = collaborationService.revokeJoinCode(revokeCodeMatch[1], db.currentUser);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const codeConfigMatch = pathname.match(/^\/join-code\/config\/([a-zA-Z0-9_-]+)$/);
+    if (codeConfigMatch && method === 'GET') {
+      const config = collaborationService.getJoinCodeConfig(codeConfigMatch[1]);
+      return sendJson(res, 200, { config });
     }
 
     if (pathname === '/join-code/validate' && method === 'POST') {
@@ -223,10 +352,37 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, resData.valid ? 200 : 400, resData);
     }
 
+    if (pathname === '/join-code/request-access' && method === 'POST') {
+      const body = await readBody(req);
+      try {
+        const resData = collaborationService.requestJoinAccess(body.code, body, db.currentUser);
+        return sendJson(res, 200, resData);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
     if (pathname === '/join-code/redeem' && method === 'POST') {
       const body = await readBody(req);
-      const resData = collaborationService.redeemJoinCode(body.code);
+      const resData = collaborationService.redeemJoinCode(body.code, db.currentUser);
       return sendJson(res, resData.success ? 200 : 400, resData);
+    }
+
+    // Public key exchange for E2EE
+    if (pathname === '/e2ee/public-key' && method === 'POST') {
+      const body = await readBody(req);
+      try {
+        const result = collaborationService.registerUserPublicKey(db.currentUser, body);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const userKeyMatch = pathname.match(/^\/e2ee\/public-key\/([a-zA-Z0-9@._+-]+)$/);
+    if (userKeyMatch && method === 'GET') {
+      const keyRecord = collaborationService.getUserPublicKey(decodeURIComponent(userKeyMatch[1]));
+      return sendJson(res, 200, { keyRecord });
     }
 
     // 7. NOTIFICATIONS

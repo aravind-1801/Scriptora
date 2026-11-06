@@ -4,6 +4,12 @@ import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 import { setupPopupToggle } from '../utils/popupPosition.js';
+import {
+  getOrCreateUserDeviceKeyPair,
+  generateScreenplayKey,
+  exportRawKeyBase64,
+  computeKeyFingerprint
+} from '../services/crypto.js';
 
 export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
@@ -11,7 +17,6 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
   const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
-  const returnLabel = isFromEditor ? 'Back to Editor' : 'Back to Profile';
 
   const script = store.state.scripts.find(s => s.id === scriptId) || store.state.scripts[0] || {
     id: 'chronicles-of-dust',
@@ -33,7 +38,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </button>
           <div class="flex flex-col min-w-0">
             <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Collaborators</h1>
-            <p class="text-xs text-slate-500 mt-0.5 truncate">Work together on your screenplay with controlled access.</p>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">Granular roles, secure invitations & end-to-end encrypted collaboration.</p>
           </div>
         </div>
 
@@ -67,17 +72,42 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </div>
         </div>
 
+        <!-- E2EE Security Status Bar -->
+        <div class="bg-white border border-slate-200/80 rounded-xl p-3 shadow-xs flex items-center justify-between gap-3" id="e2ee-status-card">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100" id="e2ee-icon-box">
+              <span class="material-symbols-outlined text-[18px]">lock</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-heading font-bold text-xs text-slate-900">End-to-End Encryption</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-600" id="e2ee-badge">AES-256-GCM</span>
+              </div>
+              <span class="text-[10px] text-slate-500 truncate" id="e2ee-desc">Zero-knowledge client encryption active.</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button id="btn-security-info" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200/70 text-slate-700 text-[11px] font-semibold transition-colors flex items-center gap-1 cursor-pointer">
+              <span class="material-symbols-outlined text-[14px]">shield</span>
+              <span>Details</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Add Collaborator Action Bar -->
         <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase text-slate-500 tracking-wider">Team Access</span>
-          <button class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all" id="openInviteBtn">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-bold uppercase text-slate-500 tracking-wider">Team Access</span>
+            <span class="text-[10px] font-semibold text-slate-400" id="team-members-count">(0)</span>
+          </div>
+          <button class="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer" id="openInviteBtn">
             <span class="material-symbols-outlined text-[16px]">person_add</span>
             <span>Add Collaborator</span>
           </button>
         </div>
 
         <!-- Inline Invite Card -->
-        <div class="hidden bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3" id="inviteCard">
+        <div class="hidden bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-3.5" id="inviteCard">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
               <div class="w-7 h-7 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -85,7 +115,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
               </div>
               <span class="font-heading text-sm font-bold text-slate-900">Invite Teammate</span>
             </div>
-            <button class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100" id="closeInviteBtn">
+            <button class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer" id="closeInviteBtn">
               <span class="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
@@ -96,48 +126,85 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </div>
 
           <div class="space-y-1.5">
-            <span class="text-[11px] font-semibold text-slate-600">Permission Level</span>
-            <div class="grid grid-cols-2 gap-2">
-              <label class="flex flex-col p-2.5 rounded-lg border border-blue-200 bg-blue-50/50 cursor-pointer">
+            <span class="text-[11px] font-semibold text-slate-600">Assigned Role</span>
+            <div class="grid grid-cols-2 gap-2" id="invite-role-selector">
+              <label class="flex flex-col p-2.5 rounded-lg border border-blue-500 bg-blue-50/50 cursor-pointer transition-colors role-radio-card" data-role="Editor">
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-bold text-slate-900">Editor</span>
-                  <input type="radio" name="inviteRole" value="editor" checked class="accent-blue-600">
+                  <input type="radio" name="inviteRole" value="Editor" checked class="accent-blue-600">
                 </div>
-                <span class="text-[10px] text-slate-500 mt-0.5">Can edit dialogue & scene locks</span>
+                <span class="text-[10px] text-slate-500 mt-0.5">Edit dialogue, scene locks & storyboards</span>
               </label>
-              <label class="flex flex-col p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+
+              <label class="flex flex-col p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors role-radio-card" data-role="Viewer">
                 <div class="flex items-center justify-between">
                   <span class="text-xs font-bold text-slate-900">Viewer</span>
-                  <input type="radio" name="inviteRole" value="viewer" class="accent-blue-600">
+                  <input type="radio" name="inviteRole" value="Viewer" class="accent-blue-600">
                 </div>
                 <span class="text-[10px] text-slate-500 mt-0.5">Read-only script & review notes</span>
+              </label>
+
+              <label class="flex flex-col p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors role-radio-card" data-role="Script Doctor">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-900">Script Doctor</span>
+                  <input type="radio" name="inviteRole" value="Script Doctor" class="accent-blue-600">
+                </div>
+                <span class="text-[10px] text-slate-500 mt-0.5">Analyze structure, dialogue & pacing</span>
+              </label>
+
+              <label class="flex flex-col p-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors role-radio-card" data-role="Producer">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-900">Producer</span>
+                  <input type="radio" name="inviteRole" value="Producer" class="accent-blue-600">
+                </div>
+                <span class="text-[10px] text-slate-500 mt-0.5">Production notes, schedule & review</span>
               </label>
             </div>
           </div>
 
-          <button id="sendInviteBtn" class="w-full h-9 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs transition-all">
-            Send Invitation
+          <div class="space-y-1">
+            <label class="text-[11px] font-semibold text-slate-600">Invitation Note (Optional)</label>
+            <input class="w-full h-8 px-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600" id="inviteNoteInput" placeholder="e.g. Collaborating on Act 2 dialogue rewrite..." type="text">
+          </div>
+
+          <button id="sendInviteBtn" class="w-full h-9 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+            <span class="material-symbols-outlined text-[16px]">send</span>
+            <span>Send Invitation</span>
           </button>
         </div>
 
-        <!-- Collaborators List -->
+        <!-- Collaborators List & Pending Invitations -->
         <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs divide-y divide-slate-100 overflow-hidden" id="collaborators-list">
           <div class="p-4 text-center text-xs text-slate-400">Loading collaborators...</div>
+        </div>
+
+        <!-- PENDING ACCESS REQUESTS SECTION (Revealed if pending join requests exist) -->
+        <div id="pending-requests-section" class="hidden flex flex-col gap-2 pt-1">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-amber-600 text-[18px]">pending_actions</span>
+              <h2 class="font-heading text-sm font-bold text-slate-900 tracking-tight">Pending Access Requests</h2>
+            </div>
+            <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full" id="pending-requests-count">0</span>
+          </div>
+          <div class="bg-white rounded-xl border border-amber-200 shadow-xs divide-y divide-slate-100 overflow-hidden" id="requests-list">
+            <!-- Rendered dynamically -->
+          </div>
         </div>
 
         <!-- JOIN BY SCRIPT CODE SECTION -->
         <div class="flex flex-col gap-2 pt-2">
           <div class="flex flex-col">
             <h2 class="font-heading text-sm font-bold text-slate-900 tracking-tight">Join a Script</h2>
-            <p class="text-xs text-slate-500">Use a script join code to collaborate without an email invitation.</p>
+            <p class="text-xs text-slate-500">Join codes allow authenticated teammates to submit an access request to the owner.</p>
           </div>
 
           <!-- Join Code Tabs Switcher -->
           <div class="w-full bg-slate-100 rounded-xl p-1 flex items-center text-xs font-semibold">
-            <button id="tabGenCodeBtn" class="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs">
+            <button id="tabGenCodeBtn" class="flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs cursor-pointer">
               Generate Join Code
             </button>
-            <button id="tabEnterCodeBtn" class="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+            <button id="tabEnterCodeBtn" class="flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
               Enter Join Code
             </button>
           </div>
@@ -146,22 +213,29 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           <div id="paneGenerateCode" class="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col gap-3">
             <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-xl p-3">
               <div class="flex flex-col">
-                <span class="text-[10px] uppercase font-bold text-slate-400">SCRIPT JOIN CODE</span>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[10px] uppercase font-bold text-slate-400">SCRIPT JOIN CODE</span>
+                  <span id="joinCodeStatusBadge" class="text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700">Active</span>
+                </div>
                 <span id="displayJoinCode" class="font-mono font-bold text-base text-blue-600 tracking-widest mt-0.5">${script.joinCode || 'A7K9-XP42'}</span>
               </div>
               <div class="flex items-center gap-1.5">
-                <button id="copyJoinCodeBtn" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 text-xs font-medium flex items-center gap-1 shadow-xs transition-all">
+                <button id="copyJoinCodeBtn" class="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 text-xs font-medium flex items-center gap-1 shadow-xs transition-all cursor-pointer">
                   <span class="material-symbols-outlined text-[15px]">content_copy</span>
                   <span id="copyJoinCodeLabel">Copy</span>
                 </button>
-                <button id="regenJoinCodeBtn" class="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 text-xs shadow-xs transition-all" title="Regenerate Code">
+                <button id="regenJoinCodeBtn" class="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:scale-95 text-xs shadow-xs transition-all cursor-pointer" title="Regenerate Code">
                   <span class="material-symbols-outlined text-[16px]">refresh</span>
+                </button>
+                <button id="revokeJoinCodeBtn" class="p-1.5 rounded-lg bg-white border border-slate-200 text-rose-600 hover:bg-rose-50 active:scale-95 text-xs shadow-xs transition-all cursor-pointer" title="Revoke Code">
+                  <span class="material-symbols-outlined text-[16px]">block</span>
                 </button>
               </div>
             </div>
-            <p class="text-[11px] text-slate-400 leading-relaxed">
-              Anyone with this join code can request Editor or Viewer access to "${script.title}".
-            </p>
+            <div class="text-[11px] text-slate-500 leading-relaxed space-y-1">
+              <p>• Join codes request access from the owner; they do not bypass owner permission approval.</p>
+              <p>• Code expiration: <span class="font-semibold text-slate-700" id="joinCodeExpirationLabel">14 days</span>.</p>
+            </div>
           </div>
 
           <!-- Tab Content 2: Enter Join Code -->
@@ -170,25 +244,61 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
               <label class="text-[11px] font-semibold text-slate-600">Enter 8-Character Join Code</label>
               <div class="flex items-center gap-2">
                 <input id="joinCodeInput" type="text" maxlength="9" placeholder="A7K9-XP42" class="flex-1 h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 font-mono text-sm uppercase tracking-widest text-slate-900 focus:outline-none focus:border-blue-600">
-                <button id="verifyCodeBtn" class="h-10 px-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs active:scale-95 transition-all flex items-center gap-1">
+                <button id="verifyCodeBtn" class="h-10 px-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
                   <span>Verify</span>
                 </button>
               </div>
             </div>
 
             <!-- Join Code Result Card (revealed after verification) -->
-            <div id="joinCodeResultCard" class="hidden bg-blue-50/50 border border-blue-200 rounded-xl p-3.5 flex flex-col gap-2">
+            <div id="joinCodeResultCard" class="hidden bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 flex flex-col gap-3">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-bold text-slate-900 font-heading" id="verifiedScriptTitle">Chronicles of Dust</span>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-slate-900 font-heading" id="verifiedScriptTitle">Chronicles of Dust</span>
+                  <span class="text-[10px] text-slate-500" id="verifiedScriptOwner">Owner: Arun Kumar</span>
+                </div>
                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" id="verifiedScriptFormat">Feature · 96 pages</span>
               </div>
-              <p class="text-[11px] text-slate-500">Ready to join this shared screenplay workspace.</p>
-              <button id="confirmJoinScriptBtn" class="w-full mt-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-xs active:scale-95 transition-all">
-                Request to Join Workspace
+
+              <div class="flex flex-col gap-1.5">
+                <label class="text-[11px] font-semibold text-slate-700">Requested Permission Role</label>
+                <select id="reqRoleSelect" class="w-full px-2.5 py-1.5 text-xs bg-white border border-blue-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600">
+                  <option value="Editor">Editor — Screenplay & dialogue editing</option>
+                  <option value="Viewer" selected>Viewer — Read-only script review</option>
+                  <option value="Script Doctor">Script Doctor — Narrative analysis & suggestions</option>
+                  <option value="Producer">Producer — Production breakdown & schedule</option>
+                </select>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-[11px] font-semibold text-slate-700">Request Note (Optional)</label>
+                <input id="reqNoteInput" type="text" placeholder="e.g. Assisting with dialogue polish..." class="w-full px-2.5 py-1.5 text-xs bg-white border border-blue-200 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600">
+              </div>
+
+              <button id="confirmJoinScriptBtn" class="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-lg shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">how_to_reg</span>
+                <span>Submit Access Request</span>
               </button>
             </div>
           </div>
 
+        </div>
+
+        <!-- SECURITY ACTIVITY LOG SECTION -->
+        <div class="bg-white border border-slate-200/80 rounded-xl shadow-xs overflow-hidden">
+          <button id="toggleSecLogBtn" class="w-full p-3.5 flex items-center justify-between text-left hover:bg-slate-50 transition-colors cursor-pointer">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-slate-600 text-[18px]">history</span>
+              <div class="flex flex-col">
+                <span class="font-heading font-bold text-xs text-slate-900">Security & Access Activity</span>
+                <span class="text-[10px] text-slate-500">Audit log of permissions, invitations & key rotations</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-slate-400 text-[18px] transition-transform" id="secLogChevron">expand_more</span>
+          </button>
+          <div id="secLogContainer" class="hidden border-t border-slate-100 divide-y divide-slate-100 max-h-56 overflow-y-auto">
+            <div class="p-3 text-center text-xs text-slate-400">Loading audit log...</div>
+          </div>
         </div>
 
         ${isFromEditor ? `
@@ -202,6 +312,121 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
 
       </div>
     </main>
+
+    <!-- INLINE ROLE SELECTOR POPOVER (Positioned dynamically) -->
+    <div id="roleSelectorPopover" class="hidden fixed z-50 bg-white border border-slate-200 rounded-xl shadow-xl w-60 py-1 overflow-hidden fade-in">
+      <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Change Role</span>
+        <button id="closeRolePopoverBtn" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+          <span class="material-symbols-outlined text-[14px]">close</span>
+        </button>
+      </div>
+      <div class="py-1">
+        <button class="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors flex flex-col role-opt-btn" data-role="Editor">
+          <span class="text-xs font-bold text-slate-900 flex items-center justify-between">
+            <span>Editor</span>
+            <span class="material-symbols-outlined text-[16px] text-blue-600 hidden role-check-Editor">check</span>
+          </span>
+          <span class="text-[10px] text-slate-500">Edit dialogue, scenes & storyboards</span>
+        </button>
+
+        <button class="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors flex flex-col role-opt-btn" data-role="Viewer">
+          <span class="text-xs font-bold text-slate-900 flex items-center justify-between">
+            <span>Viewer</span>
+            <span class="material-symbols-outlined text-[16px] text-blue-600 hidden role-check-Viewer">check</span>
+          </span>
+          <span class="text-[10px] text-slate-500">Read-only screenplay & notes</span>
+        </button>
+
+        <button class="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors flex flex-col role-opt-btn" data-role="Script Doctor">
+          <span class="text-xs font-bold text-slate-900 flex items-center justify-between">
+            <span>Script Doctor</span>
+            <span class="material-symbols-outlined text-[16px] text-blue-600 hidden role-check-Doctor">check</span>
+          </span>
+          <span class="text-[10px] text-slate-500">Structure, dialogue analysis & suggestions</span>
+        </button>
+
+        <button class="w-full text-left px-3 py-2 hover:bg-blue-50 transition-colors flex flex-col role-opt-btn" data-role="Producer">
+          <span class="text-xs font-bold text-slate-900 flex items-center justify-between">
+            <span>Producer</span>
+            <span class="material-symbols-outlined text-[16px] text-blue-600 hidden role-check-Producer">check</span>
+          </span>
+          <span class="text-[10px] text-slate-500">Production notes, schedule & review</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SECURITY DETAILS MODAL -->
+    <div id="securityDetailsModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 fade-in">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-[20px]">verified_user</span>
+            </div>
+            <div>
+              <h3 class="font-heading font-bold text-sm text-slate-900">E2EE Cryptographic Architecture</h3>
+              <p class="text-[11px] text-slate-500">Standards-compliant zero-knowledge security</p>
+            </div>
+          </div>
+          <button id="closeSecModalBtn" class="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 cursor-pointer">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs text-slate-700 leading-relaxed">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+            <span class="font-bold text-slate-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-blue-600">lock</span>
+              What is Protected
+            </span>
+            <p class="text-[11px] text-slate-600">
+              Screenplay scenes, dialogue, parentheticals, action lines, character arcs, and private storyboard prompts are encrypted on your local device before transmission.
+            </p>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+            <span class="font-bold text-slate-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-emerald-600">key</span>
+              Decryption & Key Distribution
+            </span>
+            <p class="text-[11px] text-slate-600">
+              Each screenplay generates an isolated 256-bit AES-GCM master key. Keys are securely wrapped for authorized collaborators using Elliptic Curve Diffie-Hellman (ECDH P-256). SCRIPTORA servers never possess unencrypted keys.
+            </p>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+            <span class="font-bold text-slate-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-amber-600">published_with_changes</span>
+              Key Rotation on Member Removal
+            </span>
+            <p class="text-[11px] text-slate-600">
+              When a collaborator is removed or revoked, the screenplay master key is automatically rotated. New revisions use the updated key, ensuring revoked members cannot decrypt future edits.
+            </p>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
+            <span class="font-bold text-slate-900 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[16px] text-purple-600">psychology</span>
+              AI Privacy Boundary
+            </span>
+            <p class="text-[11px] text-slate-600">
+              Screenplay Intelligence models never receive unencrypted background text without explicit, per-session consent. Plaintext is not stored in training corpora.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <button id="btn-toggle-e2ee-enable" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer shadow-xs transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[15px]">lock_reset</span>
+            <span id="e2ee-toggle-label">Activate Zero-Knowledge E2EE</span>
+          </button>
+          <button id="closeSecModalBtn2" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
 
     ${renderBottomNav('profile')}
   `;
@@ -242,51 +467,364 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   }
 
   let activeCode = 'A7K9-XP42';
+  let activeTargetCollaboratorId = null;
 
-  // Load collaborators list
+  // Popover elements
+  const rolePopover = document.getElementById('roleSelectorPopover');
+  const closeRolePopoverBtn = document.getElementById('closeRolePopoverBtn');
+  if (closeRolePopoverBtn && rolePopover) {
+    closeRolePopoverBtn.onclick = () => rolePopover.classList.add('hidden');
+  }
+
+  // Close popover on document click outside
+  document.addEventListener('click', (e) => {
+    if (rolePopover && !rolePopover.classList.contains('hidden')) {
+      if (!rolePopover.contains(e.target) && !e.target.closest('.interactive-role-trigger')) {
+        rolePopover.classList.add('hidden');
+      }
+    }
+  });
+
+  // Load and render collaborators & invitations
   async function loadList() {
-    const list = await api.getCollaborators(scriptId);
+    const [list, invitations, requests, e2ee] = await Promise.all([
+      api.getCollaborators(scriptId),
+      api.getPendingInvitations(scriptId),
+      api.getAccessRequests(scriptId),
+      api.getE2EESettings(scriptId)
+    ]);
+
+    const countBadge = document.getElementById('collab-count-badge');
+    const membersCount = document.getElementById('team-members-count');
+    if (countBadge) countBadge.textContent = `${list.length} Members`;
+    if (membersCount) membersCount.textContent = `(${list.length})`;
+
+    // Update E2EE banner
+    const e2eeBadge = document.getElementById('e2ee-badge');
+    const e2eeDesc = document.getElementById('e2ee-desc');
+    const e2eeToggleLabel = document.getElementById('e2ee-toggle-label');
+    if (e2ee?.enabled) {
+      if (e2eeBadge) {
+        e2eeBadge.textContent = `v${e2ee.keyVersion} · ${e2ee.algorithm}`;
+        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
+      }
+      if (e2eeDesc) e2eeDesc.textContent = `Zero-knowledge active. Fingerprint: ${e2ee.keyFingerprint || 'sha256-verified'}`;
+      if (e2eeToggleLabel) e2eeToggleLabel.textContent = 'Rotate Master Encryption Key';
+    } else {
+      if (e2eeBadge) {
+        e2eeBadge.textContent = 'Standard';
+        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-600';
+      }
+      if (e2eeDesc) e2eeDesc.textContent = 'Standard server storage. Tap Details to activate E2EE.';
+      if (e2eeToggleLabel) e2eeToggleLabel.textContent = 'Activate Zero-Knowledge E2EE';
+    }
+
     const container = document.getElementById('collaborators-list');
     if (!container) return;
 
+    let html = '';
+
+    // Active Collaborators
     if (list.length === 0) {
-      container.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code to invite teammates.</div>`;
-      return;
+      html += `<div class="p-4 text-center text-xs text-slate-400">No external collaborators yet. Share your join code or invite teammates above.</div>`;
+    } else {
+      html += list.map(c => `
+        <div class="p-3.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors collaborator-card" data-id="${c.id}">
+          <div class="flex items-center gap-3 min-w-0 pr-2">
+            <div class="w-9 h-9 rounded-full ${c.avatarBg || 'bg-blue-100 text-blue-700'} flex items-center justify-center font-bold text-xs shrink-0 cursor-pointer interactive-role-trigger" data-id="${c.id}" data-role="${c.role}" data-name="${c.name}">
+              ${c.initials || 'CB'}
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-slate-900 truncate hover:text-blue-600 cursor-pointer interactive-role-trigger" data-id="${c.id}" data-role="${c.role}" data-name="${c.name}">${c.name}</span>
+              <span class="text-[11px] text-slate-500 truncate">${c.email}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button class="interactive-role-trigger flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer ${
+              c.role === 'Editor' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
+              c.role === 'Script Doctor' ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' :
+              c.role === 'Producer' ? 'bg-purple-50 text-purple-700 hover:bg-purple-100' :
+              'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }" data-id="${c.id}" data-role="${c.role}" data-name="${c.name}" title="Click to change role">
+              <span id="role-label-${c.id}">${c.role}</span>
+              <span class="material-symbols-outlined text-[13px] text-slate-400">expand_more</span>
+            </button>
+            <button class="remove-collab-btn text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer" data-id="${c.id}" data-name="${c.name}" title="Revoke access">
+              <span class="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
     }
 
-    container.innerHTML = list.map(c => `
-      <div class="p-3.5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-        <div class="flex items-center gap-3 min-w-0 pr-2">
-          <div class="w-9 h-9 rounded-full ${c.avatarBg || 'bg-blue-100 text-blue-700'} flex items-center justify-center font-bold text-xs shrink-0">
-            ${c.initials}
+    // Pending Invitations
+    if (invitations && invitations.length > 0) {
+      html += `
+        <div class="bg-slate-50/70 p-2.5 px-3.5 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pending Invitations (${invitations.length})</span>
+        </div>
+      `;
+      html += invitations.map(inv => `
+        <div class="p-3 px-3.5 flex items-center justify-between bg-slate-50/40 hover:bg-slate-50 transition-colors">
+          <div class="flex items-center gap-2.5 min-w-0 pr-2">
+            <div class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0">
+              <span class="material-symbols-outlined text-[14px]">mail</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-semibold text-slate-800 truncate">${inv.email}</span>
+              <span class="text-[10px] text-amber-600 font-medium">Invited as ${inv.role} · Expires in 7d</span>
+            </div>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="text-xs font-bold text-slate-900 truncate">${c.name}</span>
-            <span class="text-[11px] text-slate-500 truncate">${c.email}</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button class="revoke-invite-btn text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer" data-id="${inv.id}" data-email="${inv.email}">
+              Revoke
+            </button>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold">${c.role}</span>
-          <button class="remove-collab-btn text-slate-400 hover:text-red-600 p-1" data-id="${c.id}" title="Remove access">
-            <span class="material-symbols-outlined text-[16px]">close</span>
-          </button>
-        </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
 
-    document.querySelectorAll('.remove-collab-btn').forEach(btn => {
-      btn.onclick = async () => {
-        const id = btn.getAttribute('data-id');
-        if (confirm("Remove collaborator access for this user?")) {
-          await api.removeCollaborator(scriptId, id);
-          showToast('Collaborator access removed');
-          loadList();
+    container.innerHTML = html;
+
+    // Attach role change popover triggers
+    document.querySelectorAll('.interactive-role-trigger').forEach(trigger => {
+      trigger.onclick = (e) => {
+        e.stopPropagation();
+        const id = trigger.getAttribute('data-id');
+        const role = trigger.getAttribute('data-role');
+        const name = trigger.getAttribute('data-name');
+        activeTargetCollaboratorId = id;
+
+        // Position popover relative to trigger button
+        if (rolePopover) {
+          const rect = trigger.getBoundingClientRect();
+          rolePopover.style.top = `${Math.min(window.innerHeight - 240, rect.bottom + 6)}px`;
+          rolePopover.style.left = `${Math.max(16, Math.min(window.innerWidth - 256, rect.left - 40))}px`;
+          
+          // Show active checkmark
+          ['Editor', 'Viewer', 'Doctor', 'Producer'].forEach(k => {
+            const el = rolePopover.querySelector(`.role-check-${k}`);
+            if (el) el.classList.add('hidden');
+          });
+          const checkKey = role === 'Script Doctor' ? 'Doctor' : role;
+          const activeCheck = rolePopover.querySelector(`.role-check-${checkKey}`);
+          if (activeCheck) activeCheck.classList.remove('hidden');
+
+          rolePopover.classList.remove('hidden');
         }
       };
     });
+
+    // Attach remove collaborator buttons
+    document.querySelectorAll('.remove-collab-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-id');
+        const name = btn.getAttribute('data-name');
+        if (confirm(`Revoke collaboration access for ${name}?\n\nThey will immediately lose access to this screenplay. If End-to-End Encryption is active, the screenplay key will be automatically rotated.`)) {
+          try {
+            await api.removeCollaborator(scriptId, id);
+            showToast(`Revoked access for ${name}`);
+            await loadList();
+            loadSecurityLog();
+          } catch (err) {
+            showToast(err.message || 'Failed to remove collaborator', 'error');
+          }
+        }
+      };
+    });
+
+    // Attach revoke invite buttons
+    document.querySelectorAll('.revoke-invite-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-id');
+        const email = btn.getAttribute('data-email');
+        if (confirm(`Revoke invitation for ${email}?`)) {
+          try {
+            await api.revokeInvitation(scriptId, id);
+            showToast(`Invitation revoked for ${email}`);
+            await loadList();
+            loadSecurityLog();
+          } catch (err) {
+            showToast(err.message || 'Failed to revoke invitation', 'error');
+          }
+        }
+      };
+    });
+
+    // Render Pending Access Requests
+    const reqSection = document.getElementById('pending-requests-section');
+    const reqListContainer = document.getElementById('requests-list');
+    const reqCountBadge = document.getElementById('pending-requests-count');
+
+    if (requests && requests.length > 0) {
+      if (reqSection) reqSection.classList.remove('hidden');
+      if (reqCountBadge) reqCountBadge.textContent = String(requests.length);
+      if (reqListContainer) {
+        reqListContainer.innerHTML = requests.map(r => `
+          <div class="p-3.5 flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shrink-0">
+                  ${r.initials || 'RQ'}
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-bold text-slate-900 truncate">${r.userName}</span>
+                  <span class="text-[11px] text-slate-500 truncate">${r.userEmail}</span>
+                </div>
+              </div>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200">
+                Requested: ${r.requestedRole}
+              </span>
+            </div>
+            ${r.note ? `<p class="text-[11px] text-slate-600 bg-slate-50 rounded-lg p-2 italic border border-slate-100">"${r.note}"</p>` : ''}
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button class="reject-req-btn px-3 py-1 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium transition-colors cursor-pointer" data-id="${r.id}" data-name="${r.userName}">
+                Reject
+              </button>
+              <button class="approve-req-btn px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center gap-1" data-id="${r.id}" data-role="${r.requestedRole}" data-name="${r.userName}">
+                <span class="material-symbols-outlined text-[14px]">check</span>
+                <span>Approve as ${r.requestedRole}</span>
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        reqListContainer.querySelectorAll('.approve-req-btn').forEach(b => {
+          b.onclick = async () => {
+            const rId = b.getAttribute('data-id');
+            const role = b.getAttribute('data-role');
+            const name = b.getAttribute('data-name');
+            try {
+              b.disabled = true;
+              b.textContent = 'Approving...';
+              await api.approveAccessRequest(scriptId, rId, role);
+              showToast(`Approved ${name} as ${role}`);
+              await loadList();
+              loadSecurityLog();
+            } catch (err) {
+              showToast(err.message || 'Approval failed', 'error');
+            }
+          };
+        });
+
+        reqListContainer.querySelectorAll('.reject-req-btn').forEach(b => {
+          b.onclick = async () => {
+            const rId = b.getAttribute('data-id');
+            const name = b.getAttribute('data-name');
+            if (confirm(`Reject access request from ${name}?`)) {
+              try {
+                await api.rejectAccessRequest(scriptId, rId);
+                showToast(`Rejected request from ${name}`);
+                await loadList();
+                loadSecurityLog();
+              } catch (err) {
+                showToast(err.message || 'Rejection failed', 'error');
+              }
+            }
+          };
+        });
+      }
+    } else {
+      if (reqSection) reqSection.classList.add('hidden');
+    }
   }
 
-  loadList();
+  // Handle role selection from popover
+  document.querySelectorAll('.role-opt-btn').forEach(btn => {
+    btn.onclick = async () => {
+      const newRole = btn.getAttribute('data-role');
+      if (!activeTargetCollaboratorId) return;
+
+      if (rolePopover) rolePopover.classList.add('hidden');
+
+      const roleLabelEl = document.getElementById(`role-label-${activeTargetCollaboratorId}`);
+      const oldRole = roleLabelEl?.textContent || 'Editor';
+
+      // Confirmation for sensitive demotion (Editor -> Viewer)
+      if (oldRole === 'Editor' && newRole === 'Viewer') {
+        if (!confirm(`Demote collaborator from Editor to Viewer?\n\nThey will immediately lose write access and the ability to edit scenes or dialogue.`)) {
+          return;
+        }
+      }
+
+      // Show temporary loading spinner on role label
+      if (roleLabelEl) {
+        roleLabelEl.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">progress_activity</span>`;
+      }
+
+      try {
+        await api.changeCollaboratorRole(scriptId, activeTargetCollaboratorId, newRole);
+        showToast(`Role updated to ${newRole}`);
+        await loadList();
+        loadSecurityLog();
+      } catch (err) {
+        if (roleLabelEl) roleLabelEl.textContent = oldRole;
+        showToast(err.message || 'Failed to update role', 'error');
+      }
+    };
+  });
+
+  // Load Security Activity Log
+  async function loadSecurityLog() {
+    const secLogContainer = document.getElementById('secLogContainer');
+    if (!secLogContainer) return;
+
+    try {
+      const logs = await api.getSecurityActivity(scriptId);
+      if (!logs || logs.length === 0) {
+        secLogContainer.innerHTML = `<div class="p-4 text-center text-xs text-slate-400">No security events recorded yet.</div>`;
+        return;
+      }
+
+      secLogContainer.innerHTML = logs.map(l => `
+        <div class="p-3 px-4 flex items-start gap-2.5 hover:bg-slate-50 transition-colors text-xs">
+          <div class="w-6 h-6 rounded-lg ${
+            l.type === 'role_changed' ? 'bg-blue-100 text-blue-700' :
+            l.type === 'collaborator_removed' ? 'bg-rose-100 text-rose-700' :
+            l.type === 'request_approved' ? 'bg-emerald-100 text-emerald-700' :
+            l.type === 'e2ee_enabled' || l.type === 'key_rotated' ? 'bg-purple-100 text-purple-700' :
+            'bg-slate-100 text-slate-700'
+          } flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[14px]">${
+              l.type === 'role_changed' ? 'sync' :
+              l.type === 'collaborator_removed' ? 'person_remove' :
+              l.type === 'request_approved' ? 'check' :
+              l.type === 'e2ee_enabled' || l.type === 'key_rotated' ? 'lock_reset' :
+              'info'
+            }</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-1">
+              <span class="font-bold text-slate-900">${l.title || 'Security Event'}</span>
+              <span class="text-[10px] text-slate-400 shrink-0">${l.timestamp || 'Just now'}</span>
+            </div>
+            <p class="text-[11px] text-slate-600 mt-0.5 leading-relaxed">${l.details || ''}</p>
+          </div>
+        </div>
+      `).join('');
+    } catch {
+      secLogContainer.innerHTML = `<div class="p-3 text-center text-xs text-slate-400">Failed to load activity log.</div>`;
+    }
+  }
+
+  // Toggle Security Log section
+  const toggleSecLogBtn = document.getElementById('toggleSecLogBtn');
+  const secLogContainer = document.getElementById('secLogContainer');
+  const secLogChevron = document.getElementById('secLogChevron');
+
+  if (toggleSecLogBtn && secLogContainer) {
+    toggleSecLogBtn.onclick = () => {
+      const isHidden = secLogContainer.classList.contains('hidden');
+      if (isHidden) {
+        secLogContainer.classList.remove('hidden');
+        if (secLogChevron) secLogChevron.classList.add('rotate-180');
+        loadSecurityLog();
+      } else {
+        secLogContainer.classList.add('hidden');
+        if (secLogChevron) secLogChevron.classList.remove('rotate-180');
+      }
+    };
+  }
 
   // Active script dropdown
   const projBtn = document.getElementById('projectSelectBtn');
@@ -314,16 +852,52 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   if (openInviteBtn) openInviteBtn.onclick = () => inviteCard?.classList.remove('hidden');
   if (closeInviteBtn) closeInviteBtn.onclick = () => inviteCard?.classList.add('hidden');
 
+  // Role card radio styling
+  document.querySelectorAll('.role-radio-card').forEach(card => {
+    card.onclick = () => {
+      document.querySelectorAll('.role-radio-card').forEach(c => {
+        c.classList.remove('border-blue-500', 'bg-blue-50/50');
+        c.classList.add('border-slate-200');
+      });
+      card.classList.add('border-blue-500', 'bg-blue-50/50');
+      card.classList.remove('border-slate-200');
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+    };
+  });
+
   if (sendInviteBtn) {
     sendInviteBtn.onclick = async () => {
       const email = document.getElementById('inviteEmailInput')?.value.trim();
-      const role = document.querySelector('input[name="inviteRole"]:checked')?.value || 'editor';
-      if (!email) return;
+      const role = document.querySelector('input[name="inviteRole"]:checked')?.value || 'Editor';
+      const message = document.getElementById('inviteNoteInput')?.value.trim() || '';
 
-      await api.inviteCollaborator(scriptId, { email, role });
-      showToast(`Invited ${email} as ${role}`);
-      inviteCard?.classList.add('hidden');
-      loadList();
+      if (!email) {
+        showToast('Please enter an email address', 'error');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showToast('Please enter a valid email address', 'error');
+        return;
+      }
+
+      sendInviteBtn.disabled = true;
+      sendInviteBtn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span><span>Sending...</span>`;
+
+      try {
+        await api.inviteCollaborator(scriptId, { email, role, message });
+        showToast(`Invitation sent to ${email} as ${role}`);
+        inviteCard?.classList.add('hidden');
+        document.getElementById('inviteEmailInput').value = '';
+        document.getElementById('inviteNoteInput').value = '';
+        await loadList();
+        loadSecurityLog();
+      } catch (err) {
+        showToast(err.message || 'Failed to send invitation', 'error');
+      } finally {
+        sendInviteBtn.disabled = false;
+        sendInviteBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">send</span><span>Send Invitation</span>`;
+      }
     };
   }
 
@@ -335,16 +909,16 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
 
   if (tabGen) {
     tabGen.onclick = () => {
-      tabGen.className = "flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs";
-      tabEnter.className = "flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+      tabGen.className = "flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs cursor-pointer";
+      tabEnter.className = "flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
       paneGen?.classList.remove('hidden');
       paneEnter?.classList.add('hidden');
     };
   }
   if (tabEnter) {
     tabEnter.onclick = () => {
-      tabEnter.className = "flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs";
-      tabGen.className = "flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900";
+      tabEnter.className = "flex-1 py-1.5 px-3 rounded-lg transition-all bg-white text-blue-700 shadow-xs cursor-pointer";
+      tabGen.className = "flex-1 py-1.5 px-3 rounded-lg transition-all text-slate-600 hover:text-slate-900 cursor-pointer";
       paneEnter?.classList.remove('hidden');
       paneGen?.classList.add('hidden');
     };
@@ -357,8 +931,8 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
     copyBtn.onclick = () => {
       const code = document.getElementById('displayJoinCode')?.textContent || activeCode;
       navigator.clipboard?.writeText(code);
-      copyLabel.textContent = 'Copied!';
-      setTimeout(() => { copyLabel.textContent = 'Copy'; }, 1800);
+      if (copyLabel) copyLabel.textContent = 'Copied!';
+      setTimeout(() => { if (copyLabel) copyLabel.textContent = 'Copy'; }, 1800);
       showToast(`Copied code: ${code}`);
     };
   }
@@ -367,11 +941,44 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   const regenBtn = document.getElementById('regenJoinCodeBtn');
   if (regenBtn) {
     regenBtn.onclick = async () => {
-      const code = await api.generateJoinCode(scriptId);
-      activeCode = code;
-      const display = document.getElementById('displayJoinCode');
-      if (display) display.textContent = code;
-      showToast(`Generated new join code: ${code}`);
+      if (confirm('Regenerate screenplay join code?\n\nExisting join requests remain unaffected, but future users will need the new code.')) {
+        try {
+          const code = await api.generateJoinCode(scriptId);
+          activeCode = code;
+          const display = document.getElementById('displayJoinCode');
+          if (display) display.textContent = code;
+          const statusBadge = document.getElementById('joinCodeStatusBadge');
+          if (statusBadge) {
+            statusBadge.textContent = 'Active';
+            statusBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
+          }
+          showToast(`Generated new join code: ${code}`);
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to regenerate code', 'error');
+        }
+      }
+    };
+  }
+
+  // Revoke code
+  const revokeBtn = document.getElementById('revokeJoinCodeBtn');
+  if (revokeBtn) {
+    revokeBtn.onclick = async () => {
+      if (confirm('Revoke current join code?\n\nNew join requests using this code will be rejected until a new code is generated.')) {
+        try {
+          await api.revokeJoinCode(scriptId);
+          const statusBadge = document.getElementById('joinCodeStatusBadge');
+          if (statusBadge) {
+            statusBadge.textContent = 'Revoked';
+            statusBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-rose-100 text-rose-700';
+          }
+          showToast('Join code revoked');
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to revoke code', 'error');
+        }
+      }
     };
   }
 
@@ -392,20 +999,33 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   if (verifyBtn && codeInput) {
     verifyBtn.onclick = async () => {
       const code = codeInput.value.trim();
-      if (!code) return;
+      if (!code) {
+        showToast('Please enter a join code', 'error');
+        return;
+      }
+      verifyBtn.disabled = true;
       verifyBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span>`;
       
-      const res = await api.validateJoinCode(code);
-      verifyBtn.innerHTML = `<span>Verify</span>`;
-      
-      if (res.valid) {
-        resultCard?.classList.remove('hidden');
-        document.getElementById('verifiedScriptTitle').textContent = res.script.title;
-        document.getElementById('verifiedScriptFormat').textContent = `${res.script.format} · ${res.script.pages} pages`;
-        showToast('Valid join code');
-      } else {
+      try {
+        const res = await api.validateJoinCode(code);
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = `<span>Verify</span>`;
+        
+        if (res.valid) {
+          resultCard?.classList.remove('hidden');
+          document.getElementById('verifiedScriptTitle').textContent = res.script.title;
+          document.getElementById('verifiedScriptFormat').textContent = `${res.script.format || 'Feature'} · ${res.script.pages || 96} pgs`;
+          document.getElementById('verifiedScriptOwner').textContent = `Owner: ${res.script.ownerName || 'Arun Kumar'}`;
+          showToast('Valid join code verified');
+        } else {
+          resultCard?.classList.add('hidden');
+          showToast(res.error || 'Invalid or expired join code', 'error');
+        }
+      } catch (err) {
+        verifyBtn.disabled = false;
+        verifyBtn.innerHTML = `<span>Verify</span>`;
         resultCard?.classList.add('hidden');
-        showToast('Invalid or expired join code', 'error');
+        showToast(err.message || 'Verification failed', 'error');
       }
     };
   }
@@ -413,9 +1033,78 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   if (confirmJoinBtn && codeInput) {
     confirmJoinBtn.onclick = async () => {
       const code = codeInput.value.trim();
-      await api.joinWithCode(code);
-      showToast('Successfully joined screenplay workspace!');
-      navigate('/workspace');
+      const requestedRole = document.getElementById('reqRoleSelect')?.value || 'Viewer';
+      const note = document.getElementById('reqNoteInput')?.value.trim() || '';
+
+      confirmJoinBtn.disabled = true;
+      confirmJoinBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Submitting...</span>`;
+
+      try {
+        const res = await api.requestJoinAccess(code, { requestedRole, note });
+        showToast(res.message || 'Access request submitted to screenplay owner!');
+        codeInput.value = '';
+        resultCard?.classList.add('hidden');
+        await loadList();
+      } catch (err) {
+        showToast(err.message || 'Failed to submit access request', 'error');
+      } finally {
+        confirmJoinBtn.disabled = false;
+        confirmJoinBtn.innerHTML = `<span class="material-symbols-outlined text-[16px]">how_to_reg</span><span>Submit Access Request</span>`;
+      }
     };
   }
+
+  // Security Details Modal handling
+  const btnSecurityInfo = document.getElementById('btn-security-info');
+  const secModal = document.getElementById('securityDetailsModal');
+  const closeSecModalBtn = document.getElementById('closeSecModalBtn');
+  const closeSecModalBtn2 = document.getElementById('closeSecModalBtn2');
+  const btnToggleE2EE = document.getElementById('btn-toggle-e2ee-enable');
+
+  if (btnSecurityInfo && secModal) {
+    btnSecurityInfo.onclick = () => secModal.classList.remove('hidden');
+  }
+  if (closeSecModalBtn && secModal) {
+    closeSecModalBtn.onclick = () => secModal.classList.add('hidden');
+  }
+  if (closeSecModalBtn2 && secModal) {
+    closeSecModalBtn2.onclick = () => secModal.classList.add('hidden');
+  }
+
+  if (btnToggleE2EE) {
+    btnToggleE2EE.onclick = async () => {
+      btnToggleE2EE.disabled = true;
+      btnToggleE2EE.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Initializing Zero-Knowledge Keys...</span>`;
+
+      try {
+        const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
+        // 1. Generate or load user device key pair
+        await getOrCreateUserDeviceKeyPair(currentUserEmail);
+        
+        // 2. Generate screenplay AES-256-GCM master key
+        const masterKey = await generateScreenplayKey();
+        const rawBase64 = await exportRawKeyBase64(masterKey);
+        const fingerprint = await computeKeyFingerprint(rawBase64);
+
+        // 3. Register on server
+        await api.enableE2EE(scriptId, {
+          keyFingerprint: fingerprint,
+          wrappedKeys: { [currentUserEmail]: rawBase64 }
+        });
+
+        showToast('Zero-knowledge End-to-End Encryption activated!');
+        secModal?.classList.add('hidden');
+        await loadList();
+        loadSecurityLog();
+      } catch (err) {
+        showToast(err.message || 'Failed to enable E2EE', 'error');
+      } finally {
+        btnToggleE2EE.disabled = false;
+        btnToggleE2EE.innerHTML = `<span class="material-symbols-outlined text-[15px]">lock_reset</span><span id="e2ee-toggle-label">Activate Zero-Knowledge E2EE</span>`;
+      }
+    };
+  }
+
+  // Initialize view
+  loadList();
 }

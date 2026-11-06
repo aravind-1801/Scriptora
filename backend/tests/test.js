@@ -190,6 +190,75 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Restore Shot from Recycle Bin:', restoreShot.status === 200 && restoreShot.body.success ? 'PASS' : 'FAIL');
 
+    // 14b. Interactive Role Management & Permission Enforcement
+    const roleChangeRes = await request('/api/collaborators/chronicles-of-dust/c-1', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: { role: 'Viewer' }
+    });
+    console.log('✓ Update Collaborator Role (Editor -> Viewer):', roleChangeRes.status === 200 && roleChangeRes.body.collaborator?.role === 'Viewer' ? 'PASS' : 'FAIL');
+
+    // Role permissions check
+    const permsRes = await request('/api/collaborators/chronicles-of-dust/permissions');
+    console.log('✓ Centralized Permissions Retrieval:', permsRes.status === 200 && permsRes.body.permissions?.['screenplay.read'] === true ? 'PASS' : 'FAIL');
+
+    // 14c. Collaborator Invitation Lifecycle
+    const inviteRes = await request('/api/collaborators/chronicles-of-dust/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email: 'rachel.scribe@studio.com', role: 'Script Doctor', message: 'Reviewing dialog' }
+    });
+    console.log('✓ Invite Collaborator:', inviteRes.status === 201 && inviteRes.body.collaborator?.email === 'rachel.scribe@studio.com' ? 'PASS' : 'FAIL');
+
+    // Duplicate invitation rejection check
+    const dupInviteRes = await request('/api/collaborators/chronicles-of-dust/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email: 'rachel.scribe@studio.com', role: 'Script Doctor' }
+    });
+    console.log('✓ Duplicate Invitation Prevention (400):', dupInviteRes.status === 400 ? 'PASS' : 'FAIL');
+
+    // 14d. Join Code Access Request & Approval Workflow
+    const reqAccessRes = await request('/api/join-code/request-access', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { code: 'A7K9-XP42', userEmail: 'line.producer@paramount.com', userName: 'Line Producer', requestedRole: 'Producer', note: 'Line producer reviewing budget' }
+    });
+    console.log('✓ Join Code Access Request:', reqAccessRes.status === 200 && reqAccessRes.body.status === 'pending' ? 'PASS' : 'FAIL');
+
+    // Fetch pending requests & approve
+    const pendingReqs = await request('/api/collaborators/chronicles-of-dust/requests');
+    const targetReq = (pendingReqs.body.requests || []).find(r => r.userEmail === 'line.producer@paramount.com');
+    let approvedOk = false;
+    if (targetReq) {
+      const approveRes = await request(`/api/collaborators/chronicles-of-dust/requests/${targetReq.id}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: { role: 'Producer' }
+      });
+      approvedOk = approveRes.status === 200 && approveRes.body.collaborator?.role === 'Producer';
+    }
+    console.log('✓ Approve Join Access Request:', approvedOk ? 'PASS' : 'FAIL');
+
+    // 14e. End-to-End Encryption Setup & Key Rotation on Member Removal
+    const e2eeEnableRes = await request('/api/collaborators/chronicles-of-dust/e2ee/enable', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { keyFingerprint: 'sha256-a1b2c3d4e5f6', wrappedKeys: { 'arun.kumar@scriptora.studio': 'd3JhcHBlZF9rZXlfZGF0YQ==' } }
+    });
+    console.log('✓ Enable E2EE Zero-Knowledge Encryption:', e2eeEnableRes.status === 200 && e2eeEnableRes.body.e2ee?.enabled === true ? 'PASS' : 'FAIL');
+
+    // Remove collaborator with automatic E2EE key rotation
+    const removeMemberRes = await request('/api/collaborators/chronicles-of-dust/c-2', {
+      method: 'DELETE'
+    });
+    const e2eeAfterRemoval = await request('/api/collaborators/chronicles-of-dust/e2ee');
+    console.log('✓ Member Removal & E2EE Key Rotation:', removeMemberRes.status === 200 && e2eeAfterRemoval.body.e2ee?.keyVersion === 2 ? 'PASS' : 'FAIL');
+
+    // 14f. Security Activity Log Verification
+    const secLogRes = await request('/api/collaborators/chronicles-of-dust/security-activity');
+    console.log('✓ Security Activity Audit Log:', secLogRes.status === 200 && Array.isArray(secLogRes.body.activity) && secLogRes.body.activity.length >= 3 ? 'PASS' : 'FAIL');
+
     // 15. Sign Out (Session Invalidation)
     const logoutRes = await request('/api/auth/logout', { method: 'POST' });
     const meAfterLogout = await request('/api/auth/me');

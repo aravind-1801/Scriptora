@@ -2,6 +2,7 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { promptAIConsentForEncryptedScript } from '../services/crypto.js';
 
 // AI Chat Screen (Universal Natural-Language Assistant)
 // Full-screen conversational interaction anchored immediately above bottom navigation
@@ -192,6 +193,20 @@ export function attachAiChatEvents(navigate) {
     container.scrollTop = container.scrollHeight;
 
     try {
+      // E2EE Privacy Boundary Consent Check
+      try {
+        const e2ee = await api.getE2EESettings(activeScriptId);
+        if (e2ee?.enabled) {
+          const script = store.state.scripts?.find(s => s.id === activeScriptId);
+          const consented = await promptAIConsentForEncryptedScript(script?.title || 'Screenplay', 'Scriptora Universal AI');
+          if (!consented) {
+            thinkingEl.remove();
+            appendMessage('assistant', 'AI intelligence processing was cancelled to preserve zero-knowledge local encryption boundary.');
+            return;
+          }
+        }
+      } catch (_) {}
+
       const response = await api.queryIntelligence(q, activeScriptId);
       thinkingEl.remove();
 

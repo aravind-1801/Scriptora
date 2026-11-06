@@ -30,6 +30,8 @@ let savedActiveBlockBeforeImage = null;
 let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
 let activeDocumentTab = 'screenplay'; // 'screenplay' or 'titlepage'
 let editorToolbarExpanded = false; // Master visibility control for secondary toolbar rows (Default: collapsed)
+let canEditScreenplay = true;
+let currentUserRole = 'Owner';
 
 // Hierarchical Navigation Stack (Prompts 23, 23A, 23B)
 const editorNavStack = [];
@@ -1166,6 +1168,40 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   renderScreenplayPages();
   populateNavigators();
+
+  // Screenplay permissions & role enforcement
+  try {
+    const userPerms = await api.getUserPermissions(scriptId);
+    if (userPerms) {
+      currentUserRole = userPerms.role || 'Owner';
+      canEditScreenplay = userPerms.permissions ? Boolean(userPerms.permissions['screenplay.edit']) : true;
+    }
+  } catch {
+    canEditScreenplay = true;
+    currentUserRole = 'Owner';
+  }
+
+  // If user role does not have edit permission, display read-only indicator
+  if (!canEditScreenplay) {
+    const mainContainer = document.querySelector('main');
+    if (mainContainer && !document.getElementById('editor-readonly-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'editor-readonly-banner';
+      banner.className = 'w-full bg-amber-500/90 text-slate-950 font-bold text-xs px-4 py-2 flex items-center justify-between shadow-xs sticky top-0 z-40 border-b border-amber-600';
+      banner.innerHTML = `
+        <div class="flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-[16px]">visibility</span>
+          <span>Viewing in Read-Only Mode (Role: ${currentUserRole})</span>
+        </div>
+        <span class="text-[10px] font-medium uppercase tracking-wider bg-black/10 px-2 py-0.5 rounded">Edits Disabled</span>
+      `;
+      mainContainer.prepend(banner);
+    }
+    // Prevent edits
+    document.querySelectorAll('.script-block-content, [contenteditable="true"]').forEach(el => {
+      el.setAttribute('contenteditable', 'false');
+    });
+  }
 
   // 3. Setup Manual Save & Status Machine
   const saveBtn = document.getElementById('editor-save-btn');
@@ -3647,6 +3683,14 @@ function navigateAutocomplete(dir) {
 // =========================================================================
 async function performSave(isManual = false) {
   if (isSaving || !currentScreenplay) return;
+  if (!canEditScreenplay) {
+    isSaving = false;
+    updateSaveStatus('Read-only');
+    if (isManual) {
+      showToast(`Viewing as ${currentUserRole || 'Viewer'} (Read-only mode)`, 'error');
+    }
+    return;
+  }
   isSaving = true;
   updateSaveStatus('Saving...');
 
