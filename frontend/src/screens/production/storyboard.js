@@ -553,10 +553,16 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </div>
             </div>
 
-            <!-- Custom Creative Prompt -->
+            <!-- Creative Direction & Image Prompt (Mandatory) -->
             <div class="flex flex-col gap-1">
-              <label class="text-[11px] font-semibold text-slate-700">Creative Direction / Extra Prompt</label>
-              <textarea id="gen-prompt-input" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" placeholder="Optional creative guidance for lighting, lens atmosphere, mood..."></textarea>
+              <div class="flex items-center justify-between">
+                <label class="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                  <span>Creative Direction / Image Prompt</span>
+                  <span class="text-rose-500 font-bold">*</span>
+                </label>
+                <span class="text-[10px] font-medium text-rose-500 uppercase tracking-wide">Mandatory</span>
+              </div>
+              <textarea id="gen-prompt-input" rows="2" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600 transition-colors" placeholder="Describe visual framing, lighting, atmosphere, subjects, and key action (mandatory)..." required></textarea>
             </div>
 
             <!-- Generation Error Alert -->
@@ -1784,6 +1790,17 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     };
   }
 
+  // Clear error highlight on prompt input when user types
+  const genPromptInputEl = document.getElementById('gen-prompt-input');
+  if (genPromptInputEl) {
+    genPromptInputEl.addEventListener('input', () => {
+      if (genPromptInputEl.value.trim()) {
+        genPromptInputEl.classList.remove('border-rose-400', 'bg-rose-50/20');
+        if (genErrorAlert) genErrorAlert.classList.add('hidden');
+      }
+    });
+  }
+
   // Start sequence generation button with real-time card-by-card streaming
   if (genBtnStart) {
     genBtnStart.onclick = async (e) => {
@@ -1795,6 +1812,21 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       const quality = document.getElementById('gen-quality-select')?.value || 'Standard Draft';
       const userPrompt = document.getElementById('gen-prompt-input')?.value.trim() || '';
       const count = parseInt(genShotCountSelect?.value, 10) || selectedShotCount || 4;
+
+      // Mandatory validation for Creative Direction / Image Prompt
+      if (!userPrompt) {
+        if (genErrorAlert) {
+          genErrorAlert.classList.remove('hidden');
+          if (genErrorMsg) genErrorMsg.textContent = 'Creative Direction / Image Prompt is mandatory for image generation. Please describe the visual scene.';
+        }
+        const promptInputEl = document.getElementById('gen-prompt-input');
+        if (promptInputEl) {
+          promptInputEl.classList.add('border-rose-400', 'bg-rose-50/20');
+          promptInputEl.focus();
+        }
+        showToast('Creative Direction / Image Prompt is mandatory');
+        return;
+      }
 
       if (selectedProv.pricingType === 'paid') {
         if (!selectedProv.isConfigured) {
@@ -2648,10 +2680,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     // Hide shot sequence length selector (since it comes under add one shot)
     if (shotCountContainer) shotCountContainer.classList.add('hidden');
 
-    // Pre-fill extra direction / prompt with shot description
+    // Pre-fill creative direction / prompt with shot description
     if (promptInput) {
       const shotDesc = document.getElementById('input-shot-desc')?.value.trim() || '';
       promptInput.value = shotDesc;
+      promptInput.classList.remove('border-rose-400', 'bg-rose-50/20');
     }
 
     // Match aspect ratio from shot form
@@ -2706,6 +2739,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     setupVisualArtStylePopup();
     const defaultGenStyle = currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Soft Pencil';
     applySelectedVisualArtStyle(defaultGenStyle, false);
+
+    const promptInput = document.getElementById('gen-prompt-input');
+    if (promptInput) {
+      if (!promptInput.value.trim() && scene.snippet) {
+        promptInput.value = scene.snippet;
+      }
+      promptInput.classList.remove('border-rose-400', 'bg-rose-50/20');
+    }
 
     if (genErrorAlert) genErrorAlert.classList.add('hidden');
     openModal(genModal);
