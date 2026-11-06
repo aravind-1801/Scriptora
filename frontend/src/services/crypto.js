@@ -350,3 +350,4 @@ export function promptAIConsentForEncryptedScript(scriptTitle, featureName = 'Na
     };
   });
 }
+
