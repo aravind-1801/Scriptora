@@ -2293,6 +2293,120 @@ export const authoritativeSelection = {
   lastVisibleTimestamp: 0
 };
 
+export function getNodeAndOffsetAtCharacterOffset(element, offset) {
+  if (!element) return null;
+  let currentOffset = 0;
+  let result = null;
+
+  function traverse(node) {
+    if (result) return;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const len = node.nodeValue.length;
+      if (currentOffset + len >= offset) {
+        result = { node, offset: Math.min(offset - currentOffset, len) };
+        return;
+      }
+      currentOffset += len;
+    } else {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        traverse(node.childNodes[i]);
+        if (result) return;
+      }
+    }
+  }
+
+  traverse(element);
+  if (!result) {
+    const lastNode = getLastTextNode(element) || element;
+    result = { node: lastNode, offset: lastNode.nodeType === Node.TEXT_NODE ? lastNode.nodeValue.length : 0 };
+  }
+  return result;
+}
+
+export function captureSelectionBookmark(sel) {
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) return null;
+
+  let startBlock = range.startContainer.nodeType === Node.ELEMENT_NODE
+    ? range.startContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.startContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+
+  let endBlock = range.endContainer.nodeType === Node.ELEMENT_NODE
+    ? range.endContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.endContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+
+  const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+  if (!startBlock) {
+    startBlock = allBlocks.find(b => {
+      try { return range.intersectsNode(b); } catch (_) { return false; }
+    }) || allBlocks[0];
+  }
+  if (!endBlock) {
+    for (let i = allBlocks.length - 1; i >= 0; i--) {
+      try {
+        if (range.intersectsNode(allBlocks[i])) {
+          endBlock = allBlocks[i];
+          break;
+        }
+      } catch (_) {}
+    }
+    if (!endBlock) endBlock = allBlocks[allBlocks.length - 1];
+  }
+
+  if (!startBlock || !endBlock) return null;
+
+  const startEd = getBlockEditable(startBlock);
+  const endEd = getBlockEditable(endBlock);
+  if (!startEd || !endEd) return null;
+
+  const startOffset = getCaretCharacterOffsetWithin(startEd, range.startContainer, range.startOffset);
+  const endOffset = getCaretCharacterOffsetWithin(endEd, range.endContainer, range.endOffset);
+
+  authoritativeSelection.active = true;
+  authoritativeSelection.startBlockId = startBlock.getAttribute('data-block-id');
+  authoritativeSelection.endBlockId = endBlock.getAttribute('data-block-id');
+  authoritativeSelection.startOffset = startOffset;
+  authoritativeSelection.endOffset = endOffset;
+  authoritativeSelection.text = sel.toString();
+  authoritativeSelection.range = range.cloneRange();
+  authoritativeSelection.lastVisibleTimestamp = Date.now();
+
+  return authoritativeSelection;
+}
+
+export function restoreAuthoritativeSelection() {
+  if (!authoritativeSelection.active) return false;
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) return false;
+
+  const startBlock = document.getElementById(authoritativeSelection.startBlockId);
+  const endBlock = document.getElementById(authoritativeSelection.endBlockId);
+  if (!startBlock || !endBlock) return false;
+
+  const startEd = getBlockEditable(startBlock);
+  const endEd = getBlockEditable(endBlock);
+  if (!startEd || !endEd) return false;
+
+  try {
+    const startPos = getNodeAndOffsetAtCharacterOffset(startEd, authoritativeSelection.startOffset);
+    const endPos = getNodeAndOffsetAtCharacterOffset(endEd, authoritativeSelection.endOffset);
+
+    if (startPos && endPos) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      const range = document.createRange();
+      range.setStart(startPos.node, startPos.offset);
+      range.setEnd(endPos.node, endPos.offset);
+      sel.addRange(range);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
 export function clearMultiBlockSelection() {
   currentMultiSelectedBlocks = [];
   dragAnchorBlock = null;
@@ -2624,6 +2738,7 @@ export function setupMultiBlockSelectionEngine() {
     bar.querySelector('#btn-multi-copy').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
+      restoreAuthoritativeSelection();
       await copySelectedText(false);
       clearMultiBlockSelection();
     };
@@ -2631,6 +2746,7 @@ export function setupMultiBlockSelectionEngine() {
     bar.querySelector('#btn-multi-cut').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
+      restoreAuthoritativeSelection();
       await copySelectedText(true);
       clearMultiBlockSelection();
     };
@@ -2638,6 +2754,7 @@ export function setupMultiBlockSelectionEngine() {
     bar.querySelector('#btn-multi-paste').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
+      restoreAuthoritativeSelection();
       await pasteIntoSelection();
       clearMultiBlockSelection();
     };
@@ -2645,6 +2762,7 @@ export function setupMultiBlockSelectionEngine() {
     bar.querySelector('#btn-multi-delete').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      restoreAuthoritativeSelection();
       const sel = window.getSelection();
       if (sel && !sel.isCollapsed) {
         deleteCharacterRange(sel);
@@ -2794,14 +2912,7 @@ export function setupMultiBlockSelectionEngine() {
       if (sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().length > 0) {
         const isInside = isSelectionInsideEditor(sel, pagesContainer);
         if (isInside) {
-          const range = sel.getRangeAt(0);
-          authoritativeSelection.active = true;
-          authoritativeSelection.text = sel.toString();
-          try {
-            authoritativeSelection.range = range.cloneRange();
-          } catch (_) {}
-          authoritativeSelection.lastVisibleTimestamp = Date.now();
-
+          captureSelectionBookmark(sel);
           positionToolbar(toolbar);
           toolbar.classList.remove('hidden');
           isToolbarOpen = true;
@@ -2812,11 +2923,14 @@ export function setupMultiBlockSelectionEngine() {
       // If pointer is currently dragging or selecting, never dismiss
       if (isPointerDragging) return;
 
-      // ELIMINATE AUTOMATIC DISMISSAL:
-      // Do not dismiss simply because selectionchange fired or OS native handles popped up.
-      // The toolbar remains strictly visible while authoritativeSelection.active is true
-      // until an explicit user action occurs (tapping Cut/Copy/Paste/Delete, tapping outside,
-      // or tapping elsewhere in the editor to place a new cursor).
+      // When toolbar is open and selection was temporarily blurred or detached by browser/OS,
+      // preserve the exact highlight in the editor and keep the toolbar properly positioned
+      if (isToolbarOpen && authoritativeSelection.active) {
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+          restoreAuthoritativeSelection();
+        }
+        positionToolbar(toolbar);
+      }
     });
   }
 
@@ -3019,6 +3133,13 @@ export function attachContainerListeners() {
   };
 
   container.addEventListener('click', (e) => {
+    // If an active selection with text exists, preserve it completely and never collapse
+    const sel = window.getSelection();
+    if ((sel && !sel.isCollapsed && sel.toString().length > 0) || authoritativeSelection.active) {
+      syncActiveBlockFromSelection();
+      return;
+    }
+
     // If clicked on empty space of a page sheet or wrapper, place cursor into nearest block
     if (e.target.classList.contains('screenplay-page-sheet') || e.target.classList.contains('page-blocks-wrapper')) {
       const page = e.target.closest('.screenplay-page-sheet');
