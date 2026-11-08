@@ -482,8 +482,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- Single vertical scroll container, Header stays fixed      -->
       <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3">
         
-        <!-- Document 1: Continuous A4 Sheets Container -->
-        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4">
+        <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
+        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -1280,6 +1280,14 @@ function handleGlobalKeydown(e) {
     e.preventDefault();
     insertPageBreak();
   }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+    const container = document.getElementById('screenplay-pages-container');
+    const activeEl = document.activeElement;
+    if (container && (container === activeEl || container.contains(activeEl) || container.contains(window.getSelection()?.anchorNode))) {
+      e.preventDefault();
+      selectAllScreenplayText();
+    }
+  }
 }
 
 // =========================================================================
@@ -1634,7 +1642,7 @@ function renderScreenplayPages() {
     <div class="screenplay-page-sheet w-full max-w-[816px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
-      <div class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
+      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
         <span>${page.pageNumber}.</span>
       </div>
 
@@ -1644,7 +1652,7 @@ function renderScreenplayPages() {
       </div>
 
       <!-- Bottom Page Boundary indicator with Page Controls -->
-      <div class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-4">
+      <div contenteditable="false" class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-4">
         <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
           <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
           <span class="hidden sm:inline">Add Page Before</span>
@@ -1953,12 +1961,12 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isPageBreak) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="pagebreak" tabindex="0" class="screenplay-block my-3 select-none flex items-center justify-between px-3 py-2 text-slate-400 bg-slate-50 border border-dashed border-slate-300 rounded-lg group hover:border-blue-400 hover:bg-blue-50/30 transition-all outline-none focus:ring-1 focus:ring-blue-500">
-        <div class="flex items-center gap-2 text-xs font-sans font-semibold tracking-wider uppercase text-slate-500 group-hover:text-blue-600">
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="pagebreak" tabindex="0" contenteditable="false" class="screenplay-block my-3 select-none flex items-center justify-between px-3 py-2 text-slate-400 bg-slate-50 border border-dashed border-slate-300 rounded-lg group hover:border-blue-400 hover:bg-blue-50/30 transition-all outline-none focus:ring-1 focus:ring-blue-500">
+        <div contenteditable="false" class="flex items-center gap-2 text-xs font-sans font-semibold tracking-wider uppercase text-slate-500 group-hover:text-blue-600 select-none">
           <span class="material-symbols-outlined text-[16px] text-blue-500">insert_page_break</span>
           <span>PAGE BREAK</span>
         </div>
-        <button type="button" class="btn-remove-pagebreak p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors" data-block-id="${block.id}" title="Remove Page Break">
+        <button type="button" contenteditable="false" class="btn-remove-pagebreak p-0.5 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors select-none" data-block-id="${block.id}" title="Remove Page Break">
           <span class="material-symbols-outlined text-[16px]">close</span>
         </button>
       </div>
@@ -1969,81 +1977,81 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
-        <span class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+        <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
   }
 
   if (isAction) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isChar) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isParen) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isDia) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isTrans) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isShot) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
     `;
   }
 
   if (isText) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isNote) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block screenplay-block-text text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
     `;
   }
 
   if (isOutline) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block screenplay-block-text text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
     `;
   }
 
   if (isAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
     `;
   }
 
   if (isEndAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
     `;
   }
 
   if (isSequence) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
     `;
   }
 
@@ -2051,12 +2059,12 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dual" class="screenplay-block screenplay-dual-dialogue-grid">
         <div class="flex flex-col">
-          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
-          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
         </div>
         <div class="flex flex-col">
-          <div class="text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
-          <div class="text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
         </div>
       </div>
     `;
@@ -2064,7 +2072,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isLyrics) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block screenplay-block-text text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
     `;
   }
 
@@ -2073,17 +2081,17 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     const safeCaption = escapeHtml(block.caption || '');
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="image" class="screenplay-block my-4 flex flex-col items-center group relative border border-slate-200 rounded-xl overflow-hidden bg-slate-50 p-2.5 shadow-2xs transition-all">
-        <div class="w-full flex items-center justify-center min-h-[180px] max-h-[420px] rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200/60">
-          <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-[400px] w-auto max-w-full object-contain rounded-md shadow-xs bg-white" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';" loading="eager" />
+        <div contenteditable="false" class="w-full flex items-center justify-center min-h-[180px] max-h-[420px] rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200/60 select-none">
+          <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-[400px] w-auto max-w-full object-contain rounded-md shadow-xs bg-white pointer-events-none select-none" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';" loading="eager" />
         </div>
-        <div class="text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
-        <button class="btn-delete-img-block absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
+        <div class="screenplay-block-text text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
+        <button type="button" contenteditable="false" class="btn-delete-img-block select-none absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
       </div>
     `;
   }
 
   return `
-    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true">${renderFormattedContent(block.content)}</div>
+    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
   `;
 }
 
@@ -2221,8 +2229,252 @@ function setCaretCharacterOffsetWithin(element, offset) {
   sel.addRange(range);
 }
 
+// =========================================================================
+// WRITERDUET-INSPIRED CONTINUOUS MULTI-PAGE SCREENPLAY SELECTION ENGINE
+// =========================================================================
+
+export function getBlockEditable(blockEl) {
+  if (!blockEl) return null;
+  if (blockEl.classList && blockEl.classList.contains('screenplay-block-text')) return blockEl;
+  return blockEl.querySelector('.screenplay-block-text') || (blockEl.hasAttribute('contenteditable') ? blockEl : null) || blockEl.querySelector('[contenteditable="true"]') || blockEl;
+}
+
+export function getSelectedScreenplayBlocks() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return [];
+  const range = sel.getRangeAt(0);
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) return [];
+  if (!container.contains(range.commonAncestorContainer) && !range.intersectsNode(container)) return [];
+
+  const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+  return allBlocks.filter(b => {
+    try {
+      return range.intersectsNode(b);
+    } catch {
+      return false;
+    }
+  });
+}
+
+export function selectAllScreenplayText() {
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) return;
+  const blocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+  if (blocks.length === 0) return;
+
+  const firstBlock = blocks[0];
+  const lastBlock = blocks[blocks.length - 1];
+  const firstEd = getBlockEditable(firstBlock) || firstBlock;
+  const lastEd = getBlockEditable(lastBlock) || lastBlock;
+
+  const sel = window.getSelection();
+  if (!sel) return;
+
+  const range = document.createRange();
+  range.setStart(firstEd, 0);
+  range.setEnd(lastEd, lastEd.childNodes ? lastEd.childNodes.length : 0);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+export function deleteMultiBlockSelection(sel, selectedBlocks) {
+  if (!currentScreenplay || !selectedBlocks || selectedBlocks.length <= 1) return;
+
+  const firstBlock = selectedBlocks[0];
+  const lastBlock = selectedBlocks[selectedBlocks.length - 1];
+
+  const firstId = firstBlock.getAttribute('data-block-id');
+  const firstSceneId = firstBlock.getAttribute('data-scene-id');
+  const lastId = lastBlock.getAttribute('data-block-id');
+  const lastSceneId = lastBlock.getAttribute('data-scene-id');
+
+  const firstEd = getBlockEditable(firstBlock);
+  const lastEd = getBlockEditable(lastBlock);
+
+  const range = sel.getRangeAt(0);
+
+  let keepBefore = '';
+  if (firstEd) {
+    const firstText = firstEd.innerText;
+    const startOffset = Math.min(range.startOffset, firstText.length);
+    keepBefore = firstText.substring(0, startOffset);
+  }
+
+  let keepAfter = '';
+  if (lastEd) {
+    const lastText = lastEd.innerText;
+    const endOffset = Math.min(range.endOffset, lastText.length);
+    keepAfter = lastText.substring(endOffset);
+  }
+
+  // Remove intermediate blocks from model
+  const intermediateIds = new Set(selectedBlocks.slice(1, -1).map(b => b.getAttribute('data-block-id')));
+  currentScreenplay.scenes.forEach(sc => {
+    sc.blocks = sc.blocks.filter(b => !intermediateIds.has(b.id));
+  });
+
+  const firstScene = currentScreenplay.scenes.find(s => s.id === firstSceneId);
+  const firstModelBlock = firstScene?.blocks.find(b => b.id === firstId);
+
+  if (!keepAfter.trim() && firstId !== lastId) {
+    const lastScene = currentScreenplay.scenes.find(s => s.id === lastSceneId);
+    if (lastScene) {
+      lastScene.blocks = lastScene.blocks.filter(b => b.id !== lastId);
+    }
+  } else if (firstModelBlock && keepAfter) {
+    keepBefore = (keepBefore + keepAfter).trim();
+    const lastScene = currentScreenplay.scenes.find(s => s.id === lastSceneId);
+    if (lastScene && firstId !== lastId) {
+      lastScene.blocks = lastScene.blocks.filter(b => b.id !== lastId);
+    }
+  }
+
+  if (firstModelBlock) {
+    firstModelBlock.content = cleanScreenplayContent(keepBefore);
+  }
+
+  if (currentScreenplay.scenes.length > 1) {
+    currentScreenplay.scenes = currentScreenplay.scenes.filter(sc => sc.blocks.length > 0);
+    currentScreenplay.scenes.forEach((sc, i) => { sc.number = i + 1; });
+  }
+
+  hasUnsavedChanges = true;
+  updateSaveStatus('Unsaved');
+  if (autoSaveEnabled) scheduleAutosave();
+
+  renderScreenplayPages();
+  const newFirstEl = document.getElementById(firstId);
+  if (newFirstEl) {
+    const ed = getBlockEditable(newFirstEl);
+    if (ed) {
+      ed.focus();
+      setCursorAtEnd(ed);
+    }
+  }
+}
+
+let multiBlockEngineInitialized = false;
+export function setupMultiBlockSelectionEngine() {
+  const container = document.getElementById('screenplay-pages-container');
+  const scrollContainer = document.getElementById('editor-main-scroll');
+  if (!container || !scrollContainer || multiBlockEngineInitialized) return;
+  multiBlockEngineInitialized = true;
+
+  // 1. Multi-block clipboard copy & cut
+  container.addEventListener('copy', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const blocks = getSelectedScreenplayBlocks();
+    if (blocks.length > 1) {
+      const lines = blocks.map(b => {
+        const type = b.getAttribute('data-block-type');
+        const text = (getBlockEditable(b)?.innerText || '').trim();
+        if (type === 'scene') return `\n${text}\n`;
+        if (type === 'character') return `\n          ${text}`;
+        if (type === 'parenthetical') return `        ${text}`;
+        if (type === 'dialogue') return `    ${text}`;
+        if (type === 'transition') return `\n                    ${text}\n`;
+        return text;
+      }).filter(Boolean);
+
+      e.clipboardData.setData('text/plain', lines.join('\n'));
+      e.preventDefault();
+    }
+  });
+
+  container.addEventListener('cut', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const blocks = getSelectedScreenplayBlocks();
+    if (blocks.length > 1) {
+      const lines = blocks.map(b => {
+        const type = b.getAttribute('data-block-type');
+        const text = (getBlockEditable(b)?.innerText || '').trim();
+        if (type === 'scene') return `\n${text}\n`;
+        if (type === 'character') return `\n          ${text}`;
+        if (type === 'parenthetical') return `        ${text}`;
+        if (type === 'dialogue') return `    ${text}`;
+        return text;
+      }).filter(Boolean);
+
+      e.clipboardData.setData('text/plain', lines.join('\n'));
+      e.preventDefault();
+      deleteMultiBlockSelection(sel, blocks);
+    }
+  });
+
+  // 2. Automatic Edge Scrolling during multi-page selection
+  let isSelecting = false;
+  let scrollAnimId = null;
+  let scrollSpeed = 0;
+
+  function stepScroll() {
+    if (scrollSpeed !== 0 && isSelecting) {
+      scrollContainer.scrollTop += scrollSpeed;
+      scrollAnimId = requestAnimationFrame(stepScroll);
+    } else {
+      scrollAnimId = null;
+    }
+  }
+
+  function handlePointerMove(clientY) {
+    const rect = scrollContainer.getBoundingClientRect();
+    const topZone = rect.top + 70;
+    const bottomZone = rect.bottom - 90;
+
+    if (clientY < topZone) {
+      const intensity = Math.min(1, Math.max(0, (topZone - clientY) / 70));
+      scrollSpeed = -Math.round(4 + intensity * 18);
+      if (!scrollAnimId) scrollAnimId = requestAnimationFrame(stepScroll);
+    } else if (clientY > bottomZone) {
+      const intensity = Math.min(1, Math.max(0, (clientY - bottomZone) / 90));
+      scrollSpeed = Math.round(4 + intensity * 18);
+      if (!scrollAnimId) scrollAnimId = requestAnimationFrame(stepScroll);
+    } else {
+      scrollSpeed = 0;
+    }
+  }
+
+  scrollContainer.addEventListener('pointerdown', () => { isSelecting = true; });
+  scrollContainer.addEventListener('touchstart', () => { isSelecting = true; }, { passive: true });
+
+  window.addEventListener('pointermove', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      scrollSpeed = 0;
+      return;
+    }
+    handlePointerMove(e.clientY);
+  });
+
+  window.addEventListener('touchmove', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      scrollSpeed = 0;
+      return;
+    }
+    if (e.touches && e.touches[0]) {
+      handlePointerMove(e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  const stopSelecting = () => {
+    isSelecting = false;
+    scrollSpeed = 0;
+    if (scrollAnimId) {
+      cancelAnimationFrame(scrollAnimId);
+      scrollAnimId = null;
+    }
+  };
+
+  window.addEventListener('pointerup', stopSelecting);
+  window.addEventListener('touchend', stopSelecting);
+  window.addEventListener('pointercancel', stopSelecting);
+}
+
 function attachSingleBlockListeners(block) {
-  const editable = block.hasAttribute('contenteditable') ? block : block.querySelector('[contenteditable="true"]');
+  const editable = getBlockEditable(block);
   if (!editable) return;
 
   editable.onfocus = () => {
@@ -2387,6 +2639,8 @@ function attachBlockListeners() {
       insertPageAfterPage(pageNum);
     };
   });
+
+  setupMultiBlockSelectionEngine();
 }
 
 // Scene Heading Structured Parser (Section 8)
@@ -2603,6 +2857,19 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     e.preventDefault();
     insertPageBreak(blockId);
     return;
+  }
+
+  // Multi-block continuous selection deletion (WriterDuet cross-page selection support)
+  if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      const selectedBlocks = getSelectedScreenplayBlocks();
+      if (selectedBlocks.length > 1) {
+        e.preventDefault();
+        deleteMultiBlockSelection(sel, selectedBlocks);
+        return;
+      }
+    }
   }
 
   // Intelligent Parenthesis: Backspace between empty parentheses "()" -> delete both "(" and ")"

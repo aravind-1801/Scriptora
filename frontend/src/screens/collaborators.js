@@ -3,7 +3,7 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
-import { setupPopupToggle } from '../utils/popupPosition.js';
+import { setupPopupToggle, openModal, closeModal } from '../utils/popupPosition.js';
 import {
   getOrCreateUserDeviceKeyPair,
   generateScreenplayKey,
@@ -357,11 +357,11 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
     </div>
 
     <!-- SECURITY DETAILS MODAL -->
-    <div id="securityDetailsModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 fade-in">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-5 space-y-4 max-h-[85vh] overflow-y-auto">
-        <div class="flex items-center justify-between">
+    <div id="securityDetailsModal" class="scriptora-modal-overlay fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs hidden p-4">
+      <div class="scriptora-modal-card bg-white w-full max-w-sm sm:max-w-md rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5 my-auto max-h-[85vh] overflow-hidden">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
               <span class="material-symbols-outlined text-[20px]">verified_user</span>
             </div>
             <div>
@@ -374,7 +374,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </button>
         </div>
 
-        <div class="space-y-3 text-xs text-slate-700 leading-relaxed">
+        <div class="space-y-3 text-xs text-slate-700 leading-relaxed overflow-y-auto pr-1">
           <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1.5">
             <span class="font-bold text-slate-900 flex items-center gap-1">
               <span class="material-symbols-outlined text-[16px] text-blue-600">lock</span>
@@ -540,14 +540,9 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
             </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <button class="interactive-role-trigger flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer ${
-              c.role === 'Editor' ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' :
-              c.role === 'Script Doctor' ? 'bg-amber-50 text-amber-700 hover:bg-amber-100' :
-              c.role === 'Producer' ? 'bg-purple-50 text-purple-700 hover:bg-purple-100' :
-              'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }" data-id="${c.id}" data-role="${c.role}" data-name="${c.name}" title="Click to change role">
+            <button class="interactive-role-trigger flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-full font-semibold transition-all cursor-pointer border bg-blue-50 text-blue-700 border-blue-200/80 hover:bg-blue-100 hover:text-blue-800 active:scale-95 shadow-2xs" data-id="${c.id}" data-role="${c.role}" data-name="${c.name}" title="Click to change role">
               <span id="role-label-${c.id}">${c.role}</span>
-              <span class="material-symbols-outlined text-[13px] text-slate-400">expand_more</span>
+              <span class="material-symbols-outlined text-[13px] text-blue-500">expand_more</span>
             </button>
             <button class="remove-collab-btn text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer" data-id="${c.id}" data-name="${c.name}" title="Revoke access">
               <span class="material-symbols-outlined text-[16px]">close</span>
@@ -576,6 +571,9 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
+            <button class="resend-invite-btn text-[11px] text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer" data-id="${inv.id}" data-email="${inv.email}">
+              Resend
+            </button>
             <button class="revoke-invite-btn text-[11px] text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2 py-0.5 rounded font-medium transition-colors cursor-pointer" data-id="${inv.id}" data-email="${inv.email}">
               Revoke
             </button>
@@ -629,6 +627,28 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           } catch (err) {
             showToast(err.message || 'Failed to remove collaborator', 'error');
           }
+        }
+      };
+    });
+
+    // Attach resend invite buttons
+    document.querySelectorAll('.resend-invite-btn').forEach(btn => {
+      btn.onclick = async () => {
+        const id = btn.getAttribute('data-id');
+        const email = btn.getAttribute('data-email');
+        btn.disabled = true;
+        const prevText = btn.innerText;
+        btn.innerText = 'Resending...';
+        try {
+          await api.resendInvitation(scriptId, id);
+          showToast(`Invitation resent to ${email}`);
+          await loadList();
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to resend invitation', 'error');
+        } finally {
+          btn.disabled = false;
+          btn.innerText = prevText;
         }
       };
     });
@@ -1062,13 +1082,18 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   const btnToggleE2EE = document.getElementById('btn-toggle-e2ee-enable');
 
   if (btnSecurityInfo && secModal) {
-    btnSecurityInfo.onclick = () => secModal.classList.remove('hidden');
+    btnSecurityInfo.onclick = () => openModal(secModal);
   }
   if (closeSecModalBtn && secModal) {
-    closeSecModalBtn.onclick = () => secModal.classList.add('hidden');
+    closeSecModalBtn.onclick = () => closeModal(secModal);
   }
   if (closeSecModalBtn2 && secModal) {
-    closeSecModalBtn2.onclick = () => secModal.classList.add('hidden');
+    closeSecModalBtn2.onclick = () => closeModal(secModal);
+  }
+  if (secModal) {
+    secModal.onclick = (e) => {
+      if (e.target === secModal) closeModal(secModal);
+    };
   }
 
   if (btnToggleE2EE) {

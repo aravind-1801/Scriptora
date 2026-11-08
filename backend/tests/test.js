@@ -218,6 +218,28 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Duplicate Invitation Prevention (400):', dupInviteRes.status === 400 ? 'PASS' : 'FAIL');
 
+    // List invitations, Resend, and Accept via token
+    const invListRes = await request('/api/collaborators/chronicles-of-dust/invitations');
+    const createdInv = (invListRes.body.invitations || []).find(i => i.email === 'rachel.scribe@studio.com');
+    console.log('✓ List Pending Invitations:', invListRes.status === 200 && !!createdInv ? 'PASS' : 'FAIL');
+
+    let resendOk = false;
+    let acceptOk = false;
+    if (createdInv) {
+      const resendRes = await request(`/api/collaborators/chronicles-of-dust/invitations/${createdInv.id}/resend`, {
+        method: 'POST'
+      });
+      resendOk = resendRes.status === 200 && resendRes.body.invitation?.status === 'pending';
+
+      const token = resendRes.body.invitation?.token || createdInv.token;
+      const lookupRes = await request(`/api/collaborators/invitations/${token}`);
+      const acceptRes = await request(`/api/collaborators/invitations/${token}/accept`, {
+        method: 'POST'
+      });
+      acceptOk = lookupRes.status === 200 && acceptRes.status === 200 && acceptRes.body.collaborator?.email === 'rachel.scribe@studio.com';
+    }
+    console.log('✓ Resend and Accept Invitation via Token:', resendOk && acceptOk ? 'PASS' : 'FAIL');
+
     // 14d. Join Code Access Request & Approval Workflow
     const reqAccessRes = await request('/api/join-code/request-access', {
       method: 'POST',

@@ -20,6 +20,7 @@
 - **Smart Formatting Automation**:
   - Sentence auto-capitalization for Action lines and Dialogue (at start of line and after periods).
   - Dynamic Character Name memory and suggestion dropdown.
+  - **WriterDuet-Inspired Continuous Multi-Page Selection**: Unified document editing surface across all A4 pages, allowing users to select text continuously across multiple lines, screenplay elements (Scene, Action, Character, Dialogue, Parenthetical, Transition), and consecutive pages using a single drag gesture on mobile and desktop. Features smooth automatic edge-scrolling near viewport boundaries, unified "Select All" spanning the entire multi-page document, formatted multi-block clipboard copy/cut, and non-destructive deletion that preserves screenplay semantic integrity.
   - **Smart Character Extensions Autocomplete**: Type `(` after a character cue (e.g. `ARUN(`) to trigger an immediate, keyboard-navigable dropdown with standard industry extensions (`V.O.` Voice Over, `O.S.` Off Screen, `O.C.` Off Camera, and `CONT'D` Continued). Automatically formats the cue (e.g. `ARUN (V.O.)`), auto-pairs closing parentheses, inserts a new Dialogue block, and positions the cursor seamlessly without breaking writer flow. Features scene-aware character cue memory to prioritize `CONT'D` when the character previously spoke.
   - **Parenthetical Autocomplete & Auto-Pairing**: Contextual emotional notes and acting directions (`(sadly)`, `(angrily)`, `(whispering)`, `(smiling)`, `(crying)`, `(softly)`) triggered instantly upon typing `(` inside dialogue, with overtyping protection and auto-positioning.
   - Scene Heading autocomplete for time/lighting (`- DAY`, `- NIGHT`, `- CONTINUOUS`, etc.).
@@ -135,11 +136,11 @@ Every core production tool opens as a **dedicated workspace** with stable screen
 ---
 
 ### 👥 Collaboration, Access Control & End-to-End Encryption
-- **Granular Role Management**: Interactive inline role selection across 4 standard roles (`Editor`, `Viewer`, `Script Doctor`, `Producer`) with centralized permission enforcement on backend and editor views.
-- **Invitation Lifecycle**: Email-based invitations with 7-day tokens, duplicate prevention, and revocation workflows.
+- **Consistent Blue Role Selectors**: All collaborator role badges (`Editor`, `Viewer`, `Script Doctor`, `Producer`) use SCRIPTORA's primary blue design system (`bg-blue-50 text-blue-700 border-blue-200`) with mobile viewport-clamped dropdown menus and granular backend permission enforcement.
+- **Robust Invitation Lifecycle & Static/Offline Resilience**: Resilient invitation management supporting email invitations with 7-day tokens, duplicate prevention, resend capabilities, and revocation workflows. Features automatic local fallback to eliminate HTTP 405 errors on static deployments (e.g. GitHub Pages) and offline environments.
 - **Join Code Access Requests**: Cryptographic join code generation with owner approval gates (join codes submit access requests; they do not bypass owner permission approval).
 - **Owner Request Management**: Dedicated pending requests panel allowing screenplay owners to review, assign roles, approve, or reject applicants.
-- **End-to-End Encryption (E2EE)**: Standards-compliant zero-knowledge client encryption powered by Web Crypto API (`AES-256-GCM` with 96-bit random IVs and ECDH `P-256` key agreement for collaborator wrapping). Screenplay keys are rotated automatically upon collaborator removal.
+- **End-to-End Encryption (E2EE)**: Standards-compliant zero-knowledge client encryption powered by Web Crypto API (`AES-256-GCM` with 96-bit random IVs and ECDH `P-256` key agreement for collaborator wrapping). Screenplay keys are rotated automatically upon collaborator removal. Features a viewport-centered modal architecture portaled to document body to ensure clean mobile presentation without clipping.
 - **AI Privacy Boundary**: Explicit consent disclosures required before submitting decrypted text to AI narrative analysis.
 - **Security Activity Audit Log**: Real-time event log tracking permission modifications, join code rotations, key rotations, and access revocations.
 - **Draft & Version Management**: Snapshot screenplay drafts, restore previous iterations, and compare screenplay diffs side-by-side.

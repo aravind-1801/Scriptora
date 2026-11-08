@@ -913,44 +913,61 @@ export async function createVersion(scriptId, versionData) {
 }
 
 // 5. COLLABORATION API
+const DEFAULT_COLLABORATORS = [
+  {
+    id: "c-1",
+    name: "Heamanth S.",
+    email: "heamanth@studio.com",
+    initials: "HS",
+    role: "Editor",
+    avatarBg: "bg-blue-100 text-blue-700",
+    status: "Active",
+    added: "2d ago"
+  },
+  {
+    id: "c-2",
+    name: "Elena Rostova",
+    email: "elena@cineworks.io",
+    initials: "ER",
+    role: "Script Doctor",
+    avatarBg: "bg-amber-100 text-amber-700",
+    status: "Active",
+    added: "1w ago"
+  },
+  {
+    id: "c-3",
+    name: "Marcus Vance",
+    email: "vance.prod@paramount.com",
+    initials: "MV",
+    role: "Producer",
+    avatarBg: "bg-purple-100 text-purple-700",
+    status: "Active",
+    added: "2w ago"
+  }
+];
+
 export async function getCollaborators(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}`);
-    return data.collaborators || [];
+    if (data.collaborators && Array.isArray(data.collaborators)) {
+      localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(data.collaborators));
+      return data.collaborators;
+    }
   } catch {
-    return [
-      {
-        id: "c-1",
-        name: "Heamanth S.",
-        email: "heamanth@studio.com",
-        initials: "HS",
-        role: "Editor",
-        avatarBg: "bg-blue-100 text-blue-700",
-        status: "Active",
-        added: "2d ago"
-      },
-      {
-        id: "c-2",
-        name: "Elena Rostova",
-        email: "elena@cineworks.io",
-        initials: "ER",
-        role: "Script Doctor",
-        avatarBg: "bg-amber-100 text-amber-700",
-        status: "Active",
-        added: "1w ago"
-      },
-      {
-        id: "c-3",
-        name: "Marcus Vance",
-        email: "vance.prod@paramount.com",
-        initials: "MV",
-        role: "Producer",
-        avatarBg: "bg-purple-100 text-purple-700",
-        status: "Active",
-        added: "2w ago"
-      }
-    ];
+    // Fallback to local storage or defaults on static hosts
   }
+
+  const saved = localStorage.getItem(`scriptora_collaborators_${scriptId}`);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+  }
+
+  const seeded = [...DEFAULT_COLLABORATORS];
+  localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(seeded));
+  return seeded;
 }
 
 export async function getUserPermissions(scriptId) {
@@ -983,40 +1000,203 @@ export async function getUserPermissions(scriptId) {
 }
 
 export async function inviteCollaborator(scriptId, inviteData) {
-  const data = await request(`/collaborators/${scriptId}/invite`, {
-    method: 'POST',
-    body: JSON.stringify(inviteData)
-  });
-  return data.collaborator;
+  const email = (inviteData.email || '').trim().toLowerCase();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('Please provide a valid email address.');
+  }
+
+  // Pre-validate duplicates client-side to protect users on static or offline environments
+  const currentMembers = await getCollaborators(scriptId);
+  if (currentMembers.some(m => (m.email || '').toLowerCase() === email)) {
+    throw new Error('This user is already a collaborator on this screenplay.');
+  }
+
+  const currentInvs = await getPendingInvitations(scriptId);
+  if (currentInvs.some(i => (i.email || '').toLowerCase() === email && i.status === 'pending')) {
+    throw new Error('An active invitation is already pending for this email address.');
+  }
+
+  try {
+    const data = await request(`/collaborators/${scriptId}/invite`, {
+      method: 'POST',
+      body: JSON.stringify(inviteData)
+    });
+    if (data.collaborator) return data.collaborator;
+  } catch (err) {
+    // If backend returns a deliberate business logic error (e.g. 400 Bad Request), rethrow it
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch') && !err.message.includes('NetworkError')) {
+      throw err;
+    }
+  }
+
+  // Static hosting (GitHub Pages) or offline fallback
+  const newInv = {
+    id: `inv-${Date.now()}`,
+    email,
+    role: inviteData.role || 'Editor',
+    message: inviteData.message || '',
+    token: `inv_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString()
+  };
+
+  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  invs.unshift(newInv);
+  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(invs));
+  return newInv;
 }
 
 export async function getPendingInvitations(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}/invitations`);
-    return data.invitations || [];
+    if (data.invitations && Array.isArray(data.invitations)) {
+      localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(data.invitations));
+      return data.invitations;
+    }
   } catch {
-    return [];
+    // Static / offline fallback
   }
+
+  const saved = localStorage.getItem(`scriptora_invitations_${scriptId}`);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed.filter(i => i.status === 'pending');
+    } catch {}
+  }
+  return [];
 }
 
 export async function revokeInvitation(scriptId, inviteId) {
-  return await request(`/collaborators/${scriptId}/invitations/${inviteId}`, {
-    method: 'DELETE'
-  });
+  try {
+    const res = await request(`/collaborators/${scriptId}/invitations/${inviteId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  } catch (err) {
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+  }
+
+  // Local fallback
+  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  const updated = invs.filter(i => i.id !== inviteId);
+  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(updated));
+  return { success: true };
+}
+
+export async function resendInvitation(scriptId, inviteId) {
+  try {
+    const res = await request(`/collaborators/${scriptId}/invitations/${inviteId}/resend`, {
+      method: 'POST'
+    });
+    return res.invitation;
+  } catch (err) {
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+  }
+
+  // Local fallback
+  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  const inv = invs.find(i => i.id === inviteId);
+  if (!inv) throw new Error('Invitation not found.');
+
+  inv.status = 'pending';
+  inv.token = `inv_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+  inv.createdAt = new Date().toISOString();
+  inv.expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(invs));
+  return inv;
+}
+
+export async function acceptInvitation(token) {
+  try {
+    const res = await request(`/collaborators/invitations/${token}/accept`, {
+      method: 'POST'
+    });
+    return res;
+  } catch (err) {
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+  }
+
+  // Fallback lookup in local storage
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key.startsWith('scriptora_invitations_')) {
+      const scriptId = key.replace('scriptora_invitations_', '');
+      const invs = JSON.parse(localStorage.getItem(key) || '[]');
+      const inv = invs.find(it => it.token === token);
+      if (inv) {
+        inv.status = 'accepted';
+        localStorage.setItem(key, JSON.stringify(invs));
+
+        // Add to collaborators
+        const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+        const newCollab = {
+          id: `c-${Date.now()}`,
+          name: inv.email.split('@')[0],
+          email: inv.email,
+          initials: inv.email.substring(0, 2).toUpperCase(),
+          role: inv.role,
+          avatarBg: 'bg-blue-100 text-blue-700',
+          status: 'Active',
+          added: 'Just now'
+        };
+        collabs.push(newCollab);
+        localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(collabs));
+        return { success: true, scriptId, collaborator: newCollab };
+      }
+    }
+  }
+  throw new Error('Invitation not found or expired.');
 }
 
 export async function changeCollaboratorRole(scriptId, memberId, newRole) {
-  const data = await request(`/collaborators/${scriptId}/${memberId}`, {
-    method: 'PUT',
-    body: JSON.stringify({ role: newRole })
-  });
-  return data.collaborator;
+  try {
+    const data = await request(`/collaborators/${scriptId}/${memberId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ role: newRole })
+    });
+    if (data.collaborator) return data.collaborator;
+  } catch (err) {
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+  }
+
+  // Local fallback
+  const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+  const member = collabs.find(c => c.id === memberId);
+  if (member) {
+    member.role = newRole;
+    localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(collabs));
+    return member;
+  }
+  throw new Error('Collaborator not found.');
 }
 
 export async function removeCollaborator(scriptId, memberId) {
-  return await request(`/collaborators/${scriptId}/${memberId}`, {
-    method: 'DELETE'
-  });
+  try {
+    const res = await request(`/collaborators/${scriptId}/${memberId}`, {
+      method: 'DELETE'
+    });
+    return res;
+  } catch (err) {
+    if (err.message && !err.message.includes('405') && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+      throw err;
+    }
+  }
+
+  // Local fallback
+  const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+  const updated = collabs.filter(c => c.id !== memberId);
+  localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(updated));
+  return { success: true };
 }
 
 // 6. JOIN CODE & ACCESS REQUEST API

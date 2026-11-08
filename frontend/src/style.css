@@ -271,6 +271,34 @@ body.scriptora-modal-open {
   text-align: right !important;
 }
 
+/* WriterDuet-Inspired Continuous Multi-Page Screenplay Selection */
+#screenplay-pages-container {
+  outline: none !important;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.screenplay-page-sheet {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.page-blocks-wrapper {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.screenplay-block,
+.screenplay-block-text {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.screenplay-block-text:focus,
+.screenplay-block:focus {
+  outline: none;
+}
+
 /* Screenplay Editor Mobile & Desktop Viewport & Stationary Header Architecture */
 html.editor-mode,
 body.editor-mode {

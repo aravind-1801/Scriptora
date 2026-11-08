@@ -300,6 +300,128 @@ export function revokeInvitation(scriptId, inviteId, actorUser = db.currentUser)
   return true;
 }
 
+export function resendInvitation(scriptId, inviteId, actorUser = db.currentUser) {
+  if (!isScriptOwner(scriptId, actorUser) && !checkPermission(scriptId, 'collaborators.invite', actorUser)) {
+    throw new Error('Unauthorized: You do not have permission to resend invitations.');
+  }
+
+  if (!db.invitations || !db.invitations[scriptId]) {
+    throw new Error('Invitation not found.');
+  }
+  const invite = db.invitations[scriptId].find(i => i.id === inviteId);
+  if (!invite) {
+    throw new Error('Invitation not found.');
+  }
+
+  invite.status = 'pending';
+  invite.token = `inv_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
+  invite.createdAt = new Date().toISOString();
+  invite.expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
+
+  logSecurityEvent(scriptId, {
+    type: 'invitation_resent',
+    title: 'Invitation Resent',
+    actor: actorUser,
+    target: { email: invite.email, role: invite.role },
+    details: `Resent invitation to ${invite.email} for role '${invite.role}'.`
+  });
+
+  return invite;
+}
+
+export function getInvitationByToken(token) {
+  if (!token || !db.invitations) return null;
+  for (const scriptId in db.invitations) {
+    const inv = db.invitations[scriptId].find(i => i.token === token);
+    if (inv) {
+      const script = db.scripts.find(s => s.id === scriptId);
+      return {
+        ...inv,
+        scriptId,
+        scriptTitle: script?.title || 'Screenplay',
+        isExpired: new Date(inv.expiresAt) < new Date()
+      };
+    }
+  }
+  return null;
+}
+
+export function acceptInvitation(token, user = db.currentUser) {
+  if (!token || !db.invitations) {
+    throw new Error('Invalid or missing invitation token.');
+  }
+
+  let foundScriptId = null;
+  let foundInvite = null;
+
+  for (const scriptId in db.invitations) {
+    const inv = db.invitations[scriptId].find(i => i.token === token);
+    if (inv) {
+      foundScriptId = scriptId;
+      foundInvite = inv;
+      break;
+    }
+  }
+
+  if (!foundInvite) {
+    throw new Error('Invitation not found or has been revoked.');
+  }
+
+  if (foundInvite.status === 'revoked') {
+    throw new Error('This invitation has been revoked by the screenplay owner.');
+  }
+
+  if (new Date(foundInvite.expiresAt) < new Date()) {
+    throw new Error('This invitation has expired. Please ask the owner to send a new invitation.');
+  }
+
+  if (!db.collaborators[foundScriptId]) db.collaborators[foundScriptId] = [];
+  const collabs = db.collaborators[foundScriptId];
+
+  // Check if user is already a collaborator
+  const userEmail = (user?.email || foundInvite.email).toLowerCase();
+  let existing = collabs.find(c => (c.email || '').toLowerCase() === userEmail);
+
+  if (existing) {
+    existing.role = foundInvite.role;
+    foundInvite.status = 'accepted';
+    return { success: true, scriptId: foundScriptId, collaborator: existing, alreadyMember: true };
+  }
+
+  const newCollaborator = {
+    id: user?.id || `user-${Date.now()}`,
+    name: user?.name || foundInvite.email.split('@')[0],
+    email: foundInvite.email,
+    role: foundInvite.role,
+    avatar: (user?.name || foundInvite.email.split('@')[0]).substring(0, 2).toUpperCase(),
+    avatarColor: getAvatarColor(foundInvite.email),
+    joinedAt: new Date().toISOString()
+  };
+
+  collabs.push(newCollaborator);
+  foundInvite.status = 'accepted';
+
+  // If E2EE is enabled, register member's key record
+  if (db.e2ee && db.e2ee[foundScriptId] && db.e2ee[foundScriptId].enabled) {
+    if (!db.e2ee[foundScriptId].wrappedKeys) db.e2ee[foundScriptId].wrappedKeys = {};
+    db.e2ee[foundScriptId].wrappedKeys[newCollaborator.email] = {
+      wrappedMasterKey: `e2ee_wk_${Math.random().toString(36).substring(2, 10)}`,
+      recipientKeyId: `key_${newCollaborator.email.replace(/[^a-z0-9]/gi, '')}`,
+      assignedAt: new Date().toISOString()
+    };
+  }
+
+  logSecurityEvent(foundScriptId, {
+    type: 'collaborator_joined',
+    title: 'Collaborator Accepted Invitation',
+    actor: newCollaborator,
+    target: { email: newCollaborator.email, role: newCollaborator.role },
+    details: `${newCollaborator.name} (${newCollaborator.email}) accepted invitation with role '${newCollaborator.role}'.`
+  });
+
+  return { success: true, scriptId: foundScriptId, collaborator: newCollaborator };
+}
+
 // 3. ROLE MANAGEMENT
 export function updateRole(scriptId, memberId, newRoleInput, actorUser = db.currentUser) {
   if (!isScriptOwner(scriptId, actorUser) && !checkPermission(scriptId, 'collaborators.manage', actorUser)) {

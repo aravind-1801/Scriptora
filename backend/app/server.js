@@ -297,6 +297,59 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    const collabInvsMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations$/);
+    if (collabInvsMatch && method === 'GET') {
+      const invitations = collaborationService.getInvitations(collabInvsMatch[1]);
+      return sendJson(res, 200, { invitations });
+    }
+
+    const collabInvResendMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)\/resend$/);
+    if (collabInvResendMatch && method === 'POST') {
+      const [, scriptId, inviteId] = collabInvResendMatch;
+      try {
+        const result = collaborationService.resendInvitation(scriptId, inviteId, db.currentUser);
+        return sendJson(res, 200, { invitation: result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const collabInvRevokeMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)$/);
+    if (collabInvRevokeMatch && method === 'DELETE') {
+      const [, scriptId, inviteId] = collabInvRevokeMatch;
+      try {
+        const result = collaborationService.revokeInvitation(scriptId, inviteId, db.currentUser);
+        return sendJson(res, 200, { success: result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const invAcceptMatch = pathname.match(/^\/collaborators\/invitations\/([a-zA-Z0-9_-]+)\/accept$/);
+    if (invAcceptMatch && method === 'POST') {
+      try {
+        const result = collaborationService.acceptInvitation(invAcceptMatch[1], db.currentUser);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const invTokenMatch = pathname.match(/^\/collaborators\/invitations\/([a-zA-Z0-9_-]+)$/);
+    if (invTokenMatch && method === 'GET') {
+      const inv = collaborationService.getInvitationByToken(invTokenMatch[1]);
+      if (!inv) return sendJson(res, 404, { error: 'Invitation not found or revoked' });
+      return sendJson(res, 200, { invitation: inv });
+    }
+    if (invTokenMatch && method === 'POST') {
+      try {
+        const result = collaborationService.acceptInvitation(invTokenMatch[1], db.currentUser);
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
     const collabMemberMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)$/);
     if (collabMemberMatch) {
       const [, scriptId, memberId] = collabMemberMatch;
