@@ -2528,25 +2528,25 @@ export function setupMultiBlockSelectionEngine() {
     bar.id = 'screenplay-multi-selection-bar';
     bar.className = 'hidden fixed z-50 bg-white text-slate-800 px-1.5 py-1 rounded-xl shadow-xl shadow-slate-300/40 border border-slate-200/90 flex items-center gap-0.5 text-xs select-none animate-in fade-in zoom-in-95 duration-100 font-mono';
     bar.innerHTML = `
-      <button id="btn-multi-cut" type="button" class="p-2 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center" title="Cut">
-        <span class="material-symbols-outlined text-[18px] text-blue-600">content_cut</span>
+      <button id="btn-multi-cut" type="button" class="p-2 rounded-lg text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center" title="Cut">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">content_cut</span>
       </button>
-      <button id="btn-multi-copy" type="button" class="p-2 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center" title="Copy">
-        <span class="material-symbols-outlined text-[18px] text-blue-600">content_copy</span>
+      <button id="btn-multi-copy" type="button" class="p-2 rounded-lg text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center" title="Copy">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">content_copy</span>
       </button>
-      <button id="btn-multi-paste" type="button" class="p-2 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center" title="Paste">
-        <span class="material-symbols-outlined text-[18px] text-blue-600">content_paste</span>
-      </button>
-      <div class="h-4 w-px bg-slate-200 mx-0.5 my-auto"></div>
-      <button id="btn-multi-delete" type="button" class="p-2 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 active:bg-rose-100 transition-colors cursor-pointer flex items-center justify-center" title="Delete">
-        <span class="material-symbols-outlined text-[18px] text-rose-500">delete</span>
+      <button id="btn-multi-paste" type="button" class="p-2 rounded-lg text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center" title="Paste">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">content_paste</span>
       </button>
       <div class="h-4 w-px bg-slate-200 mx-0.5 my-auto"></div>
-      <button id="btn-multi-select-all" type="button" class="p-2 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer flex items-center justify-center" title="Select All">
-        <span class="material-symbols-outlined text-[18px] text-blue-600">select_all</span>
+      <button id="btn-multi-delete" type="button" class="p-2 rounded-lg text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center" title="Delete">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">delete</span>
       </button>
-      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-2 ml-0.5 cursor-pointer rounded-lg flex items-center justify-center transition-colors" title="Close">
-        <span class="material-symbols-outlined text-[18px]">close</span>
+      <div class="h-4 w-px bg-slate-200 mx-0.5 my-auto"></div>
+      <button id="btn-multi-select-all" type="button" class="p-2 rounded-lg text-slate-900 hover:bg-slate-100 active:bg-slate-200 transition-colors cursor-pointer flex items-center justify-center" title="Select All">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">select_all</span>
+      </button>
+      <button id="btn-multi-close" type="button" class="text-slate-900 hover:bg-slate-100 active:bg-slate-200 p-2 ml-0.5 cursor-pointer rounded-lg flex items-center justify-center transition-colors" title="Close">
+        <span class="material-symbols-outlined text-[18px] text-slate-900">close</span>
       </button>
     `;
     document.body.appendChild(bar);
