@@ -2281,11 +2281,27 @@ export function getLastTextNode(el) {
 
 export let isToolbarOpen = false;
 
+export const authoritativeSelection = {
+  active: false,
+  text: '',
+  range: null,
+  startBlockId: null,
+  endBlockId: null,
+  startOffset: 0,
+  endOffset: 0,
+  lastValidRect: null,
+  lastVisibleTimestamp: 0
+};
+
 export function clearMultiBlockSelection() {
   currentMultiSelectedBlocks = [];
   dragAnchorBlock = null;
   isPointerDragging = false;
   isToolbarOpen = false;
+  authoritativeSelection.active = false;
+  authoritativeSelection.text = '';
+  authoritativeSelection.range = null;
+  authoritativeSelection.lastValidRect = null;
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
   if (toolbar) toolbar.classList.add('hidden');
 }
@@ -2674,11 +2690,16 @@ export function setupMultiBlockSelectionEngine() {
   }
 
   function positionToolbar(toolbar) {
+    let range = null;
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
+    if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+      range = sel.getRangeAt(0);
+    } else if (authoritativeSelection.active && authoritativeSelection.range) {
+      range = authoritativeSelection.range;
+    }
+    if (!range) return;
 
     try {
-      const range = sel.getRangeAt(0);
       const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0);
       const boundingBox = range.getBoundingClientRect();
 
@@ -2768,27 +2789,34 @@ export function setupMultiBlockSelectionEngine() {
       if (!toolbar || !pagesContainer) return;
 
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-        if (!isPointerDragging) {
-          toolbar.classList.add('hidden');
-          isToolbarOpen = false;
-        }
-        return;
-      }
 
-      const hasText = sel.toString().length > 0;
-      const isInside = isSelectionInsideEditor(sel, pagesContainer);
+      // If browser reports an active non-collapsed selection inside the editor:
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().length > 0) {
+        const isInside = isSelectionInsideEditor(sel, pagesContainer);
+        if (isInside) {
+          const range = sel.getRangeAt(0);
+          authoritativeSelection.active = true;
+          authoritativeSelection.text = sel.toString();
+          try {
+            authoritativeSelection.range = range.cloneRange();
+          } catch (_) {}
+          authoritativeSelection.lastVisibleTimestamp = Date.now();
 
-      if (isInside && hasText) {
-        positionToolbar(toolbar);
-        toolbar.classList.remove('hidden');
-        isToolbarOpen = true;
-      } else {
-        if (!isPointerDragging) {
-          toolbar.classList.add('hidden');
-          isToolbarOpen = false;
+          positionToolbar(toolbar);
+          toolbar.classList.remove('hidden');
+          isToolbarOpen = true;
+          return;
         }
       }
+
+      // If pointer is currently dragging or selecting, never dismiss
+      if (isPointerDragging) return;
+
+      // ELIMINATE AUTOMATIC DISMISSAL:
+      // Do not dismiss simply because selectionchange fired or OS native handles popped up.
+      // The toolbar remains strictly visible while authoritativeSelection.active is true
+      // until an explicit user action occurs (tapping Cut/Copy/Paste/Delete, tapping outside,
+      // or tapping elsewhere in the editor to place a new cursor).
     });
   }
 
@@ -2836,8 +2864,16 @@ export function setupMultiBlockSelectionEngine() {
     return false;
   });
 
-  // Track drag for edge-scrolling and show toolbar on completion
+  // Track discrete user taps vs drag gestures
+  let tapStartX = 0;
+  let tapStartY = 0;
+  let tapStartTime = 0;
+
   const handlePointerStart = (e) => {
+    tapStartX = e.clientX;
+    tapStartY = e.clientY;
+    tapStartTime = Date.now();
+
     if (e.target.closest('#screenplay-multi-selection-bar') || e.target.closest('button')) return;
     isPointerDragging = true;
   };
@@ -2887,27 +2923,48 @@ export function setupMultiBlockSelectionEngine() {
     window.visualViewport.addEventListener('scroll', onEditorScroll);
   }
 
-  // Dismiss toolbar on Back navigation, Escape key, or clicking outside UI
+  // Dismiss toolbar on Back navigation, Escape key
   window.addEventListener('popstate', clearMultiBlockSelection);
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && isToolbarOpen) clearMultiBlockSelection();
   });
 
-  // Dismiss toolbar only when user taps outside the editor container or on interactive UI actions
+  // Explicit dismissal handling on taps outside or discrete single tap elsewhere to set new cursor
   document.addEventListener('pointerdown', (e) => {
     const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
     if (isToolbar) return;
 
+    // Explicit dismissal when tapping UI controls, header buttons, navigation, modals
     const isUiControl = e.target.closest('button, nav, #header-collaborators-btn, #editorMoreMenuModal, .scriptora-modal-overlay');
     if (isUiControl && isToolbarOpen) {
       clearMultiBlockSelection();
       return;
     }
 
+    // Dismissal when tapping outside the entire editor document
     const isEditorArea = e.target.closest('#screenplay-pages-container, #editor-main-scroll');
     if (!isEditorArea && isToolbarOpen) {
       clearMultiBlockSelection();
       return;
+    }
+  });
+
+  // Explicit dismissal on discrete single tap inside editor that establishes a new collapsed cursor
+  document.addEventListener('pointerup', (e) => {
+    const elapsed = Date.now() - tapStartTime;
+    const dist = Math.hypot(e.clientX - tapStartX, e.clientY - tapStartY);
+    const isDiscreteTap = elapsed < 350 && dist < 8;
+
+    if (isDiscreteTap && isToolbarOpen) {
+      const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
+      if (isToolbar) return;
+
+      setTimeout(() => {
+        const sel = window.getSelection();
+        if (sel && sel.isCollapsed) {
+          clearMultiBlockSelection();
+        }
+      }, 60);
     }
   });
 
@@ -4881,6 +4938,44 @@ export function applyTextFormatting(cmd) {
   }
 }
 
+export function executeUndo() {
+  const container = document.getElementById('screenplay-pages-container');
+  if (activeBlockId) {
+    const el = document.getElementById(activeBlockId);
+    const ed = getBlockEditable(el);
+    if (ed && document.activeElement !== ed) ed.focus();
+  } else if (container && document.activeElement !== container && !container.contains(document.activeElement)) {
+    container.focus();
+  }
+  try {
+    document.execCommand('undo', false, null);
+  } catch (_) {}
+  hasUnsavedChanges = true;
+  updateSaveStatus('Unsaved');
+  if (autoSaveEnabled) scheduleAutosave();
+  updateTextFormatButtonStates();
+  updateTelemetry();
+}
+
+export function executeRedo() {
+  const container = document.getElementById('screenplay-pages-container');
+  if (activeBlockId) {
+    const el = document.getElementById(activeBlockId);
+    const ed = getBlockEditable(el);
+    if (ed && document.activeElement !== ed) ed.focus();
+  } else if (container && document.activeElement !== container && !container.contains(document.activeElement)) {
+    container.focus();
+  }
+  try {
+    document.execCommand('redo', false, null);
+  } catch (_) {}
+  hasUnsavedChanges = true;
+  updateSaveStatus('Unsaved');
+  if (autoSaveEnabled) scheduleAutosave();
+  updateTextFormatButtonStates();
+  updateTelemetry();
+}
+
 function handleToolbarToolClick(type) {
   // 1. Text formatting commands (Operate on selection or future typing)
   if (type === 'bold') {
@@ -4900,13 +4995,11 @@ function handleToolbarToolClick(type) {
     return;
   }
   if (type === 'undo') {
-    document.execCommand('undo', false, null);
-    updateTextFormatButtonStates();
+    executeUndo();
     return;
   }
   if (type === 'redo') {
-    document.execCommand('redo', false, null);
-    updateTextFormatButtonStates();
+    executeRedo();
     return;
   }
 
@@ -5284,8 +5377,20 @@ function setupToolbarAndMenu(scriptId, navigate) {
   // Undo / Redo in sub-row
   const undoBtn = document.getElementById('btn-undo');
   const redoBtn = document.getElementById('btn-redo');
-  if (undoBtn) undoBtn.onclick = () => document.execCommand('undo');
-  if (redoBtn) redoBtn.onclick = () => document.execCommand('redo');
+  if (undoBtn) {
+    undoBtn.onpointerdown = (e) => e.preventDefault();
+    undoBtn.onclick = (e) => {
+      e.preventDefault();
+      executeUndo();
+    };
+  }
+  if (redoBtn) {
+    redoBtn.onpointerdown = (e) => e.preventDefault();
+    redoBtn.onclick = (e) => {
+      e.preventDefault();
+      executeRedo();
+    };
+  }
 }
 
 // =========================================================================
