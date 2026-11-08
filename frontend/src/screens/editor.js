@@ -2699,8 +2699,7 @@ export async function pasteIntoSelection() {
 export function setupMultiBlockSelectionEngine() {
   const container = document.getElementById('screenplay-pages-container');
   const scrollContainer = document.getElementById('editor-main-scroll');
-  if (!container || !scrollContainer || multiBlockEngineInitialized) return;
-  multiBlockEngineInitialized = true;
+  if (!container || !scrollContainer) return;
 
   // 1. Create floating selection toolbar matching SCRIPTORA dropboxes
   let bar = document.getElementById('screenplay-multi-selection-bar');
@@ -2980,51 +2979,40 @@ export function setupMultiBlockSelectionEngine() {
     }
   }
 
-  // Disable native text drag-and-drop on screenplay container to avoid glitchy moving of selected text
-  container.addEventListener('dragstart', (e) => {
-    e.preventDefault();
-    return false;
-  });
-  container.addEventListener('dragover', (e) => {
-    e.preventDefault();
-  });
-  container.addEventListener('drop', (e) => {
-    e.preventDefault();
-    return false;
-  });
-
   const handlePointerStart = (e) => {
     if (e.target.closest('#screenplay-multi-selection-bar') || e.target.closest('button')) return;
     isPointerDragging = true;
   };
 
-  container.addEventListener('pointerdown', handlePointerStart);
-  scrollContainer.addEventListener('pointerdown', handlePointerStart);
-
-  window.addEventListener('pointermove', (e) => {
-    if (isPointerDragging) {
-      handlePointerEdgeScroll(e.clientY);
-    }
-  });
-
-  const handleDragEnd = () => {
-    if (isPointerDragging) {
-      isPointerDragging = false;
-      scrollSpeed = 0;
-      if (scrollAnimId) {
-        cancelAnimationFrame(scrollAnimId);
-        scrollAnimId = null;
+  // Attach per-container listeners
+  if (!container.__scriptoraSelectionAttached) {
+    container.__scriptoraSelectionAttached = true;
+    container.addEventListener('dragstart', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+    });
+    container.addEventListener('drop', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    container.addEventListener('pointerdown', handlePointerStart);
+    container.addEventListener('keyup', (e) => {
+      if (e.shiftKey || (e.ctrlKey && e.key.toLowerCase() === 'a')) {
+        updateToolbarFromSelection();
       }
-      updateToolbarFromSelection();
-    }
-  };
-
-  window.addEventListener('pointerup', handleDragEnd);
-  window.addEventListener('pointercancel', handleDragEnd);
-  window.addEventListener('touchend', handleDragEnd);
-
-  // Persistent selection tracking: updates position and remains visible while selection exists
-  document.addEventListener('selectionchange', updateToolbarFromSelection);
+    });
+    container.addEventListener('cut', (e) => {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().length > 0) {
+        e.preventDefault();
+        copySelectedText(true);
+        clearMultiBlockSelection();
+      }
+    });
+  }
 
   // Position sync during editor scroll
   const onEditorScroll = () => {
@@ -3034,95 +3022,107 @@ export function setupMultiBlockSelectionEngine() {
     }
   };
 
-  scrollContainer.addEventListener('scroll', onEditorScroll, { passive: true });
-  window.addEventListener('scroll', onEditorScroll, { capture: true, passive: true });
-
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onEditorScroll);
-    window.visualViewport.addEventListener('scroll', onEditorScroll);
+  // Attach per-scrollContainer listeners
+  if (!scrollContainer.__scriptoraScrollAttached) {
+    scrollContainer.__scriptoraScrollAttached = true;
+    scrollContainer.addEventListener('pointerdown', handlePointerStart);
+    scrollContainer.addEventListener('scroll', onEditorScroll, { passive: true });
   }
 
-  // Dismiss toolbar on Back navigation, Escape key
-  window.addEventListener('popstate', () => {
-    window.getSelection()?.removeAllRanges();
-    clearMultiBlockSelection();
-  });
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isToolbarOpen) {
-      window.getSelection()?.removeAllRanges();
-      clearMultiBlockSelection();
-    }
-  });
+  // Attach global window & document listeners once
+  if (!window.__scriptoraDocSelectionAttached) {
+    window.__scriptoraDocSelectionAttached = true;
 
-  // Explicit dismissal handling on taps outside the toolbar
-  // Interaction rules:
-  // 1. Select text: exact characters remain highlighted, Cut/Copy/Paste/Delete toolbar appears.
-  // 2. Tap toolbar: selection kept intact, toolbar interactions do not collapse selection.
-  // 3. Tap anywhere outside toolbar: immediately clear selection, remove highlight, dismiss toolbar,
-  //    and place cursor at tapped position if inside editor.
-  // 4. Tap another location in editor: clear previous selection and establish new cursor position.
-  // 5. Tap elsewhere on screen: clear selection and dismiss toolbar, even if tap is outside editor.
-  // 6. Drag selection handles: preserve and update selection normally. Do not treat handle movement as outside tap.
-  // 7. Scroll document: do not clear selection merely because user scrolls.
-  // 8. Wait without interacting: no timeout-based dismissal.
-  const handleOutsideTap = (e) => {
-    if (!isToolbarOpen) return;
+    window.addEventListener('pointermove', (e) => {
+      if (isPointerDragging) {
+        handlePointerEdgeScroll(e.clientY);
+      }
+    });
 
-    // Rule 2: Toolbar is the only protected interaction area
-    if (e.target.closest('#screenplay-multi-selection-bar')) return;
-
-    const pagesContainer = document.getElementById('screenplay-pages-container');
-    const isInsideEditor = pagesContainer && pagesContainer.contains(e.target);
-
-    if (!isInsideEditor) {
-      // Rule 5: Tap outside editor entirely -> immediately clear selection & dismiss toolbar
-      window.getSelection()?.removeAllRanges();
-      clearMultiBlockSelection();
-    } else {
-      // Rule 3 & 4: Tap inside editor -> let browser/editor place new cursor position,
-      // and dismiss the toolbar immediately once caret is placed
-      requestAnimationFrame(() => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed || sel.rangeCount === 0 || sel.toString().length === 0) {
-          clearMultiBlockSelection();
+    const handleDragEnd = () => {
+      if (isPointerDragging) {
+        isPointerDragging = false;
+        scrollSpeed = 0;
+        if (scrollAnimId) {
+          cancelAnimationFrame(scrollAnimId);
+          scrollAnimId = null;
         }
-      });
+        updateToolbarFromSelection();
+      }
+    };
+
+    window.addEventListener('pointerup', handleDragEnd);
+    window.addEventListener('pointercancel', handleDragEnd);
+    window.addEventListener('touchend', handleDragEnd);
+
+    // Persistent selection tracking: updates position and remains visible while selection exists
+    document.addEventListener('selectionchange', updateToolbarFromSelection);
+
+    window.addEventListener('scroll', onEditorScroll, { capture: true, passive: true });
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', onEditorScroll);
+      window.visualViewport.addEventListener('scroll', onEditorScroll);
     }
-  };
 
-  document.addEventListener('pointerdown', handleOutsideTap, { capture: true });
-  document.addEventListener('touchstart', handleOutsideTap, { capture: true, passive: true });
-
-  // Keyboard shortcut selection check (e.g. Ctrl+A or Shift+Arrows)
-  container.addEventListener('keyup', (e) => {
-    if (e.shiftKey || (e.ctrlKey && e.key.toLowerCase() === 'a')) {
-      updateToolbarFromSelection();
-    }
-  });
-
-  // Clipboard copy & cut hooks
-  container.addEventListener('copy', (e) => {
-    const sel = window.getSelection();
-    if (sel && !sel.isCollapsed && sel.toString().length > 0) {
-      // Allow browser native copy or set plain text
-    }
-  });
-
-  container.addEventListener('cut', (e) => {
-    const sel = window.getSelection();
-    if (sel && !sel.isCollapsed && sel.toString().length > 0) {
-      e.preventDefault();
-      copySelectedText(true);
+    // Dismiss toolbar on Back navigation, Escape key
+    window.addEventListener('popstate', () => {
+      window.getSelection()?.removeAllRanges();
       clearMultiBlockSelection();
-    }
-  });
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isToolbarOpen) {
+        window.getSelection()?.removeAllRanges();
+        clearMultiBlockSelection();
+      }
+    });
+
+    // Explicit dismissal handling on taps outside the toolbar
+    const handleOutsideTap = (e) => {
+      if (!isToolbarOpen) return;
+
+      const targetEl = e.target instanceof Element ? e.target : e.target?.parentElement;
+      if (!targetEl) {
+        window.getSelection()?.removeAllRanges();
+        clearMultiBlockSelection();
+        return;
+      }
+
+      // Rule 2: Toolbar is the only protected interaction area
+      if (targetEl.closest('#screenplay-multi-selection-bar')) return;
+
+      const pagesContainer = document.getElementById('screenplay-pages-container');
+      const isInsideEditor = pagesContainer && pagesContainer.contains(targetEl);
+
+      if (!isInsideEditor) {
+        // Rule 5: Tap outside editor entirely -> immediately clear selection & dismiss toolbar
+        window.getSelection()?.removeAllRanges();
+        clearMultiBlockSelection();
+      } else {
+        // Rule 3 & 4: Tap inside editor -> let browser/editor place new cursor position,
+        // and dismiss the toolbar immediately once caret is placed
+        requestAnimationFrame(() => {
+          if (isPointerDragging) return;
+          const sel = window.getSelection();
+          if (!sel || sel.isCollapsed || sel.rangeCount === 0 || sel.toString().length === 0) {
+            clearMultiBlockSelection();
+          }
+        });
+      }
+    };
+
+    window.addEventListener('pointerdown', handleOutsideTap, { capture: true });
+    window.addEventListener('mousedown', handleOutsideTap, { capture: true });
+    document.addEventListener('pointerdown', handleOutsideTap, { capture: true });
+    document.addEventListener('mousedown', handleOutsideTap, { capture: true });
+    document.addEventListener('touchstart', handleOutsideTap, { capture: true, passive: true });
+  }
 }
 
-let containerListenersAttached = false;
 export function attachContainerListeners() {
   const container = document.getElementById('screenplay-pages-container');
-  if (!container || containerListenersAttached) return;
-  containerListenersAttached = true;
+  if (!container || container.__scriptoraContainerListenersAttached) return;
+  container.__scriptoraContainerListenersAttached = true;
 
   // 1. Click / pointerdown to update active block & focus
   const syncActiveBlockFromSelection = () => {
@@ -3208,6 +3208,21 @@ export function attachContainerListeners() {
         e.preventDefault();
         deleteCharacterRange(sel);
         clearMultiBlockSelection();
+        return;
+      }
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        deleteCharacterRange(sel);
+        clearMultiBlockSelection();
+        setTimeout(() => {
+          const activeEl = document.getElementById(activeBlockId);
+          if (activeEl) {
+            const ed = getBlockEditable(activeEl);
+            if (ed) {
+              handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), activeEl, ed);
+            }
+          }
+        }, 40);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -3701,6 +3716,21 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       deleteCharacterRange(selKey);
+      return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      deleteCharacterRange(selKey);
+      clearMultiBlockSelection();
+      setTimeout(() => {
+        const activeEl = document.getElementById(activeBlockId);
+        if (activeEl) {
+          const ed = getBlockEditable(activeEl);
+          if (ed) {
+            handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), activeEl, ed);
+          }
+        }
+      }, 40);
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -5082,6 +5112,7 @@ export function applyTextFormatting(cmd) {
 }
 
 export function executeUndo() {
+  if (isToolbarOpen) clearMultiBlockSelection();
   const container = document.getElementById('screenplay-pages-container');
   if (activeBlockId) {
     const el = document.getElementById(activeBlockId);
@@ -5101,6 +5132,7 @@ export function executeUndo() {
 }
 
 export function executeRedo() {
+  if (isToolbarOpen) clearMultiBlockSelection();
   const container = document.getElementById('screenplay-pages-container');
   if (activeBlockId) {
     const el = document.getElementById(activeBlockId);
