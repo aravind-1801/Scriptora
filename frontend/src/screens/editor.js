@@ -2329,21 +2329,44 @@ export function deleteCharacterRange(sel) {
   if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
   const range = sel.getRangeAt(0);
 
-  const startBlock = range.startContainer.nodeType === Node.ELEMENT_NODE
-    ? range.startContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
-    : range.startContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
-
-  const endBlock = range.endContainer.nodeType === Node.ELEMENT_NODE
-    ? range.endContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
-    : range.endContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
-
-  if (!startBlock || !endBlock) {
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) {
     range.deleteContents();
     return true;
   }
 
-  const container = document.getElementById('screenplay-pages-container');
   const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+  if (allBlocks.length === 0) {
+    range.deleteContents();
+    return true;
+  }
+
+  let startBlock = range.startContainer.nodeType === Node.ELEMENT_NODE
+    ? range.startContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.startContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+
+  let endBlock = range.endContainer.nodeType === Node.ELEMENT_NODE
+    ? range.endContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.endContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+
+  // Fallback for selections spanning across page boundaries or page wrappers
+  if (!startBlock) {
+    startBlock = allBlocks.find(b => {
+      try { return range.intersectsNode(b); } catch (_) { return false; }
+    }) || allBlocks[0];
+  }
+  if (!endBlock) {
+    for (let i = allBlocks.length - 1; i >= 0; i--) {
+      try {
+        if (range.intersectsNode(allBlocks[i])) {
+          endBlock = allBlocks[i];
+          break;
+        }
+      } catch (_) {}
+    }
+    if (!endBlock) endBlock = allBlocks[allBlocks.length - 1];
+  }
+
   const idxA = allBlocks.indexOf(startBlock);
   const idxB = allBlocks.indexOf(endBlock);
 
@@ -2389,11 +2412,11 @@ export function deleteCharacterRange(sel) {
   const firstOffset = getCaretCharacterOffsetWithin(firstEd, startNode, startOffsetVal);
   const lastOffset = getCaretCharacterOffsetWithin(lastEd, endNode, endOffsetVal);
 
-  const firstText = firstEd.innerText;
-  const lastText = lastEd.innerText;
+  const firstText = firstEd ? firstEd.innerText : '';
+  const lastText = lastEd ? lastEd.innerText : '';
 
-  const keepBefore = firstText.slice(0, firstOffset);
-  const keepAfter = lastText.slice(lastOffset);
+  const keepBefore = firstText.slice(0, Math.max(0, firstOffset));
+  const keepAfter = lastText.slice(Math.max(0, lastOffset));
 
   const firstId = firstBlock.getAttribute('data-block-id');
   const lastId = lastBlock.getAttribute('data-block-id');
@@ -2404,6 +2427,18 @@ export function deleteCharacterRange(sel) {
   const toDeleteIds = new Set();
   for (let i = firstIdx + 1; i < lastIdx; i++) {
     toDeleteIds.add(allBlocks[i].getAttribute('data-block-id'));
+  }
+
+  // Also remove any page breaks located between firstBlock and lastBlock in document order
+  const allDOMBlocks = Array.from(container.querySelectorAll('.screenplay-block'));
+  const domIdxA = allDOMBlocks.indexOf(firstBlock);
+  const domIdxB = allDOMBlocks.indexOf(lastBlock);
+  if (domIdxA !== -1 && domIdxB !== -1) {
+    const minD = Math.min(domIdxA, domIdxB);
+    const maxD = Math.max(domIdxA, domIdxB);
+    for (let i = minD + 1; i < maxD; i++) {
+      toDeleteIds.add(allDOMBlocks[i].getAttribute('data-block-id'));
+    }
   }
 
   const firstType = firstBlock.getAttribute('data-block-type');
@@ -2456,9 +2491,18 @@ export function deleteCharacterRange(sel) {
 
 export async function copySelectedText(isCut = false) {
   const sel = window.getSelection();
-  if (!sel || sel.isCollapsed) return;
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
 
-  const textToCopy = sel.toString();
+  let textToCopy = sel.toString();
+  if (!textToCopy) return;
+
+  // Clean out any page indicators or numbers copied across page boundaries
+  textToCopy = textToCopy
+    .replace(/—\s*PAGE\s*\d+\s*—/gi, '')
+    .replace(/^\s*\d+\.\s*$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
   if (!textToCopy) return;
 
   try {
@@ -2606,50 +2650,113 @@ export function setupMultiBlockSelectionEngine() {
     };
   }
 
+  function isSelectionInsideEditor(sel, container) {
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+    try {
+      const range = sel.getRangeAt(0);
+      if (!range) return false;
+
+      // Direct node containment check
+      if (container.contains(sel.anchorNode) || container.contains(sel.focusNode)) return true;
+
+      // Range intersection with pages container
+      if (range.intersectsNode && range.intersectsNode(container)) return true;
+
+      // Common ancestor check across editor scroll bounds
+      const common = range.commonAncestorContainer;
+      const commonEl = common.nodeType === Node.ELEMENT_NODE ? common : common.parentElement;
+      const sc = document.getElementById('editor-main-scroll');
+      if (commonEl && (container.contains(commonEl) || commonEl.contains(container) || (sc && sc.contains(commonEl)))) {
+        return true;
+      }
+    } catch (_) {}
+    return false;
+  }
+
   function positionToolbar(toolbar) {
     const sel = window.getSelection();
-    if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
-      try {
-        const range = sel.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        if (rect && (rect.width > 0 || rect.height > 0)) {
-          const barHeight = toolbar.offsetHeight || 42;
-          const barWidth = toolbar.offsetWidth || 230;
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) return;
 
-          // Compute visible viewport bounds (considering visualViewport on mobile)
-          const viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
-          const viewportLeft = window.visualViewport ? window.visualViewport.offsetLeft : 0;
-          const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-          const headerOffset = 64; // stationary top header height
+    try {
+      const range = sel.getRangeAt(0);
+      const clientRects = Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0);
+      const boundingBox = range.getBoundingClientRect();
 
-          // Prefer placing toolbar ABOVE the selection to keep Android teardrop handles unobstructed
-          let top = rect.top - barHeight - 12;
-          if (top < viewportTop + headerOffset) {
-            // If near top of viewport, place BELOW bottom of selection with clearance for handles
-            top = rect.bottom + 32;
-          }
+      // Compute visible viewport bounds (considering mobile visualViewport)
+      const vTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+      const vLeft = window.visualViewport ? window.visualViewport.offsetLeft : 0;
+      const vWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+      const vHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      const vBottom = vTop + vHeight;
 
-          let left = rect.left + rect.width / 2;
-          const halfWidth = barWidth / 2;
-          const minLeft = viewportLeft + halfWidth + 8;
-          const maxLeft = viewportLeft + viewportWidth - halfWidth - 8;
-          left = Math.max(minLeft, Math.min(maxLeft, left));
+      const headerOffset = 64; // stationary top header height
+      const minTop = vTop + headerOffset + 8;
+      const barHeight = toolbar.offsetHeight || 42;
+      const barWidth = toolbar.offsetWidth || 230;
+      const bottomNavClearance = 56; // stationary mobile bottom navigation clearance
+      const maxTop = Math.max(minTop, vBottom - barHeight - bottomNavClearance);
 
-          toolbar.style.position = 'fixed';
-          toolbar.style.top = `${Math.round(top)}px`;
-          toolbar.style.left = `${Math.round(left)}px`;
-          toolbar.style.bottom = 'auto';
-          toolbar.style.transform = 'translateX(-50%)';
-          return;
+      // Filter rects visible on screen
+      const visibleRects = clientRects.filter(r => r.bottom >= minTop - 20 && r.top <= maxTop + barHeight + 20);
+
+      let top = null;
+      let left = null;
+
+      if (visibleRects.length > 0) {
+        // Multi-line or single-line with visible segments
+        const firstVisible = visibleRects[0];
+        const lastVisible = visibleRects[visibleRects.length - 1];
+
+        const aboveTop = firstVisible.top - barHeight - 12;
+        const belowTop = lastVisible.bottom + 28;
+
+        if (aboveTop >= minTop) {
+          top = aboveTop;
+          left = (firstVisible.left + firstVisible.right) / 2;
+        } else if (belowTop <= maxTop) {
+          top = belowTop;
+          left = (lastVisible.left + lastVisible.right) / 2;
+        } else {
+          // Visible selection spans across the entire viewport: keep anchored in safe top zone
+          top = minTop;
+          left = (firstVisible.left + firstVisible.right) / 2;
         }
-      } catch (_) {}
-    }
+      } else if (boundingBox && (boundingBox.width > 0 || boundingBox.height > 0)) {
+        // Selection rect exists across lines/pages
+        const aboveTop = boundingBox.top - barHeight - 12;
+        const belowTop = boundingBox.bottom + 28;
+        if (aboveTop >= minTop && aboveTop <= maxTop) {
+          top = aboveTop;
+        } else if (belowTop >= minTop && belowTop <= maxTop) {
+          top = belowTop;
+        } else {
+          top = minTop;
+        }
+        left = boundingBox.left + boundingBox.width / 2;
+      } else {
+        // Fallback: safe center
+        top = minTop;
+        left = vLeft + vWidth / 2;
+      }
 
-    toolbar.style.position = 'fixed';
-    toolbar.style.top = 'auto';
-    toolbar.style.bottom = '5.5rem';
-    toolbar.style.left = '50%';
-    toolbar.style.transform = 'translateX(-50%)';
+      // Constrain horizontally and vertically within visible viewport
+      const minLeft = vLeft + barWidth / 2 + 8;
+      const maxLeft = vLeft + vWidth - barWidth / 2 - 8;
+      left = Math.max(minLeft, Math.min(maxLeft, left || (vLeft + vWidth / 2)));
+      top = Math.max(minTop, Math.min(maxTop, top));
+
+      toolbar.style.position = 'fixed';
+      toolbar.style.top = `${Math.round(top)}px`;
+      toolbar.style.left = `${Math.round(left)}px`;
+      toolbar.style.bottom = 'auto';
+      toolbar.style.transform = 'translateX(-50%)';
+    } catch (_) {
+      toolbar.style.position = 'fixed';
+      toolbar.style.top = '72px';
+      toolbar.style.left = '50%';
+      toolbar.style.bottom = 'auto';
+      toolbar.style.transform = 'translateX(-50%)';
+    }
   }
 
   let selectionDebounceId = null;
@@ -2661,16 +2768,23 @@ export function setupMultiBlockSelectionEngine() {
       if (!toolbar || !pagesContainer) return;
 
       const sel = window.getSelection();
-      const hasText = sel && !sel.isCollapsed && sel.toString().trim().length > 0;
-      const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        if (!isPointerDragging) {
+          toolbar.classList.add('hidden');
+          isToolbarOpen = false;
+        }
+        return;
+      }
 
-      if (isInside) {
+      const hasText = sel.toString().length > 0;
+      const isInside = isSelectionInsideEditor(sel, pagesContainer);
+
+      if (isInside && hasText) {
         positionToolbar(toolbar);
         toolbar.classList.remove('hidden');
         isToolbarOpen = true;
       } else {
-        // Only hide if the selection has actually collapsed or is empty
-        if (!sel || sel.isCollapsed || !hasText) {
+        if (!isPointerDragging) {
           toolbar.classList.add('hidden');
           isToolbarOpen = false;
         }
@@ -2723,10 +2837,13 @@ export function setupMultiBlockSelectionEngine() {
   });
 
   // Track drag for edge-scrolling and show toolbar on completion
-  container.addEventListener('pointerdown', (e) => {
+  const handlePointerStart = (e) => {
     if (e.target.closest('#screenplay-multi-selection-bar') || e.target.closest('button')) return;
     isPointerDragging = true;
-  });
+  };
+
+  container.addEventListener('pointerdown', handlePointerStart);
+  scrollContainer.addEventListener('pointerdown', handlePointerStart);
 
   window.addEventListener('pointermove', (e) => {
     if (isPointerDragging) {
@@ -2743,6 +2860,7 @@ export function setupMultiBlockSelectionEngine() {
         scrollAnimId = null;
       }
       updateToolbarFromSelection();
+      setTimeout(updateToolbarFromSelection, 50);
     }
   };
 
@@ -2753,27 +2871,20 @@ export function setupMultiBlockSelectionEngine() {
   // Persistent selection tracking: updates position and remains visible while selection exists
   document.addEventListener('selectionchange', updateToolbarFromSelection);
 
-  // Position sync during scroll if toolbar is open
-  window.addEventListener('scroll', () => {
+  // Position sync during editor scroll
+  const onEditorScroll = () => {
     const toolbar = document.getElementById('screenplay-multi-selection-bar');
     if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
       positionToolbar(toolbar);
     }
-  }, { passive: true });
+  };
+
+  scrollContainer.addEventListener('scroll', onEditorScroll, { passive: true });
+  window.addEventListener('scroll', onEditorScroll, { capture: true, passive: true });
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', () => {
-      const toolbar = document.getElementById('screenplay-multi-selection-bar');
-      if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
-        positionToolbar(toolbar);
-      }
-    });
-    window.visualViewport.addEventListener('scroll', () => {
-      const toolbar = document.getElementById('screenplay-multi-selection-bar');
-      if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
-        positionToolbar(toolbar);
-      }
-    });
+    window.visualViewport.addEventListener('resize', onEditorScroll);
+    window.visualViewport.addEventListener('scroll', onEditorScroll);
   }
 
   // Dismiss toolbar on Back navigation, Escape key, or clicking outside UI
@@ -2782,7 +2893,7 @@ export function setupMultiBlockSelectionEngine() {
     if (e.key === 'Escape' && isToolbarOpen) clearMultiBlockSelection();
   });
 
-  // Dismiss toolbar only when user taps outside the editor container or on UI actions
+  // Dismiss toolbar only when user taps outside the editor container or on interactive UI actions
   document.addEventListener('pointerdown', (e) => {
     const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
     if (isToolbar) return;
@@ -2793,8 +2904,8 @@ export function setupMultiBlockSelectionEngine() {
       return;
     }
 
-    const isInsideContainer = e.target.closest('#screenplay-pages-container');
-    if (!isInsideContainer && isToolbarOpen) {
+    const isEditorArea = e.target.closest('#screenplay-pages-container, #editor-main-scroll');
+    if (!isEditorArea && isToolbarOpen) {
       clearMultiBlockSelection();
       return;
     }
@@ -3053,19 +3164,29 @@ function attachSingleBlockListeners(block) {
   };
 
   editable.onblur = () => {
+    const sel = window.getSelection();
+    const isPartOfActiveSelection = sel && !sel.isCollapsed && sel.rangeCount > 0 &&
+      (editable.contains(sel.anchorNode) || editable.contains(sel.focusNode) || isPointerDragging || isToolbarOpen);
+
     const type = block.getAttribute('data-block-type') || 'action';
     const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
-    if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
-      const originalText = editable.innerText;
-      const formattedText = capitalizeSentenceStarters(originalText);
-      if (formattedText !== originalText) {
-        editable.innerText = formattedText;
+
+    // Preserve DOM text nodes untouched when block is part of an active selection or drag to prevent premature collapse
+    if (!isPartOfActiveSelection) {
+      if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
+        const originalText = editable.innerText;
+        const formattedText = capitalizeSentenceStarters(originalText);
+        if (formattedText !== originalText) {
+          editable.innerText = formattedText;
+        }
+      }
+      const cleaned = cleanScreenplayContent(editable.innerHTML);
+      if (editable.innerHTML !== cleaned) {
+        editable.innerHTML = cleaned;
       }
     }
+
     const cleaned = cleanScreenplayContent(editable.innerHTML);
-    if (editable.innerHTML !== cleaned) {
-      editable.innerHTML = cleaned;
-    }
     updateBlockModel(block, cleaned);
 
     // Commit ONLY completed entities upon blur (Prompt 23: 4-8)
