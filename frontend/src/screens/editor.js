@@ -2084,14 +2084,14 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
         <div contenteditable="false" class="w-full flex items-center justify-center min-h-[180px] max-h-[420px] rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200/60 select-none">
           <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-[400px] w-auto max-w-full object-contain rounded-md shadow-xs bg-white pointer-events-none select-none" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';" loading="eager" />
         </div>
-        <div class="screenplay-block-text text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
+        <div class="screenplay-block-text text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
         <button type="button" contenteditable="false" class="btn-delete-img-block select-none absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
       </div>
     `;
   }
 
   return `
-    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
   `;
 }
 
@@ -2275,12 +2275,8 @@ export function applyMultiBlockSelection(blocks) {
   });
 
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
-  const countBadge = document.getElementById('multi-sel-count');
-  if (toolbar && blocks.length > 1) {
-    if (countBadge) countBadge.textContent = `${blocks.length} lines`;
+  if (toolbar) {
     toolbar.classList.remove('hidden');
-  } else if (toolbar) {
-    toolbar.classList.add('hidden');
   }
 }
 
@@ -2378,59 +2374,235 @@ export function setupMultiBlockSelectionEngine() {
   multiBlockEngineInitialized = true;
 
   // 1. Create floating selection toolbar if missing
-  if (!document.getElementById('screenplay-multi-selection-bar')) {
-    const bar = document.createElement('div');
+  let bar = document.getElementById('screenplay-multi-selection-bar');
+  if (!bar) {
+    bar = document.createElement('div');
     bar.id = 'screenplay-multi-selection-bar';
-    bar.className = 'hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-2xl border border-slate-700/60 flex items-center gap-2 text-xs font-semibold animate-fade-in select-none';
+    bar.className = 'hidden fixed z-50 bg-slate-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-2xl border border-slate-700/60 flex items-center gap-1.5 text-xs font-semibold animate-fade-in select-none';
     bar.innerHTML = `
-      <span id="multi-sel-count" class="text-[11px] text-blue-400 font-mono pr-1.5 border-r border-slate-700">0 lines</span>
-      <button id="btn-multi-copy" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">content_copy</span>
-        <span>Copy</span>
-      </button>
-      <button id="btn-multi-cut" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+      <button id="btn-multi-cut" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
         <span class="material-symbols-outlined text-[15px]">content_cut</span>
         <span>Cut</span>
       </button>
-      <button id="btn-multi-delete" type="button" class="flex items-center gap-1 text-rose-400 hover:text-rose-300 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+      <button id="btn-multi-copy" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+        <span>Copy</span>
+      </button>
+      <button id="btn-multi-paste" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">content_paste</span>
+        <span>Paste</span>
+      </button>
+      <button id="btn-multi-delete" type="button" class="flex items-center gap-1 text-rose-400 hover:text-rose-300 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
         <span class="material-symbols-outlined text-[15px]">delete</span>
         <span>Delete</span>
       </button>
-      <button id="btn-multi-select-all" type="button" class="flex items-center gap-1 text-slate-300 hover:text-white active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+      <button id="btn-multi-select-all" type="button" class="flex items-center gap-1 text-slate-300 hover:text-white active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
         <span class="material-symbols-outlined text-[15px]">select_all</span>
         <span>All</span>
       </button>
-      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-white p-0.5 ml-0.5 cursor-pointer">
+      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-white p-1 ml-0.5 cursor-pointer rounded-full" title="Close">
         <span class="material-symbols-outlined text-[14px]">close</span>
       </button>
     `;
     document.body.appendChild(bar);
 
-    bar.querySelector('#btn-multi-copy').onclick = (e) => {
+    // Prevent button click from blurring active selection or editor focus
+    bar.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      copySelectedMultiBlocks(false);
-    };
-    bar.querySelector('#btn-multi-cut').onclick = (e) => {
+    });
+    bar.addEventListener('mousedown', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      copySelectedMultiBlocks(true);
+    });
+
+    bar.querySelector('#btn-multi-copy').onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sel = window.getSelection();
+      const text = sel && !sel.isCollapsed ? sel.toString() : '';
+      if (text.length > 0) {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            document.execCommand('copy');
+          }
+          showToast('Copied to clipboard');
+        } catch (_) {
+          document.execCommand('copy');
+          showToast('Copied');
+        }
+      } else if (currentMultiSelectedBlocks.length > 0) {
+        copySelectedMultiBlocks(false);
+      }
     };
+
+    bar.querySelector('#btn-multi-cut').onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const sel = window.getSelection();
+      const text = sel && !sel.isCollapsed ? sel.toString() : '';
+      if (text.length > 0) {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+          }
+        } catch (_) {}
+        const anchor = sel.anchorNode;
+        const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
+        document.execCommand('delete');
+        if (block) {
+          block.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        showToast('Cut');
+        clearMultiBlockSelection();
+      } else if (currentMultiSelectedBlocks.length > 0) {
+        copySelectedMultiBlocks(true);
+      }
+    };
+
+    bar.querySelector('#btn-multi-paste').onclick = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        let pasteText = '';
+        if (navigator.clipboard?.readText) {
+          try {
+            pasteText = await navigator.clipboard.readText();
+          } catch (err) {
+            console.warn('Clipboard read error:', err);
+          }
+        }
+
+        const sel = window.getSelection();
+        if (pasteText) {
+          if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            const textNode = document.createTextNode(pasteText);
+            range.insertNode(textNode);
+            range.setStartAfter(textNode);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            const anchor = sel.anchorNode;
+            const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
+            if (block) {
+              block.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            showToast('Pasted');
+            clearMultiBlockSelection();
+            return;
+          }
+
+          if (currentMultiSelectedBlocks.length > 0) {
+            const first = currentMultiSelectedBlocks[0];
+            const ed = getBlockEditable(first);
+            if (ed) {
+              ed.innerText = pasteText;
+              ed.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            showToast('Pasted');
+            clearMultiBlockSelection();
+            return;
+          }
+
+          document.execCommand('insertText', false, pasteText);
+          showToast('Pasted');
+          clearMultiBlockSelection();
+        } else {
+          const ok = document.execCommand('paste');
+          if (ok) showToast('Pasted');
+          else showToast('Clipboard is empty or access denied');
+          clearMultiBlockSelection();
+        }
+      } catch (err) {
+        console.error('Paste error:', err);
+        showToast('Unable to paste');
+      }
+    };
+
     bar.querySelector('#btn-multi-delete').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      deleteSelectedMultiBlocks();
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.toString().length > 0) {
+        const anchor = sel.anchorNode;
+        const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
+        document.execCommand('delete');
+        if (block) {
+          block.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        showToast('Deleted');
+        clearMultiBlockSelection();
+      } else if (currentMultiSelectedBlocks.length > 0) {
+        deleteSelectedMultiBlocks();
+      }
     };
+
     bar.querySelector('#btn-multi-select-all').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       selectAllScreenplayBlocks();
     };
+
     bar.querySelector('#btn-multi-close').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
+      window.getSelection()?.removeAllRanges();
       clearMultiBlockSelection();
     };
+  }
+
+  function positionToolbar(toolbar) {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+      try {
+        const range = sel.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        if (rect && rect.height > 0) {
+          const barHeight = 44;
+          let top = rect.top - barHeight - 12;
+          if (top < 70) {
+            top = rect.bottom + 12;
+          }
+          let left = rect.left + rect.width / 2;
+          left = Math.max(140, Math.min(window.innerWidth - 140, left));
+
+          toolbar.style.position = 'fixed';
+          toolbar.style.top = `${top}px`;
+          toolbar.style.left = `${left}px`;
+          toolbar.style.bottom = 'auto';
+          toolbar.style.transform = 'translateX(-50%)';
+          return;
+        }
+      } catch (_) {}
+    }
+
+    toolbar.style.position = 'fixed';
+    toolbar.style.top = 'auto';
+    toolbar.style.bottom = '5.5rem';
+    toolbar.style.left = '50%';
+    toolbar.style.transform = 'translateX(-50%)';
+  }
+
+  function updateToolbarVisibility() {
+    const pagesContainer = document.getElementById('screenplay-pages-container');
+    const toolbar = document.getElementById('screenplay-multi-selection-bar');
+    if (!toolbar || !pagesContainer) return;
+
+    const sel = window.getSelection();
+    const hasText = sel && !sel.isCollapsed && sel.toString().length > 0;
+    const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
+
+    if (isInside || currentMultiSelectedBlocks.length > 0) {
+      positionToolbar(toolbar);
+      toolbar.classList.remove('hidden');
+    } else if (!isPointerDragging && currentMultiSelectedBlocks.length === 0) {
+      toolbar.classList.add('hidden');
+    }
   }
 
   // Edge scrolling helper
@@ -2464,14 +2636,32 @@ export function setupMultiBlockSelectionEngine() {
     }
   }
 
+  function getCaretPoint(x, y) {
+    if (document.caretRangeFromPoint) {
+      return document.caretRangeFromPoint(x, y);
+    } else if (document.caretPositionFromPoint) {
+      const pos = document.caretPositionFromPoint(x, y);
+      if (pos) {
+        const range = document.createRange();
+        range.setStart(pos.offsetNode, pos.offset);
+        range.collapse(true);
+        return range;
+      }
+    }
+    return null;
+  }
+
+  let dragStartCaret = null;
+
   // Pointer & Touch Down
   function handleDragStart(clientX, clientY, target) {
-    if (target.closest('button') || target.closest('#screenplay-multi-selection-bar')) return;
+    if (target.closest('button') || target.closest('#screenplay-multi-selection-bar') || target.closest('#action-popup-menu')) return;
 
     const block = target.closest('.screenplay-block:not([data-block-type="pagebreak"])');
     if (block) {
       dragAnchorBlock = block;
       dragStartPos = { x: clientX, y: clientY };
+      dragStartCaret = getCaretPoint(clientX, clientY);
       isPointerDragging = false;
     } else {
       clearMultiBlockSelection();
@@ -2485,19 +2675,44 @@ export function setupMultiBlockSelectionEngine() {
     const dx = Math.abs(clientX - dragStartPos.x);
     const dy = Math.abs(clientY - dragStartPos.y);
 
-    if (dy > 10 || dx > 25) {
+    if (dy > 12 || dx > 20) {
+      isPointerDragging = true;
+      const currentCaret = getCaretPoint(clientX, clientY);
+
+      if (dragStartCaret && currentCaret) {
+        try {
+          const sel = window.getSelection();
+          const range = document.createRange();
+          const comp = dragStartCaret.startContainer.compareDocumentPosition(currentCaret.startContainer);
+          if (comp & Node.DOCUMENT_POSITION_PRECEDING || 
+             (dragStartCaret.startContainer === currentCaret.startContainer && dragStartCaret.startOffset > currentCaret.startOffset)) {
+            range.setStart(currentCaret.startContainer, currentCaret.startOffset);
+            range.setEnd(dragStartCaret.startContainer, dragStartCaret.startOffset);
+          } else {
+            range.setStart(dragStartCaret.startContainer, dragStartCaret.startOffset);
+            range.setEnd(currentCaret.startContainer, currentCaret.startOffset);
+          }
+          sel.removeAllRanges();
+          sel.addRange(range);
+        } catch (_) {}
+      }
+
       const el = document.elementFromPoint(clientX, clientY);
       const currentBlock = el?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
       if (currentBlock && currentBlock !== dragAnchorBlock) {
-        isPointerDragging = true;
-        window.getSelection()?.removeAllRanges();
         const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
         const idxA = allBlocks.indexOf(dragAnchorBlock);
         const idxB = allBlocks.indexOf(currentBlock);
         if (idxA !== -1 && idxB !== -1) {
           const start = Math.min(idxA, idxB);
           const end = Math.max(idxA, idxB);
-          applyMultiBlockSelection(allBlocks.slice(start, end + 1));
+          const blockSlice = allBlocks.slice(start, end + 1);
+          currentMultiSelectedBlocks = blockSlice;
+          const blockSet = new Set(blockSlice);
+          allBlocks.forEach(b => {
+            if (blockSet.has(b)) b.classList.add('screenplay-block-selected');
+            else b.classList.remove('screenplay-block-selected');
+          });
         }
       }
     }
@@ -2507,12 +2722,14 @@ export function setupMultiBlockSelectionEngine() {
   function handleDragEnd() {
     dragStartPos = null;
     dragAnchorBlock = null;
+    dragStartCaret = null;
     isPointerDragging = false;
     scrollSpeed = 0;
     if (scrollAnimId) {
       cancelAnimationFrame(scrollAnimId);
       scrollAnimId = null;
     }
+    setTimeout(updateToolbarVisibility, 20);
   }
 
   // Mouse / Pointer Drag Listeners
@@ -2548,14 +2765,26 @@ export function setupMultiBlockSelectionEngine() {
   window.addEventListener('touchend', handleDragEnd);
   window.addEventListener('touchcancel', handleDragEnd);
 
+  // Sync toolbar visibility with text selection changes
+  document.addEventListener('selectionchange', () => {
+    setTimeout(updateToolbarVisibility, 10);
+  });
+
+  window.addEventListener('scroll', () => {
+    const toolbar = document.getElementById('screenplay-multi-selection-bar');
+    if (toolbar && !toolbar.classList.contains('hidden')) {
+      positionToolbar(toolbar);
+    }
+  }, { passive: true });
+
   // Dismiss selection on tap outside
   document.addEventListener('pointerdown', (e) => {
-    if (currentMultiSelectedBlocks.length > 0) {
-      const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
-      const isSelectedBlock = e.target.closest('.screenplay-block-selected');
-      if (!isToolbar && !isSelectedBlock) {
-        clearMultiBlockSelection();
-      }
+    const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
+    if (isToolbar) return;
+
+    const isInsideContainer = e.target.closest('#screenplay-pages-container');
+    if (!isInsideContainer && currentMultiSelectedBlocks.length > 0) {
+      clearMultiBlockSelection();
     }
   });
 
