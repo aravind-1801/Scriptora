@@ -276,16 +276,22 @@ body.scriptora-modal-open {
   outline: none !important;
   user-select: text;
   -webkit-user-select: text;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 .screenplay-page-sheet {
   user-select: text;
   -webkit-user-select: text;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 .page-blocks-wrapper {
   user-select: text;
   -webkit-user-select: text;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 .screenplay-block,
@@ -293,6 +299,8 @@ body.scriptora-modal-open {
   min-height: 1.25em;
   user-select: text;
   -webkit-user-select: text;
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 .screenplay-block-text:focus,

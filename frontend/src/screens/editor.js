@@ -2279,10 +2279,13 @@ export function getLastTextNode(el) {
   return null;
 }
 
+export let isToolbarOpen = false;
+
 export function clearMultiBlockSelection() {
   currentMultiSelectedBlocks = [];
   dragAnchorBlock = null;
   isPointerDragging = false;
+  isToolbarOpen = false;
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
   if (toolbar) toolbar.classList.add('hidden');
 }
@@ -2518,40 +2521,42 @@ export function setupMultiBlockSelectionEngine() {
   if (!container || !scrollContainer || multiBlockEngineInitialized) return;
   multiBlockEngineInitialized = true;
 
-  // 1. Create floating selection toolbar if missing
+  // 1. Create floating selection toolbar matching SCRIPTORA dropboxes
   let bar = document.getElementById('screenplay-multi-selection-bar');
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'screenplay-multi-selection-bar';
-    bar.className = 'hidden fixed z-50 bg-slate-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-2xl border border-slate-700/60 flex items-center gap-1.5 text-xs font-semibold animate-fade-in select-none';
+    bar.className = 'hidden fixed z-50 bg-white text-slate-800 px-1.5 py-1 rounded-xl shadow-xl shadow-slate-300/40 border border-slate-200/90 flex items-center gap-0.5 text-xs select-none animate-in fade-in zoom-in-95 duration-100 font-mono';
     bar.innerHTML = `
-      <button id="btn-multi-cut" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">content_cut</span>
+      <button id="btn-multi-cut" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer font-bold font-mono text-[12px]">
+        <span class="material-symbols-outlined text-[16px] text-blue-600">content_cut</span>
         <span>Cut</span>
       </button>
-      <button id="btn-multi-copy" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+      <button id="btn-multi-copy" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer font-bold font-mono text-[12px]">
+        <span class="material-symbols-outlined text-[16px] text-blue-600">content_copy</span>
         <span>Copy</span>
       </button>
-      <button id="btn-multi-paste" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">content_paste</span>
+      <button id="btn-multi-paste" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer font-bold font-mono text-[12px]">
+        <span class="material-symbols-outlined text-[16px] text-blue-600">content_paste</span>
         <span>Paste</span>
       </button>
-      <button id="btn-multi-delete" type="button" class="flex items-center gap-1 text-rose-400 hover:text-rose-300 active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">delete</span>
+      <div class="h-4 w-px bg-slate-200 mx-0.5 my-auto"></div>
+      <button id="btn-multi-delete" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 active:bg-rose-100 transition-colors cursor-pointer font-bold font-mono text-[12px]">
+        <span class="material-symbols-outlined text-[16px] text-rose-500">delete</span>
         <span>Delete</span>
       </button>
-      <button id="btn-multi-select-all" type="button" class="flex items-center gap-1 text-slate-300 hover:text-white active:scale-95 px-2 py-1 rounded transition-all cursor-pointer">
-        <span class="material-symbols-outlined text-[15px]">select_all</span>
+      <div class="h-4 w-px bg-slate-200 mx-0.5 my-auto"></div>
+      <button id="btn-multi-select-all" type="button" class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-slate-700 hover:text-blue-600 hover:bg-blue-50/80 active:bg-blue-100 transition-colors cursor-pointer font-bold font-mono text-[12px]">
+        <span class="material-symbols-outlined text-[16px] text-blue-600">select_all</span>
         <span>All</span>
       </button>
-      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-white p-1 ml-0.5 cursor-pointer rounded-full" title="Close">
-        <span class="material-symbols-outlined text-[14px]">close</span>
+      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 ml-0.5 cursor-pointer rounded-lg flex items-center justify-center transition-colors" title="Close">
+        <span class="material-symbols-outlined text-[16px]">close</span>
       </button>
     `;
     document.body.appendChild(bar);
 
-    // Prevent button click from blurring active selection or editor focus
+    // Prevent button clicks from blurring selection before handler executes
     bar.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -2565,18 +2570,21 @@ export function setupMultiBlockSelectionEngine() {
       e.preventDefault();
       e.stopPropagation();
       await copySelectedText(false);
+      clearMultiBlockSelection();
     };
 
     bar.querySelector('#btn-multi-cut').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
       await copySelectedText(true);
+      clearMultiBlockSelection();
     };
 
     bar.querySelector('#btn-multi-paste').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
       await pasteIntoSelection();
+      clearMultiBlockSelection();
     };
 
     bar.querySelector('#btn-multi-delete').onclick = (e) => {
@@ -2586,6 +2594,7 @@ export function setupMultiBlockSelectionEngine() {
       if (sel && !sel.isCollapsed) {
         deleteCharacterRange(sel);
       }
+      clearMultiBlockSelection();
     };
 
     bar.querySelector('#btn-multi-select-all').onclick = (e) => {
@@ -2610,12 +2619,12 @@ export function setupMultiBlockSelectionEngine() {
         const rect = range.getBoundingClientRect();
         if (rect && rect.height > 0) {
           const barHeight = 44;
-          let top = rect.top - barHeight - 12;
-          if (top < 70) {
-            top = rect.bottom + 12;
+          let top = rect.top - barHeight - 10;
+          if (top < 65) {
+            top = rect.bottom + 10;
           }
           let left = rect.left + rect.width / 2;
-          left = Math.max(140, Math.min(window.innerWidth - 140, left));
+          left = Math.max(160, Math.min(window.innerWidth - 160, left));
 
           toolbar.style.position = 'fixed';
           toolbar.style.top = `${top}px`;
@@ -2634,24 +2643,23 @@ export function setupMultiBlockSelectionEngine() {
     toolbar.style.transform = 'translateX(-50%)';
   }
 
-  function updateToolbarVisibility() {
+  function checkAndShowToolbar() {
     const pagesContainer = document.getElementById('screenplay-pages-container');
     const toolbar = document.getElementById('screenplay-multi-selection-bar');
     if (!toolbar || !pagesContainer) return;
 
     const sel = window.getSelection();
-    const hasText = sel && !sel.isCollapsed && sel.toString().length > 0;
+    const hasText = sel && !sel.isCollapsed && sel.toString().trim().length > 0;
     const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
 
     if (isInside) {
       positionToolbar(toolbar);
       toolbar.classList.remove('hidden');
-    } else if (!isPointerDragging) {
-      toolbar.classList.add('hidden');
+      isToolbarOpen = true;
     }
   }
 
-  // Edge scrolling helper
+  // Edge scrolling helper during drag
   let scrollAnimId = null;
   let scrollSpeed = 0;
 
@@ -2682,136 +2690,69 @@ export function setupMultiBlockSelectionEngine() {
     }
   }
 
-  function getCaretPoint(x, y) {
-    if (document.caretRangeFromPoint) {
-      return document.caretRangeFromPoint(x, y);
-    } else if (document.caretPositionFromPoint) {
-      const pos = document.caretPositionFromPoint(x, y);
-      if (pos) {
-        const range = document.createRange();
-        range.setStart(pos.offsetNode, pos.offset);
-        range.collapse(true);
-        return range;
-      }
-    }
-    return null;
-  }
+  // Disable native text drag-and-drop on screenplay container to avoid glitchy moving of selected text
+  container.addEventListener('dragstart', (e) => {
+    e.preventDefault();
+    return false;
+  });
+  container.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+  container.addEventListener('drop', (e) => {
+    e.preventDefault();
+    return false;
+  });
 
-  let dragStartCaret = null;
-
-  // Pointer & Touch Down
-  function handleDragStart(clientX, clientY, target) {
-    if (target.closest('button') || target.closest('#screenplay-multi-selection-bar') || target.closest('#action-popup-menu')) return;
-
-    const block = target.closest('.screenplay-block:not([data-block-type="pagebreak"])');
-    if (block) {
-      dragAnchorBlock = block;
-      dragStartPos = { x: clientX, y: clientY };
-      dragStartCaret = getCaretPoint(clientX, clientY);
-      isPointerDragging = false;
-    } else {
-      clearMultiBlockSelection();
-    }
-  }
-
-  // Pointer & Touch Move
-  function handleDragMove(clientX, clientY) {
-    if (!dragAnchorBlock || !dragStartPos) return;
-
-    const dx = Math.abs(clientX - dragStartPos.x);
-    const dy = Math.abs(clientY - dragStartPos.y);
-
-    if (dy > 6 || dx > 8) {
-      isPointerDragging = true;
-      const currentCaret = getCaretPoint(clientX, clientY);
-
-      if (dragStartCaret && currentCaret) {
-        try {
-          const sel = window.getSelection();
-          const range = document.createRange();
-          const comp = dragStartCaret.startContainer.compareDocumentPosition(currentCaret.startContainer);
-          if (comp & Node.DOCUMENT_POSITION_PRECEDING || 
-             (dragStartCaret.startContainer === currentCaret.startContainer && dragStartCaret.startOffset > currentCaret.startOffset)) {
-            range.setStart(currentCaret.startContainer, currentCaret.startOffset);
-            range.setEnd(dragStartCaret.startContainer, dragStartCaret.startOffset);
-          } else {
-            range.setStart(dragStartCaret.startContainer, dragStartCaret.startOffset);
-            range.setEnd(currentCaret.startContainer, currentCaret.startOffset);
-          }
-          sel.removeAllRanges();
-          sel.addRange(range);
-        } catch (_) {}
-      }
-    }
-  }
-
-  // Pointer & Touch End
-  function handleDragEnd() {
-    dragStartPos = null;
-    dragAnchorBlock = null;
-    dragStartCaret = null;
-    isPointerDragging = false;
-    scrollSpeed = 0;
-    if (scrollAnimId) {
-      cancelAnimationFrame(scrollAnimId);
-      scrollAnimId = null;
-    }
-    setTimeout(updateToolbarVisibility, 20);
-  }
-
-  // Mouse / Pointer Drag Listeners
+  // Track drag for edge-scrolling and show toolbar on completion
   container.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
-    handleDragStart(e.clientX, e.clientY, e.target);
+    if (e.target.closest('#screenplay-multi-selection-bar') || e.target.closest('button')) return;
+    isPointerDragging = true;
   });
 
   window.addEventListener('pointermove', (e) => {
-    if (dragAnchorBlock) {
-      handleDragMove(e.clientX, e.clientY);
+    if (isPointerDragging) {
       handlePointerEdgeScroll(e.clientY);
     }
   });
 
+  const handleDragEnd = () => {
+    if (isPointerDragging) {
+      isPointerDragging = false;
+      scrollSpeed = 0;
+      if (scrollAnimId) {
+        cancelAnimationFrame(scrollAnimId);
+        scrollAnimId = null;
+      }
+      setTimeout(checkAndShowToolbar, 20);
+    }
+  };
+
   window.addEventListener('pointerup', handleDragEnd);
   window.addEventListener('pointercancel', handleDragEnd);
-
-  // Mobile Touch Drag Listeners
-  container.addEventListener('touchstart', (e) => {
-    if (e.touches && e.touches[0]) {
-      handleDragStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
-    }
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (dragAnchorBlock && e.touches && e.touches[0]) {
-      handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
-      handlePointerEdgeScroll(e.touches[0].clientY);
-    }
-  }, { passive: true });
-
   window.addEventListener('touchend', handleDragEnd);
-  window.addEventListener('touchcancel', handleDragEnd);
 
-  // Sync toolbar visibility with text selection changes
-  document.addEventListener('selectionchange', () => {
-    setTimeout(updateToolbarVisibility, 10);
-  });
-
+  // Position sync during scroll if toolbar is already pinned open
   window.addEventListener('scroll', () => {
     const toolbar = document.getElementById('screenplay-multi-selection-bar');
-    if (toolbar && !toolbar.classList.contains('hidden')) {
+    if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
       positionToolbar(toolbar);
     }
   }, { passive: true });
 
-  // Dismiss selection on tap outside
+  // Dismiss toolbar only when user taps outside (taps behind popup)
   document.addEventListener('pointerdown', (e) => {
     const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
     if (isToolbar) return;
 
-    const isInsideContainer = e.target.closest('#screenplay-pages-container');
-    if (!isInsideContainer && window.getSelection()?.toString().length > 0) {
+    if (isToolbarOpen) {
       clearMultiBlockSelection();
+    }
+  });
+
+  // Keyboard shortcut selection check (e.g. Ctrl+A or Shift+Arrows)
+  container.addEventListener('keyup', (e) => {
+    if (e.shiftKey || (e.ctrlKey && e.key.toLowerCase() === 'a')) {
+      setTimeout(checkAndShowToolbar, 30);
     }
   });
 
@@ -2828,6 +2769,7 @@ export function setupMultiBlockSelectionEngine() {
     if (sel && !sel.isCollapsed && sel.toString().length > 0) {
       e.preventDefault();
       copySelectedText(true);
+      clearMultiBlockSelection();
     }
   });
 }
@@ -2903,6 +2845,7 @@ export function attachContainerListeners() {
       if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         deleteCharacterRange(sel);
+        clearMultiBlockSelection();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
@@ -2913,12 +2856,14 @@ export function attachContainerListeners() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
         e.preventDefault();
         copySelectedText(true);
+        clearMultiBlockSelection();
         return;
       }
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         const char = e.key;
         deleteCharacterRange(sel);
+        clearMultiBlockSelection();
         setTimeout(() => {
           document.execCommand('insertText', false, char);
         }, 30);
@@ -2929,7 +2874,7 @@ export function attachContainerListeners() {
     handleBlockKeydown(e, block, editable);
   });
 
-  // 3. Input handler on container: updates the active block's model
+  // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
   container.addEventListener('input', (e) => {
     hasUnsavedChanges = true;
     updateSaveStatus('Unsaved');
@@ -2947,6 +2892,29 @@ export function attachContainerListeners() {
     if (!editable) return;
 
     const type = block.getAttribute('data-block-type') || 'action';
+
+    // Auto-capitalize first letter immediately visible to user
+    if (type === 'scene' || type === 'character' || type === 'transition' || type === 'shot') {
+      const originalText = editable.innerText;
+      const upperText = originalText.toUpperCase();
+      if (upperText !== originalText) {
+        const caretOffset = getCaretCharacterOffsetWithin(editable);
+        editable.innerText = upperText;
+        setCaretCharacterOffsetWithin(editable, caretOffset);
+      }
+    } else if (type === 'action' || type === 'dialogue') {
+      const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
+      if (!hasRichTags) {
+        const originalText = editable.innerText;
+        const formattedText = capitalizeSentenceStarters(originalText);
+        if (formattedText !== originalText) {
+          const caretOffset = getCaretCharacterOffsetWithin(editable);
+          editable.innerText = formattedText;
+          setCaretCharacterOffsetWithin(editable, caretOffset);
+        }
+      }
+    }
+
     let contentToUpdate = editable.innerHTML;
     contentToUpdate = contentToUpdate.replace(/&(?:amp;)+nbsp;?/gi, ' ');
     contentToUpdate = contentToUpdate.replace(/&nbsp;?/gi, ' ');
@@ -2994,15 +2962,25 @@ function attachSingleBlockListeners(block) {
     hasUnsavedChanges = true;
     const type = block.getAttribute('data-block-type') || 'action';
 
-    // Auto-capitalize first letter of sentence in Action and Dialogue (only when no rich formatting tags present)
-    const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
-    if ((type === 'action' || type === 'dialogue') && !hasRichTags) {
+    // Auto-capitalize immediately visible to user
+    if (type === 'scene' || type === 'character' || type === 'transition' || type === 'shot') {
       const originalText = editable.innerText;
-      const formattedText = capitalizeSentenceStarters(originalText);
-      if (formattedText !== originalText) {
+      const upperText = originalText.toUpperCase();
+      if (upperText !== originalText) {
         const caretOffset = getCaretCharacterOffsetWithin(editable);
-        editable.innerText = formattedText;
+        editable.innerText = upperText;
         setCaretCharacterOffsetWithin(editable, caretOffset);
+      }
+    } else if (type === 'action' || type === 'dialogue') {
+      const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
+      if (!hasRichTags) {
+        const originalText = editable.innerText;
+        const formattedText = capitalizeSentenceStarters(originalText);
+        if (formattedText !== originalText) {
+          const caretOffset = getCaretCharacterOffsetWithin(editable);
+          editable.innerText = formattedText;
+          setCaretCharacterOffsetWithin(editable, caretOffset);
+        }
       }
     }
 
