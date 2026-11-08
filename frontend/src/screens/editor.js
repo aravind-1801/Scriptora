@@ -2413,9 +2413,14 @@ export function clearMultiBlockSelection() {
   isPointerDragging = false;
   isToolbarOpen = false;
   authoritativeSelection.active = false;
+  authoritativeSelection.startBlockId = null;
+  authoritativeSelection.endBlockId = null;
+  authoritativeSelection.startOffset = 0;
+  authoritativeSelection.endOffset = 0;
   authoritativeSelection.text = '';
   authoritativeSelection.range = null;
   authoritativeSelection.lastValidRect = null;
+  authoritativeSelection.lastVisibleTimestamp = 0;
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
   if (toolbar) toolbar.classList.add('hidden');
 }
@@ -2442,8 +2447,10 @@ export function selectAllScreenplayText() {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+    captureSelectionBookmark(sel);
   } catch (_) {}
 
+  isToolbarOpen = true;
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
   if (toolbar) {
     toolbar.classList.remove('hidden');
@@ -2734,6 +2741,12 @@ export function setupMultiBlockSelectionEngine() {
       e.preventDefault();
       e.stopPropagation();
     });
+    bar.addEventListener('touchstart', (e) => {
+      e.stopPropagation();
+    });
+    bar.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
 
     bar.querySelector('#btn-multi-copy').onclick = async (e) => {
       e.preventDefault();
@@ -2917,19 +2930,21 @@ export function setupMultiBlockSelectionEngine() {
           toolbar.classList.remove('hidden');
           isToolbarOpen = true;
           return;
+        } else {
+          // Active selection is outside editor
+          if (isToolbarOpen) {
+            clearMultiBlockSelection();
+          }
+          return;
         }
       }
 
-      // If pointer is currently dragging or selecting, never dismiss
+      // If pointer is currently dragging or selecting, never dismiss mid-gesture
       if (isPointerDragging) return;
 
-      // When toolbar is open and selection was temporarily blurred or detached by browser/OS,
-      // preserve the exact highlight in the editor and keep the toolbar properly positioned
-      if (isToolbarOpen && authoritativeSelection.active) {
-        if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
-          restoreAuthoritativeSelection();
-        }
-        positionToolbar(toolbar);
+      // When selection is collapsed or empty, dismiss toolbar immediately
+      if (isToolbarOpen) {
+        clearMultiBlockSelection();
       }
     });
   }
@@ -2978,16 +2993,7 @@ export function setupMultiBlockSelectionEngine() {
     return false;
   });
 
-  // Track discrete user taps vs drag gestures
-  let tapStartX = 0;
-  let tapStartY = 0;
-  let tapStartTime = 0;
-
   const handlePointerStart = (e) => {
-    tapStartX = e.clientX;
-    tapStartY = e.clientY;
-    tapStartTime = Date.now();
-
     if (e.target.closest('#screenplay-multi-selection-bar') || e.target.closest('button')) return;
     isPointerDragging = true;
   };
@@ -3010,7 +3016,6 @@ export function setupMultiBlockSelectionEngine() {
         scrollAnimId = null;
       }
       updateToolbarFromSelection();
-      setTimeout(updateToolbarFromSelection, 50);
     }
   };
 
@@ -3038,49 +3043,55 @@ export function setupMultiBlockSelectionEngine() {
   }
 
   // Dismiss toolbar on Back navigation, Escape key
-  window.addEventListener('popstate', clearMultiBlockSelection);
+  window.addEventListener('popstate', () => {
+    window.getSelection()?.removeAllRanges();
+    clearMultiBlockSelection();
+  });
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && isToolbarOpen) clearMultiBlockSelection();
-  });
-
-  // Explicit dismissal handling on taps outside or discrete single tap elsewhere to set new cursor
-  document.addEventListener('pointerdown', (e) => {
-    const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
-    if (isToolbar) return;
-
-    // Explicit dismissal when tapping UI controls, header buttons, navigation, modals
-    const isUiControl = e.target.closest('button, nav, #header-collaborators-btn, #editorMoreMenuModal, .scriptora-modal-overlay');
-    if (isUiControl && isToolbarOpen) {
+    if (e.key === 'Escape' && isToolbarOpen) {
+      window.getSelection()?.removeAllRanges();
       clearMultiBlockSelection();
-      return;
-    }
-
-    // Dismissal when tapping outside the entire editor document
-    const isEditorArea = e.target.closest('#screenplay-pages-container, #editor-main-scroll');
-    if (!isEditorArea && isToolbarOpen) {
-      clearMultiBlockSelection();
-      return;
     }
   });
 
-  // Explicit dismissal on discrete single tap inside editor that establishes a new collapsed cursor
-  document.addEventListener('pointerup', (e) => {
-    const elapsed = Date.now() - tapStartTime;
-    const dist = Math.hypot(e.clientX - tapStartX, e.clientY - tapStartY);
-    const isDiscreteTap = elapsed < 350 && dist < 8;
+  // Explicit dismissal handling on taps outside the toolbar
+  // Interaction rules:
+  // 1. Select text: exact characters remain highlighted, Cut/Copy/Paste/Delete toolbar appears.
+  // 2. Tap toolbar: selection kept intact, toolbar interactions do not collapse selection.
+  // 3. Tap anywhere outside toolbar: immediately clear selection, remove highlight, dismiss toolbar,
+  //    and place cursor at tapped position if inside editor.
+  // 4. Tap another location in editor: clear previous selection and establish new cursor position.
+  // 5. Tap elsewhere on screen: clear selection and dismiss toolbar, even if tap is outside editor.
+  // 6. Drag selection handles: preserve and update selection normally. Do not treat handle movement as outside tap.
+  // 7. Scroll document: do not clear selection merely because user scrolls.
+  // 8. Wait without interacting: no timeout-based dismissal.
+  const handleOutsideTap = (e) => {
+    if (!isToolbarOpen) return;
 
-    if (isDiscreteTap && isToolbarOpen) {
-      const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
-      if (isToolbar) return;
+    // Rule 2: Toolbar is the only protected interaction area
+    if (e.target.closest('#screenplay-multi-selection-bar')) return;
 
-      setTimeout(() => {
+    const pagesContainer = document.getElementById('screenplay-pages-container');
+    const isInsideEditor = pagesContainer && pagesContainer.contains(e.target);
+
+    if (!isInsideEditor) {
+      // Rule 5: Tap outside editor entirely -> immediately clear selection & dismiss toolbar
+      window.getSelection()?.removeAllRanges();
+      clearMultiBlockSelection();
+    } else {
+      // Rule 3 & 4: Tap inside editor -> let browser/editor place new cursor position,
+      // and dismiss the toolbar immediately once caret is placed
+      requestAnimationFrame(() => {
         const sel = window.getSelection();
-        if (sel && sel.isCollapsed) {
+        if (!sel || sel.isCollapsed || sel.rangeCount === 0 || sel.toString().length === 0) {
           clearMultiBlockSelection();
         }
-      }, 60);
+      });
     }
-  });
+  };
+
+  document.addEventListener('pointerdown', handleOutsideTap, { capture: true });
+  document.addEventListener('touchstart', handleOutsideTap, { capture: true, passive: true });
 
   // Keyboard shortcut selection check (e.g. Ctrl+A or Shift+Arrows)
   container.addEventListener('keyup', (e) => {
@@ -3133,11 +3144,22 @@ export function attachContainerListeners() {
   };
 
   container.addEventListener('click', (e) => {
-    // If an active selection with text exists, preserve it completely and never collapse
+    // If user clicked inside the selection toolbar, let toolbar button handle it
+    if (e.target.closest('#screenplay-multi-selection-bar')) return;
+
     const sel = window.getSelection();
-    if ((sel && !sel.isCollapsed && sel.toString().length > 0) || authoritativeSelection.active) {
+    const hasTextSelection = sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().length > 0;
+
+    // If an active text selection with text exists (e.g. user just completed a drag selection),
+    // preserve it completely and never collapse
+    if (hasTextSelection) {
       syncActiveBlockFromSelection();
       return;
+    }
+
+    // Dismiss open selection toolbar on any click that does not have text selected
+    if (isToolbarOpen || authoritativeSelection.active) {
+      clearMultiBlockSelection();
     }
 
     // If clicked on empty space of a page sheet or wrapper, place cursor into nearest block
