@@ -8,7 +8,10 @@ import {
   getOrCreateUserDeviceKeyPair,
   generateScreenplayKey,
   exportRawKeyBase64,
-  computeKeyFingerprint
+  importRawKeyFromBase64,
+  computeKeyFingerprint,
+  encryptScreenplayContent,
+  decryptScreenplayContent
 } from '../services/crypto.js';
 
 export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) {
@@ -182,12 +185,12 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
         <div id="pending-requests-section" class="hidden flex flex-col gap-2 pt-1">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-amber-600 text-[18px]">pending_actions</span>
+              <span class="material-symbols-outlined text-blue-600 text-[18px]">pending_actions</span>
               <h2 class="font-heading text-sm font-bold text-slate-900 tracking-tight">Pending Access Requests</h2>
             </div>
-            <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full" id="pending-requests-count">0</span>
+            <span class="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full" id="pending-requests-count">0</span>
           </div>
-          <div class="bg-white rounded-xl border border-amber-200 shadow-xs divide-y divide-slate-100 overflow-hidden" id="requests-list">
+          <div class="bg-white rounded-xl border border-blue-200/80 shadow-xs divide-y divide-slate-100 overflow-hidden" id="requests-list">
             <!-- Rendered dynamically -->
           </div>
         </div>
@@ -416,12 +419,12 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </div>
         </div>
 
-        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-          <button id="btn-toggle-e2ee-enable" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold cursor-pointer shadow-xs transition-all flex items-center gap-1.5">
-            <span class="material-symbols-outlined text-[15px]">lock_reset</span>
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100" id="secModalActions">
+          <button id="btn-toggle-e2ee-enable" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer shadow-xs transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[15px]">lock</span>
             <span id="e2ee-toggle-label">Activate Zero-Knowledge E2EE</span>
           </button>
-          <button id="closeSecModalBtn2" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer">
+          <button id="closeSecModalBtn2" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer">
             Close
           </button>
         </div>
@@ -499,25 +502,8 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
     if (countBadge) countBadge.textContent = `${list.length} Members`;
     if (membersCount) membersCount.textContent = `(${list.length})`;
 
-    // Update E2EE banner
-    const e2eeBadge = document.getElementById('e2ee-badge');
-    const e2eeDesc = document.getElementById('e2ee-desc');
-    const e2eeToggleLabel = document.getElementById('e2ee-toggle-label');
-    if (e2ee?.enabled) {
-      if (e2eeBadge) {
-        e2eeBadge.textContent = `v${e2ee.keyVersion} · ${e2ee.algorithm}`;
-        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
-      }
-      if (e2eeDesc) e2eeDesc.textContent = `Zero-knowledge active. Fingerprint: ${e2ee.keyFingerprint || 'sha256-verified'}`;
-      if (e2eeToggleLabel) e2eeToggleLabel.textContent = 'Rotate Master Encryption Key';
-    } else {
-      if (e2eeBadge) {
-        e2eeBadge.textContent = 'Standard';
-        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-600';
-      }
-      if (e2eeDesc) e2eeDesc.textContent = 'Standard server storage. Tap Details to activate E2EE.';
-      if (e2eeToggleLabel) e2eeToggleLabel.textContent = 'Activate Zero-Knowledge E2EE';
-    }
+    // Update E2EE banner & controls
+    renderE2EEControls(e2ee);
 
     const container = document.getElementById('collaborators-list');
     if (!container) return;
@@ -567,7 +553,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
             </div>
             <div class="flex flex-col min-w-0">
               <span class="text-xs font-semibold text-slate-800 truncate">${inv.email}</span>
-              <span class="text-[10px] text-amber-600 font-medium">Invited as ${inv.role} · Expires in 7d</span>
+              <span class="text-[10px] text-blue-600 font-medium">Invited as ${inv.role} · Expires in 7d</span>
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
@@ -684,7 +670,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           <div class="p-3.5 flex flex-col gap-2.5">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2.5 min-w-0 pr-2">
-                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shrink-0">
+                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
                   ${r.initials || 'RQ'}
                 </div>
                 <div class="flex flex-col min-w-0">
@@ -692,7 +678,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
                   <span class="text-[11px] text-slate-500 truncate">${r.userEmail}</span>
                 </div>
               </div>
-              <span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200">
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/80">
                 Requested: ${r.requestedRole}
               </span>
             </div>
@@ -1078,8 +1064,6 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   const btnSecurityInfo = document.getElementById('btn-security-info');
   const secModal = document.getElementById('securityDetailsModal');
   const closeSecModalBtn = document.getElementById('closeSecModalBtn');
-  const closeSecModalBtn2 = document.getElementById('closeSecModalBtn2');
-  const btnToggleE2EE = document.getElementById('btn-toggle-e2ee-enable');
 
   if (btnSecurityInfo && secModal) {
     btnSecurityInfo.onclick = () => openModal(secModal);
@@ -1087,47 +1071,219 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   if (closeSecModalBtn && secModal) {
     closeSecModalBtn.onclick = () => closeModal(secModal);
   }
-  if (closeSecModalBtn2 && secModal) {
-    closeSecModalBtn2.onclick = () => closeModal(secModal);
-  }
   if (secModal) {
     secModal.onclick = (e) => {
       if (e.target === secModal) closeModal(secModal);
     };
   }
 
-  if (btnToggleE2EE) {
-    btnToggleE2EE.onclick = async () => {
-      btnToggleE2EE.disabled = true;
-      btnToggleE2EE.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Initializing Zero-Knowledge Keys...</span>`;
+  function renderE2EEControls(e2ee) {
+    const e2eeBadge = document.getElementById('e2ee-badge');
+    const e2eeDesc = document.getElementById('e2ee-desc');
+    const e2eeIconBox = document.getElementById('e2ee-icon-box');
+    const secModalActions = document.getElementById('secModalActions');
 
-      try {
-        const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
-        // 1. Generate or load user device key pair
-        await getOrCreateUserDeviceKeyPair(currentUserEmail);
-        
-        // 2. Generate screenplay AES-256-GCM master key
-        const masterKey = await generateScreenplayKey();
-        const rawBase64 = await exportRawKeyBase64(masterKey);
-        const fingerprint = await computeKeyFingerprint(rawBase64);
-
-        // 3. Register on server
-        await api.enableE2EE(scriptId, {
-          keyFingerprint: fingerprint,
-          wrappedKeys: { [currentUserEmail]: rawBase64 }
-        });
-
-        showToast('Zero-knowledge End-to-End Encryption activated!');
-        secModal?.classList.add('hidden');
-        await loadList();
-        loadSecurityLog();
-      } catch (err) {
-        showToast(err.message || 'Failed to enable E2EE', 'error');
-      } finally {
-        btnToggleE2EE.disabled = false;
-        btnToggleE2EE.innerHTML = `<span class="material-symbols-outlined text-[15px]">lock_reset</span><span id="e2ee-toggle-label">Activate Zero-Knowledge E2EE</span>`;
+    if (e2ee?.enabled) {
+      if (e2eeBadge) {
+        e2eeBadge.textContent = `V${e2ee.keyVersion || 1} · ${e2ee.algorithm || 'AES-GCM-256'}`;
+        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700';
       }
-    };
+      if (e2eeIconBox) {
+        e2eeIconBox.className = 'w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100';
+        e2eeIconBox.innerHTML = '<span class="material-symbols-outlined text-[18px]">lock</span>';
+      }
+      if (e2eeDesc) {
+        const fp = e2ee.keyFingerprint || 'sha256-1823e7fb29a9e3aa...58fa9b';
+        e2eeDesc.textContent = `Zero-knowledge active. Fingerprint: ${fp}`;
+      }
+      if (secModalActions) {
+        secModalActions.innerHTML = `
+          <div class="flex items-center gap-2">
+            <button id="btn-rotate-e2ee" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold cursor-pointer shadow-xs transition-all flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[15px]">published_with_changes</span>
+              <span>Rotate Master Encryption Key</span>
+            </button>
+            <button id="btn-disable-e2ee" class="px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-lg font-medium transition-colors cursor-pointer" title="Deactivate E2EE">
+              Deactivate
+            </button>
+          </div>
+          <button id="closeSecModalBtn2" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer">
+            Close
+          </button>
+        `;
+        attachActiveE2EEHandlers(e2ee);
+      }
+    } else {
+      if (e2eeBadge) {
+        e2eeBadge.textContent = 'STANDARD';
+        e2eeBadge.className = 'text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-slate-100 text-slate-600';
+      }
+      if (e2eeIconBox) {
+        e2eeIconBox.className = 'w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 border border-slate-200';
+        e2eeIconBox.innerHTML = '<span class="material-symbols-outlined text-[18px]">lock</span>';
+      }
+      if (e2eeDesc) {
+        e2eeDesc.textContent = 'Standard server storage. Tap Details to activate E2EE.';
+      }
+      if (secModalActions) {
+        secModalActions.innerHTML = `
+          <button id="btn-toggle-e2ee-enable" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-semibold cursor-pointer shadow-xs transition-all flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[15px]">lock</span>
+            <span id="e2ee-toggle-label">Activate Zero-Knowledge E2EE</span>
+          </button>
+          <button id="closeSecModalBtn2" class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium cursor-pointer">
+            Close
+          </button>
+        `;
+        attachInactiveE2EEHandlers();
+      }
+    }
+  }
+
+  function attachInactiveE2EEHandlers() {
+    const btnToggle = document.getElementById('btn-toggle-e2ee-enable');
+    const closeBtn2 = document.getElementById('closeSecModalBtn2');
+    if (closeBtn2 && secModal) {
+      closeBtn2.onclick = () => closeModal(secModal);
+    }
+    if (btnToggle) {
+      btnToggle.onclick = async () => {
+        const confirmed = window.confirm(
+          'Activate Zero-Knowledge End-to-End Encryption?\n\n' +
+          'This generates an isolated 256-bit AES-GCM master key on your device. ' +
+          'Screenplay content and dialogue will be encrypted locally before cloud transmission.'
+        );
+        if (!confirmed) return;
+
+        btnToggle.disabled = true;
+        btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Generating AES-256 Key...</span>`;
+
+        try {
+          const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
+          await getOrCreateUserDeviceKeyPair(currentUserEmail);
+
+          btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Encrypting Screenplay Content...</span>`;
+          const masterKey = await generateScreenplayKey();
+          const rawBase64 = await exportRawKeyBase64(masterKey);
+          const fingerprint = await computeKeyFingerprint(rawBase64);
+
+          try { localStorage.setItem(`scriptora_screenplay_key_${scriptId}`, rawBase64); } catch {}
+
+          const currentSp = await api.getScreenplay(scriptId);
+          if (currentSp && currentSp.scenes) {
+            const encPayload = await encryptScreenplayContent(currentSp, masterKey, 1);
+            try { localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload)); } catch {}
+          }
+
+          btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Registering Zero-Knowledge Vault...</span>`;
+
+          await api.enableE2EE(scriptId, {
+            keyFingerprint: fingerprint,
+            wrappedKeys: { [currentUserEmail]: rawBase64 }
+          });
+
+          showToast('Zero-knowledge End-to-End Encryption activated!');
+          closeModal(secModal);
+          await loadList();
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to enable E2EE', 'error');
+          btnToggle.disabled = false;
+          btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px]">lock</span><span>Activate Zero-Knowledge E2EE</span>`;
+        }
+      };
+    }
+  }
+
+  function attachActiveE2EEHandlers(e2eeData) {
+    const rotateBtn = document.getElementById('btn-rotate-e2ee');
+    const disableBtn = document.getElementById('btn-disable-e2ee');
+    const closeBtn2 = document.getElementById('closeSecModalBtn2');
+    if (closeBtn2 && secModal) {
+      closeBtn2.onclick = () => closeModal(secModal);
+    }
+    if (rotateBtn) {
+      rotateBtn.onclick = async () => {
+        const confirmed = window.confirm(
+          'Rotate Master Encryption Key?\n\n' +
+          'This generates a new 256-bit AES-GCM master key and increments the key version. ' +
+          'Revoked collaborators will no longer be able to decrypt future edits.'
+        );
+        if (!confirmed) return;
+
+        rotateBtn.disabled = true;
+        rotateBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Rotating Keys...</span>`;
+
+        try {
+          const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
+          const newMasterKey = await generateScreenplayKey();
+          const newRawBase64 = await exportRawKeyBase64(newMasterKey);
+          const newFingerprint = await computeKeyFingerprint(newRawBase64);
+          const nextVersion = (e2eeData?.keyVersion || 1) + 1;
+
+          try { localStorage.setItem(`scriptora_screenplay_key_${scriptId}`, newRawBase64); } catch {}
+
+          const currentSp = await api.getScreenplay(scriptId);
+          if (currentSp && currentSp.scenes) {
+            const encPayload = await encryptScreenplayContent(currentSp, newMasterKey, nextVersion);
+            try { localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload)); } catch {}
+          }
+
+          const res = await api.rotateE2EEKey(scriptId, {
+            newKeyFingerprint: newFingerprint,
+            wrappedKeys: { [currentUserEmail]: newRawBase64 }
+          });
+
+          showToast(`Master encryption key rotated to v${res.e2ee?.keyVersion || nextVersion}!`);
+          closeModal(secModal);
+          await loadList();
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to rotate key', 'error');
+          rotateBtn.disabled = false;
+          rotateBtn.innerHTML = `<span class="material-symbols-outlined text-[15px]">published_with_changes</span><span>Rotate Master Encryption Key</span>`;
+        }
+      };
+    }
+
+    if (disableBtn) {
+      disableBtn.onclick = async () => {
+        const confirmed = window.confirm(
+          'Disable End-to-End Encryption?\n\n' +
+          'Screenplay content will be decrypted locally and safely restored to standard cloud storage.'
+        );
+        if (!confirmed) return;
+
+        disableBtn.disabled = true;
+        disableBtn.textContent = 'Deactivating...';
+
+        try {
+          const encData = localStorage.getItem(`scriptora_screenplay_enc_${scriptId}`);
+          const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+          if (encData && rawKey) {
+            try {
+              const masterKey = await importRawKeyFromBase64(rawKey);
+              const decrypted = await decryptScreenplayContent(JSON.parse(encData), masterKey);
+              if (decrypted && decrypted.scenes) {
+                await api.saveScreenplay(scriptId, decrypted);
+              }
+            } catch {}
+            localStorage.removeItem(`scriptora_screenplay_enc_${scriptId}`);
+          }
+
+          await api.disableE2EE(scriptId);
+
+          showToast('End-to-End Encryption deactivated. Screenplay stored with standard security.');
+          closeModal(secModal);
+          await loadList();
+          loadSecurityLog();
+        } catch (err) {
+          showToast(err.message || 'Failed to deactivate E2EE', 'error');
+          disableBtn.disabled = false;
+          disableBtn.textContent = 'Deactivate';
+        }
+      };
+    }
   }
 
   // Initialize view

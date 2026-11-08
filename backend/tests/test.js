@@ -277,6 +277,12 @@ server.listen(PORT, async () => {
     const e2eeAfterRemoval = await request('/api/collaborators/chronicles-of-dust/e2ee');
     console.log('✓ Member Removal & E2EE Key Rotation:', removeMemberRes.status === 200 && e2eeAfterRemoval.body.e2ee?.keyVersion === 2 ? 'PASS' : 'FAIL');
 
+    // Disable E2EE deactivation check
+    const e2eeDisableRes = await request('/api/collaborators/chronicles-of-dust/e2ee/disable', {
+      method: 'POST'
+    });
+    console.log('✓ Disable E2EE Deactivation:', e2eeDisableRes.status === 200 && e2eeDisableRes.body.e2ee?.enabled === false ? 'PASS' : 'FAIL');
+
     // 14f. Security Activity Log Verification
     const secLogRes = await request('/api/collaborators/chronicles-of-dust/security-activity');
     console.log('✓ Security Activity Audit Log:', secLogRes.status === 200 && Array.isArray(secLogRes.body.activity) && secLogRes.body.activity.length >= 3 ? 'PASS' : 'FAIL');

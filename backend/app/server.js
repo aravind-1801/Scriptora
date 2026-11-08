@@ -281,6 +281,16 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    const e2eeDisableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/disable$/);
+    if (e2eeDisableMatch && method === 'POST') {
+      try {
+        const result = collaborationService.disableE2EE(e2eeDisableMatch[1], db.currentUser);
+        return sendJson(res, 200, { success: true, e2ee: result });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
     const collabMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)$/);
     if (collabMatch && method === 'GET') {
       return sendJson(res, 200, { collaborators: collaborationService.getCollaborators(collabMatch[1]) });

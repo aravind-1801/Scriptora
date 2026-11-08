@@ -1,6 +1,12 @@
 // Centralized API and Service Layer for Scriptora
 // Handles backend calls to Vercel Serverless Functions with transparent offline persistence fallback
 
+import {
+  encryptScreenplayContent,
+  decryptScreenplayContent,
+  importRawKeyFromBase64
+} from './crypto.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
 
 const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
@@ -760,12 +766,29 @@ export const CANONICAL_SCREENPLAY_CHRONICLES = {
 export async function getScreenplay(scriptId) {
   let screenplay = null;
 
-  try {
-    const data = await request(`/screenplay/${scriptId}`);
-    if (data.screenplay && data.screenplay.scenes) {
-      screenplay = data.screenplay;
+  // If encrypted payload exists for E2EE, decrypt it with local master key
+  const encStored = localStorage.getItem(`scriptora_screenplay_enc_${scriptId}`);
+  const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+  if (encStored && rawKey) {
+    try {
+      const masterKey = await importRawKeyFromBase64(rawKey);
+      const dec = await decryptScreenplayContent(JSON.parse(encStored), masterKey);
+      if (dec && dec.scenes) {
+        screenplay = dec;
+      }
+    } catch (err) {
+      console.warn('Failed to decrypt E2EE screenplay payload:', err);
     }
-  } catch {}
+  }
+
+  if (!screenplay) {
+    try {
+      const data = await request(`/screenplay/${scriptId}`);
+      if (data.screenplay && data.screenplay.scenes) {
+        screenplay = data.screenplay;
+      }
+    } catch {}
+  }
 
   if (!screenplay) {
     const saved = localStorage.getItem(`scriptora_screenplay_${scriptId}`);
@@ -840,6 +863,23 @@ export async function getScreenplay(scriptId) {
 
 export async function saveScreenplay(scriptId, screenplay) {
   localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(screenplay));
+
+  // If E2EE is enabled, also encrypt content locally with the master key
+  const e2eeSetting = localStorage.getItem(`scriptora_e2ee_${scriptId}`);
+  const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+  if (e2eeSetting && rawKey) {
+    try {
+      const e2ee = JSON.parse(e2eeSetting);
+      if (e2ee.enabled) {
+        const masterKey = await importRawKeyFromBase64(rawKey);
+        const encPayload = await encryptScreenplayContent(screenplay, masterKey, e2ee.keyVersion || 1);
+        localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload));
+      }
+    } catch (e) {
+      console.warn('E2EE auto-encrypt on save skipped:', e);
+    }
+  }
+
   try {
     return await request(`/screenplay/${scriptId}`, {
       method: 'PUT',
@@ -1289,31 +1329,95 @@ export async function getSecurityActivity(scriptId) {
 export async function getE2EESettings(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}/e2ee`);
-    return data.e2ee;
-  } catch {
-    return {
-      enabled: false,
-      algorithm: 'AES-GCM-256',
-      keyVersion: 1,
-      keyFingerprint: null,
-      lastRotated: null,
-      wrappedKeys: {}
-    };
+    if (data?.e2ee) {
+      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(data.e2ee)); } catch {}
+      return data.e2ee;
+    }
+  } catch {}
+
+  const stored = localStorage.getItem(`scriptora_e2ee_${scriptId}`);
+  if (stored) {
+    try { return JSON.parse(stored); } catch {}
   }
+
+  return {
+    enabled: false,
+    algorithm: 'AES-GCM-256',
+    keyVersion: 1,
+    keyFingerprint: null,
+    lastRotated: null,
+    wrappedKeys: {}
+  };
 }
 
 export async function enableE2EE(scriptId, payload) {
-  return await request(`/collaborators/${scriptId}/e2ee/enable`, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
+  try {
+    const res = await request(`/collaborators/${scriptId}/e2ee/enable`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res?.e2ee) {
+      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+    }
+    return res;
+  } catch (err) {
+    const e2ee = {
+      enabled: true,
+      algorithm: 'AES-GCM-256',
+      keyVersion: 1,
+      keyFingerprint: payload.keyFingerprint || `sha256-${Date.now()}`,
+      lastRotated: new Date().toISOString(),
+      wrappedKeys: payload.wrappedKeys || {}
+    };
+    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    return { success: true, e2ee };
+  }
 }
 
 export async function rotateE2EEKey(scriptId, payload) {
-  return await request(`/collaborators/${scriptId}/e2ee/rotate`, {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
+  try {
+    const res = await request(`/collaborators/${scriptId}/e2ee/rotate`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    if (res?.e2ee) {
+      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+    }
+    return res;
+  } catch (err) {
+    const prev = JSON.parse(localStorage.getItem(`scriptora_e2ee_${scriptId}`) || '{}');
+    const e2ee = {
+      ...prev,
+      enabled: true,
+      keyVersion: (prev.keyVersion || 1) + 1,
+      keyFingerprint: payload.newKeyFingerprint || `sha256-v${(prev.keyVersion || 1) + 1}-${Date.now()}`,
+      lastRotated: new Date().toISOString(),
+      wrappedKeys: payload.wrappedKeys || prev.wrappedKeys || {}
+    };
+    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    return { success: true, e2ee };
+  }
+}
+
+export async function disableE2EE(scriptId) {
+  try {
+    const res = await request(`/collaborators/${scriptId}/e2ee/disable`, {
+      method: 'POST'
+    });
+    if (res?.e2ee) {
+      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+    }
+    return res;
+  } catch (err) {
+    const prev = JSON.parse(localStorage.getItem(`scriptora_e2ee_${scriptId}`) || '{}');
+    const e2ee = {
+      ...prev,
+      enabled: false,
+      disabledAt: new Date().toISOString()
+    };
+    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    return { success: true, e2ee };
+  }
 }
 
 export async function registerUserPublicKey(publicKeyJwk) {

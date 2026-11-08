@@ -873,6 +873,29 @@ export function rotateE2EEKey(scriptId, { newKeyFingerprint, wrappedKeys }, user
   return current;
 }
 
+export function disableE2EE(scriptId, user = db.currentUser) {
+  if (!isScriptOwner(scriptId, user)) {
+    throw new Error('Unauthorized: Only the screenplay owner can disable End-to-End Encryption.');
+  }
+
+  if (!db.e2ee || !db.e2ee[scriptId]) {
+    return { enabled: false };
+  }
+
+  db.e2ee[scriptId].enabled = false;
+  db.e2ee[scriptId].disabledAt = new Date().toISOString();
+
+  logSecurityEvent(scriptId, {
+    type: 'e2ee_disabled',
+    title: 'End-to-End Encryption Disabled',
+    actor: user,
+    target: null,
+    details: 'Zero-knowledge encryption deactivated. Screenplay returned to standard server storage.'
+  });
+
+  return db.e2ee[scriptId];
+}
+
 export function registerUserPublicKey(user, { publicKeyJwk }) {
   if (!user || !user.email) throw new Error('Authentication required.');
   if (!db.userKeys) db.userKeys = {};
