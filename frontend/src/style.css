@@ -299,6 +299,22 @@ body.scriptora-modal-open {
   outline: none;
 }
 
+/* WriterDuet Multi-Block Continuous Highlight */
+.screenplay-block-selected,
+.screenplay-block.screenplay-block-selected,
+.screenplay-block-selected .screenplay-block-text,
+.screenplay-block-text.screenplay-block-selected {
+  background-color: #bfdbfe !important;
+  color: #1e3a8a !important;
+  border-radius: 4px;
+}
+
+.screenplay-block ::selection,
+.screenplay-block-text::selection {
+  background-color: #bfdbfe;
+  color: #1e3a8a;
+}
+
 /* Screenplay Editor Mobile & Desktop Viewport & Stationary Header Architecture */
 html.editor-mode,
 body.editor-mode {

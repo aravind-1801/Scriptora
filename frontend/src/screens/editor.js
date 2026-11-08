@@ -483,7 +483,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
-        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
+        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -1285,7 +1285,7 @@ function handleGlobalKeydown(e) {
     const activeEl = document.activeElement;
     if (container && (container === activeEl || container.contains(activeEl) || container.contains(window.getSelection()?.anchorNode))) {
       e.preventDefault();
-      selectAllScreenplayText();
+      selectAllScreenplayBlocks();
     }
   }
 }
@@ -1978,80 +1978,80 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
   }
 
   if (isAction) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isChar) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isParen) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isDia) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isTrans) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isShot) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
     `;
   }
 
   if (isText) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isNote) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block screenplay-block-text text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block screenplay-block-text text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
     `;
   }
 
   if (isOutline) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block screenplay-block-text text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block screenplay-block-text text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
     `;
   }
 
   if (isAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
     `;
   }
 
   if (isEndAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
     `;
   }
 
   if (isSequence) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
     `;
   }
 
@@ -2059,12 +2059,12 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dual" class="screenplay-block screenplay-dual-dialogue-grid">
         <div class="flex flex-col">
-          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
-          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
         </div>
         <div class="flex flex-col">
-          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
-          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
         </div>
       </div>
     `;
@@ -2072,7 +2072,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isLyrics) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block screenplay-block-text text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block screenplay-block-text text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
     `;
   }
 
@@ -2233,184 +2233,212 @@ function setCaretCharacterOffsetWithin(element, offset) {
 // WRITERDUET-INSPIRED CONTINUOUS MULTI-PAGE SCREENPLAY SELECTION ENGINE
 // =========================================================================
 
+export let currentMultiSelectedBlocks = [];
+let dragAnchorBlock = null;
+let dragStartPos = null;
+let isPointerDragging = false;
+let multiBlockEngineInitialized = false;
+
 export function getBlockEditable(blockEl) {
   if (!blockEl) return null;
   if (blockEl.classList && blockEl.classList.contains('screenplay-block-text')) return blockEl;
   return blockEl.querySelector('.screenplay-block-text') || (blockEl.hasAttribute('contenteditable') ? blockEl : null) || blockEl.querySelector('[contenteditable="true"]') || blockEl;
 }
 
-export function getSelectedScreenplayBlocks() {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return [];
-  const range = sel.getRangeAt(0);
-  const container = document.getElementById('screenplay-pages-container');
-  if (!container) return [];
-  if (!container.contains(range.commonAncestorContainer) && !range.intersectsNode(container)) return [];
-
-  const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
-  return allBlocks.filter(b => {
-    try {
-      return range.intersectsNode(b);
-    } catch {
-      return false;
-    }
+export function clearMultiBlockSelection() {
+  currentMultiSelectedBlocks = [];
+  dragAnchorBlock = null;
+  isPointerDragging = false;
+  document.querySelectorAll('.screenplay-block-selected').forEach(el => {
+    el.classList.remove('screenplay-block-selected');
   });
+  const toolbar = document.getElementById('screenplay-multi-selection-bar');
+  if (toolbar) toolbar.classList.add('hidden');
 }
 
-export function selectAllScreenplayText() {
+export function applyMultiBlockSelection(blocks) {
+  if (!blocks || blocks.length === 0) {
+    clearMultiBlockSelection();
+    return;
+  }
+
+  currentMultiSelectedBlocks = blocks;
+  const blockSet = new Set(blocks);
+
+  const allBlocks = document.querySelectorAll('#screenplay-pages-container .screenplay-block');
+  allBlocks.forEach(b => {
+    if (blockSet.has(b)) {
+      b.classList.add('screenplay-block-selected');
+    } else {
+      b.classList.remove('screenplay-block-selected');
+    }
+  });
+
+  const toolbar = document.getElementById('screenplay-multi-selection-bar');
+  const countBadge = document.getElementById('multi-sel-count');
+  if (toolbar && blocks.length > 1) {
+    if (countBadge) countBadge.textContent = `${blocks.length} lines`;
+    toolbar.classList.remove('hidden');
+  } else if (toolbar) {
+    toolbar.classList.add('hidden');
+  }
+}
+
+export function selectAllScreenplayBlocks() {
   const container = document.getElementById('screenplay-pages-container');
   if (!container) return;
   const blocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
   if (blocks.length === 0) return;
-
-  const firstBlock = blocks[0];
-  const lastBlock = blocks[blocks.length - 1];
-  const firstEd = getBlockEditable(firstBlock) || firstBlock;
-  const lastEd = getBlockEditable(lastBlock) || lastBlock;
-
-  const sel = window.getSelection();
-  if (!sel) return;
-
-  const range = document.createRange();
-  range.setStart(firstEd, 0);
-  range.setEnd(lastEd, lastEd.childNodes ? lastEd.childNodes.length : 0);
-  sel.removeAllRanges();
-  sel.addRange(range);
+  applyMultiBlockSelection(blocks);
 }
 
-export function deleteMultiBlockSelection(sel, selectedBlocks) {
-  if (!currentScreenplay || !selectedBlocks || selectedBlocks.length <= 1) return;
+export function copySelectedMultiBlocks(isCut = false) {
+  if (!currentMultiSelectedBlocks || currentMultiSelectedBlocks.length === 0) return;
 
-  const firstBlock = selectedBlocks[0];
-  const lastBlock = selectedBlocks[selectedBlocks.length - 1];
+  const lines = currentMultiSelectedBlocks.map(b => {
+    const type = b.getAttribute('data-block-type');
+    const text = (getBlockEditable(b)?.innerText || '').trim();
+    if (type === 'scene') return `\n${text}\n`;
+    if (type === 'character') return `\n          ${text}`;
+    if (type === 'parenthetical') return `        ${text}`;
+    if (type === 'dialogue') return `    ${text}`;
+    if (type === 'transition') return `\n                    ${text}\n`;
+    if (type === 'shot') return `\n${text}\n`;
+    if (type === 'act' || type === 'endact') return `\n                ${text}\n`;
+    return text;
+  }).filter(Boolean);
 
-  const firstId = firstBlock.getAttribute('data-block-id');
-  const firstSceneId = firstBlock.getAttribute('data-scene-id');
-  const lastId = lastBlock.getAttribute('data-block-id');
-  const lastSceneId = lastBlock.getAttribute('data-scene-id');
-
-  const firstEd = getBlockEditable(firstBlock);
-  const lastEd = getBlockEditable(lastBlock);
-
-  const range = sel.getRangeAt(0);
-
-  let keepBefore = '';
-  if (firstEd) {
-    const firstText = firstEd.innerText;
-    const startOffset = Math.min(range.startOffset, firstText.length);
-    keepBefore = firstText.substring(0, startOffset);
+  const fullText = lines.join('\n');
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(fullText).catch(() => {});
   }
 
-  let keepAfter = '';
-  if (lastEd) {
-    const lastText = lastEd.innerText;
-    const endOffset = Math.min(range.endOffset, lastText.length);
-    keepAfter = lastText.substring(endOffset);
+  const count = currentMultiSelectedBlocks.length;
+  if (isCut) {
+    deleteSelectedMultiBlocks();
+    showToast(`Cut ${count} lines`);
+  } else {
+    showToast(`Copied ${count} lines`);
+  }
+}
+
+export function deleteSelectedMultiBlocks() {
+  if (!currentScreenplay || !currentMultiSelectedBlocks || currentMultiSelectedBlocks.length === 0) return;
+
+  const toDeleteIds = new Set(currentMultiSelectedBlocks.map(b => b.getAttribute('data-block-id')));
+
+  // Identify preceding block ID for focus restoration
+  const allBlocks = Array.from(document.querySelectorAll('#screenplay-pages-container .screenplay-block:not([data-block-type="pagebreak"])'));
+  const firstIdx = allBlocks.indexOf(currentMultiSelectedBlocks[0]);
+  let focusTargetId = null;
+  if (firstIdx > 0) {
+    focusTargetId = allBlocks[firstIdx - 1]?.getAttribute('data-block-id');
   }
 
-  // Remove intermediate blocks from model
-  const intermediateIds = new Set(selectedBlocks.slice(1, -1).map(b => b.getAttribute('data-block-id')));
-  currentScreenplay.scenes.forEach(sc => {
-    sc.blocks = sc.blocks.filter(b => !intermediateIds.has(b.id));
+  // Remove from model
+  (currentScreenplay.scenes || []).forEach(sc => {
+    if (sc.blocks) {
+      sc.blocks = sc.blocks.filter(b => !toDeleteIds.has(b.id));
+    }
   });
 
-  const firstScene = currentScreenplay.scenes.find(s => s.id === firstSceneId);
-  const firstModelBlock = firstScene?.blocks.find(b => b.id === firstId);
-
-  if (!keepAfter.trim() && firstId !== lastId) {
-    const lastScene = currentScreenplay.scenes.find(s => s.id === lastSceneId);
-    if (lastScene) {
-      lastScene.blocks = lastScene.blocks.filter(b => b.id !== lastId);
+  // Ensure scenes don't remain empty
+  (currentScreenplay.scenes || []).forEach(sc => {
+    if (!sc.blocks || sc.blocks.length === 0) {
+      sc.blocks = [
+        { id: 'b-' + Date.now() + '-1', type: 'action', content: '' }
+      ];
     }
-  } else if (firstModelBlock && keepAfter) {
-    keepBefore = (keepBefore + keepAfter).trim();
-    const lastScene = currentScreenplay.scenes.find(s => s.id === lastSceneId);
-    if (lastScene && firstId !== lastId) {
-      lastScene.blocks = lastScene.blocks.filter(b => b.id !== lastId);
-    }
-  }
-
-  if (firstModelBlock) {
-    firstModelBlock.content = cleanScreenplayContent(keepBefore);
-  }
-
-  if (currentScreenplay.scenes.length > 1) {
-    currentScreenplay.scenes = currentScreenplay.scenes.filter(sc => sc.blocks.length > 0);
-    currentScreenplay.scenes.forEach((sc, i) => { sc.number = i + 1; });
-  }
+  });
 
   hasUnsavedChanges = true;
   updateSaveStatus('Unsaved');
   if (autoSaveEnabled) scheduleAutosave();
 
+  clearMultiBlockSelection();
   renderScreenplayPages();
-  const newFirstEl = document.getElementById(firstId);
-  if (newFirstEl) {
-    const ed = getBlockEditable(newFirstEl);
-    if (ed) {
-      ed.focus();
-      setCursorAtEnd(ed);
+
+  // Restore cursor focus
+  setTimeout(() => {
+    const targetEl = focusTargetId ? document.getElementById(focusTargetId) : document.querySelector('.screenplay-block-text');
+    if (targetEl) {
+      const ed = getBlockEditable(targetEl);
+      if (ed) {
+        ed.focus();
+        setCursorAtEnd(ed);
+      }
     }
-  }
+  }, 50);
 }
 
-let multiBlockEngineInitialized = false;
 export function setupMultiBlockSelectionEngine() {
   const container = document.getElementById('screenplay-pages-container');
   const scrollContainer = document.getElementById('editor-main-scroll');
   if (!container || !scrollContainer || multiBlockEngineInitialized) return;
   multiBlockEngineInitialized = true;
 
-  // 1. Multi-block clipboard copy & cut
-  container.addEventListener('copy', (e) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const blocks = getSelectedScreenplayBlocks();
-    if (blocks.length > 1) {
-      const lines = blocks.map(b => {
-        const type = b.getAttribute('data-block-type');
-        const text = (getBlockEditable(b)?.innerText || '').trim();
-        if (type === 'scene') return `\n${text}\n`;
-        if (type === 'character') return `\n          ${text}`;
-        if (type === 'parenthetical') return `        ${text}`;
-        if (type === 'dialogue') return `    ${text}`;
-        if (type === 'transition') return `\n                    ${text}\n`;
-        return text;
-      }).filter(Boolean);
+  // 1. Create floating selection toolbar if missing
+  if (!document.getElementById('screenplay-multi-selection-bar')) {
+    const bar = document.createElement('div');
+    bar.id = 'screenplay-multi-selection-bar';
+    bar.className = 'hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-2xl border border-slate-700/60 flex items-center gap-2 text-xs font-semibold animate-fade-in select-none';
+    bar.innerHTML = `
+      <span id="multi-sel-count" class="text-[11px] text-blue-400 font-mono pr-1.5 border-r border-slate-700">0 lines</span>
+      <button id="btn-multi-copy" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+        <span>Copy</span>
+      </button>
+      <button id="btn-multi-cut" type="button" class="flex items-center gap-1 hover:text-blue-400 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">content_cut</span>
+        <span>Cut</span>
+      </button>
+      <button id="btn-multi-delete" type="button" class="flex items-center gap-1 text-rose-400 hover:text-rose-300 active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">delete</span>
+        <span>Delete</span>
+      </button>
+      <button id="btn-multi-select-all" type="button" class="flex items-center gap-1 text-slate-300 hover:text-white active:scale-95 px-1.5 py-1 rounded transition-all cursor-pointer">
+        <span class="material-symbols-outlined text-[15px]">select_all</span>
+        <span>All</span>
+      </button>
+      <button id="btn-multi-close" type="button" class="text-slate-400 hover:text-white p-0.5 ml-0.5 cursor-pointer">
+        <span class="material-symbols-outlined text-[14px]">close</span>
+      </button>
+    `;
+    document.body.appendChild(bar);
 
-      e.clipboardData.setData('text/plain', lines.join('\n'));
+    bar.querySelector('#btn-multi-copy').onclick = (e) => {
       e.preventDefault();
-    }
-  });
-
-  container.addEventListener('cut', (e) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const blocks = getSelectedScreenplayBlocks();
-    if (blocks.length > 1) {
-      const lines = blocks.map(b => {
-        const type = b.getAttribute('data-block-type');
-        const text = (getBlockEditable(b)?.innerText || '').trim();
-        if (type === 'scene') return `\n${text}\n`;
-        if (type === 'character') return `\n          ${text}`;
-        if (type === 'parenthetical') return `        ${text}`;
-        if (type === 'dialogue') return `    ${text}`;
-        return text;
-      }).filter(Boolean);
-
-      e.clipboardData.setData('text/plain', lines.join('\n'));
+      e.stopPropagation();
+      copySelectedMultiBlocks(false);
+    };
+    bar.querySelector('#btn-multi-cut').onclick = (e) => {
       e.preventDefault();
-      deleteMultiBlockSelection(sel, blocks);
-    }
-  });
+      e.stopPropagation();
+      copySelectedMultiBlocks(true);
+    };
+    bar.querySelector('#btn-multi-delete').onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      deleteSelectedMultiBlocks();
+    };
+    bar.querySelector('#btn-multi-select-all').onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      selectAllScreenplayBlocks();
+    };
+    bar.querySelector('#btn-multi-close').onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      clearMultiBlockSelection();
+    };
+  }
 
-  // 2. Automatic Edge Scrolling during multi-page selection
-  let isSelecting = false;
+  // Edge scrolling helper
   let scrollAnimId = null;
   let scrollSpeed = 0;
 
   function stepScroll() {
-    if (scrollSpeed !== 0 && isSelecting) {
+    if (scrollSpeed !== 0 && isPointerDragging) {
       scrollContainer.scrollTop += scrollSpeed;
       scrollAnimId = requestAnimationFrame(stepScroll);
     } else {
@@ -2418,7 +2446,7 @@ export function setupMultiBlockSelectionEngine() {
     }
   }
 
-  function handlePointerMove(clientY) {
+  function handlePointerEdgeScroll(clientY) {
     const rect = scrollContainer.getBoundingClientRect();
     const topZone = rect.top + 70;
     const bottomZone = rect.bottom - 90;
@@ -2436,41 +2464,115 @@ export function setupMultiBlockSelectionEngine() {
     }
   }
 
-  scrollContainer.addEventListener('pointerdown', () => { isSelecting = true; });
-  scrollContainer.addEventListener('touchstart', () => { isSelecting = true; }, { passive: true });
+  // Pointer & Touch Down
+  function handleDragStart(clientX, clientY, target) {
+    if (target.closest('button') || target.closest('#screenplay-multi-selection-bar')) return;
 
-  window.addEventListener('pointermove', (e) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
-      scrollSpeed = 0;
-      return;
+    const block = target.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+    if (block) {
+      dragAnchorBlock = block;
+      dragStartPos = { x: clientX, y: clientY };
+      isPointerDragging = false;
+    } else {
+      clearMultiBlockSelection();
     }
-    handlePointerMove(e.clientY);
-  });
+  }
 
-  window.addEventListener('touchmove', (e) => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
-      scrollSpeed = 0;
-      return;
-    }
-    if (e.touches && e.touches[0]) {
-      handlePointerMove(e.touches[0].clientY);
-    }
-  }, { passive: true });
+  // Pointer & Touch Move
+  function handleDragMove(clientX, clientY) {
+    if (!dragAnchorBlock || !dragStartPos) return;
 
-  const stopSelecting = () => {
-    isSelecting = false;
+    const dx = Math.abs(clientX - dragStartPos.x);
+    const dy = Math.abs(clientY - dragStartPos.y);
+
+    if (dy > 10 || dx > 25) {
+      const el = document.elementFromPoint(clientX, clientY);
+      const currentBlock = el?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+      if (currentBlock && currentBlock !== dragAnchorBlock) {
+        isPointerDragging = true;
+        window.getSelection()?.removeAllRanges();
+        const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+        const idxA = allBlocks.indexOf(dragAnchorBlock);
+        const idxB = allBlocks.indexOf(currentBlock);
+        if (idxA !== -1 && idxB !== -1) {
+          const start = Math.min(idxA, idxB);
+          const end = Math.max(idxA, idxB);
+          applyMultiBlockSelection(allBlocks.slice(start, end + 1));
+        }
+      }
+    }
+  }
+
+  // Pointer & Touch End
+  function handleDragEnd() {
+    dragStartPos = null;
+    dragAnchorBlock = null;
+    isPointerDragging = false;
     scrollSpeed = 0;
     if (scrollAnimId) {
       cancelAnimationFrame(scrollAnimId);
       scrollAnimId = null;
     }
-  };
+  }
 
-  window.addEventListener('pointerup', stopSelecting);
-  window.addEventListener('touchend', stopSelecting);
-  window.addEventListener('pointercancel', stopSelecting);
+  // Mouse / Pointer Drag Listeners
+  container.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    handleDragStart(e.clientX, e.clientY, e.target);
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (dragAnchorBlock) {
+      handleDragMove(e.clientX, e.clientY);
+      handlePointerEdgeScroll(e.clientY);
+    }
+  });
+
+  window.addEventListener('pointerup', handleDragEnd);
+  window.addEventListener('pointercancel', handleDragEnd);
+
+  // Mobile Touch Drag Listeners
+  container.addEventListener('touchstart', (e) => {
+    if (e.touches && e.touches[0]) {
+      handleDragStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (dragAnchorBlock && e.touches && e.touches[0]) {
+      handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      handlePointerEdgeScroll(e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', handleDragEnd);
+  window.addEventListener('touchcancel', handleDragEnd);
+
+  // Dismiss selection on tap outside
+  document.addEventListener('pointerdown', (e) => {
+    if (currentMultiSelectedBlocks.length > 0) {
+      const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
+      const isSelectedBlock = e.target.closest('.screenplay-block-selected');
+      if (!isToolbar && !isSelectedBlock) {
+        clearMultiBlockSelection();
+      }
+    }
+  });
+
+  // Clipboard copy & cut hooks
+  container.addEventListener('copy', (e) => {
+    if (currentMultiSelectedBlocks.length > 1) {
+      e.preventDefault();
+      copySelectedMultiBlocks(false);
+    }
+  });
+
+  container.addEventListener('cut', (e) => {
+    if (currentMultiSelectedBlocks.length > 1) {
+      e.preventDefault();
+      copySelectedMultiBlocks(true);
+    }
+  });
 }
 
 function attachSingleBlockListeners(block) {
@@ -2859,16 +2961,32 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     return;
   }
 
-  // Multi-block continuous selection deletion (WriterDuet cross-page selection support)
-  if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
-    const sel = window.getSelection();
-    if (sel && !sel.isCollapsed) {
-      const selectedBlocks = getSelectedScreenplayBlocks();
-      if (selectedBlocks.length > 1) {
-        e.preventDefault();
-        deleteMultiBlockSelection(sel, selectedBlocks);
-        return;
-      }
+  // Multi-block continuous selection handling (WriterDuet cross-page selection support)
+  if (currentMultiSelectedBlocks && currentMultiSelectedBlocks.length > 1) {
+    if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      deleteSelectedMultiBlocks();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      copySelectedMultiBlocks(false);
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+      e.preventDefault();
+      copySelectedMultiBlocks(true);
+      return;
+    }
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      const char = e.key;
+      deleteSelectedMultiBlocks();
+      setTimeout(() => {
+        const active = document.activeElement;
+        if (active) document.execCommand('insertText', false, char);
+      }, 50);
+      return;
     }
   }
 
