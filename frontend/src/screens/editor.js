@@ -2612,18 +2612,32 @@ export function setupMultiBlockSelectionEngine() {
       try {
         const range = sel.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        if (rect && rect.height > 0) {
-          const barHeight = 44;
-          let top = rect.top - barHeight - 10;
-          if (top < 65) {
-            top = rect.bottom + 10;
+        if (rect && (rect.width > 0 || rect.height > 0)) {
+          const barHeight = toolbar.offsetHeight || 42;
+          const barWidth = toolbar.offsetWidth || 230;
+
+          // Compute visible viewport bounds (considering visualViewport on mobile)
+          const viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+          const viewportLeft = window.visualViewport ? window.visualViewport.offsetLeft : 0;
+          const viewportWidth = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+          const headerOffset = 64; // stationary top header height
+
+          // Prefer placing toolbar ABOVE the selection to keep Android teardrop handles unobstructed
+          let top = rect.top - barHeight - 12;
+          if (top < viewportTop + headerOffset) {
+            // If near top of viewport, place BELOW bottom of selection with clearance for handles
+            top = rect.bottom + 32;
           }
+
           let left = rect.left + rect.width / 2;
-          left = Math.max(120, Math.min(window.innerWidth - 120, left));
+          const halfWidth = barWidth / 2;
+          const minLeft = viewportLeft + halfWidth + 8;
+          const maxLeft = viewportLeft + viewportWidth - halfWidth - 8;
+          left = Math.max(minLeft, Math.min(maxLeft, left));
 
           toolbar.style.position = 'fixed';
-          toolbar.style.top = `${top}px`;
-          toolbar.style.left = `${left}px`;
+          toolbar.style.top = `${Math.round(top)}px`;
+          toolbar.style.left = `${Math.round(left)}px`;
           toolbar.style.bottom = 'auto';
           toolbar.style.transform = 'translateX(-50%)';
           return;
@@ -2638,20 +2652,30 @@ export function setupMultiBlockSelectionEngine() {
     toolbar.style.transform = 'translateX(-50%)';
   }
 
-  function checkAndShowToolbar() {
-    const pagesContainer = document.getElementById('screenplay-pages-container');
-    const toolbar = document.getElementById('screenplay-multi-selection-bar');
-    if (!toolbar || !pagesContainer) return;
+  let selectionDebounceId = null;
+  function updateToolbarFromSelection() {
+    if (selectionDebounceId) cancelAnimationFrame(selectionDebounceId);
+    selectionDebounceId = requestAnimationFrame(() => {
+      const pagesContainer = document.getElementById('screenplay-pages-container');
+      const toolbar = document.getElementById('screenplay-multi-selection-bar');
+      if (!toolbar || !pagesContainer) return;
 
-    const sel = window.getSelection();
-    const hasText = sel && !sel.isCollapsed && sel.toString().trim().length > 0;
-    const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
+      const sel = window.getSelection();
+      const hasText = sel && !sel.isCollapsed && sel.toString().trim().length > 0;
+      const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
 
-    if (isInside) {
-      positionToolbar(toolbar);
-      toolbar.classList.remove('hidden');
-      isToolbarOpen = true;
-    }
+      if (isInside) {
+        positionToolbar(toolbar);
+        toolbar.classList.remove('hidden');
+        isToolbarOpen = true;
+      } else {
+        // Only hide if the selection has actually collapsed or is empty
+        if (!sel || sel.isCollapsed || !hasText) {
+          toolbar.classList.add('hidden');
+          isToolbarOpen = false;
+        }
+      }
+    });
   }
 
   // Edge scrolling helper during drag
@@ -2718,7 +2742,7 @@ export function setupMultiBlockSelectionEngine() {
         cancelAnimationFrame(scrollAnimId);
         scrollAnimId = null;
       }
-      setTimeout(checkAndShowToolbar, 20);
+      updateToolbarFromSelection();
     }
   };
 
@@ -2726,7 +2750,10 @@ export function setupMultiBlockSelectionEngine() {
   window.addEventListener('pointercancel', handleDragEnd);
   window.addEventListener('touchend', handleDragEnd);
 
-  // Position sync during scroll if toolbar is already pinned open
+  // Persistent selection tracking: updates position and remains visible while selection exists
+  document.addEventListener('selectionchange', updateToolbarFromSelection);
+
+  // Position sync during scroll if toolbar is open
   window.addEventListener('scroll', () => {
     const toolbar = document.getElementById('screenplay-multi-selection-bar');
     if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
@@ -2734,20 +2761,49 @@ export function setupMultiBlockSelectionEngine() {
     }
   }, { passive: true });
 
-  // Dismiss toolbar only when user taps outside (taps behind popup)
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const toolbar = document.getElementById('screenplay-multi-selection-bar');
+      if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
+        positionToolbar(toolbar);
+      }
+    });
+    window.visualViewport.addEventListener('scroll', () => {
+      const toolbar = document.getElementById('screenplay-multi-selection-bar');
+      if (toolbar && isToolbarOpen && !toolbar.classList.contains('hidden')) {
+        positionToolbar(toolbar);
+      }
+    });
+  }
+
+  // Dismiss toolbar on Back navigation, Escape key, or clicking outside UI
+  window.addEventListener('popstate', clearMultiBlockSelection);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isToolbarOpen) clearMultiBlockSelection();
+  });
+
+  // Dismiss toolbar only when user taps outside the editor container or on UI actions
   document.addEventListener('pointerdown', (e) => {
     const isToolbar = e.target.closest('#screenplay-multi-selection-bar');
     if (isToolbar) return;
 
-    if (isToolbarOpen) {
+    const isUiControl = e.target.closest('button, nav, #header-collaborators-btn, #editorMoreMenuModal, .scriptora-modal-overlay');
+    if (isUiControl && isToolbarOpen) {
       clearMultiBlockSelection();
+      return;
+    }
+
+    const isInsideContainer = e.target.closest('#screenplay-pages-container');
+    if (!isInsideContainer && isToolbarOpen) {
+      clearMultiBlockSelection();
+      return;
     }
   });
 
   // Keyboard shortcut selection check (e.g. Ctrl+A or Shift+Arrows)
   container.addEventListener('keyup', (e) => {
     if (e.shiftKey || (e.ctrlKey && e.key.toLowerCase() === 'a')) {
-      setTimeout(checkAndShowToolbar, 30);
+      updateToolbarFromSelection();
     }
   });
 
