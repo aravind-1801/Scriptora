@@ -290,6 +290,7 @@ body.scriptora-modal-open {
 
 .screenplay-block,
 .screenplay-block-text {
+  min-height: 1.25em;
   user-select: text;
   -webkit-user-select: text;
 }
@@ -299,20 +300,19 @@ body.scriptora-modal-open {
   outline: none;
 }
 
-/* WriterDuet Multi-Block Continuous Highlight */
-.screenplay-block-selected,
-.screenplay-block.screenplay-block-selected,
-.screenplay-block-selected .screenplay-block-text,
-.screenplay-block-text.screenplay-block-selected {
+/* SCRIPTORA True Character-Level Selection Highlight */
+::selection,
+::-moz-selection,
+.screenplay-page-sheet ::selection,
+.screenplay-page-sheet ::-moz-selection,
+#screenplay-pages-container ::selection,
+#screenplay-pages-container ::-moz-selection,
+.screenplay-block ::selection,
+.screenplay-block ::-moz-selection,
+.screenplay-block-text::selection,
+.screenplay-block-text::-moz-selection {
   background-color: #bfdbfe !important;
   color: #1e3a8a !important;
-  border-radius: 4px;
-}
-
-.screenplay-block ::selection,
-.screenplay-block-text::selection {
-  background-color: #bfdbfe;
-  color: #1e3a8a;
 }
 
 /* Screenplay Editor Mobile & Desktop Viewport & Stationary Header Architecture */

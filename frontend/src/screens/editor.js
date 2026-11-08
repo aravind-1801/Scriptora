@@ -483,7 +483,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
-        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" spellcheck="false">
+        <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -1667,6 +1667,9 @@ function renderScreenplayPages() {
     </div>
   `).join('');
 
+  container.setAttribute('contenteditable', 'true');
+  container.setAttribute('spellcheck', 'false');
+
   attachBlockListeners();
   updateTelemetry();
 }
@@ -1792,8 +1795,8 @@ function insertPage(targetBlockId = null) {
   setTimeout(() => {
     const el = document.getElementById(newActionBlock.id);
     if (el) {
-      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
-      if (ed) ed.focus();
+      const ed = getBlockEditable(el);
+      if (ed) setCursorAtEnd(ed);
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, 50);
@@ -1834,8 +1837,8 @@ function addPageAtEnd() {
   setTimeout(() => {
     const el = document.getElementById(newScene.blocks[1].id);
     if (el) {
-      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
-      if (ed) ed.focus();
+      const ed = getBlockEditable(el);
+      if (ed) setCursorAtEnd(ed);
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, 80);
@@ -1882,8 +1885,8 @@ function addPageBefore(targetPageNum = null) {
     setTimeout(() => {
       const el = document.getElementById(newScene.blocks[0].id);
       if (el) {
-        const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
-        if (ed) ed.focus();
+        const ed = getBlockEditable(el);
+        if (ed) setCursorAtEnd(ed);
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 80);
@@ -1930,8 +1933,8 @@ function addPageBefore(targetPageNum = null) {
   setTimeout(() => {
     const el = document.getElementById(newActionBlock.id);
     if (el) {
-      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
-      if (ed) ed.focus();
+      const ed = getBlockEditable(el);
+      if (ed) setCursorAtEnd(ed);
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }, 80);
@@ -1978,80 +1981,80 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
       </div>
     `;
   }
 
   if (isAction) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isChar) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isParen) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isDia) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isTrans) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isShot) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="shot" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content || 'CLOSE ON:')}</div>
     `;
   }
 
   if (isText) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="text" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
     `;
   }
 
   if (isNote) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block screenplay-block-text text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="note" class="screenplay-block screenplay-block-text text-amber-900 bg-amber-50/80 border-l-4 border-amber-400 p-2 my-2.5 rounded-r font-mono text-xs outline-none focus:ring-1 focus:ring-amber-400 cursor-text select-text" spellcheck="false">${renderFormattedContent(block.content || '[[ NOTE: Script comment... ]]')}</div>
     `;
   }
 
   if (isOutline) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block screenplay-block-text text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="outline" class="screenplay-block screenplay-block-text text-slate-500 uppercase tracking-widest font-sans font-bold text-xs my-2 border-b border-slate-200 pb-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'OUTLINE BEAT')}</div>
     `;
   }
 
   if (isAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="act" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-base outline-none focus:bg-blue-50/50 rounded px-1 cursor-text underline decoration-2 underline-offset-4" spellcheck="false">${renderFormattedContent(block.content || 'ACT I')}</div>
     `;
   }
 
   if (isEndAct) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="endact" class="screenplay-block screenplay-block-text text-center uppercase font-bold tracking-widest text-slate-900 my-4 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'END OF ACT I')}</div>
     `;
   }
 
   if (isSequence) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="sequence" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wide text-slate-800 my-3 text-sm outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || 'SEQUENCE 1')}</div>
     `;
   }
 
@@ -2059,12 +2062,12 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
     return `
       <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dual" class="screenplay-block screenplay-dual-dialogue-grid">
         <div class="flex flex-col">
-          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
-          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char1 || 'CHARACTER A')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia1 || 'Dialogue A')}</div>
         </div>
         <div class="flex flex-col">
-          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
-          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
+          <div class="screenplay-block-text text-center font-bold uppercase text-slate-900 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.char2 || 'CHARACTER B')}</div>
+          <div class="screenplay-block-text text-left text-slate-900 text-xs sm:text-sm mt-1 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.dia2 || 'Dialogue B')}</div>
         </div>
       </div>
     `;
@@ -2072,7 +2075,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
 
   if (isLyrics) {
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block screenplay-block-text text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="lyrics" class="screenplay-block screenplay-block-text text-center italic text-slate-800 my-2.5 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content || '♫ Musical lyrics... ♫')}</div>
     `;
   }
 
@@ -2084,14 +2087,14 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
         <div contenteditable="false" class="w-full flex items-center justify-center min-h-[180px] max-h-[420px] rounded-lg bg-slate-100 overflow-hidden relative border border-slate-200/60 select-none">
           <img src="${safeUrl}" alt="${safeCaption || 'Storyboard'}" class="max-h-[400px] w-auto max-w-full object-contain rounded-md shadow-xs bg-white pointer-events-none select-none" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&auto=format&fit=crop&q=80';" loading="eager" />
         </div>
-        <div class="screenplay-block-text text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" contenteditable="true" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
+        <div class="screenplay-block-text text-[11px] font-sans text-slate-600 italic mt-2 text-center outline-none px-2 py-0.5 rounded focus:bg-white w-full cursor-text" data-placeholder="Add a storyboard caption...">${safeCaption || 'Storyboard visual concept'}</div>
         <button type="button" contenteditable="false" class="btn-delete-img-block select-none absolute top-4 right-4 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-red-600 text-white flex items-center justify-center transition-colors shadow-md text-xs font-bold" data-block-id="${block.id}" data-scene-id="${sceneId}" title="Delete image">✕</button>
       </div>
     `;
   }
 
   return `
-    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" contenteditable="true" spellcheck="false">${renderFormattedContent(block.content)}</div>
+    <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
   `;
 }
 
@@ -2172,8 +2175,19 @@ export function capitalizeSentenceStarters(text) {
   return result;
 }
 
-function getCaretCharacterOffsetWithin(element) {
+function getCaretCharacterOffsetWithin(element, targetNode = null, targetOffset = null) {
   let caretOffset = 0;
+  if (!element) return 0;
+  if (targetNode !== null && targetOffset !== null) {
+    try {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      range.setEnd(targetNode, targetOffset);
+      return range.toString().length;
+    } catch (_) {
+      return 0;
+    }
+  }
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) {
     const range = sel.getRangeAt(0);
@@ -2230,7 +2244,7 @@ function setCaretCharacterOffsetWithin(element, offset) {
 }
 
 // =========================================================================
-// WRITERDUET-INSPIRED CONTINUOUS MULTI-PAGE SCREENPLAY SELECTION ENGINE
+// SCRIPTORA TRUE CHARACTER-LEVEL MULTI-PAGE SCREENPLAY SELECTION ENGINE
 // =========================================================================
 
 export let currentMultiSelectedBlocks = [];
@@ -2242,110 +2256,179 @@ let multiBlockEngineInitialized = false;
 export function getBlockEditable(blockEl) {
   if (!blockEl) return null;
   if (blockEl.classList && blockEl.classList.contains('screenplay-block-text')) return blockEl;
-  return blockEl.querySelector('.screenplay-block-text') || (blockEl.hasAttribute('contenteditable') ? blockEl : null) || blockEl.querySelector('[contenteditable="true"]') || blockEl;
+  return blockEl.querySelector('.screenplay-block-text') || blockEl;
+}
+
+export function getFirstTextNode(el) {
+  if (!el) return null;
+  if (el.nodeType === Node.TEXT_NODE) return el;
+  for (let child of el.childNodes) {
+    const found = getFirstTextNode(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+export function getLastTextNode(el) {
+  if (!el) return null;
+  if (el.nodeType === Node.TEXT_NODE) return el;
+  for (let i = el.childNodes.length - 1; i >= 0; i--) {
+    const found = getLastTextNode(el.childNodes[i]);
+    if (found) return found;
+  }
+  return null;
 }
 
 export function clearMultiBlockSelection() {
   currentMultiSelectedBlocks = [];
   dragAnchorBlock = null;
   isPointerDragging = false;
-  document.querySelectorAll('.screenplay-block-selected').forEach(el => {
-    el.classList.remove('screenplay-block-selected');
-  });
   const toolbar = document.getElementById('screenplay-multi-selection-bar');
   if (toolbar) toolbar.classList.add('hidden');
 }
 
-export function applyMultiBlockSelection(blocks) {
-  if (!blocks || blocks.length === 0) {
-    clearMultiBlockSelection();
-    return;
-  }
-
-  currentMultiSelectedBlocks = blocks;
-  const blockSet = new Set(blocks);
-
-  const allBlocks = document.querySelectorAll('#screenplay-pages-container .screenplay-block');
-  allBlocks.forEach(b => {
-    if (blockSet.has(b)) {
-      b.classList.add('screenplay-block-selected');
-    } else {
-      b.classList.remove('screenplay-block-selected');
-    }
-  });
-
-  const toolbar = document.getElementById('screenplay-multi-selection-bar');
-  if (toolbar) {
-    toolbar.classList.remove('hidden');
-  }
-}
-
-export function selectAllScreenplayBlocks() {
+export function selectAllScreenplayText() {
   const container = document.getElementById('screenplay-pages-container');
   if (!container) return;
   const blocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
   if (blocks.length === 0) return;
-  applyMultiBlockSelection(blocks);
+
+  const firstBlock = blocks[0];
+  const lastBlock = blocks[blocks.length - 1];
+  const firstEd = getBlockEditable(firstBlock) || firstBlock;
+  const lastEd = getBlockEditable(lastBlock) || lastBlock;
+
+  const firstNode = getFirstTextNode(firstEd) || firstEd;
+  const lastNode = getLastTextNode(lastEd) || lastEd;
+
+  try {
+    const range = document.createRange();
+    range.setStart(firstNode, 0);
+    range.setEnd(lastNode, lastNode.nodeType === Node.TEXT_NODE ? lastNode.textContent.length : lastNode.childNodes.length);
+
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  } catch (_) {}
+
+  const toolbar = document.getElementById('screenplay-multi-selection-bar');
+  if (toolbar) {
+    toolbar.classList.remove('hidden');
+    toolbar.style.position = 'fixed';
+    toolbar.style.top = 'auto';
+    toolbar.style.bottom = '5.5rem';
+    toolbar.style.left = '50%';
+    toolbar.style.transform = 'translateX(-50%)';
+  }
 }
 
-export function copySelectedMultiBlocks(isCut = false) {
-  if (!currentMultiSelectedBlocks || currentMultiSelectedBlocks.length === 0) return;
+export function deleteCharacterRange(sel) {
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) return false;
+  const range = sel.getRangeAt(0);
 
-  const lines = currentMultiSelectedBlocks.map(b => {
-    const type = b.getAttribute('data-block-type');
-    const text = (getBlockEditable(b)?.innerText || '').trim();
-    if (type === 'scene') return `\n${text}\n`;
-    if (type === 'character') return `\n          ${text}`;
-    if (type === 'parenthetical') return `        ${text}`;
-    if (type === 'dialogue') return `    ${text}`;
-    if (type === 'transition') return `\n                    ${text}\n`;
-    if (type === 'shot') return `\n${text}\n`;
-    if (type === 'act' || type === 'endact') return `\n                ${text}\n`;
-    return text;
-  }).filter(Boolean);
+  const startBlock = range.startContainer.nodeType === Node.ELEMENT_NODE
+    ? range.startContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.startContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
 
-  const fullText = lines.join('\n');
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(fullText).catch(() => {});
+  const endBlock = range.endContainer.nodeType === Node.ELEMENT_NODE
+    ? range.endContainer.closest('.screenplay-block:not([data-block-type="pagebreak"])')
+    : range.endContainer.parentElement?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
+
+  if (!startBlock || !endBlock) {
+    range.deleteContents();
+    return true;
   }
 
-  const count = currentMultiSelectedBlocks.length;
-  if (isCut) {
-    deleteSelectedMultiBlocks();
-    showToast(`Cut ${count} lines`);
+  const container = document.getElementById('screenplay-pages-container');
+  const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
+  const idxA = allBlocks.indexOf(startBlock);
+  const idxB = allBlocks.indexOf(endBlock);
+
+  if (idxA === -1 || idxB === -1) {
+    range.deleteContents();
+    return true;
+  }
+
+  let firstBlock, lastBlock, startNode, startOffsetVal, endNode, endOffsetVal;
+  if (idxA <= idxB) {
+    firstBlock = startBlock;
+    lastBlock = endBlock;
+    startNode = range.startContainer;
+    startOffsetVal = range.startOffset;
+    endNode = range.endContainer;
+    endOffsetVal = range.endOffset;
   } else {
-    showToast(`Copied ${count} lines`);
-  }
-}
-
-export function deleteSelectedMultiBlocks() {
-  if (!currentScreenplay || !currentMultiSelectedBlocks || currentMultiSelectedBlocks.length === 0) return;
-
-  const toDeleteIds = new Set(currentMultiSelectedBlocks.map(b => b.getAttribute('data-block-id')));
-
-  // Identify preceding block ID for focus restoration
-  const allBlocks = Array.from(document.querySelectorAll('#screenplay-pages-container .screenplay-block:not([data-block-type="pagebreak"])'));
-  const firstIdx = allBlocks.indexOf(currentMultiSelectedBlocks[0]);
-  let focusTargetId = null;
-  if (firstIdx > 0) {
-    focusTargetId = allBlocks[firstIdx - 1]?.getAttribute('data-block-id');
+    firstBlock = endBlock;
+    lastBlock = startBlock;
+    startNode = range.endContainer;
+    startOffsetVal = range.endOffset;
+    endNode = range.startContainer;
+    endOffsetVal = range.startOffset;
   }
 
-  // Remove from model
-  (currentScreenplay.scenes || []).forEach(sc => {
-    if (sc.blocks) {
-      sc.blocks = sc.blocks.filter(b => !toDeleteIds.has(b.id));
-    }
-  });
+  const firstEd = getBlockEditable(firstBlock);
+  const lastEd = getBlockEditable(lastBlock);
 
-  // Ensure scenes don't remain empty
-  (currentScreenplay.scenes || []).forEach(sc => {
-    if (!sc.blocks || sc.blocks.length === 0) {
-      sc.blocks = [
-        { id: 'b-' + Date.now() + '-1', type: 'action', content: '' }
-      ];
+  if (firstBlock === lastBlock) {
+    range.deleteContents();
+    if (firstEd) {
+      updateBlockModel(firstBlock, firstEd.innerHTML);
     }
-  });
+    hasUnsavedChanges = true;
+    updateSaveStatus('Unsaved');
+    if (autoSaveEnabled) scheduleAutosave();
+    updateTelemetry();
+    clearMultiBlockSelection();
+    return true;
+  }
+
+  // Cross-block character deletion:
+  const firstOffset = getCaretCharacterOffsetWithin(firstEd, startNode, startOffsetVal);
+  const lastOffset = getCaretCharacterOffsetWithin(lastEd, endNode, endOffsetVal);
+
+  const firstText = firstEd.innerText;
+  const lastText = lastEd.innerText;
+
+  const keepBefore = firstText.slice(0, firstOffset);
+  const keepAfter = lastText.slice(lastOffset);
+
+  const firstId = firstBlock.getAttribute('data-block-id');
+  const lastId = lastBlock.getAttribute('data-block-id');
+
+  const firstIdx = Math.min(idxA, idxB);
+  const lastIdx = Math.max(idxA, idxB);
+
+  const toDeleteIds = new Set();
+  for (let i = firstIdx + 1; i < lastIdx; i++) {
+    toDeleteIds.add(allBlocks[i].getAttribute('data-block-id'));
+  }
+
+  const firstType = firstBlock.getAttribute('data-block-type');
+  const lastType = lastBlock.getAttribute('data-block-type');
+  const shouldMerge = (firstType === lastType) || (firstType === 'action' && lastType === 'dialogue');
+
+  if (shouldMerge) {
+    toDeleteIds.add(lastId);
+    (currentScreenplay.scenes || []).forEach(sc => {
+      if (sc.blocks) {
+        sc.blocks = sc.blocks.filter(b => !toDeleteIds.has(b.id));
+        const b = sc.blocks.find(x => x.id === firstId);
+        if (b) {
+          b.content = keepBefore + keepAfter;
+        }
+      }
+    });
+  } else {
+    (currentScreenplay.scenes || []).forEach(sc => {
+      if (sc.blocks) {
+        sc.blocks = sc.blocks.filter(b => !toDeleteIds.has(b.id));
+        const bFirst = sc.blocks.find(x => x.id === firstId);
+        if (bFirst) bFirst.content = keepBefore;
+        const bLast = sc.blocks.find(x => x.id === lastId);
+        if (bLast) bLast.content = keepAfter;
+      }
+    });
+  }
 
   hasUnsavedChanges = true;
   updateSaveStatus('Unsaved');
@@ -2354,17 +2437,79 @@ export function deleteSelectedMultiBlocks() {
   clearMultiBlockSelection();
   renderScreenplayPages();
 
-  // Restore cursor focus
   setTimeout(() => {
-    const targetEl = focusTargetId ? document.getElementById(focusTargetId) : document.querySelector('.screenplay-block-text');
-    if (targetEl) {
-      const ed = getBlockEditable(targetEl);
+    const targetBlock = document.getElementById(firstId);
+    if (targetBlock) {
+      const ed = getBlockEditable(targetBlock);
       if (ed) {
-        ed.focus();
-        setCursorAtEnd(ed);
+        setCaretCharacterOffsetWithin(ed, keepBefore.length);
       }
     }
-  }, 50);
+  }, 40);
+
+  updateTelemetry();
+  return true;
+}
+
+export async function copySelectedText(isCut = false) {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return;
+
+  const textToCopy = sel.toString();
+  if (!textToCopy) return;
+
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(textToCopy);
+    } else {
+      document.execCommand('copy');
+    }
+  } catch (_) {
+    document.execCommand('copy');
+  }
+
+  if (isCut) {
+    deleteCharacterRange(sel);
+    showToast('Cut');
+  } else {
+    showToast('Copied to clipboard');
+  }
+}
+
+export async function pasteIntoSelection() {
+  try {
+    let pasteText = '';
+    if (navigator.clipboard?.readText) {
+      try {
+        pasteText = await navigator.clipboard.readText();
+      } catch (err) {
+        console.warn('Clipboard read error:', err);
+      }
+    }
+
+    if (!pasteText) {
+      const ok = document.execCommand('paste');
+      if (ok) showToast('Pasted');
+      else showToast('Clipboard is empty or access denied');
+      return;
+    }
+
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed) {
+      deleteCharacterRange(sel);
+      setTimeout(() => {
+        document.execCommand('insertText', false, pasteText);
+        showToast('Pasted');
+      }, 40);
+      return;
+    }
+
+    document.execCommand('insertText', false, pasteText);
+    showToast('Pasted');
+  } catch (err) {
+    console.error('Paste error:', err);
+    showToast('Unable to paste');
+  }
 }
 
 export function setupMultiBlockSelectionEngine() {
@@ -2419,133 +2564,34 @@ export function setupMultiBlockSelectionEngine() {
     bar.querySelector('#btn-multi-copy').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const sel = window.getSelection();
-      const text = sel && !sel.isCollapsed ? sel.toString() : '';
-      if (text.length > 0) {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(text);
-          } else {
-            document.execCommand('copy');
-          }
-          showToast('Copied to clipboard');
-        } catch (_) {
-          document.execCommand('copy');
-          showToast('Copied');
-        }
-      } else if (currentMultiSelectedBlocks.length > 0) {
-        copySelectedMultiBlocks(false);
-      }
+      await copySelectedText(false);
     };
 
     bar.querySelector('#btn-multi-cut').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const sel = window.getSelection();
-      const text = sel && !sel.isCollapsed ? sel.toString() : '';
-      if (text.length > 0) {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(text);
-          }
-        } catch (_) {}
-        const anchor = sel.anchorNode;
-        const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
-        document.execCommand('delete');
-        if (block) {
-          block.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        showToast('Cut');
-        clearMultiBlockSelection();
-      } else if (currentMultiSelectedBlocks.length > 0) {
-        copySelectedMultiBlocks(true);
-      }
+      await copySelectedText(true);
     };
 
     bar.querySelector('#btn-multi-paste').onclick = async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      try {
-        let pasteText = '';
-        if (navigator.clipboard?.readText) {
-          try {
-            pasteText = await navigator.clipboard.readText();
-          } catch (err) {
-            console.warn('Clipboard read error:', err);
-          }
-        }
-
-        const sel = window.getSelection();
-        if (pasteText) {
-          if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
-            const textNode = document.createTextNode(pasteText);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-
-            const anchor = sel.anchorNode;
-            const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
-            if (block) {
-              block.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            showToast('Pasted');
-            clearMultiBlockSelection();
-            return;
-          }
-
-          if (currentMultiSelectedBlocks.length > 0) {
-            const first = currentMultiSelectedBlocks[0];
-            const ed = getBlockEditable(first);
-            if (ed) {
-              ed.innerText = pasteText;
-              ed.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            showToast('Pasted');
-            clearMultiBlockSelection();
-            return;
-          }
-
-          document.execCommand('insertText', false, pasteText);
-          showToast('Pasted');
-          clearMultiBlockSelection();
-        } else {
-          const ok = document.execCommand('paste');
-          if (ok) showToast('Pasted');
-          else showToast('Clipboard is empty or access denied');
-          clearMultiBlockSelection();
-        }
-      } catch (err) {
-        console.error('Paste error:', err);
-        showToast('Unable to paste');
-      }
+      await pasteIntoSelection();
     };
 
     bar.querySelector('#btn-multi-delete').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
       const sel = window.getSelection();
-      if (sel && !sel.isCollapsed && sel.toString().length > 0) {
-        const anchor = sel.anchorNode;
-        const block = (anchor?.nodeType === Node.ELEMENT_NODE ? anchor.closest('.screenplay-block') : anchor?.parentElement?.closest('.screenplay-block')) || document.querySelector('.screenplay-block-text:focus');
-        document.execCommand('delete');
-        if (block) {
-          block.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        showToast('Deleted');
-        clearMultiBlockSelection();
-      } else if (currentMultiSelectedBlocks.length > 0) {
-        deleteSelectedMultiBlocks();
+      if (sel && !sel.isCollapsed) {
+        deleteCharacterRange(sel);
       }
     };
 
     bar.querySelector('#btn-multi-select-all').onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      selectAllScreenplayBlocks();
+      selectAllScreenplayText();
     };
 
     bar.querySelector('#btn-multi-close').onclick = (e) => {
@@ -2597,10 +2643,10 @@ export function setupMultiBlockSelectionEngine() {
     const hasText = sel && !sel.isCollapsed && sel.toString().length > 0;
     const isInside = hasText && (pagesContainer.contains(sel.anchorNode) || pagesContainer.contains(sel.focusNode));
 
-    if (isInside || currentMultiSelectedBlocks.length > 0) {
+    if (isInside) {
       positionToolbar(toolbar);
       toolbar.classList.remove('hidden');
-    } else if (!isPointerDragging && currentMultiSelectedBlocks.length === 0) {
+    } else if (!isPointerDragging) {
       toolbar.classList.add('hidden');
     }
   }
@@ -2675,7 +2721,7 @@ export function setupMultiBlockSelectionEngine() {
     const dx = Math.abs(clientX - dragStartPos.x);
     const dy = Math.abs(clientY - dragStartPos.y);
 
-    if (dy > 12 || dx > 20) {
+    if (dy > 6 || dx > 8) {
       isPointerDragging = true;
       const currentCaret = getCaretPoint(clientX, clientY);
 
@@ -2695,25 +2741,6 @@ export function setupMultiBlockSelectionEngine() {
           sel.removeAllRanges();
           sel.addRange(range);
         } catch (_) {}
-      }
-
-      const el = document.elementFromPoint(clientX, clientY);
-      const currentBlock = el?.closest('.screenplay-block:not([data-block-type="pagebreak"])');
-      if (currentBlock && currentBlock !== dragAnchorBlock) {
-        const allBlocks = Array.from(container.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])'));
-        const idxA = allBlocks.indexOf(dragAnchorBlock);
-        const idxB = allBlocks.indexOf(currentBlock);
-        if (idxA !== -1 && idxB !== -1) {
-          const start = Math.min(idxA, idxB);
-          const end = Math.max(idxA, idxB);
-          const blockSlice = allBlocks.slice(start, end + 1);
-          currentMultiSelectedBlocks = blockSlice;
-          const blockSet = new Set(blockSlice);
-          allBlocks.forEach(b => {
-            if (blockSet.has(b)) b.classList.add('screenplay-block-selected');
-            else b.classList.remove('screenplay-block-selected');
-          });
-        }
       }
     }
   }
@@ -2783,24 +2810,151 @@ export function setupMultiBlockSelectionEngine() {
     if (isToolbar) return;
 
     const isInsideContainer = e.target.closest('#screenplay-pages-container');
-    if (!isInsideContainer && currentMultiSelectedBlocks.length > 0) {
+    if (!isInsideContainer && window.getSelection()?.toString().length > 0) {
       clearMultiBlockSelection();
     }
   });
 
   // Clipboard copy & cut hooks
   container.addEventListener('copy', (e) => {
-    if (currentMultiSelectedBlocks.length > 1) {
-      e.preventDefault();
-      copySelectedMultiBlocks(false);
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString().length > 0) {
+      // Allow browser native copy or set plain text
     }
   });
 
   container.addEventListener('cut', (e) => {
-    if (currentMultiSelectedBlocks.length > 1) {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString().length > 0) {
       e.preventDefault();
-      copySelectedMultiBlocks(true);
+      copySelectedText(true);
     }
+  });
+}
+
+let containerListenersAttached = false;
+export function attachContainerListeners() {
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container || containerListenersAttached) return;
+  containerListenersAttached = true;
+
+  // 1. Click / pointerdown to update active block & focus
+  const syncActiveBlockFromSelection = () => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!el || !container.contains(el)) return;
+    const block = el.closest('.screenplay-block');
+    if (block) {
+      const bId = block.getAttribute('data-block-id');
+      if (bId && bId !== activeBlockId) {
+        activeBlockId = bId;
+        const type = block.getAttribute('data-block-type') || 'action';
+        highlightElementButton(type);
+      }
+    }
+  };
+
+  container.addEventListener('click', (e) => {
+    // If clicked on empty space of a page sheet or wrapper, place cursor into nearest block
+    if (e.target.classList.contains('screenplay-page-sheet') || e.target.classList.contains('page-blocks-wrapper')) {
+      const page = e.target.closest('.screenplay-page-sheet');
+      const blocks = page ? Array.from(page.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])')) : [];
+      if (blocks.length > 0) {
+        let closest = blocks[0];
+        let minDist = Infinity;
+        blocks.forEach(b => {
+          const rect = b.getBoundingClientRect();
+          const dist = Math.abs(rect.top + rect.height / 2 - e.clientY);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = b;
+          }
+        });
+        const ed = getBlockEditable(closest);
+        if (ed) {
+          setCursorAtEnd(ed);
+          activeBlockId = closest.getAttribute('data-block-id');
+          highlightElementButton(closest.getAttribute('data-block-type') || 'action');
+          return;
+        }
+      }
+    }
+    syncActiveBlockFromSelection();
+  });
+
+  // 2. Keydown handler on container: forwards to handleBlockKeydown if in a block
+  container.addEventListener('keydown', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!el || !container.contains(el)) return;
+    const block = el.closest('.screenplay-block');
+    if (!block) return;
+    const editable = getBlockEditable(block);
+    if (!editable) return;
+
+    // Active character range deletion on Backspace/Delete or typing
+    if (sel && !sel.isCollapsed) {
+      if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        deleteCharacterRange(sel);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copySelectedText(false);
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        copySelectedText(true);
+        return;
+      }
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        const char = e.key;
+        deleteCharacterRange(sel);
+        setTimeout(() => {
+          document.execCommand('insertText', false, char);
+        }, 30);
+        return;
+      }
+    }
+
+    handleBlockKeydown(e, block, editable);
+  });
+
+  // 3. Input handler on container: updates the active block's model
+  container.addEventListener('input', (e) => {
+    hasUnsavedChanges = true;
+    updateSaveStatus('Unsaved');
+    if (autoSaveEnabled) scheduleAutosave();
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!el || !container.contains(el)) return;
+    const block = el.closest('.screenplay-block');
+    if (!block) return;
+    const editable = getBlockEditable(block);
+    if (!editable) return;
+
+    const type = block.getAttribute('data-block-type') || 'action';
+    let contentToUpdate = editable.innerHTML;
+    contentToUpdate = contentToUpdate.replace(/&(?:amp;)+nbsp;?/gi, ' ');
+    contentToUpdate = contentToUpdate.replace(/&nbsp;?/gi, ' ');
+    contentToUpdate = contentToUpdate.replace(/\u00A0/g, ' ');
+
+    updateBlockModel(block, contentToUpdate);
+    triggerAutocomplete(block, editable);
+    updateTelemetry();
   });
 }
 
@@ -2971,6 +3125,7 @@ function attachBlockListeners() {
     };
   });
 
+  attachContainerListeners();
   setupMultiBlockSelectionEngine();
 }
 
@@ -3190,31 +3345,31 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     return;
   }
 
-  // Multi-block continuous selection handling (WriterDuet cross-page selection support)
-  if (currentMultiSelectedBlocks && currentMultiSelectedBlocks.length > 1) {
+  // Active character-level selection handling across single/multiple lines & pages
+  const selKey = window.getSelection();
+  if (selKey && !selKey.isCollapsed && selKey.toString().length > 0) {
     if ((e.key === 'Backspace' || e.key === 'Delete') && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
-      deleteSelectedMultiBlocks();
+      deleteCharacterRange(selKey);
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
       e.preventDefault();
-      copySelectedMultiBlocks(false);
+      copySelectedText(false);
       return;
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'x') {
       e.preventDefault();
-      copySelectedMultiBlocks(true);
+      copySelectedText(true);
       return;
     }
     if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
       e.preventDefault();
       const char = e.key;
-      deleteSelectedMultiBlocks();
+      deleteCharacterRange(selKey);
       setTimeout(() => {
-        const active = document.activeElement;
-        if (active) document.execCommand('insertText', false, char);
-      }, 50);
+        document.execCommand('insertText', false, char);
+      }, 30);
       return;
     }
   }
@@ -3252,7 +3407,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       if (currentIdx > 0) {
         e.preventDefault();
         const prevBlockEl = allBlocks[currentIdx - 1];
-        const prevEditable = prevBlockEl.hasAttribute('contenteditable') ? prevBlockEl : prevBlockEl.querySelector('[contenteditable="true"]');
+        const prevEditable = getBlockEditable(prevBlockEl);
         const currentText = editableEl.innerText.trim();
 
         // If current block is empty (or parenthetical '()')
@@ -3300,7 +3455,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
 
       if (currentIdx < allBlocks.length - 1) {
         const nextBlockEl = allBlocks[currentIdx + 1];
-        const nextEditable = nextBlockEl.hasAttribute('contenteditable') ? nextBlockEl : nextBlockEl.querySelector('[contenteditable="true"]');
+        const nextEditable = getBlockEditable(nextBlockEl);
         const nextSceneId = nextBlockEl.getAttribute('data-scene-id');
         const nextBlockId = nextBlockEl.getAttribute('data-block-id');
         const nextType = nextBlockEl.getAttribute('data-block-type');
@@ -3343,9 +3498,8 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       if (currentIdx > 0) {
         e.preventDefault();
         const prevBlockEl = allBlocks[currentIdx - 1];
-        const prevEd = prevBlockEl.querySelector('[contenteditable="true"]') || prevBlockEl;
+        const prevEd = getBlockEditable(prevBlockEl);
         if (prevEd) {
-          prevEd.focus();
           setCursorAtEnd(prevEd);
         }
       }
@@ -3361,9 +3515,8 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       if (currentIdx < allBlocks.length - 1) {
         e.preventDefault();
         const nextBlockEl = allBlocks[currentIdx + 1];
-        const nextEd = nextBlockEl.querySelector('[contenteditable="true"]') || nextBlockEl;
+        const nextEd = getBlockEditable(nextBlockEl);
         if (nextEd) {
-          nextEd.focus();
           setCaretCharacterOffsetWithin(nextEd, 0);
         }
       }
@@ -3578,9 +3731,8 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     updateTelemetry();
 
     // Focus the new line immediately
-    const ed = newEl.hasAttribute('contenteditable') ? newEl : newEl.querySelector('[contenteditable="true"]');
+    const ed = getBlockEditable(newEl);
     if (ed) {
-      ed.focus();
       setCursorAtEnd(ed);
     }
 
@@ -3598,9 +3750,8 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
       setTimeout(() => {
         const el = document.getElementById(newBlockId);
         if (el) {
-          const ed2 = el.querySelector('[contenteditable="true"]') || el;
-          ed2.focus();
-          setCursorAtEnd(ed2);
+          const ed2 = getBlockEditable(el);
+          if (ed2) setCursorAtEnd(ed2);
         }
       }, 20);
     }
@@ -3609,9 +3760,8 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     setTimeout(() => {
       const el = document.getElementById(newBlockId);
       if (el) {
-        const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+        const ed = getBlockEditable(el);
         if (ed) {
-          ed.focus();
           setCursorAtEnd(ed);
         }
       }
@@ -3663,9 +3813,8 @@ function createNewSceneAfter(sceneId, fromBlockId = null) {
   setTimeout(() => {
     const headingEl = document.getElementById(newHeadingBlockId);
     if (headingEl) {
-      const ed = headingEl.querySelector('[contenteditable="true"]');
+      const ed = getBlockEditable(headingEl);
       if (ed) {
-        ed.focus();
         setCursorAtEnd(ed);
         triggerAutocomplete(headingEl, ed);
       }
@@ -3762,9 +3911,8 @@ function convertBlockType(blockEl, newType) {
   setTimeout(() => {
     const el = document.getElementById(blockId);
     if (el) {
-      const ed = el.hasAttribute('contenteditable') ? el : el.querySelector('[contenteditable="true"]');
+      const ed = getBlockEditable(el);
       if (ed) {
-        ed.focus();
         if (newType === 'parenthetical' && ed.innerText === '()') {
           // Place cursor EXACTLY between () at index 1: (|)
           const textNode = ed.firstChild;
@@ -3794,12 +3942,17 @@ function convertBlockType(blockEl, newType) {
 }
 
 function setCursorAtEnd(el) {
+  if (!el) return;
   const range = document.createRange();
   const sel = window.getSelection();
   range.selectNodeContents(el);
   range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
+  const container = document.getElementById('screenplay-pages-container');
+  if (container && document.activeElement !== container) {
+    container.focus();
+  }
 }
 
 // =========================================================================
@@ -3817,7 +3970,7 @@ function setupAutocomplete() {
     if (dropdown && !dropdown.classList.contains('hidden') && activeBlockId) {
       const activeEl = document.getElementById(activeBlockId);
       if (activeEl) {
-        const ed = activeEl.querySelector('[contenteditable="true"]') || activeEl;
+        const ed = getBlockEditable(activeEl);
         positionAutocomplete(dropdown, ed);
       }
     }
@@ -4527,13 +4680,13 @@ export function isFormatActive(cmd) {
 export function applyTextFormatting(cmd) {
   let activeEl = document.activeElement;
   let blockEl = activeEl ? activeEl.closest('.screenplay-block') : null;
-  let editable = blockEl ? (blockEl.hasAttribute('contenteditable') ? blockEl : blockEl.querySelector('[contenteditable="true"]')) : null;
+  let editable = blockEl ? getBlockEditable(blockEl) : null;
 
   if (!editable && activeBlockId) {
     const b = document.getElementById(activeBlockId);
     if (b) {
       blockEl = b;
-      editable = b.hasAttribute('contenteditable') ? b : b.querySelector('[contenteditable="true"]');
+      editable = getBlockEditable(b);
     }
   }
 
@@ -4541,7 +4694,7 @@ export function applyTextFormatting(cmd) {
     const firstBlock = document.querySelector('.screenplay-block');
     if (firstBlock) {
       blockEl = firstBlock;
-      editable = firstBlock.hasAttribute('contenteditable') ? firstBlock : firstBlock.querySelector('[contenteditable="true"]');
+      editable = getBlockEditable(firstBlock);
     }
   }
 
@@ -5085,8 +5238,8 @@ export function toggleFindReplace(open) {
     }
     if (savedActiveBlockBeforeFind) {
       const el = document.getElementById(savedActiveBlockBeforeFind);
-      const ed = el?.querySelector('[contenteditable="true"]') || el;
-      if (ed) ed.focus();
+      const ed = getBlockEditable(el);
+      if (ed) setCursorAtEnd(ed);
     }
     const idx = editorNavStack.findIndex(x => x.id === 'findModal');
     if (idx !== -1) editorNavStack.splice(idx, 1);
@@ -5618,7 +5771,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       }
 
       if (bType === 'scene') {
-        const editable = bEl.querySelector('[contenteditable="true"]');
+        const editable = getBlockEditable(bEl);
         const text = (editable ? editable.innerText.trim() : bEl.innerText.trim()).toUpperCase();
         if (text) hasActualContent = true;
         const sNum = sceneNumbers ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
@@ -5672,7 +5825,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
         pageLines.push({ text, x: LEFT_MARGIN, y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'image') {
-        const caption = bEl.querySelector('[contenteditable="true"]')?.innerText?.trim() || 'Storyboard Image';
+        const caption = getBlockEditable(bEl)?.innerText?.trim() || 'Storyboard Image';
         hasActualContent = true;
         y -= PARAGRAPH_GAP;
         pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: LEFT_MARGIN, y, font: 'F1', size: 12 });
@@ -5949,7 +6102,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
 
             let content = '';
             if (bType === 'scene') {
-              const editable = bEl.querySelector('[contenteditable="true"]');
+              const editable = getBlockEditable(bEl);
               content = editable ? editable.innerText.trim() : bEl.innerText.trim();
               const sNum = optSceneNum ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
               if (content) {
