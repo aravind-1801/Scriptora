@@ -490,7 +490,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-4xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[794px] sm:min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
@@ -1677,31 +1677,38 @@ function renderScreenplayPages() {
     });
   }
 
-  // Render each continuous A4 sheet
+  // Render each continuous A4 sheet with 3-part authentic internal page structure:
+  // 1. Top Margin (1.0 inch) with Header Page Number
+  // 2. Full-Height Editable Screenplay Content Area (979px between margins)
+  // 3. Bottom Margin (1.0 inch) with unobtrusive page controls (text stops at bottom margin)
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet w-full max-w-[794px] sm:min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet" data-page-num="${page.pageNumber}">
       
-      <!-- Top Page Header: Page number in top right -->
-      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
-        <span>${page.pageNumber}.</span>
+      <!-- 1. Top Margin Area (Physical 1.0 inch with Page Number in Header) -->
+      <div contenteditable="false" class="screenplay-page-top-margin select-none">
+        <div class="screenplay-page-header">
+          <span class="screenplay-page-number">${page.pageNumber}.</span>
+        </div>
       </div>
 
-      <!-- Screenplay Blocks naturally flowing across this A4 page -->
-      <div class="page-blocks-wrapper flex flex-col flex-1 w-full">
+      <!-- 2. Full-Height Editable Screenplay Writing Area (Full height between margins) -->
+      <div class="page-blocks-wrapper screenplay-page-content" data-page-num="${page.pageNumber}">
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- Bottom Page Boundary indicator with Page Controls -->
-      <div contenteditable="false" class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-auto">
-        <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
-          <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
-          <span class="hidden sm:inline">Add Page Before</span>
-        </button>
-        <span class="tracking-widest uppercase text-slate-300 font-bold">— PAGE ${page.pageNumber} —</span>
-        <button type="button" class="btn-page-add-after px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Insert Page after Page ${page.pageNumber}">
-          <span class="material-symbols-outlined text-[14px]">add</span>
-          <span class="hidden sm:inline">Insert Page</span>
-        </button>
+      <!-- 3. Bottom Margin Area (Physical 1.0 inch: text stops at screenplay bottom margin) -->
+      <div contenteditable="false" class="screenplay-page-bottom-margin select-none">
+        <div class="screenplay-page-footer">
+          <button type="button" class="btn-page-add-before" data-page-num="${page.pageNumber}" title="Add Page Before Page ${page.pageNumber}">
+            <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+            <span class="hidden sm:inline">Add Page Before</span>
+          </button>
+          <span class="page-footer-badge">— PAGE ${page.pageNumber} —</span>
+          <button type="button" class="btn-page-add-after" data-page-num="${page.pageNumber}" title="Insert Page After Page ${page.pageNumber}">
+            <span class="material-symbols-outlined text-[14px]">add</span>
+            <span class="hidden sm:inline">Insert Page</span>
+          </button>
+        </div>
       </div>
 
     </div>
@@ -3208,11 +3215,27 @@ export function attachContainerListeners() {
       clearMultiBlockSelection();
     }
 
-    // If clicked on empty space of a page sheet or wrapper, place cursor into nearest block
-    if (e.target.classList.contains('screenplay-page-sheet') || e.target.classList.contains('page-blocks-wrapper')) {
+    // If clicked on empty space of a page sheet, content area, or margin, place cursor into the writing area
+    if (e.target.classList.contains('screenplay-page-sheet') || 
+        e.target.classList.contains('page-blocks-wrapper') || 
+        e.target.classList.contains('screenplay-page-content') ||
+        e.target.classList.contains('screenplay-page-bottom-margin') ||
+        e.target.classList.contains('screenplay-page-top-margin')) {
       const page = e.target.closest('.screenplay-page-sheet');
       const blocks = page ? Array.from(page.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])')) : [];
       if (blocks.length > 0) {
+        // If clicking below the last block on the sheet, focus the end of the last block
+        const lastBlock = blocks[blocks.length - 1];
+        const lastRect = lastBlock.getBoundingClientRect();
+        if (e.clientY > lastRect.bottom) {
+          const ed = getBlockEditable(lastBlock);
+          if (ed) {
+            setCursorAtEnd(ed);
+            activeBlockId = lastBlock.getAttribute('data-block-id');
+            highlightElementButton(lastBlock.getAttribute('data-block-type') || 'action');
+            return;
+          }
+        }
         let closest = blocks[0];
         let minDist = Infinity;
         blocks.forEach(b => {

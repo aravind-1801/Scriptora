@@ -221,36 +221,156 @@ body.scriptora-modal-open {
   }
 }
 
-/* Professional Screenplay Page Sheet (Standard A4 Geometry & Margins: 210mm x 297mm) */
+/* ==========================================================================
+   AUTHENTIC ISO A4 SCREENPLAY PAGE ARCHITECTURE (210mm x 297mm)
+   Reference Dimensions at 96 DPI: 794px x 1123px (Aspect Ratio 210:297)
+   Standard Screenplay Margins: Top 1.0" (72px), Left 1.5" (108px), Right 1.0" (72px), Bottom 1.0" (72px)
+   Usable Content Height: 1123px - 72px - 72px = 979px (~54 lines)
+   ========================================================================== */
+
 .screenplay-page-sheet {
-  width: 100%;
-  max-width: 794px; /* Exact A4 at 96dpi: 210mm = 793.7px */
-  min-height: 1123px; /* Exact A4 at 96dpi: 297mm = 1122.5px */
-  background-color: #ffffff;
-  padding: 72px 72px 72px 108px !important; /* 1.0in top, 1.0in right, 1.0in bottom, 1.5in left */
-  box-sizing: border-box;
-  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
-  font-size: 12pt;
-  line-height: 1.25;
-  color: #0f172a;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
-  border-radius: 2px;
+  width: 794px !important;
+  min-width: 794px !important;
+  max-width: 794px !important;
+  min-height: 1123px !important;
+  height: 1123px !important;
+  background-color: #ffffff !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  margin: 0 auto 32px auto !important;
+  box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(226, 232, 240, 0.9) !important;
+  border-radius: 2px !important;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace !important;
+  font-size: 12pt !important;
+  line-height: 1.25 !important;
+  color: #0f172a !important;
+  overflow: visible !important;
 }
 
-/* Screenplay Title Page Sheet (Symmetric 1.5in margins for true horizontal page centering) */
 .screenplay-title-page-sheet {
-  width: 100%;
-  max-width: 794px;
-  min-height: 1123px;
-  background-color: #ffffff;
+  width: 794px !important;
+  min-width: 794px !important;
+  max-width: 794px !important;
+  min-height: 1123px !important;
+  height: 1123px !important;
+  background-color: #ffffff !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  position: relative !important;
+  margin: 0 auto 32px auto !important;
   padding: 72px 108px 72px 108px !important;
-  box-sizing: border-box;
-  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
-  font-size: 12pt;
-  line-height: 1.25;
-  color: #0f172a;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
-  border-radius: 2px;
+  box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(226, 232, 240, 0.9) !important;
+  border-radius: 2px !important;
+}
+
+/* 1. Top Margin: Physical 1.0 inch (72px) with Page Number Header */
+.screenplay-page-top-margin {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  width: 100% !important;
+  padding-left: 108px !important;
+  padding-right: 72px !important;
+  padding-top: 36px !important;
+  padding-bottom: 8px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.screenplay-page-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+}
+
+.screenplay-page-number {
+  font-family: 'Courier Prime', Courier, monospace !important;
+  font-size: 12pt !important;
+  color: #64748b !important;
+  text-align: right !important;
+}
+
+/* 2. Full-Height Editable Writing Area: Occupies full 979px between margins */
+.page-blocks-wrapper,
+.screenplay-page-content {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-height: 979px !important;
+  height: 979px !important;
+  padding-left: 108px !important;
+  padding-right: 72px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  overflow: visible !important;
+}
+
+/* 3. Bottom Margin: Physical 1.0 inch (72px) - Screenplay text stops here */
+.screenplay-page-bottom-margin {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  width: 100% !important;
+  padding-left: 108px !important;
+  padding-right: 72px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.screenplay-page-footer {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  font-family: sans-serif !important;
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  border-top: 1px dashed #e2e8f0 !important;
+  padding-top: 8px !important;
+}
+
+.page-footer-badge {
+  font-weight: 700 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+  color: #cbd5e1 !important;
+  font-size: 10px !important;
+}
+
+.btn-page-add-before,
+.btn-page-add-after {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  background-color: transparent !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.btn-page-add-before:hover,
+.btn-page-add-after:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
 }
 
 @media (max-width: 640px) {
@@ -260,83 +380,59 @@ body.scriptora-modal-open {
     padding-right: 8px !important;
     padding-top: 12px !important;
     padding-bottom: 32px !important;
-    gap: 16px !important;
+    gap: 20px !important;
     box-sizing: border-box !important;
   }
 
   .screenplay-page-sheet {
     width: min(794px, calc(100vw - 16px)) !important;
-    max-width: 794px !important;
+    min-width: min(794px, calc(100vw - 16px)) !important;
+    max-width: min(794px, calc(100vw - 16px)) !important;
+    height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
     min-height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
     aspect-ratio: 210 / 297 !important;
-    padding: 36px 16px 36px 28px !important;
-    margin: 0 auto !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    margin: 0 auto 20px auto !important;
     border-radius: 2px !important;
   }
+
   .screenplay-title-page-sheet {
     width: min(794px, calc(100vw - 16px)) !important;
-    max-width: 794px !important;
+    min-width: min(794px, calc(100vw - 16px)) !important;
+    max-width: min(794px, calc(100vw - 16px)) !important;
+    height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
     min-height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
     aspect-ratio: 210 / 297 !important;
-    padding: 36px 20px 36px 20px !important;
-    margin: 0 auto !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
-    border-radius: 2px !important;
+    margin: 0 auto 20px auto !important;
+    padding: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
   }
-  .screenplay-block[data-block-type="character"] {
-    margin-left: 18% !important;
-    max-width: 100% !important;
+
+  .screenplay-page-top-margin {
+    height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    min-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    max-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-top: calc(18px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-bottom: 4px !important;
   }
-  .screenplay-block[data-block-type="parenthetical"] {
-    margin-left: 12% !important;
-    max-width: 100% !important;
+
+  .page-blocks-wrapper,
+  .screenplay-page-content {
+    min-height: calc(calc(min(794px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(794px, calc(100vw - 16px)) / 794))) !important;
+    height: calc(calc(min(794px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(794px, calc(100vw - 16px)) / 794))) !important;
+    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
   }
-  .screenplay-block[data-block-type="dialogue"] {
-    margin-left: 8% !important;
-    max-width: 100% !important;
-  }
-  .scene-num-indicator {
-    margin-left: -26px !important;
-    width: 20px !important;
-    margin-right: 6px !important;
-    font-size: 10pt !important;
+
+  .screenplay-page-bottom-margin {
+    height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    min-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    max-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
   }
 }
 
-/* Professional Screenplay Element Indentation Rules */
-.screenplay-block[data-block-type="action"] {
-  width: 100%;
-  max-width: 60ch;
-  text-align: left;
-}
-
-.screenplay-block[data-block-type="character"] {
-  margin-left: 37% !important;
-  max-width: 28ch !important;
-  text-align: left !important;
-}
-
-.screenplay-block[data-block-type="parenthetical"] {
-  margin-left: 26% !important;
-  max-width: 24ch !important;
-  text-align: left !important;
-}
-
-.screenplay-block[data-block-type="dialogue"] {
-  margin-left: 17% !important;
-  max-width: 36ch !important;
-  text-align: left !important;
-}
-
-.screenplay-block[data-block-type="transition"] {
-  width: 100% !important;
-  text-align: right !important;
-}
 
 /* WriterDuet-Inspired Continuous Multi-Page Screenplay Selection */
 #screenplay-pages-container {
