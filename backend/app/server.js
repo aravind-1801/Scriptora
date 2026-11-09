@@ -1,6 +1,32 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
+
+// Automatically load environment variables from local .env files
+const envLocations = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'backend', '.env'),
+  path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([a-zA-Z]:)/, '$1')), '../.env')
+];
+for (const envFile of envLocations) {
+  if (fs.existsSync(envFile)) {
+    try {
+      const raw = fs.readFileSync(envFile, 'utf8');
+      raw.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const idx = trimmed.indexOf('=');
+          const k = trimmed.slice(0, idx).trim();
+          const v = trimmed.slice(idx + 1).trim();
+          if (k && !process.env[k]) {
+            process.env[k] = v;
+          }
+        }
+      });
+    } catch {}
+  }
+}
+
 import { handleCors } from './middleware/cors.js';
 import { db } from './models/db.js';
 import * as authService from './auth/authService.js';

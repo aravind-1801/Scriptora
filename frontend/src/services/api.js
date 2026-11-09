@@ -3251,6 +3251,33 @@ export async function getAiImageProviders() {
       description: "Fast, cinematic vector canvas with camera crosshairs, aspect ratio letterboxing, stylized character silhouettes, and directional lighting."
     },
     {
+      id: "nvidia-nim",
+      name: "NVIDIA NIM (FLUX.1-dev)",
+      model: "black-forest-labs/flux.1-dev",
+      isConfigured: true,
+      pricingType: "free",
+      costPerImage: 0.0,
+      costLabel: "Free Tier (NVIDIA Developer)",
+      requiresApiKey: true,
+      envVarName: "NVIDIA_API_KEY",
+      aspectRatios: ["16:9", "2.39:1", "1:1", "4:3", "9:16"],
+      styles: [
+        "Cinematic Concept Art",
+        "Photorealistic / Live Action",
+        "Storyboard Ink",
+        "Pencil Sketch",
+        "3D Animation",
+        "Anime / Illustration",
+        "Storyboard Sketch",
+        "Graphic Novel",
+        "Noir / High Contrast B&W",
+        "Watercolor",
+        "Vintage Film",
+        "Cyberpunk / Neon"
+      ],
+      description: "High-fidelity visual storyboard frame synthesis via official NVIDIA NIM Cloud Functions (FLUX.1-dev)."
+    },
+    {
       id: "openai-dalle3",
       name: "OpenAI DALL-E 3",
       model: "dall-e-3",
@@ -3825,8 +3852,8 @@ export async function generateStoryboardShot(scriptId, params = {}) {
       return res;
     }
   } catch (e) {
-    // If backend returns a provider unconfigured error, re-throw it so caller displays clear honest guidance
-    if (e.message && e.message.includes('not configured')) {
+    // If an external provider was requested (like NVIDIA NIM), re-throw so user receives honest provider error
+    if (params.provider && params.provider !== 'scriptora-concept') {
       throw e;
     }
   }
@@ -3891,7 +3918,7 @@ export async function generateStoryboardSequence(scriptId, sceneId, params = {})
     });
     if (res?.proposedShots) return res;
   } catch (e) {
-    if (e.message && e.message.includes('not configured')) {
+    if (params.provider && params.provider !== 'scriptora-concept') {
       throw e;
     }
   }

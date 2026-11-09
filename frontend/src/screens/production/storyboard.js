@@ -488,6 +488,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <label class="text-[11px] font-semibold text-slate-700">Image Generation Provider</label>
               <select id="gen-provider-select" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-900 font-semibold focus:outline-none focus:border-blue-600">
                 <option value="scriptora-concept">SCRIPTORA Concept Engine (Free / Built-in)</option>
+                <option value="nvidia-nim">NVIDIA NIM (FLUX.1-dev — Free Developer Tier)</option>
                 <option value="gemini-imagen3">Google Imagen 3 (Paid API)</option>
                 <option value="stability-sdxl">Stability AI SDXL (Paid API)</option>
                 <option value="openai-dalle3">OpenAI DALL-E 3 (Paid API)</option>
@@ -727,6 +728,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <label class="text-[11px] font-semibold text-slate-700">Image Provider</label>
               <select id="regen-provider-select" class="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white text-slate-900 font-semibold focus:outline-none focus:border-blue-600">
                 <option value="scriptora-concept">SCRIPTORA Concept Engine (Free / Built-in)</option>
+                <option value="nvidia-nim">NVIDIA NIM (FLUX.1-dev — Free Developer Tier)</option>
                 <option value="gemini-imagen3">Google Imagen 3 (Paid API)</option>
                 <option value="stability-sdxl">Stability AI SDXL (Paid API)</option>
                 <option value="openai-dalle3">OpenAI DALL-E 3 (Paid API)</option>
@@ -2779,7 +2781,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (genCostLabel) {
       if (p.pricingType === 'free') {
-        genCostLabel.textContent = 'Free (Built-in Concept Engine, no API keys or charges required).';
+        genCostLabel.textContent = p.id === 'nvidia-nim'
+          ? 'Free (NVIDIA Developer Tier — 100% Free, no automatic billing or charges).'
+          : 'Free (Built-in Concept Engine, no API keys or charges required).';
       } else {
         const count = activeGenerationMode === 'single' ? 1 : (selectedShotCount || 4);
         const est = `$${((p.costPerImage || 0.04) * count).toFixed(3)} (${count}-shot${count > 1 ? ' batch' : ''})`;
@@ -2955,7 +2959,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (!provSelect || !costBanner) return;
     const p = providers.find(prov => prov.id === provSelect.value) || providers[0] || { pricingType: 'free' };
     if (p.pricingType === 'free') {
-      costBanner.textContent = 'Free (Built-in Concept Engine, no charges).';
+      costBanner.textContent = p.id === 'nvidia-nim'
+        ? 'Free (NVIDIA Developer Tier — 100% Free, no automatic billing or charges).'
+        : 'Free (Built-in Concept Engine, no charges).';
     } else {
       costBanner.textContent = `Estimated: ${p.costLabel || '$0.040'}. Server credentials required.`;
     }

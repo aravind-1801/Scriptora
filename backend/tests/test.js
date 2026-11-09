@@ -80,7 +80,8 @@ server.listen(PORT, async () => {
 
     // 8. Storyboard AI Providers List
     const providers = await request('/api/production/ai/providers');
-    console.log('✓ Storyboard AI Providers:', providers.status, Array.isArray(providers.body.providers) && providers.body.providers.length >= 4 ? 'PASS' : 'FAIL');
+    const hasNvidia = providers.body.providers?.some(p => p.id === 'nvidia-nim' && p.model === 'black-forest-labs/flux.1-dev');
+    console.log('✓ Storyboard AI Providers (including NVIDIA NIM):', providers.status, (Array.isArray(providers.body.providers) && hasNvidia) ? 'PASS' : 'FAIL');
 
     // 9. Fetch Storyboard for Scene 1
     const sb1 = await request('/api/production/chronicles-of-dust/storyboard?sceneId=scene-1');

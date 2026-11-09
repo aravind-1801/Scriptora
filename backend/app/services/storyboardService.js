@@ -420,6 +420,7 @@ export function getAiProviders() {
   const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim() !== "");
   const hasGeminiKey = Boolean((process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY) && (process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY).trim() !== "");
   const hasStabilityKey = Boolean(process.env.STABILITY_API_KEY && process.env.STABILITY_API_KEY.trim() !== "");
+  const hasNvidiaKey = Boolean(process.env.NVIDIA_API_KEY && process.env.NVIDIA_API_KEY.trim() !== "");
 
   return [
     {
@@ -441,6 +442,33 @@ export function getAiProviders() {
         "Anime / Illustration"
       ],
       description: "Fast, cinematic vector canvas with camera crosshairs, aspect ratio letterboxing, stylized character silhouettes, and directional lighting."
+    },
+    {
+      id: "nvidia-nim",
+      name: "NVIDIA NIM (FLUX.1-dev)",
+      model: "black-forest-labs/flux.1-dev",
+      isConfigured: hasNvidiaKey,
+      pricingType: "free",
+      costPerImage: 0.0,
+      costLabel: "Free Tier (NVIDIA Developer)",
+      requiresApiKey: true,
+      envVarName: "NVIDIA_API_KEY",
+      aspectRatios: ["16:9", "2.39:1", "1:1", "4:3", "9:16"],
+      styles: [
+        "Cinematic Concept Art",
+        "Photorealistic / Live Action",
+        "Storyboard Ink",
+        "Pencil Sketch",
+        "3D Animation",
+        "Anime / Illustration",
+        "Storyboard Sketch",
+        "Graphic Novel",
+        "Noir / High Contrast B&W",
+        "Watercolor",
+        "Vintage Film",
+        "Cyberpunk / Neon"
+      ],
+      description: "High-fidelity cinematic visual storyboard frame synthesis via official NVIDIA NIM Cloud Functions (FLUX.1-dev)."
     },
     {
       id: "openai-dalle3",
@@ -510,6 +538,173 @@ export async function generateShotImage(params = {}) {
       `Provider '${selectedProvider.name}' is not configured: ${selectedProvider.envVarName} is missing in the backend server environment. ` +
       `Please configure your API key in backend/.env or choose SCRIPTORA Concept Engine (Free / Built-in) or Manual Image Import.`
     );
+  }
+
+  // If NVIDIA NIM is requested
+  if (provider === "nvidia-nim") {
+    if (!process.env.NVIDIA_API_KEY) {
+      throw new Error(
+        "NVIDIA API Key is missing. Please set NVIDIA_API_KEY in backend/.env to use NVIDIA NIM."
+      );
+    }
+
+    const apiKey = process.env.NVIDIA_API_KEY.trim();
+    const endpoint = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev";
+
+    // Set dimensions supported by FLUX.1-dev
+    let width = 1024;
+    let height = 1024;
+    if (aspectRatio === "16:9") {
+      width = 1024;
+      height = 576;
+    } else if (aspectRatio === "2.39:1") {
+      width = 1024;
+      height = 448;
+    } else if (aspectRatio === "9:16") {
+      width = 576;
+      height = 1024;
+    } else if (aspectRatio === "4:3") {
+      width = 1024;
+      height = 768;
+    }
+
+    const fullPrompt = `${visualStyle} cinematic storyboard film still frame for ${sceneHeading}: ${prompt}. Camera: ${shotSize}, ${cameraAngle}, ${focalLength}. Lighting: ${lightingMood}. High detail production storyboard illustration.`;
+
+    let attempts = 0;
+    const maxAttempts = 2;
+    let lastError = null;
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 65000);
+
+      try {
+        const resp = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            prompt: fullPrompt,
+            mode: "base",
+            cfg_scale: 5,
+            width,
+            height,
+            steps: 25,
+            seed: params.seed || Math.floor(Math.random() * 1000000)
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        // Async handling: HTTP 202 Accepted
+        if (resp.status === 202) {
+          const reqId = resp.headers.get("nvcf-reqid") || (await resp.json().catch(() => ({}))).id;
+          if (!reqId) {
+            throw new Error("NVIDIA async invocation returned 202 without a valid request ID.");
+          }
+          const pollUrl = `https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/${reqId}`;
+          const startTime = Date.now();
+          while (Date.now() - startTime < 45000) {
+            await new Promise(r => setTimeout(r, 2000));
+            const pollRes = await fetch(pollUrl, {
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Accept": "application/json"
+              }
+            });
+            if (pollRes.status === 200) {
+              const pollData = await pollRes.json();
+              const b64 = pollData.artifacts?.[0]?.base64 || pollData.b64_json;
+              if (b64) {
+                return {
+                  imageUrl: `data:image/jpeg;base64,${b64}`,
+                  provider: "nvidia-nim",
+                  model: "black-forest-labs/flux.1-dev",
+                  quality: params.quality || "standard",
+                  costEstimate: "Free (NVIDIA Developer Tier)",
+                  prompt
+                };
+              }
+            } else if (pollRes.status !== 202) {
+              const errTxt = await pollRes.text();
+              throw new Error(`NVIDIA async task failed: ${errTxt}`);
+            }
+          }
+          throw new Error("NVIDIA generation timed out while waiting for async job completion.");
+        }
+
+        if (resp.status === 404) {
+          const errJson = await resp.json().catch(() => ({}));
+          if (errJson.detail && errJson.detail.includes("Not found for account")) {
+            throw new Error(
+              `NVIDIA Account Notice: Endpoint execution requires 'Public API Endpoints' enabled on build.nvidia.com for your account.`
+            );
+          }
+          throw new Error(`NVIDIA endpoint returned 404: ${errJson.detail || "Model not found"}`);
+        }
+
+        if (resp.status === 402 || resp.status === 403) {
+          throw new Error(
+            "NVIDIA generation paused: Free developer quota exhausted or billing activation required. SCRIPTORA strict free-only policy prevents any automatic charges."
+          );
+        }
+
+        if (resp.status === 429) {
+          throw new Error("NVIDIA rate limit reached. Please wait a moment before trying again.");
+        }
+
+        if (resp.status >= 500 && attempts < maxAttempts) {
+          await new Promise(r => setTimeout(r, 2000));
+          continue;
+        }
+
+        if (!resp.ok) {
+          const errTxt = await resp.text();
+          throw new Error(`NVIDIA API error (${resp.status}): ${errTxt}`);
+        }
+
+        const json = await resp.json();
+        const b64 = json.artifacts?.[0]?.base64 || json.b64_json || json.data?.[0]?.b64_json;
+        if (b64) {
+          return {
+            imageUrl: `data:image/jpeg;base64,${b64}`,
+            provider: "nvidia-nim",
+            model: "black-forest-labs/flux.1-dev",
+            quality: params.quality || "standard",
+            costEstimate: "Free (NVIDIA Developer Tier)",
+            prompt
+          };
+        } else if (json.data?.[0]?.url) {
+          return {
+            imageUrl: json.data[0].url,
+            provider: "nvidia-nim",
+            model: "black-forest-labs/flux.1-dev",
+            quality: params.quality || "standard",
+            costEstimate: "Free (NVIDIA Developer Tier)",
+            prompt
+          };
+        } else {
+          throw new Error("NVIDIA API returned response without valid image data.");
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        lastError = err;
+        if (err.name === 'AbortError') {
+          throw new Error("NVIDIA API request timed out after 65 seconds.");
+        }
+        if (attempts >= maxAttempts || (err.message && !err.message.includes('500') && !err.message.includes('503'))) {
+          throw err;
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    if (lastError) throw lastError;
   }
 
   // If OpenAI API key is genuinely configured, call OpenAI DALL-E 3
