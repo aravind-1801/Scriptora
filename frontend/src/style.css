@@ -55,14 +55,15 @@
   scrollbar-width: none;
 }
 
-/* Animation utilities */
+/* Animation utilities - Pure opacity for butter-smooth 60 FPS transitions without breaking position:fixed ancestors */
 @keyframes fadeIn {
-  0% { opacity: 0; transform: translateY(4px); }
-  100% { opacity: 1; transform: none; }
+  0% { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 .fade-in {
-  animation: fadeIn 0.18s ease-out forwards;
+  animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -241,10 +242,36 @@ body.scriptora-modal-open {
 
 @media (max-width: 640px) {
   .screenplay-page-sheet {
-    padding: 36px 20px 36px 36px !important;
+    padding: 24px 16px 24px 30px !important;
+    max-width: 100% !important;
+    min-height: 480px !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
   .screenplay-title-page-sheet {
-    padding: 36px 36px 36px 36px !important;
+    padding: 28px 20px 28px 20px !important;
+    max-width: 100% !important;
+    min-height: 480px !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+  .screenplay-block[data-block-type="character"] {
+    margin-left: 18% !important;
+    max-width: 100% !important;
+  }
+  .screenplay-block[data-block-type="parenthetical"] {
+    margin-left: 12% !important;
+    max-width: 100% !important;
+  }
+  .screenplay-block[data-block-type="dialogue"] {
+    margin-left: 8% !important;
+    max-width: 100% !important;
+  }
+  .scene-num-indicator {
+    margin-left: -26px !important;
+    width: 20px !important;
+    margin-right: 6px !important;
+    font-size: 10pt !important;
   }
 }
 

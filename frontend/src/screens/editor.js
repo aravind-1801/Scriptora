@@ -103,8 +103,6 @@ function handleSpaceNavigation(blockEl, editableEl) {
     return true; // Already handled in this key event sequence
   }
 
-  if (!isMobileContext()) return false;
-
   const type = blockEl.getAttribute('data-block-type') || 'action';
   if (!['action', 'text', 'character', 'transition'].includes(type)) {
     return false;
@@ -131,8 +129,8 @@ function handleSpaceNavigation(blockEl, editableEl) {
     newType: nextType
   });
 
-  // Ensure content is strictly empty
-  editableEl.innerText = '';
+  // Ensure content is strictly empty with proper contenteditable placeholder
+  editableEl.innerHTML = '<br>';
   convertBlockType(blockEl, nextType);
   highlightElementButton(nextType);
   hasUnsavedChanges = true;
@@ -1086,6 +1084,12 @@ export async function attachEditorEvents(scriptId, navigate) {
   editorNavStack.length = 0;
 
   const editorBackHandler = () => {
+    hideAutocomplete();
+    const rogueAc = document.getElementById('editor-autocomplete-dropdown');
+    if (rogueAc) rogueAc.remove();
+    const rogueBar = document.getElementById('screenplay-multi-selection-bar');
+    if (rogueBar) rogueBar.remove();
+
     if (activeDocumentTab === 'titlepage') {
       closeTitlePageDoc();
       return true;
@@ -1168,6 +1172,22 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   renderScreenplayPages();
   populateNavigators();
+
+  // Synchronize dynamic script title and draft tag immediately with actual loaded screenplay
+  if (currentScreenplay) {
+    const titleEl = document.getElementById('editor-script-title');
+    if (titleEl && currentScreenplay.title) {
+      titleEl.textContent = currentScreenplay.title;
+    }
+    const docTabTitle = document.getElementById('doc-tab-title-label');
+    if (docTabTitle && currentScreenplay.title) {
+      docTabTitle.textContent = currentScreenplay.title;
+    }
+    const versionTag = document.getElementById('currentVersionTag');
+    if (versionTag && currentScreenplay.draft) {
+      versionTag.textContent = currentScreenplay.draft;
+    }
+  }
 
   // Screenplay permissions & role enforcement
   try {
@@ -1977,42 +1997,48 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   }
 
   if (isScene) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline py-2 font-bold text-slate-900 mt-4 mb-2 group w-full">
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-center font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.25em] leading-[1.25]" spellcheck="false">${formatted || '<br>'}</div>
       </div>
     `;
   }
 
   if (isAction) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="action" class="screenplay-block screenplay-block-text text-slate-900 text-left mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text w-full max-w-[60ch] min-h-[1.25em]" spellcheck="false">${formatted || '<br>'}</div>
     `;
   }
 
   if (isChar) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="character" class="screenplay-block screenplay-block-text uppercase font-bold tracking-wider text-slate-900 text-left mt-3.5 mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[37%] max-w-[28ch] min-h-[1.25em]" spellcheck="false">${formatted || '<br>'}</div>
     `;
   }
 
   if (isParen) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="parenthetical" class="screenplay-block screenplay-block-text italic text-slate-600 text-left mb-0 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[26%] max-w-[24ch] min-h-[1.25em]" spellcheck="false">${formatted || '<br>'}</div>
     `;
   }
 
   if (isDia) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch]" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="dialogue" class="screenplay-block screenplay-block-text text-left text-slate-900 mb-3.5 leading-relaxed outline-none focus:bg-blue-50/50 rounded px-1 cursor-text ml-[17%] max-w-[36ch] min-h-[1.25em]" spellcheck="false">${formatted || '<br>'}</div>
     `;
   }
 
   if (isTrans) {
+    const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text" spellcheck="false">${renderFormattedContent(block.content)}</div>
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="transition" class="screenplay-block screenplay-block-text w-full text-right uppercase font-bold tracking-wider text-slate-900 mt-2 mb-4 outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.25em]" spellcheck="false">${formatted || '<br>'}</div>
     `;
   }
 
@@ -3270,6 +3296,14 @@ export function attachContainerListeners() {
 
     const type = block.getAttribute('data-block-type') || 'action';
 
+    // Mobile & virtual keyboard spacebar navigation fallback on empty block
+    if (isBlockContentEmpty(editable) && (e.data === ' ' || editable.innerText === ' ' || editable.innerHTML === '&nbsp;' || editable.innerHTML === ' ')) {
+      if (handleSpaceNavigation(block, editable)) {
+        editable.innerHTML = '<br>';
+        return;
+      }
+    }
+
     // Auto-capitalize first letter immediately visible to user
     if (type === 'scene' || type === 'character' || type === 'transition' || type === 'shot') {
       const originalText = editable.innerText;
@@ -3283,11 +3317,17 @@ export function attachContainerListeners() {
       const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
       if (!hasRichTags) {
         const originalText = editable.innerText;
-        const formattedText = capitalizeSentenceStarters(originalText);
-        if (formattedText !== originalText) {
-          const caretOffset = getCaretCharacterOffsetWithin(editable);
-          editable.innerText = formattedText;
-          setCaretCharacterOffsetWithin(editable, caretOffset);
+        // Only auto-capitalize initial letter or after sentence punctuation during typing to preserve instantaneous 60fps typing
+        if (originalText.length === 1 && originalText !== originalText.toUpperCase()) {
+          editable.innerText = originalText.toUpperCase();
+          setCaretCharacterOffsetWithin(editable, 1);
+        } else if (/[.!?]\s+$/.test(originalText)) {
+          const formattedText = capitalizeSentenceStarters(originalText);
+          if (formattedText !== originalText) {
+            const caretOffset = getCaretCharacterOffsetWithin(editable);
+            editable.innerText = formattedText;
+            setCaretCharacterOffsetWithin(editable, caretOffset);
+          }
         }
       }
     }
@@ -3299,7 +3339,7 @@ export function attachContainerListeners() {
 
     updateBlockModel(block, contentToUpdate);
     triggerAutocomplete(block, editable);
-    updateTelemetry();
+    scheduleTelemetryUpdate();
   });
 }
 
@@ -3334,49 +3374,6 @@ function attachSingleBlockListeners(block) {
       }
     }
   });
-
-  editable.oninput = () => {
-    hasUnsavedChanges = true;
-    const type = block.getAttribute('data-block-type') || 'action';
-
-    // Auto-capitalize immediately visible to user
-    if (type === 'scene' || type === 'character' || type === 'transition' || type === 'shot') {
-      const originalText = editable.innerText;
-      const upperText = originalText.toUpperCase();
-      if (upperText !== originalText) {
-        const caretOffset = getCaretCharacterOffsetWithin(editable);
-        editable.innerText = upperText;
-        setCaretCharacterOffsetWithin(editable, caretOffset);
-      }
-    } else if (type === 'action' || type === 'dialogue') {
-      const hasRichTags = !!editable.querySelector('b, i, u, s, strong, em, strike, del');
-      if (!hasRichTags) {
-        const originalText = editable.innerText;
-        const formattedText = capitalizeSentenceStarters(originalText);
-        if (formattedText !== originalText) {
-          const caretOffset = getCaretCharacterOffsetWithin(editable);
-          editable.innerText = formattedText;
-          setCaretCharacterOffsetWithin(editable, caretOffset);
-        }
-      }
-    }
-
-    // Sanitize any rogue &nbsp; in model while allowing smooth typing
-    let contentToUpdate = editable.innerHTML;
-    contentToUpdate = contentToUpdate.replace(/&(?:amp;)+nbsp;?/gi, ' ');
-    contentToUpdate = contentToUpdate.replace(/&nbsp;?/gi, ' ');
-    contentToUpdate = contentToUpdate.replace(/\u00A0/g, ' ');
-
-    updateBlockModel(block, contentToUpdate);
-    updateSaveStatus('Unsaved');
-    
-    // Auto-save only if enabled (Section 2 & 3)
-    if (autoSaveEnabled) {
-      scheduleAutosave();
-    }
-    triggerAutocomplete(block, editable);
-    updateTelemetry();
-  };
 
   editable.onblur = () => {
     const sel = window.getSelection();
@@ -4190,6 +4187,22 @@ function createNewSceneAfter(sceneId, fromBlockId = null) {
   renderScreenplayPages();
   populateNavigators();
 
+  // Synchronize dynamic script title and draft tag immediately with actual loaded screenplay
+  if (currentScreenplay) {
+    const titleEl = document.getElementById('editor-script-title');
+    if (titleEl && currentScreenplay.title) {
+      titleEl.textContent = currentScreenplay.title;
+    }
+    const docTabTitle = document.getElementById('doc-tab-title-label');
+    if (docTabTitle && currentScreenplay.title) {
+      docTabTitle.textContent = currentScreenplay.title;
+    }
+    const versionTag = document.getElementById('currentVersionTag');
+    if (versionTag && currentScreenplay.draft) {
+      versionTag.textContent = currentScreenplay.draft;
+    }
+  }
+
   setTimeout(() => {
     const headingEl = document.getElementById(newHeadingBlockId);
     if (headingEl) {
@@ -4286,7 +4299,18 @@ function convertBlockType(blockEl, newType) {
   hasUnsavedChanges = true;
   if (autoSaveEnabled) scheduleAutosave();
 
-  renderScreenplayPages();
+  // If converting to/from scene, re-render pages to ensure scene numbers & grouping are recalculated;
+  // otherwise, replace block element in-place for instant 60 FPS transitions without tearing down the DOM
+  if (newType === 'scene' || blockEl.getAttribute('data-block-type') === 'scene') {
+    renderScreenplayPages();
+  } else {
+    const newHtml = renderBlockHtml(b, scene.number, scene.id);
+    const temp = document.createElement('div');
+    temp.innerHTML = newHtml;
+    const newBlockEl = temp.firstElementChild;
+    blockEl.replaceWith(newBlockEl);
+    attachSingleBlockListeners(newBlockEl);
+  }
 
   setTimeout(() => {
     const el = document.getElementById(blockId);
@@ -4339,11 +4363,17 @@ function setCursorAtEnd(el) {
 // INTELLIGENT AUTOCOMPLETE (Section 7: Scene Time only after " - ", Section 13, 17, 18, 19)
 // =========================================================================
 function setupAutocomplete() {
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#editor-autocomplete-dropdown')) {
+  if (window.__scriptoraAutocompleteAttached) return;
+  window.__scriptoraAutocompleteAttached = true;
+
+  const handleOutsideDismissal = (e) => {
+    if (!e.target.closest('#editor-autocomplete-dropdown') && !e.target.closest('.screenplay-block')) {
       hideAutocomplete();
     }
-  });
+  };
+
+  document.addEventListener('click', handleOutsideDismissal, { capture: true });
+  document.addEventListener('pointerdown', handleOutsideDismissal, { capture: true });
 
   const updateAcPos = () => {
     const dropdown = document.getElementById('editor-autocomplete-dropdown');
@@ -4373,7 +4403,10 @@ function setupAutocomplete() {
 
 function hideAutocomplete() {
   const dropdown = document.getElementById('editor-autocomplete-dropdown');
-  if (dropdown) dropdown.classList.add('hidden');
+  if (dropdown) {
+    dropdown.classList.add('hidden');
+    dropdown.innerHTML = '';
+  }
 }
 
 function getActiveCaretOrBlockRect(editableEl) {
@@ -4425,9 +4458,10 @@ function getActiveCaretOrBlockRect(editableEl) {
 function positionAutocomplete(dropdown, editableEl) {
   if (!dropdown || !editableEl) return;
 
-  // Ensure dropdown is attached to document.body for reliable viewport-absolute fixed coordinates
-  if (dropdown.parentElement !== document.body) {
-    document.body.appendChild(dropdown);
+  // Portal to #scriptora-modal-portal so it cleans up automatically on route transitions
+  const portal = document.getElementById('scriptora-modal-portal') || document.body;
+  if (dropdown.parentElement !== portal) {
+    portal.appendChild(dropdown);
   }
 
   const anchorRect = getActiveCaretOrBlockRect(editableEl);
@@ -4926,9 +4960,11 @@ function populateNavigators() {
   const sceneSelect = document.getElementById('navSceneSelect');
   if (sceneSelect) {
     const scenes = currentScreenplay.scenes || [];
-    sceneSelect.innerHTML = scenes.map((s, idx) => `
-      <option value="${s.id}" ${idx === 0 ? 'selected' : ''}>Scene ${s.number} ▾</option>
+    const activeVal = sceneSelect.value || (store.state.currentSceneId ? `scene-${store.state.currentSceneId}` : (scenes[0]?.id || ''));
+    sceneSelect.innerHTML = scenes.map(s => `
+      <option value="${s.id}" ${s.id === activeVal ? 'selected' : ''}>Scene ${s.number} ▾</option>
     `).join('') || '<option value="">Scene 1 ▾</option>';
+    if (activeVal) sceneSelect.value = activeVal;
   }
 }
 
@@ -4946,6 +4982,40 @@ function setupNavigationSelectors() {
         store.setState({ currentSceneId: scObj.number });
       }
     };
+  }
+
+  // Scroll synchronization: update scene selector dropdown as user scrolls through scenes
+  const scrollContainer = document.getElementById('editor-main-scroll');
+  if (scrollContainer && !scrollContainer.__sceneSyncAttached) {
+    scrollContainer.__sceneSyncAttached = true;
+    let sceneScrollTimer = null;
+    scrollContainer.addEventListener('scroll', () => {
+      clearTimeout(sceneScrollTimer);
+      sceneScrollTimer = setTimeout(() => {
+        const sceneBlocks = Array.from(document.querySelectorAll('.screenplay-block[data-block-type="scene"]'));
+        if (sceneBlocks.length === 0) return;
+        const containerTop = scrollContainer.getBoundingClientRect().top + 90;
+        let visibleScene = sceneBlocks[0];
+        for (const sb of sceneBlocks) {
+          const rect = sb.getBoundingClientRect();
+          if (rect.top <= containerTop) {
+            visibleScene = sb;
+          } else {
+            break;
+          }
+        }
+        if (visibleScene) {
+          const sId = visibleScene.getAttribute('data-scene-id');
+          if (sId && sceneSelect && sceneSelect.value !== sId) {
+            sceneSelect.value = sId;
+            const scObj = currentScreenplay?.scenes?.find(s => s.id === sId);
+            if (scObj) {
+              store.setState({ currentSceneId: scObj.number });
+            }
+          }
+        }
+      }, 80);
+    }, { passive: true });
   }
 
   // Deep-link jump to scene on load if specified in URL query or store
@@ -6768,6 +6838,14 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       if (e.target === compareModal) closeEditorSubViewByName('compareModal');
     };
   }
+}
+
+let telemetryDebounceTimer = null;
+function scheduleTelemetryUpdate() {
+  clearTimeout(telemetryDebounceTimer);
+  telemetryDebounceTimer = setTimeout(() => {
+    updateTelemetry();
+  }, 300);
 }
 
 function updateTelemetry() {

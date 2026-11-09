@@ -692,6 +692,12 @@ class Router {
       }
       unlockBodyScroll();
 
+      // Clean up any rogue floating editor overlays attached to document.body
+      const rogueAc = document.getElementById('editor-autocomplete-dropdown');
+      if (rogueAc) rogueAc.remove();
+      const rogueBar = document.getElementById('screenplay-multi-selection-bar');
+      if (rogueBar) rogueBar.remove();
+
       // Remove any duplicate header or bottom navigation tags from screen template
       let cleanHtml = html || '';
       cleanHtml = cleanHtml.replace(/<header[^>]*data-global-header="true"[^>]*>[\s\S]*?<\/header>/gi, '');
