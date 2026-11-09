@@ -478,10 +478,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
-      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3 bg-[#eceff3]">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-20 sm:pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-1 sm:pt-3 bg-[#eceff3]">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
-        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
+        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8 pt-1 sm:pt-4 pb-8 sm:pb-12 px-1 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -1137,6 +1137,10 @@ export async function attachEditorEvents(scriptId, navigate) {
     backBtn.onclick = (e) => {
       e?.preventDefault();
       e?.stopPropagation();
+      hideAutocomplete();
+      document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup').forEach(el => {
+        try { el.remove(); } catch (_) {}
+      });
       if (window.scriptoraRouter) {
         window.scriptoraRouter.back('/workspace');
       } else {
@@ -1682,17 +1686,17 @@ function renderScreenplayPages() {
     <div class="screenplay-page-sheet w-full max-w-[900px] min-h-[1273px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
-      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
+      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier shrink-0">
         <span>${page.pageNumber}.</span>
       </div>
 
-      <!-- Screenplay Blocks naturally flowing across this A4 page -->
+      <!-- Screenplay Blocks naturally flowing across this A4 page (Full usable vertical area) -->
       <div class="page-blocks-wrapper flex flex-col flex-1 w-full">
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- Bottom Page Boundary indicator with Page Controls -->
-      <div contenteditable="false" class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-4">
+      <!-- Bottom Page Boundary indicator with Page Controls (Pinned to bottom margin of A4 sheet) -->
+      <div contenteditable="false" class="w-full pt-4 pb-2 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-auto shrink-0">
         <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
           <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
           <span class="hidden sm:inline">Add Page Before</span>
@@ -4685,10 +4689,10 @@ function getActiveCaretOrBlockRect(editableEl) {
 function positionAutocomplete(dropdown, editableEl) {
   if (!dropdown || !editableEl) return;
 
-  // Keep dropdown inside editor view container so it stays scoped and never leaks to other routes
-  const editorContainer = document.getElementById('editor-view-container');
-  if (editorContainer && dropdown.parentElement !== editorContainer) {
-    editorContainer.appendChild(dropdown);
+  // Keep dropdown inside editor root so it stays scoped and never leaks to other routes
+  const editorRoot = document.getElementById('editor-root') || document.body;
+  if (dropdown.parentElement !== editorRoot) {
+    editorRoot.appendChild(dropdown);
   }
 
   const anchorRect = getActiveCaretOrBlockRect(editableEl);

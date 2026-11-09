@@ -167,11 +167,15 @@ class Router {
 
     // 3. Visible popups, contextual dropdowns, and overlays
     const visiblePopups = Array.from(document.querySelectorAll(
-      '.scriptora-popup:not(.hidden), [data-scriptora-popup]:not(.hidden), [role="menu"]:not(.hidden), #quick-add-menu:not(.hidden)'
+      '#editor-autocomplete-dropdown:not(.hidden), .scriptora-popup:not(.hidden), [data-scriptora-popup]:not(.hidden), [role="menu"]:not(.hidden), #quick-add-menu:not(.hidden)'
     ));
     if (visiblePopups.length > 0) {
       const topmost = visiblePopups[visiblePopups.length - 1];
       topmost.classList.add('hidden');
+      if (topmost.id === 'editor-autocomplete-dropdown') {
+        topmost.style.display = 'none';
+        topmost.innerHTML = '';
+      }
       return true;
     }
 
