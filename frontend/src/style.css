@@ -221,11 +221,12 @@ body.scriptora-modal-open {
   }
 }
 
-/* Professional Screenplay Page Sheet (Standard A4 Geometry & Margins) */
+/* Professional Screenplay Page Sheet (Standard A4 Geometry & Margins: 210mm x 297mm) */
 .screenplay-page-sheet {
   width: 100%;
-  max-width: 816px; /* 8.5in at 96dpi or 210mm A4 */
-  min-height: 1123px; /* A4 standard 297mm */
+  max-width: 794px; /* Exact A4 at 96dpi: 210mm = 793.7px */
+  min-height: 1123px; /* Exact A4 at 96dpi: 297mm = 1122.5px */
+  aspect-ratio: 210 / 297;
   background-color: #ffffff;
   padding: 72px 72px 72px 108px !important; /* 1.0in top, 1.0in right, 1.0in bottom, 1.5in left */
   box-sizing: border-box;
@@ -233,27 +234,51 @@ body.scriptora-modal-open {
   font-size: 12pt;
   line-height: 1.25;
   color: #0f172a;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
+  border-radius: 2px;
 }
 
 /* Screenplay Title Page Sheet (Symmetric 1.5in margins for true horizontal page centering) */
 .screenplay-title-page-sheet {
+  width: 100%;
+  max-width: 794px;
+  min-height: 1123px;
+  aspect-ratio: 210 / 297;
+  background-color: #ffffff;
   padding: 72px 108px 72px 108px !important;
+  box-sizing: border-box;
+  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
+  font-size: 12pt;
+  line-height: 1.25;
+  color: #0f172a;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
+  border-radius: 2px;
 }
 
 @media (max-width: 640px) {
   .screenplay-page-sheet {
-    padding: 24px 16px 24px 30px !important;
-    max-width: 100% !important;
-    min-height: 480px !important;
+    width: calc(100% - 16px) !important;
+    max-width: 794px !important;
+    min-height: calc((100vw - 16px) * 1.4142) !important;
+    aspect-ratio: 210 / 297 !important;
+    padding: 28px 16px 28px 28px !important;
+    margin: 0 auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
+    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    border-radius: 2px !important;
   }
   .screenplay-title-page-sheet {
-    padding: 28px 20px 28px 20px !important;
-    max-width: 100% !important;
-    min-height: 480px !important;
+    width: calc(100% - 16px) !important;
+    max-width: 794px !important;
+    min-height: calc((100vw - 16px) * 1.4142) !important;
+    aspect-ratio: 210 / 297 !important;
+    padding: 32px 20px 32px 20px !important;
+    margin: 0 auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
+    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    border-radius: 2px !important;
   }
   .screenplay-block[data-block-type="character"] {
     margin-left: 18% !important;

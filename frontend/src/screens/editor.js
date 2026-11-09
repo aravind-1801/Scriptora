@@ -478,7 +478,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
-      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-3 bg-[#eceff3]">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
         <div id="screenplay-pages-container" class="w-full max-w-4xl flex flex-col items-center gap-8 py-6 px-2 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
@@ -1999,7 +1999,7 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   if (isScene) {
     const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-center font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
         <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.25em] leading-[1.25]" spellcheck="false">${formatted || '<br>'}</div>
@@ -3995,13 +3995,35 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       return;
     }
 
-    // 2. CHARACTER -> DIALOGUE (with Automatic Continuation CONT'D - Section 10)
+    // 2. CHARACTER -> DIALOGUE or PARENTHETICAL (with Automatic Continuation CONT'D - Section 10)
     if (type === 'character') {
       e.preventDefault();
       const rawText = editableEl.innerText.trim();
       const baseName = cleanCharacterName(rawText);
       const userExt = extractCharacterExtension(rawText);
       const userAlreadyHasContd = hasContinuationMarker(rawText);
+
+      // Check if user entered an actor parenthetical (e.g. "ARUN (sadly)" or "ARUN (sadly")
+      const parenMatch = rawText.match(/\(([^)]+)\)?$/);
+      const parenContent = parenMatch ? parenMatch[1].trim() : null;
+      const isActorParen = parenContent && !['V.O.', 'VO', 'O.S.', 'OS', 'O.C.', 'OC', "CONT'D", 'CONTD'].includes(parenContent.toUpperCase());
+
+      if (isActorParen && baseName) {
+        // User typed "ARUN (sadly)" or "ARUN (sadly" on the character line:
+        // Set clean character cue, insert parenthetical below it, and insert dialogue below that in 1 step!
+        const priorAppearance = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
+        const finalCue = (priorAppearance && !userAlreadyHasContd) ? formatCharacterCue(baseName, null, true) : baseName;
+        editableEl.innerText = finalCue;
+        updateBlockModel(blockEl, finalCue);
+        commitCharacterToMemory(baseName);
+
+        const formattedParen = `(${parenContent.toLowerCase().replace(/^\(+|\)+$/g, '')})`;
+        const parenBlock = insertNewBlockAfter(sceneId, blockId, 'parenthetical', formattedParen);
+        if (parenBlock) {
+          insertNewBlockAfter(sceneId, parenBlock.id, 'dialogue', '');
+        }
+        return;
+      }
 
       // Check for returning appearance in the current scene (Section 10)
       const priorAppearance = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
@@ -4039,12 +4061,12 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     // 4. PARENTHETICAL -> DIALOGUE
     if (type === 'parenthetical') {
       e.preventDefault();
-      let text = editableEl.innerText.trim();
-      if (!text.endsWith(')')) {
-        text += ')';
-        editableEl.innerText = text;
-        updateBlockModel(blockEl, text);
-      }
+      hideAutocomplete();
+      let text = (editableEl.innerText || '').trim();
+      let inner = text.replace(/^\(+/, '').replace(/\)+$/, '').trim();
+      let formatted = inner.length > 0 ? `(${inner})` : '()';
+      editableEl.innerText = formatted;
+      updateBlockModel(blockEl, formatted);
       insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       return;
     }
@@ -4088,9 +4110,26 @@ function handleBlockKeydown(e, blockEl, editableEl) {
 
 // Insert new block directly as next line with contextual navigation flow
 function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
-  const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
-  if (!scene) return;
+  const scene = currentScreenplay?.scenes?.find(s => s.id === sceneId);
+  if (!scene) return null;
   const targetIdx = scene.blocks.findIndex(b => b.id === targetBlockId);
+
+  // If next block is already of target type and currently empty, seamlessly focus it
+  if (targetIdx !== -1 && scene.blocks[targetIdx + 1] && scene.blocks[targetIdx + 1].type === newType && !scene.blocks[targetIdx + 1].content.trim()) {
+    const existingNext = scene.blocks[targetIdx + 1];
+    const existingEl = document.getElementById(existingNext.id);
+    if (existingEl) {
+      const ed = getBlockEditable(existingEl);
+      if (ed) {
+        setCursorAtEnd(ed);
+        try {
+          existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } catch (_) {}
+        return existingNext;
+      }
+    }
+  }
+
   const newBlockId = `b-${Date.now().toString().slice(-6)}`;
   const newBlock = {
     id: newBlockId,
@@ -4116,10 +4155,13 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     attachSingleBlockListeners(newEl);
     updateTelemetry();
 
-    // Focus the new line immediately
+    // Focus the new line immediately with 60fps smooth cursor placement
     const ed = getBlockEditable(newEl);
     if (ed) {
       setCursorAtEnd(ed);
+      try {
+        newEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (_) {}
     }
 
     // Check line capacity: re-paginate only if page sheet exceeds line capacity
@@ -4137,7 +4179,12 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
         const el = document.getElementById(newBlockId);
         if (el) {
           const ed2 = getBlockEditable(el);
-          if (ed2) setCursorAtEnd(ed2);
+          if (ed2) {
+            setCursorAtEnd(ed2);
+            try {
+              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (_) {}
+          }
         }
       }, 20);
     }
@@ -4149,10 +4196,14 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
         const ed = getBlockEditable(el);
         if (ed) {
           setCursorAtEnd(ed);
+          try {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          } catch (_) {}
         }
       }
     }, 20);
   }
+  return newBlock;
 }
 
 // Create new scene after transition WITHOUT FORCING A NEW PAGE (Section 11 & 23)
@@ -4362,9 +4413,25 @@ function setCursorAtEnd(el) {
   range.collapse(false);
   sel.removeAllRanges();
   sel.addRange(range);
-  const container = document.getElementById('screenplay-pages-container');
-  if (container && document.activeElement !== container) {
-    container.focus();
+  if (typeof el.focus === 'function') {
+    try {
+      el.focus({ preventScroll: true });
+    } catch (_) {}
+  }
+}
+
+function setCursorAtStart(el) {
+  if (!el) return;
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  if (typeof el.focus === 'function') {
+    try {
+      el.focus({ preventScroll: true });
+    } catch (_) {}
   }
 }
 
@@ -4667,11 +4734,12 @@ function triggerAutocomplete(blockEl, editableEl) {
     const parenIdx = text.indexOf('(');
 
     if (parenIdx !== -1) {
-      // User entered character name followed by "(" -> Character Extension Autocomplete
+      // User entered character name followed by "(" -> Character Extension & Parenthetical Autocomplete
       const rawName = text.slice(0, parenIdx).trim();
       const baseName = cleanCharacterName(rawName);
       if (baseName && baseName.length >= 1) {
         const queryAfterParen = text.slice(parenIdx + 1).replace(/\)$/, '').trim().toUpperCase();
+        const queryLower = queryAfterParen.toLowerCase();
 
         const matchedExtensions = STANDARD_CHARACTER_EXTENSIONS.filter(ext => {
           if (!queryAfterParen) return true;
@@ -4682,34 +4750,48 @@ function triggerAutocomplete(blockEl, editableEl) {
                  ext.desc.toUpperCase().startsWith(queryAfterParen);
         });
 
-        if (matchedExtensions.length > 0) {
-          const sceneId = blockEl.getAttribute('data-scene-id');
-          const blockId = blockEl.getAttribute('data-block-id');
-          const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
-          const isContd = !!prior;
+        const matchedParentheticals = COMMON_PARENTHETICALS.filter(p => {
+          if (!queryLower) return true;
+          return p.toLowerCase().startsWith(queryLower);
+        });
 
-          suggestions = matchedExtensions.map(ext => {
-            let formattedCue;
-            if (ext.code === "CONT'D") {
-              // User explicitly selected CONT'D: format as NAME (CONT'D) without inheriting any prior extension
-              formattedCue = formatCharacterCue(baseName, null, true);
-            } else {
-              // User explicitly selected an extension (e.g. V.O.): format as NAME (V.O.) [(CONT'D) if returning]
-              formattedCue = formatCharacterCue(baseName, ext.code, isContd);
-            }
+        const sceneId = blockEl.getAttribute('data-scene-id');
+        const blockId = blockEl.getAttribute('data-block-id');
+        const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
+        const isContd = !!prior;
 
-            return {
-              type: 'character-extension',
-              extCode: ext.code,
-              baseName: baseName,
-              isContd: isContd,
-              label: `${ext.code} — ${ext.desc}`,
-              shortLabel: ext.code,
-              desc: ext.desc,
-              val: formattedCue
-            };
-          });
-        }
+        const extSuggestions = matchedExtensions.map(ext => {
+          let formattedCue;
+          if (ext.code === "CONT'D") {
+            formattedCue = formatCharacterCue(baseName, null, true);
+          } else {
+            formattedCue = formatCharacterCue(baseName, ext.code, isContd);
+          }
+
+          return {
+            type: 'character-extension',
+            extCode: ext.code,
+            baseName: baseName,
+            isContd: isContd,
+            label: `${ext.code} — ${ext.desc}`,
+            shortLabel: ext.code,
+            desc: ext.desc,
+            val: formattedCue
+          };
+        });
+
+        const parenSuggestions = matchedParentheticals.map(p => {
+          return {
+            type: 'character-parenthetical',
+            baseName: baseName,
+            parenCode: p,
+            label: `(${p})`,
+            shortLabel: `(${p})`,
+            val: `(${p})`
+          };
+        });
+
+        suggestions = [...extSuggestions, ...parenSuggestions];
       }
     } else {
       // Normal character name autocomplete: suggest only clean character names (Section 10)
@@ -4733,15 +4815,15 @@ function triggerAutocomplete(blockEl, editableEl) {
   // 3. PARENTHETICAL AUTOCOMPLETE (Section 2)
   else if (type === 'parenthetical') {
     const raw = text.replace(/^\(+|\)+$/g, '').trim().toLowerCase();
-    if (raw.length > 0) {
-      const matches = COMMON_PARENTHETICALS.filter(p => p.startsWith(raw));
-      if (matches.length > 0) {
-        suggestions = matches.map(p => ({
-          type: 'parenthetical',
-          label: `(${p})`,
-          val: `(${p})`
-        }));
-      }
+    const matches = raw.length > 0
+      ? COMMON_PARENTHETICALS.filter(p => p.startsWith(raw))
+      : COMMON_PARENTHETICALS;
+    if (matches.length > 0) {
+      suggestions = matches.map(p => ({
+        type: 'parenthetical',
+        label: `(${p})`,
+        val: `(${p})`
+      }));
     }
   }
 
@@ -4775,7 +4857,7 @@ function triggerAutocomplete(blockEl, editableEl) {
     const label = typeof item === 'object' ? item.label : item;
     const val = typeof item === 'object' ? item.val : item;
     const isExt = item.type === 'character-extension';
-    const isParen = item.type === 'parenthetical';
+    const isParen = item.type === 'parenthetical' || item.type === 'character-parenthetical';
 
     let innerHtml = '';
     if (isExt) {
@@ -4818,33 +4900,54 @@ function triggerAutocomplete(blockEl, editableEl) {
       const item = suggestions[idx] || {};
       const val = el.getAttribute('data-val');
       const itemType = el.getAttribute('data-type');
-
-      editableEl.innerText = val;
-      updateBlockModel(blockEl, val);
+      const sceneId = blockEl.getAttribute('data-scene-id');
+      const blockId = blockEl.getAttribute('data-block-id');
 
       if (itemType === 'character-extension') {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
         if (item.baseName) {
           commitCharacterToMemory(item.baseName);
         }
         hideAutocomplete();
-        const sceneId = blockEl.getAttribute('data-scene-id');
-        const blockId = blockEl.getAttribute('data-block-id');
         // Automatically insert dialogue on next line and position cursor at start
         insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
-      } else if (itemType === 'parenthetical') {
+      } else if (itemType === 'character-parenthetical') {
+        const cleanCue = item.baseName || cleanCharacterName(editableEl.innerText);
+        editableEl.innerText = cleanCue;
+        updateBlockModel(blockEl, cleanCue);
+        if (cleanCue) {
+          commitCharacterToMemory(cleanCue);
+        }
         hideAutocomplete();
-        // Position cursor immediately after closing parenthesis
-        setCaretCharacterOffsetWithin(editableEl, val.length);
+        // Insert parenthetical block directly after character cue
+        const parenBlock = insertNewBlockAfter(sceneId, blockId, 'parenthetical', val);
+        // And automatically transition to dialogue immediately in 1 flow!
+        if (parenBlock) {
+          insertNewBlockAfter(sceneId, parenBlock.id, 'dialogue', '');
+        }
+      } else if (itemType === 'parenthetical') {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
+        hideAutocomplete();
+        // Automatically move to dialogue line immediately!
+        insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       } else if (type === 'character') {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
         commitCharacterToMemory(item.baseName || val);
         hideAutocomplete();
         setCursorAtEnd(editableEl);
       } else if (type === 'scene') {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
         const parsed = parseSceneHeading(val);
         if (parsed.location) commitLocationToMemory(parsed.location);
         hideAutocomplete();
         setCursorAtEnd(editableEl);
       } else {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
         hideAutocomplete();
         setCursorAtEnd(editableEl);
       }
