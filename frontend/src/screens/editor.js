@@ -490,7 +490,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-5xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[880px] sm:min-h-[1245px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[900px] min-h-[1273px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
@@ -1677,38 +1677,31 @@ function renderScreenplayPages() {
     });
   }
 
-  // Render each continuous A4 sheet with 3-part authentic internal page structure:
-  // 1. Top Margin (1.0 inch) with Header Page Number
-  // 2. Full-Height Editable Screenplay Content Area (979px between margins)
-  // 3. Bottom Margin (1.0 inch) with unobtrusive page controls (text stops at bottom margin)
+  // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet w-full max-w-[900px] min-h-[1273px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
-      <!-- 1. Top Margin Area (Physical 1.0 inch with Page Number in Header) -->
-      <div contenteditable="false" class="screenplay-page-top-margin select-none">
-        <div class="screenplay-page-header">
-          <span class="screenplay-page-number">${page.pageNumber}.</span>
-        </div>
+      <!-- Top Page Header: Page number in top right -->
+      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
+        <span>${page.pageNumber}.</span>
       </div>
 
-      <!-- 2. Full-Height Editable Screenplay Writing Area (Full height between margins) -->
-      <div class="page-blocks-wrapper screenplay-page-content" data-page-num="${page.pageNumber}">
+      <!-- Screenplay Blocks naturally flowing across this A4 page -->
+      <div class="page-blocks-wrapper flex flex-col flex-1 w-full">
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- 3. Bottom Margin Area (Physical 1.0 inch: text stops at screenplay bottom margin) -->
-      <div contenteditable="false" class="screenplay-page-bottom-margin select-none">
-        <div class="screenplay-page-footer">
-          <button type="button" class="btn-page-add-before" data-page-num="${page.pageNumber}" title="Add Page Before Page ${page.pageNumber}">
-            <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
-            <span class="hidden sm:inline">Add Page Before</span>
-          </button>
-          <span class="page-footer-badge">— PAGE ${page.pageNumber} —</span>
-          <button type="button" class="btn-page-add-after" data-page-num="${page.pageNumber}" title="Insert Page After Page ${page.pageNumber}">
-            <span class="material-symbols-outlined text-[14px]">add</span>
-            <span class="hidden sm:inline">Insert Page</span>
-          </button>
-        </div>
+      <!-- Bottom Page Boundary indicator with Page Controls -->
+      <div contenteditable="false" class="w-full pt-6 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-4">
+        <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
+          <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+          <span class="hidden sm:inline">Add Page Before</span>
+        </button>
+        <span class="tracking-widest uppercase text-slate-300 font-bold">— PAGE ${page.pageNumber} —</span>
+        <button type="button" class="btn-page-add-after px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Insert Page after Page ${page.pageNumber}">
+          <span class="material-symbols-outlined text-[14px]">add</span>
+          <span class="hidden sm:inline">Insert Page</span>
+        </button>
       </div>
 
     </div>
@@ -2026,10 +2019,10 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   if (isScene) {
     const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-start font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.4em] leading-normal" spellcheck="false">${formatted || '<br>'}</div>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.25em] leading-[1.25]" spellcheck="false">${formatted || '<br>'}</div>
       </div>
     `;
   }
@@ -3215,27 +3208,11 @@ export function attachContainerListeners() {
       clearMultiBlockSelection();
     }
 
-    // If clicked on empty space of a page sheet, content area, or margin, place cursor into the writing area
-    if (e.target.classList.contains('screenplay-page-sheet') || 
-        e.target.classList.contains('page-blocks-wrapper') || 
-        e.target.classList.contains('screenplay-page-content') ||
-        e.target.classList.contains('screenplay-page-bottom-margin') ||
-        e.target.classList.contains('screenplay-page-top-margin')) {
+    // If clicked on empty space of a page sheet or wrapper, place cursor into nearest block
+    if (e.target.classList.contains('screenplay-page-sheet') || e.target.classList.contains('page-blocks-wrapper')) {
       const page = e.target.closest('.screenplay-page-sheet');
       const blocks = page ? Array.from(page.querySelectorAll('.screenplay-block:not([data-block-type="pagebreak"])')) : [];
       if (blocks.length > 0) {
-        // If clicking below the last block on the sheet, focus the end of the last block
-        const lastBlock = blocks[blocks.length - 1];
-        const lastRect = lastBlock.getBoundingClientRect();
-        if (e.clientY > lastRect.bottom) {
-          const ed = getBlockEditable(lastBlock);
-          if (ed) {
-            setCursorAtEnd(ed);
-            activeBlockId = lastBlock.getAttribute('data-block-id');
-            highlightElementButton(lastBlock.getAttribute('data-block-type') || 'action');
-            return;
-          }
-        }
         let closest = blocks[0];
         let minDist = Infinity;
         blocks.forEach(b => {
@@ -3318,37 +3295,6 @@ export function attachContainerListeners() {
     }
 
     handleBlockKeydown(e, block, editable);
-  });
-
-  // Delegated beforeinput on container to intercept mobile keyboard Enter & special inputs
-  container.addEventListener('beforeinput', (e) => {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) return;
-    const node = sel.anchorNode;
-    if (!node) return;
-    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-    if (!el || !container.contains(el)) return;
-    const block = el.closest('.screenplay-block');
-    if (!block) return;
-    const editable = getBlockEditable(block);
-    if (!editable) return;
-
-    // Mobile Virtual Keyboard Enter / Line Break key -> contextual screenplay transitions
-    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
-      e.preventDefault();
-      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
-      return;
-    }
-
-    // Mobile Space key navigation on empty line
-    if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
-      if (isBlockContentEmpty(editable)) {
-        if (handleSpaceNavigation(block, editable)) {
-          e.preventDefault();
-          return;
-        }
-      }
-    }
   });
 
   // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
@@ -3469,83 +3415,11 @@ function attachSingleBlockListeners(block) {
   });
 
   editable.addEventListener('beforeinput', (e) => {
-    // 1. Mobile Virtual Keyboard Enter / Line Break key
-    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
-      e.preventDefault();
-      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
-      return;
-    }
-
-    // 2. Space on empty line navigation
     if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
       if (isBlockContentEmpty(editable)) {
         if (handleSpaceNavigation(block, editable)) {
           e.preventDefault();
-          return;
         }
-      }
-    }
-
-    // 3. Mobile "(" auto-detection & parenthesis auto-pairing
-    if (e.data === '(' || (e.inputType === 'insertText' && e.data === '(')) {
-      const type = block.getAttribute('data-block-type') || 'action';
-      if ((type === 'dialogue' || type === 'character' || type === 'action') && isBlockContentEmpty(editable)) {
-        e.preventDefault();
-        convertBlockType(block, 'parenthetical');
-        const updatedBlock = document.getElementById(block.getAttribute('data-block-id'));
-        if (updatedBlock) {
-          const ed = getBlockEditable(updatedBlock);
-          if (ed) {
-            ed.innerText = '()';
-            updateBlockModel(updatedBlock, '()');
-            setCaretCharacterOffsetWithin(ed, 1);
-            highlightElementButton('parenthetical');
-            triggerAutocomplete(updatedBlock, ed);
-          }
-        }
-        return;
-      }
-      if (type === 'character') {
-        const rawText = editable.innerText;
-        if (!rawText.includes('(')) {
-          e.preventDefault();
-          const offset = getCaretCharacterOffsetWithin(editable);
-          const before = rawText.slice(0, offset).trimEnd();
-          const after = rawText.slice(offset).trimStart();
-          const newText = before + ' (' + (after.includes(')') ? after : after + ')');
-          editable.innerText = newText;
-          updateBlockModel(block, newText);
-          const parenPos = newText.indexOf('(');
-          setCaretCharacterOffsetWithin(editable, parenPos + 1);
-          triggerAutocomplete(block, editable);
-          return;
-        }
-      }
-      if (type === 'parenthetical') {
-        const rawText = editable.innerText;
-        if (!rawText.includes(')')) {
-          e.preventDefault();
-          const offset = getCaretCharacterOffsetWithin(editable);
-          const before = rawText.slice(0, offset);
-          const after = rawText.slice(offset);
-          const newText = before + '()' + after;
-          editable.innerText = newText;
-          updateBlockModel(block, newText);
-          setCaretCharacterOffsetWithin(editable, offset + 1);
-          triggerAutocomplete(block, editable);
-          return;
-        }
-      }
-    }
-
-    // 4. Mobile ")" overtype
-    if (e.data === ')' || (e.inputType === 'insertText' && e.data === ')')) {
-      const rawText = editable.innerText;
-      const offset = getCaretCharacterOffsetWithin(editable);
-      if (offset < rawText.length && rawText.charAt(offset) === ')') {
-        e.preventDefault();
-        setCaretCharacterOffsetWithin(editable, offset + 1);
-        return;
       }
     }
   });
@@ -5099,14 +4973,11 @@ function triggerAutocomplete(blockEl, editableEl) {
         if (parenBlock) {
           insertNewBlockAfter(sceneId, parenBlock.id, 'dialogue', '');
         }
-      } else if (itemType === 'parenthetical' || type === 'parenthetical') {
-        const raw = val || '';
-        const inner = raw.replace(/^\(+|\)+$/g, '').trim();
-        const formattedVal = inner ? `(${inner})` : '()';
-        editableEl.innerText = formattedVal;
-        updateBlockModel(blockEl, formattedVal);
+      } else if (itemType === 'parenthetical') {
+        editableEl.innerText = val;
+        updateBlockModel(blockEl, val);
         hideAutocomplete();
-        // Automatically move to dialogue line immediately with 0 extra clicks!
+        // Automatically move to dialogue line immediately!
         insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       } else if (type === 'character') {
         editableEl.innerText = val;
@@ -5352,14 +5223,16 @@ function setupElementBar() {
 
   if (!window.__scriptoraElementBarSyncAttached) {
     window.__scriptoraElementBarSyncAttached = true;
-    document.addEventListener('selectionchange', syncElementBarWithCursor, { passive: true });
-    document.addEventListener('focusin', syncElementBarWithCursor, { passive: true });
-    document.addEventListener('pointerup', syncElementBarWithCursor, { passive: true });
-    document.addEventListener('touchend', syncElementBarWithCursor, { passive: true });
-    document.addEventListener('keyup', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('selectionchange', () => {
+      syncElementBarWithCursor();
+    });
+    const pagesContainer = document.getElementById('screenplay-pages-container');
+    if (pagesContainer) {
+      pagesContainer.addEventListener('pointerup', syncElementBarWithCursor);
+      pagesContainer.addEventListener('touchend', syncElementBarWithCursor);
+      pagesContainer.addEventListener('keyup', syncElementBarWithCursor);
+    }
   }
-  // Re-sync immediately on bar setup
-  setTimeout(syncElementBarWithCursor, 50);
 }
 
 export const typingOverrides = {
@@ -5595,29 +5468,19 @@ export function highlightElementButton(type) {
 }
 
 export function syncElementBarWithCursor() {
-  const bar = document.getElementById('element-bar');
-  if (!bar) return;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const node = sel.anchorNode;
+  if (!node) return;
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  if (!el) return;
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container || !container.contains(el)) return;
 
-  let targetBlock = null;
-  const activeEl = document.activeElement;
-  if (activeEl && typeof activeEl.closest === 'function') {
-    targetBlock = activeEl.closest('.screenplay-block');
-  }
-
-  if (!targetBlock) {
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && sel.anchorNode) {
-      const node = sel.anchorNode;
-      const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-      if (el && typeof el.closest === 'function') {
-        targetBlock = el.closest('.screenplay-block');
-      }
-    }
-  }
-
-  if (targetBlock) {
-    const blockId = targetBlock.getAttribute('data-block-id');
-    const type = targetBlock.getAttribute('data-block-type') || 'action';
+  const block = el.closest('.screenplay-block');
+  if (block) {
+    const blockId = block.getAttribute('data-block-id');
+    const type = block.getAttribute('data-block-type') || 'action';
     if (blockId && blockId !== activeBlockId) {
       activeBlockId = blockId;
     }
@@ -5655,7 +5518,7 @@ export function setupDocumentZoomControls() {
     e.preventDefault();
     if (scrollContainer) {
       const availWidth = scrollContainer.clientWidth - 32;
-      const sheetWidth = 880;
+      const sheetWidth = 900;
       const fitZoom = Math.min(1.2, Math.max(0.6, availWidth / sheetWidth));
       applyZoom(fitZoom);
     }
