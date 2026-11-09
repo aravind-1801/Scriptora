@@ -139,8 +139,8 @@ function handleSpaceNavigation(blockEl, editableEl) {
   return true;
 }
 
-// Standard A4 screenplay page capacity (~46 lines of Courier 12pt)
-const A4_PAGE_CAPACITY_LINES = 46;
+// Standard A4 screenplay page capacity (~54 lines of Courier Prime 12pt)
+const A4_PAGE_CAPACITY_LINES = 54;
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript || {
@@ -490,7 +490,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-4xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[816px] min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[794px] min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
@@ -519,8 +519,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </div>
         </div>
 
-        <!-- Telemetry Footer Bar -->
-        <div class="w-full max-w-3xl px-4 py-2 mt-4 flex items-center justify-between gap-2 text-slate-500 font-caption text-xs select-none border-t border-slate-200 bg-white/70 backdrop-blur-xs rounded-xl shadow-2xs">
+        <!-- Telemetry Footer Bar with Professional Document Controls -->
+        <div class="w-full max-w-4xl px-4 py-2 mt-4 flex flex-wrap items-center justify-between gap-2 text-slate-500 font-caption text-xs select-none border-t border-slate-200 bg-white/70 backdrop-blur-xs rounded-xl shadow-2xs">
           <div class="flex items-center gap-2">
             <span class="flex items-center gap-1 font-mono">
               <span class="material-symbols-outlined text-[14px]">format_shapes</span>
@@ -529,10 +529,29 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span>•</span>
             <span class="bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-medium" id="tamilLangBadge">Tamil IME: Ready</span>
           </div>
+
+          <!-- Professional A4 Document Zoom Controls -->
+          <div class="flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/80">
+            <button id="btn-zoom-out" type="button" class="p-1 rounded hover:bg-white text-slate-600 hover:text-blue-600 transition-all cursor-pointer" title="Zoom Out">
+              <span class="material-symbols-outlined text-[15px]">zoom_out</span>
+            </button>
+            <span id="label-zoom-level" class="text-[10px] font-mono font-semibold px-1 text-slate-700 min-w-[34px] text-center">100%</span>
+            <button id="btn-zoom-in" type="button" class="p-1 rounded hover:bg-white text-slate-600 hover:text-blue-600 transition-all cursor-pointer" title="Zoom In">
+              <span class="material-symbols-outlined text-[15px]">zoom_in</span>
+            </button>
+            <button id="btn-zoom-fit-width" type="button" class="px-1.5 py-0.5 text-[10px] font-medium rounded hover:bg-white text-slate-600 hover:text-blue-600 transition-all cursor-pointer hidden sm:inline-flex items-center gap-0.5" title="Fit Width">
+              <span class="material-symbols-outlined text-[13px]">fit_screen</span>
+              <span>Fit</span>
+            </button>
+            <button id="btn-zoom-reset" type="button" class="p-1 rounded hover:bg-white text-slate-600 hover:text-blue-600 transition-all cursor-pointer" title="Reset Zoom (100%)">
+              <span class="material-symbols-outlined text-[15px]">restart_alt</span>
+            </button>
+          </div>
+
           <div class="flex items-center gap-2 font-mono">
-            <span id="telemetry-page-count">Page 1 of 5</span>
+            <span id="telemetry-page-count">Page 1 of 1</span>
             <span>•</span>
-            <span id="telemetry-word-count">14,280 words</span>
+            <span id="telemetry-word-count">0 words</span>
           </div>
         </div>
 
@@ -1272,6 +1291,7 @@ export async function attachEditorEvents(scriptId, navigate) {
   // 8. Element Bar (Screenplay tools 1-18) & Text Formatting Controls (B, I, U, S)
   setupElementBar();
   setupTextFormattingControls();
+  setupDocumentZoomControls();
 
   // 9. Document Tabs & Title Page parallel view (Prompt 24)
   setupDocumentTabs();
@@ -1659,7 +1679,7 @@ function renderScreenplayPages() {
 
   // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet w-full max-w-[816px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet w-full max-w-[794px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
       <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier">
@@ -3304,6 +3324,26 @@ export function attachContainerListeners() {
       }
     }
 
+    // Auto-detect opening parenthesis on dialogue line: transform directly to parenthetical
+    if (type === 'dialogue') {
+      const trimmedText = (editable.innerText || '').trim();
+      if (trimmedText === '(' || (e.data === '(' && isBlockContentEmpty(editable))) {
+        convertBlockType(block, 'parenthetical');
+        const updatedBlock = document.getElementById(block.getAttribute('data-block-id'));
+        if (updatedBlock) {
+          const ed = getBlockEditable(updatedBlock);
+          if (ed) {
+            ed.innerText = '()';
+            updateBlockModel(updatedBlock, '()');
+            setCaretCharacterOffsetWithin(ed, 1);
+            highlightElementButton('parenthetical');
+            triggerAutocomplete(updatedBlock, ed);
+          }
+        }
+        return;
+      }
+    }
+
     // Auto-capitalize first letter immediately visible to user
     if (type === 'scene' || type === 'character' || type === 'transition' || type === 'shot') {
       const originalText = editable.innerText;
@@ -3652,6 +3692,24 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       hideAutocomplete();
       return;
     }
+  }
+
+  // Auto-detect opening parenthesis on empty dialogue line -> transform to parenthetical
+  if (type === 'dialogue' && (e.key === '(' || e.key === '（') && isBlockContentEmpty(editableEl)) {
+    e.preventDefault();
+    convertBlockType(blockEl, 'parenthetical');
+    const updatedBlock = document.getElementById(blockId);
+    if (updatedBlock) {
+      const ed = getBlockEditable(updatedBlock);
+      if (ed) {
+        ed.innerText = '()';
+        updateBlockModel(updatedBlock, '()');
+        setCaretCharacterOffsetWithin(ed, 1);
+        highlightElementButton('parenthetical');
+        triggerAutocomplete(updatedBlock, ed);
+      }
+    }
+    return;
   }
 
   // Space key mobile navigation on empty lines: Action -> Character -> Transition -> Action
@@ -4121,7 +4179,9 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     if (existingEl) {
       const ed = getBlockEditable(existingEl);
       if (ed) {
+        activeBlockId = existingNext.id;
         setCursorAtEnd(ed);
+        highlightElementButton(newType);
         try {
           existingEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (_) {}
@@ -4158,7 +4218,9 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     // Focus the new line immediately with 60fps smooth cursor placement
     const ed = getBlockEditable(newEl);
     if (ed) {
+      activeBlockId = newBlockId;
       setCursorAtEnd(ed);
+      highlightElementButton(newType);
       try {
         newEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } catch (_) {}
@@ -4180,7 +4242,9 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
         if (el) {
           const ed2 = getBlockEditable(el);
           if (ed2) {
+            activeBlockId = newBlockId;
             setCursorAtEnd(ed2);
+            highlightElementButton(newType);
             try {
               el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } catch (_) {}
@@ -4195,7 +4259,9 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
       if (el) {
         const ed = getBlockEditable(el);
         if (ed) {
+          activeBlockId = newBlockId;
           setCursorAtEnd(ed);
+          highlightElementButton(newType);
           try {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           } catch (_) {}
@@ -4734,12 +4800,11 @@ function triggerAutocomplete(blockEl, editableEl) {
     const parenIdx = text.indexOf('(');
 
     if (parenIdx !== -1) {
-      // User entered character name followed by "(" -> Character Extension & Parenthetical Autocomplete
+      // User entered character name followed by "(" -> STRICTLY Character Extension Autocomplete (ONLY 4 OPTIONS: V.O., O.S., O.C., CONT'D)
       const rawName = text.slice(0, parenIdx).trim();
       const baseName = cleanCharacterName(rawName);
       if (baseName && baseName.length >= 1) {
         const queryAfterParen = text.slice(parenIdx + 1).replace(/\)$/, '').trim().toUpperCase();
-        const queryLower = queryAfterParen.toLowerCase();
 
         const matchedExtensions = STANDARD_CHARACTER_EXTENSIONS.filter(ext => {
           if (!queryAfterParen) return true;
@@ -4750,17 +4815,12 @@ function triggerAutocomplete(blockEl, editableEl) {
                  ext.desc.toUpperCase().startsWith(queryAfterParen);
         });
 
-        const matchedParentheticals = COMMON_PARENTHETICALS.filter(p => {
-          if (!queryLower) return true;
-          return p.toLowerCase().startsWith(queryLower);
-        });
-
         const sceneId = blockEl.getAttribute('data-scene-id');
         const blockId = blockEl.getAttribute('data-block-id');
         const prior = getPreviousCharacterAppearanceInScene(sceneId, blockId, baseName);
         const isContd = !!prior;
 
-        const extSuggestions = matchedExtensions.map(ext => {
+        suggestions = matchedExtensions.map(ext => {
           let formattedCue;
           if (ext.code === "CONT'D") {
             formattedCue = formatCharacterCue(baseName, null, true);
@@ -4779,19 +4839,6 @@ function triggerAutocomplete(blockEl, editableEl) {
             val: formattedCue
           };
         });
-
-        const parenSuggestions = matchedParentheticals.map(p => {
-          return {
-            type: 'character-parenthetical',
-            baseName: baseName,
-            parenCode: p,
-            label: `(${p})`,
-            shortLabel: `(${p})`,
-            val: `(${p})`
-          };
-        });
-
-        suggestions = [...extSuggestions, ...parenSuggestions];
       }
     } else {
       // Normal character name autocomplete: suggest only clean character names (Section 10)
@@ -5173,6 +5220,19 @@ function setupElementBar() {
       handleToolbarToolClick(targetType);
     };
   });
+
+  if (!window.__scriptoraElementBarSyncAttached) {
+    window.__scriptoraElementBarSyncAttached = true;
+    document.addEventListener('selectionchange', () => {
+      syncElementBarWithCursor();
+    });
+    const pagesContainer = document.getElementById('screenplay-pages-container');
+    if (pagesContainer) {
+      pagesContainer.addEventListener('pointerup', syncElementBarWithCursor);
+      pagesContainer.addEventListener('touchend', syncElementBarWithCursor);
+      pagesContainer.addEventListener('keyup', syncElementBarWithCursor);
+    }
+  }
 }
 
 export const typingOverrides = {
@@ -5394,7 +5454,7 @@ function handleToolbarToolClick(type) {
   }
 }
 
-function highlightElementButton(type) {
+export function highlightElementButton(type) {
   const bar = document.getElementById('element-bar');
   if (!bar) return;
   bar.querySelectorAll('.element-btn').forEach(btn => {
@@ -5403,6 +5463,64 @@ function highlightElementButton(type) {
       btn.className = 'element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-white bg-blue-600 shadow-2xs font-semibold shrink-0';
     } else {
       btn.className = 'element-btn flex flex-col items-center justify-center min-w-[44px] max-w-[52px] h-11 px-1 py-0.5 rounded-lg text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-blue-600 transition-colors shrink-0';
+    }
+  });
+}
+
+export function syncElementBarWithCursor() {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const node = sel.anchorNode;
+  if (!node) return;
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+  if (!el) return;
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container || !container.contains(el)) return;
+
+  const block = el.closest('.screenplay-block');
+  if (block) {
+    const blockId = block.getAttribute('data-block-id');
+    const type = block.getAttribute('data-block-type') || 'action';
+    if (blockId && blockId !== activeBlockId) {
+      activeBlockId = blockId;
+    }
+    highlightElementButton(type);
+  }
+}
+
+let currentDocumentZoom = 1.0;
+export function setupDocumentZoomControls() {
+  const container = document.getElementById('screenplay-pages-container');
+  const scrollContainer = document.getElementById('editor-main-scroll');
+  const lbl = document.getElementById('label-zoom-level');
+  if (!container || !lbl) return;
+
+  const applyZoom = (zoom) => {
+    currentDocumentZoom = Math.min(1.75, Math.max(0.5, Math.round(zoom * 100) / 100));
+    container.style.transform = currentDocumentZoom === 1.0 ? '' : `scale(${currentDocumentZoom})`;
+    container.style.transformOrigin = 'top center';
+    lbl.textContent = `${Math.round(currentDocumentZoom * 100)}%`;
+  };
+
+  document.getElementById('btn-zoom-in')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    applyZoom(currentDocumentZoom + 0.1);
+  });
+  document.getElementById('btn-zoom-out')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    applyZoom(currentDocumentZoom - 0.1);
+  });
+  document.getElementById('btn-zoom-reset')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    applyZoom(1.0);
+  });
+  document.getElementById('btn-zoom-fit-width')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (scrollContainer) {
+      const availWidth = scrollContainer.clientWidth - 32;
+      const sheetWidth = 794;
+      const fitZoom = Math.min(1.2, Math.max(0.6, availWidth / sheetWidth));
+      applyZoom(fitZoom);
     }
   });
 }

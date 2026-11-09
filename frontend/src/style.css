@@ -226,7 +226,6 @@ body.scriptora-modal-open {
   width: 100%;
   max-width: 794px; /* Exact A4 at 96dpi: 210mm = 793.7px */
   min-height: 1123px; /* Exact A4 at 96dpi: 297mm = 1122.5px */
-  aspect-ratio: 210 / 297;
   background-color: #ffffff;
   padding: 72px 72px 72px 108px !important; /* 1.0in top, 1.0in right, 1.0in bottom, 1.5in left */
   box-sizing: border-box;
@@ -243,7 +242,6 @@ body.scriptora-modal-open {
   width: 100%;
   max-width: 794px;
   min-height: 1123px;
-  aspect-ratio: 210 / 297;
   background-color: #ffffff;
   padding: 72px 108px 72px 108px !important;
   box-sizing: border-box;
@@ -259,9 +257,8 @@ body.scriptora-modal-open {
   .screenplay-page-sheet {
     width: calc(100% - 16px) !important;
     max-width: 794px !important;
-    min-height: calc((100vw - 16px) * 1.4142) !important;
-    aspect-ratio: 210 / 297 !important;
-    padding: 28px 16px 28px 28px !important;
+    min-height: 1123px !important; /* Authentic full-height A4 sheet on mobile - scrollable, not squashed */
+    padding: 36px 16px 36px 28px !important;
     margin: 0 auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
@@ -271,9 +268,8 @@ body.scriptora-modal-open {
   .screenplay-title-page-sheet {
     width: calc(100% - 16px) !important;
     max-width: 794px !important;
-    min-height: calc((100vw - 16px) * 1.4142) !important;
-    aspect-ratio: 210 / 297 !important;
-    padding: 32px 20px 32px 20px !important;
+    min-height: 1123px !important;
+    padding: 36px 20px 36px 20px !important;
     margin: 0 auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
