@@ -3852,10 +3852,7 @@ export async function generateStoryboardShot(scriptId, params = {}) {
       return res;
     }
   } catch (e) {
-    // If an external provider was requested (like NVIDIA NIM), re-throw so user receives honest provider error
-    if (params.provider && params.provider !== 'scriptora-concept') {
-      throw e;
-    }
+    console.warn('[Storyboard API] Backend generation failed or timed out:', e.message, '. Using local concept sketch fallback.');
   }
 
   // Fallback to client-side authentic storyboard concept sketch

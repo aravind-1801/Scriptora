@@ -543,9 +543,14 @@ export async function generateShotImage(params = {}) {
   // If NVIDIA NIM is requested
   if (provider === "nvidia-nim") {
     if (!process.env.NVIDIA_API_KEY) {
-      throw new Error(
-        "NVIDIA API Key is missing. Please set NVIDIA_API_KEY in backend/.env to use NVIDIA NIM."
-      );
+      console.warn("[NVIDIA NIM] NVIDIA_API_KEY missing in environment. Falling back to SCRIPTORA Concept Engine.");
+      const fallback = renderConceptEngineSketch(params);
+      return {
+        ...fallback,
+        requestedProvider: "nvidia-nim",
+        fallbackUsed: true,
+        notice: "NVIDIA API key not configured. Rendered with SCRIPTORA Concept Engine."
+      };
     }
 
     const apiKey = process.env.NVIDIA_API_KEY.trim();
@@ -567,105 +572,72 @@ export async function generateShotImage(params = {}) {
 
     const fullPrompt = `${visualStyle} cinematic storyboard film still frame for ${sceneHeading}: ${prompt}. Camera: ${shotSize}, ${cameraAngle}, ${focalLength}. Lighting: ${lightingMood}. High detail production storyboard illustration.`;
 
-    let attempts = 0;
-    const maxAttempts = 2;
-    let lastError = null;
+    // Fast 20-second timeout to prevent 65-second user freeze
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-    while (attempts < maxAttempts) {
-      attempts++;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 65000);
+    try {
+      const resp = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: fullPrompt,
+          mode: "base",
+          cfg_scale: 5,
+          width,
+          height,
+          steps: 20,
+          seed: params.seed || Math.floor(Math.random() * 1000000)
+        }),
+        signal: controller.signal
+      });
 
-      try {
-        const resp = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            prompt: fullPrompt,
-            mode: "base",
-            cfg_scale: 5,
-            width,
-            height,
-            steps: 25,
-            seed: params.seed || Math.floor(Math.random() * 1000000)
-          }),
-          signal: controller.signal
-        });
+      clearTimeout(timeoutId);
 
-        clearTimeout(timeoutId);
-
-        // Async handling: HTTP 202 Accepted
-        if (resp.status === 202) {
-          const reqId = resp.headers.get("nvcf-reqid") || (await resp.json().catch(() => ({}))).id;
-          if (!reqId) {
-            throw new Error("NVIDIA async invocation returned 202 without a valid request ID.");
-          }
+      // Async handling: HTTP 202 Accepted
+      if (resp.status === 202) {
+        const reqId = resp.headers.get("nvcf-reqid") || (await resp.json().catch(() => ({}))).id;
+        if (reqId) {
           const pollUrl = `https://api.nvcf.nvidia.com/v2/nvcf/pexec/status/${reqId}`;
           const startTime = Date.now();
-          while (Date.now() - startTime < 45000) {
+          while (Date.now() - startTime < 15000) {
             await new Promise(r => setTimeout(r, 2000));
-            const pollRes = await fetch(pollUrl, {
-              headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Accept": "application/json"
+            try {
+              const pollRes = await fetch(pollUrl, {
+                headers: {
+                  "Authorization": `Bearer ${apiKey}`,
+                  "Accept": "application/json"
+                }
+              });
+              if (pollRes.status === 200) {
+                const pollData = await pollRes.json();
+                const b64 = pollData.artifacts?.[0]?.base64 || pollData.b64_json;
+                if (b64) {
+                  return {
+                    imageUrl: `data:image/jpeg;base64,${b64}`,
+                    provider: "nvidia-nim",
+                    model: "black-forest-labs/flux.1-dev",
+                    quality: params.quality || "standard",
+                    costEstimate: "Free (NVIDIA Developer Tier)",
+                    prompt
+                  };
+                }
+              } else if (pollRes.status !== 202) {
+                break;
               }
-            });
-            if (pollRes.status === 200) {
-              const pollData = await pollRes.json();
-              const b64 = pollData.artifacts?.[0]?.base64 || pollData.b64_json;
-              if (b64) {
-                return {
-                  imageUrl: `data:image/jpeg;base64,${b64}`,
-                  provider: "nvidia-nim",
-                  model: "black-forest-labs/flux.1-dev",
-                  quality: params.quality || "standard",
-                  costEstimate: "Free (NVIDIA Developer Tier)",
-                  prompt
-                };
-              }
-            } else if (pollRes.status !== 202) {
-              const errTxt = await pollRes.text();
-              throw new Error(`NVIDIA async task failed: ${errTxt}`);
+            } catch (_) {
+              break;
             }
           }
-          throw new Error("NVIDIA generation timed out while waiting for async job completion.");
         }
+      }
 
-        if (resp.status === 404) {
-          const errJson = await resp.json().catch(() => ({}));
-          if (errJson.detail && errJson.detail.includes("Not found for account")) {
-            throw new Error(
-              `NVIDIA Account Notice: Endpoint execution requires 'Public API Endpoints' enabled on build.nvidia.com for your account.`
-            );
-          }
-          throw new Error(`NVIDIA endpoint returned 404: ${errJson.detail || "Model not found"}`);
-        }
-
-        if (resp.status === 402 || resp.status === 403) {
-          throw new Error(
-            "NVIDIA generation paused: Free developer quota exhausted or billing activation required. SCRIPTORA strict free-only policy prevents any automatic charges."
-          );
-        }
-
-        if (resp.status === 429) {
-          throw new Error("NVIDIA rate limit reached. Please wait a moment before trying again.");
-        }
-
-        if (resp.status >= 500 && attempts < maxAttempts) {
-          await new Promise(r => setTimeout(r, 2000));
-          continue;
-        }
-
-        if (!resp.ok) {
-          const errTxt = await resp.text();
-          throw new Error(`NVIDIA API error (${resp.status}): ${errTxt}`);
-        }
-
-        const json = await resp.json();
+      if (resp.ok) {
+        const json = await resp.json().catch(() => ({}));
         const b64 = json.artifacts?.[0]?.base64 || json.b64_json || json.data?.[0]?.b64_json;
         if (b64) {
           return {
@@ -685,23 +657,35 @@ export async function generateShotImage(params = {}) {
             costEstimate: "Free (NVIDIA Developer Tier)",
             prompt
           };
-        } else {
-          throw new Error("NVIDIA API returned response without valid image data.");
         }
-      } catch (err) {
-        clearTimeout(timeoutId);
-        lastError = err;
-        if (err.name === 'AbortError') {
-          throw new Error("NVIDIA API request timed out after 65 seconds.");
-        }
-        if (attempts >= maxAttempts || (err.message && !err.message.includes('500') && !err.message.includes('503'))) {
-          throw err;
-        }
-        await new Promise(r => setTimeout(r, 2000));
       }
-    }
 
-    if (lastError) throw lastError;
+      // If NVIDIA returned 402/403/500/etc. or missing image data:
+      console.warn(`[NVIDIA NIM] API returned status ${resp.status}. Falling back seamlessly to SCRIPTORA Concept Engine.`);
+      const fallback = renderConceptEngineSketch(params);
+      return {
+        ...fallback,
+        requestedProvider: "nvidia-nim",
+        model: "black-forest-labs/flux.1-dev",
+        fallbackUsed: true,
+        notice: (resp.status === 402 || resp.status === 403)
+          ? "NVIDIA cloud developer credits paused or restricted. Generated with SCRIPTORA Concept Engine."
+          : `NVIDIA cloud service returned status ${resp.status}. Generated with SCRIPTORA Concept Engine.`
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("[NVIDIA NIM] Request failed/timed out:", err.message, ". Falling back seamlessly to SCRIPTORA Concept Engine.");
+      const fallback = renderConceptEngineSketch(params);
+      return {
+        ...fallback,
+        requestedProvider: "nvidia-nim",
+        model: "black-forest-labs/flux.1-dev",
+        fallbackUsed: true,
+        notice: err.name === 'AbortError'
+          ? "NVIDIA cloud queue latency exceeded 20s. Rendered with SCRIPTORA Concept Engine."
+          : `NVIDIA cloud unavailable (${err.message}). Rendered with SCRIPTORA Concept Engine.`
+      };
+    }
   }
 
   // If OpenAI API key is genuinely configured, call OpenAI DALL-E 3
@@ -810,6 +794,16 @@ export async function generateShotImage(params = {}) {
   }
 
   // Built-in SCRIPTORA Concept Engine (Photorealistic Hand-Drawn Graphite Storyboard Sketch)
+  return renderConceptEngineSketch(params);
+}
+
+export function renderConceptEngineSketch(params = {}) {
+  const {
+    shotSize = "Medium Shot",
+    sceneHeading = "SCENE 1",
+    prompt = "",
+    shotNumber = "1A"
+  } = params;
   const sizeLower = (shotSize || "").toLowerCase();
   const headingUpper = (sceneHeading || "").toUpperCase();
   const fullText = `${sceneHeading} ${prompt} ${params.description || ""}`.toLowerCase();

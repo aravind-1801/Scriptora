@@ -14,11 +14,15 @@ function getDraftSceneSnippet(draft) {
         const sceneNum = parseInt((draft.currentScene || '').replace(/\D+/g, ''), 10) || 1;
         const targetScene = sp.scenes.find(s => s.number === sceneNum) || sp.scenes[0];
         if (targetScene && Array.isArray(targetScene.blocks)) {
-          const actionBlock = targetScene.blocks.find(b => b.type === 'action') || targetScene.blocks[0];
-          const slug = targetScene.slugline || targetScene.blocks.find(b => b.type === 'scene')?.content || '';
-          const text = actionBlock?.content || '';
+          const slug = (targetScene.slugline || targetScene.blocks.find(b => b.type === 'scene')?.content || '').trim();
+          const contentBlock = targetScene.blocks.find(b => b.content && b.content.trim().length > 0 && b.type !== 'scene') ||
+                               targetScene.blocks.find(b => b.content && b.content.trim().length > 0);
+          const text = contentBlock?.content?.trim() || '';
           if (slug && text) {
-            return `"${slug} - ${text.slice(0, 95)}..."`;
+            return `"${slug} — ${text.slice(0, 95)}..."`;
+          }
+          if (slug) {
+            return `"${slug}"`;
           }
           if (text) {
             return `"${text.slice(0, 110)}..."`;
@@ -260,6 +264,11 @@ export function renderWorkspaceScreen() {
 }
 
 export function attachWorkspaceEvents(navigate) {
+  // Ensure no rogue editor popups or autocompletes persist on the workspace screen
+  document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup').forEach(el => {
+    try { el.remove(); } catch (_) {}
+  });
+
   let targetScriptId = null;
 
   // Continue writing button

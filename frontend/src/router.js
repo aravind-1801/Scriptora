@@ -338,6 +338,9 @@ class Router {
 
   navigate(path, replace = false) {
     unlockBodyScroll();
+    document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup').forEach(el => {
+      try { el.remove(); } catch (_) {}
+    });
     // Record current scroll position
     if (this.currentPath) {
       this.scrollPositions[this.normalizePath(this.currentPath)] = window.scrollY;
@@ -692,11 +695,10 @@ class Router {
       }
       unlockBodyScroll();
 
-      // Clean up any rogue floating editor overlays attached to document.body
-      const rogueAc = document.getElementById('editor-autocomplete-dropdown');
-      if (rogueAc) rogueAc.remove();
-      const rogueBar = document.getElementById('screenplay-multi-selection-bar');
-      if (rogueBar) rogueBar.remove();
+      // Clean up any rogue floating editor overlays attached anywhere in DOM
+      document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup, [data-scriptora-popup]').forEach(el => {
+        try { el.remove(); } catch (_) {}
+      });
 
       // Remove any duplicate header or bottom navigation tags from screen template
       let cleanHtml = html || '';

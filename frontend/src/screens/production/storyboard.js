@@ -1911,7 +1911,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
             updateInspectorImagePreviewUI();
             closeModal(genModal);
-            showToast('Shot image generated successfully');
+            showToast(res.notice || 'Shot image generated successfully');
           } else {
             throw new Error('Image generation returned empty');
           }

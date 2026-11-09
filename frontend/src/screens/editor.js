@@ -3358,6 +3358,15 @@ function attachSingleBlockListeners(block) {
     }
   };
 
+  editable.addEventListener('blur', () => {
+    setTimeout(() => {
+      const activeEl = document.activeElement;
+      if (!activeEl || (!activeEl.closest('#editor-autocomplete-dropdown') && !activeEl.closest('.screenplay-block'))) {
+        hideAutocomplete();
+      }
+    }, 150);
+  });
+
   editable.addEventListener('click', () => {
     const type = block.getAttribute('data-block-type') || 'action';
     if (type === 'transition' && isBlockContentEmpty(editable)) {
@@ -4402,11 +4411,10 @@ function setupAutocomplete() {
 }
 
 function hideAutocomplete() {
-  const dropdown = document.getElementById('editor-autocomplete-dropdown');
-  if (dropdown) {
+  document.querySelectorAll('#editor-autocomplete-dropdown').forEach(dropdown => {
     dropdown.classList.add('hidden');
     dropdown.innerHTML = '';
-  }
+  });
 }
 
 function getActiveCaretOrBlockRect(editableEl) {
