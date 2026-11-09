@@ -223,17 +223,19 @@ body.scriptora-modal-open {
 
 /* ==========================================================================
    AUTHENTIC ISO A4 SCREENPLAY PAGE ARCHITECTURE (210mm x 297mm)
-   Reference Dimensions at 96 DPI: 794px x 1123px (Aspect Ratio 210:297)
-   Standard Screenplay Margins: Top 1.0" (72px), Left 1.5" (108px), Right 1.0" (72px), Bottom 1.0" (72px)
-   Usable Content Height: 1123px - 72px - 72px = 979px (~54 lines)
+   Spacious A4 Sheet: 880px x 1245px (Exact Aspect Ratio 210:297)
+   Standard Screenplay Margins Proportional to Sheet:
+   Top (80px), Left 1.5" Binding (120px), Right 1.0" (80px), Bottom 1.0" (80px)
+   Usable Content Height: 1245px - 80px - 80px = 1085px (~54 lines)
    ========================================================================== */
 
 .screenplay-page-sheet {
-  width: 794px !important;
-  min-width: 794px !important;
-  max-width: 794px !important;
-  min-height: 1123px !important;
-  height: 1123px !important;
+  width: min(880px, calc(100vw - 32px)) !important;
+  min-width: min(880px, calc(100vw - 32px)) !important;
+  max-width: 880px !important;
+  min-height: calc(min(880px, calc(100vw - 32px)) * (297 / 210)) !important;
+  height: calc(min(880px, calc(100vw - 32px)) * (297 / 210)) !important;
+  aspect-ratio: 210 / 297 !important;
   background-color: #ffffff !important;
   box-sizing: border-box !important;
   display: flex !important;
@@ -250,31 +252,32 @@ body.scriptora-modal-open {
 }
 
 .screenplay-title-page-sheet {
-  width: 794px !important;
-  min-width: 794px !important;
-  max-width: 794px !important;
-  min-height: 1123px !important;
-  height: 1123px !important;
+  width: min(880px, calc(100vw - 32px)) !important;
+  min-width: min(880px, calc(100vw - 32px)) !important;
+  max-width: 880px !important;
+  min-height: calc(min(880px, calc(100vw - 32px)) * (297 / 210)) !important;
+  height: calc(min(880px, calc(100vw - 32px)) * (297 / 210)) !important;
+  aspect-ratio: 210 / 297 !important;
   background-color: #ffffff !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-direction: column !important;
   position: relative !important;
   margin: 0 auto 32px auto !important;
-  padding: 72px 108px 72px 108px !important;
+  padding: 80px 120px 80px 120px !important;
   box-shadow: 0 4px 24px -2px rgba(15, 23, 42, 0.1), 0 0 0 1px rgba(226, 232, 240, 0.9) !important;
   border-radius: 2px !important;
 }
 
-/* 1. Top Margin: Physical 1.0 inch (72px) with Page Number Header */
+/* 1. Top Margin: Proportional 1.0 inch (80px) with Page Number Header */
 .screenplay-page-top-margin {
-  height: 72px !important;
-  min-height: 72px !important;
-  max-height: 72px !important;
+  height: 80px !important;
+  min-height: 80px !important;
+  max-height: 80px !important;
   width: 100% !important;
-  padding-left: 108px !important;
-  padding-right: 72px !important;
-  padding-top: 36px !important;
+  padding-left: 120px !important;
+  padding-right: 80px !important;
+  padding-top: 40px !important;
   padding-bottom: 8px !important;
   display: flex !important;
   align-items: flex-end !important;
@@ -298,15 +301,15 @@ body.scriptora-modal-open {
   text-align: right !important;
 }
 
-/* 2. Full-Height Editable Writing Area: Occupies full 979px between margins */
+/* 2. Full-Height Editable Writing Area: Occupies full 1085px between margins */
 .page-blocks-wrapper,
 .screenplay-page-content {
   flex: 1 1 auto !important;
   width: 100% !important;
-  min-height: 979px !important;
-  height: 979px !important;
-  padding-left: 108px !important;
-  padding-right: 72px !important;
+  min-height: 1085px !important;
+  height: 1085px !important;
+  padding-left: 120px !important;
+  padding-right: 80px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   box-sizing: border-box !important;
@@ -316,14 +319,14 @@ body.scriptora-modal-open {
   overflow: visible !important;
 }
 
-/* 3. Bottom Margin: Physical 1.0 inch (72px) - Screenplay text stops here */
+/* 3. Bottom Margin: Proportional 1.0 inch (80px) - Screenplay text stops here */
 .screenplay-page-bottom-margin {
-  height: 72px !important;
-  min-height: 72px !important;
-  max-height: 72px !important;
+  height: 80px !important;
+  min-height: 80px !important;
+  max-height: 80px !important;
   width: 100% !important;
-  padding-left: 108px !important;
-  padding-right: 72px !important;
+  padding-left: 120px !important;
+  padding-right: 80px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -385,51 +388,51 @@ body.scriptora-modal-open {
   }
 
   .screenplay-page-sheet {
-    width: min(794px, calc(100vw - 16px)) !important;
-    min-width: min(794px, calc(100vw - 16px)) !important;
-    max-width: min(794px, calc(100vw - 16px)) !important;
-    height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
-    min-height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
+    width: min(880px, calc(100vw - 16px)) !important;
+    min-width: min(880px, calc(100vw - 16px)) !important;
+    max-width: min(880px, calc(100vw - 16px)) !important;
+    height: calc(min(880px, calc(100vw - 16px)) * (297 / 210)) !important;
+    min-height: calc(min(880px, calc(100vw - 16px)) * (297 / 210)) !important;
     aspect-ratio: 210 / 297 !important;
     margin: 0 auto 20px auto !important;
     border-radius: 2px !important;
   }
 
   .screenplay-title-page-sheet {
-    width: min(794px, calc(100vw - 16px)) !important;
-    min-width: min(794px, calc(100vw - 16px)) !important;
-    max-width: min(794px, calc(100vw - 16px)) !important;
-    height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
-    min-height: calc(min(794px, calc(100vw - 16px)) * (297 / 210)) !important;
+    width: min(880px, calc(100vw - 16px)) !important;
+    min-width: min(880px, calc(100vw - 16px)) !important;
+    max-width: min(880px, calc(100vw - 16px)) !important;
+    height: calc(min(880px, calc(100vw - 16px)) * (297 / 210)) !important;
+    min-height: calc(min(880px, calc(100vw - 16px)) * (297 / 210)) !important;
     aspect-ratio: 210 / 297 !important;
     margin: 0 auto 20px auto !important;
-    padding: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(48px * (min(794px, calc(100vw - 16px)) / 794)) calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    padding: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) calc(54px * (min(880px, calc(100vw - 16px)) / 880)) calc(54px * (min(880px, calc(100vw - 16px)) / 880)) calc(80px * (min(880px, calc(100vw - 16px)) / 880)) !important;
   }
 
   .screenplay-page-top-margin {
-    height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    min-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    max-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-top: calc(18px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    min-height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    max-height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-left: calc(80px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-right: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-top: calc(20px * (min(880px, calc(100vw - 16px)) / 880)) !important;
     padding-bottom: 4px !important;
   }
 
   .page-blocks-wrapper,
   .screenplay-page-content {
-    min-height: calc(calc(min(794px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(794px, calc(100vw - 16px)) / 794))) !important;
-    height: calc(calc(min(794px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(794px, calc(100vw - 16px)) / 794))) !important;
-    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    min-height: calc(calc(min(880px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(880px, calc(100vw - 16px)) / 880))) !important;
+    height: calc(calc(min(880px, calc(100vw - 16px)) * (297 / 210)) - calc(108px * (min(880px, calc(100vw - 16px)) / 880))) !important;
+    padding-left: calc(80px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-right: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
   }
 
   .screenplay-page-bottom-margin {
-    height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    min-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    max-height: calc(54px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-left: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) !important;
-    padding-right: calc(48px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    min-height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    max-height: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-left: calc(80px * (min(880px, calc(100vw - 16px)) / 880)) !important;
+    padding-right: calc(54px * (min(880px, calc(100vw - 16px)) / 880)) !important;
   }
 }
 
