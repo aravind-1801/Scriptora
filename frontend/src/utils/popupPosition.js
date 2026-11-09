@@ -218,14 +218,19 @@ export function calculatePopupPosition(triggerEl, popupEl, options = {}) {
 export function positionPopup(triggerEl, popupEl, options = {}) {
   if (!triggerEl || !popupEl) return;
 
+  if (options.portal === false) {
+    if (options.zIndex) {
+      popupEl.style.zIndex = options.zIndex;
+    }
+    return;
+  }
+
   const isInsideModal = !!triggerEl.closest('.scriptora-modal-overlay');
 
   // Reparent to portal or document.body to avoid clipping by scrolling/overflow containers
-  if (options.portal !== false) {
-    const targetParent = isInsideModal ? getModalPortal() : document.body;
-    if (popupEl.parentElement !== targetParent) {
-      targetParent.appendChild(popupEl);
-    }
+  const targetParent = isInsideModal ? getModalPortal() : document.body;
+  if (popupEl.parentElement !== targetParent) {
+    targetParent.appendChild(popupEl);
   }
 
   // Ensure element is visible enough to measure
@@ -242,6 +247,9 @@ export function positionPopup(triggerEl, popupEl, options = {}) {
   if (coords) {
     popupEl.style.top = `${coords.top}px`;
     popupEl.style.left = `${coords.left}px`;
+    if (options.matchWidth) {
+      popupEl.style.width = `${triggerEl.offsetWidth}px`;
+    }
     popupEl.style.maxHeight = `${coords.maxHeight}px`;
     popupEl.style.overflowY = 'auto';
   }
@@ -262,18 +270,26 @@ export function setupPopupToggle(triggerEl, popupEl, options = {}) {
   popupEl.setAttribute('data-scriptora-popup', 'true');
 
   const update = () => {
-    if (!popupEl.classList.contains('hidden')) {
+    if (!popupEl.classList.contains('hidden') && options.portal !== false) {
       positionPopup(triggerEl, popupEl, options);
     }
   };
 
   const open = () => {
     popupEl.classList.remove('hidden');
-    positionPopup(triggerEl, popupEl, options);
+    if (options.portal !== false) {
+      positionPopup(triggerEl, popupEl, options);
+    }
+    if (typeof options.onOpen === 'function') {
+      options.onOpen();
+    }
   };
 
   const close = () => {
     popupEl.classList.add('hidden');
+    if (typeof options.onClose === 'function') {
+      options.onClose();
+    }
   };
 
   const toggle = () => {
@@ -284,6 +300,19 @@ export function setupPopupToggle(triggerEl, popupEl, options = {}) {
     }
   };
 
+  // Bind click listener on trigger element
+  const onTriggerClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggle();
+  };
+
+  if (triggerEl.__scriptoraPopupToggleHandler) {
+    triggerEl.removeEventListener('click', triggerEl.__scriptoraPopupToggleHandler);
+  }
+  triggerEl.__scriptoraPopupToggleHandler = onTriggerClick;
+  triggerEl.addEventListener('click', onTriggerClick);
+
   // Close on click outside
   const onDocClick = (e) => {
     if (popupEl.classList.contains('hidden')) return;
@@ -292,7 +321,15 @@ export function setupPopupToggle(triggerEl, popupEl, options = {}) {
     }
   };
 
+  // Close on Escape key
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape' && !popupEl.classList.contains('hidden')) {
+      close();
+    }
+  };
+
   document.addEventListener('click', onDocClick);
+  document.addEventListener('keydown', onKeyDown);
   window.addEventListener('scroll', update, { passive: true, capture: true });
   window.addEventListener('resize', update, { passive: true });
   if (window.visualViewport) {
@@ -300,7 +337,19 @@ export function setupPopupToggle(triggerEl, popupEl, options = {}) {
     window.visualViewport.addEventListener('scroll', update, { passive: true });
   }
 
-  return { open, close, toggle, update };
+  return {
+    open,
+    close,
+    toggle,
+    update,
+    destroy: () => {
+      triggerEl.removeEventListener('click', onTriggerClick);
+      document.removeEventListener('click', onDocClick);
+      document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    }
+  };
 }
 
 /**

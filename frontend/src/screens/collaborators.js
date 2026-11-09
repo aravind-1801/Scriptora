@@ -21,7 +21,11 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
 
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.scripts[0] || {
+  const scriptsList = (store.state.scripts && store.state.scripts.length > 0)
+    ? store.state.scripts
+    : (api.DEFAULT_SCRIPTS || []);
+
+  const script = scriptsList.find(s => s.id === scriptId) || scriptsList[0] || {
     id: 'chronicles-of-dust',
     title: 'Chronicles of Dust',
     draft: 'Draft 4.2',
@@ -63,7 +67,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
 
           <!-- Project Dropdown Popover -->
           <div class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-30 overflow-hidden py-1" id="projectDropdown">
-            ${store.state.scripts.map(s => `
+            ${scriptsList.map(s => `
               <button class="w-full text-left px-4 py-2.5 flex items-center justify-between hover:bg-slate-50 transition-colors switch-script-opt" data-id="${s.id}">
                 <div class="flex flex-col">
                   <span class="text-xs font-semibold text-slate-900">${s.title}</span>
@@ -835,17 +839,29 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   // Active script dropdown
   const projBtn = document.getElementById('projectSelectBtn');
   const projDropdown = document.getElementById('projectDropdown');
+  const projectChevron = document.getElementById('projectChevron');
   let projDropdownHandler = null;
   if (projBtn && projDropdown) {
-    projDropdownHandler = setupPopupToggle(projBtn, projDropdown, { placement: 'bottom-start' });
+    projDropdownHandler = setupPopupToggle(projBtn, projDropdown, {
+      placement: 'bottom-start',
+      portal: false,
+      onOpen: () => {
+        projectChevron?.classList.add('rotate-180');
+      },
+      onClose: () => {
+        projectChevron?.classList.remove('rotate-180');
+      }
+    });
   }
 
   document.querySelectorAll('.switch-script-opt').forEach(opt => {
-    opt.onclick = () => {
+    opt.onclick = async (e) => {
+      e.stopPropagation();
       const id = opt.getAttribute('data-id');
-      store.selectScript(id);
+      if (!id) return;
       projDropdownHandler?.close();
-      navigate(`/profile/collaborators${isFromEditor ? `?from=editor&scriptId=${id}` : ''}`);
+      await store.selectScript(id);
+      navigate(`/profile/collaborators?scriptId=${encodeURIComponent(id)}${isFromEditor ? '&from=editor' : ''}`);
     };
   });
 
