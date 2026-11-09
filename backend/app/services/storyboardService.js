@@ -551,18 +551,15 @@ export async function generateShotImage(params = {}) {
     const apiKey = process.env.NVIDIA_API_KEY.trim();
     const endpoint = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev";
 
-    // Set dimensions supported by FLUX.1-dev
+    // Set dimensions supported by FLUX.1-dev (valid values: 768, 832, 896, 960, 1024, 1088, 1152, 1216, 1280, 1344)
     let width = 1024;
     let height = 1024;
-    if (aspectRatio === "16:9") {
-      width = 1024;
-      height = 576;
-    } else if (aspectRatio === "2.39:1") {
-      width = 1024;
-      height = 448;
+    if (aspectRatio === "16:9" || aspectRatio === "2.39:1") {
+      width = 1344;
+      height = 768;
     } else if (aspectRatio === "9:16") {
-      width = 576;
-      height = 1024;
+      width = 768;
+      height = 1344;
     } else if (aspectRatio === "4:3") {
       width = 1024;
       height = 768;
