@@ -223,9 +223,9 @@ body.scriptora-modal-open {
 
 /* Professional Screenplay Page Sheet (Standard A4 Geometry: 210mm x 297mm, Spacious 900px Display) */
 .screenplay-page-sheet {
-  width: 100%;
-  max-width: 900px; /* Spacious A4 display width (approx. 900px) */
-  min-height: 1273px; /* Exact proportional A4 height: 900 * 297 / 210 = 1272.85px */
+  width: 900px !important;
+  max-width: 900px !important; /* Spacious A4 display width (approx. 900px) */
+  min-height: 1273px !important; /* Exact proportional A4 height: 900 * 297 / 210 = 1272.85px */
   aspect-ratio: 210 / 297;
   background-color: #ffffff;
   padding: 82px 82px 82px 122px !important; /* Scaled proportionally from standard 1.0in top/right/bottom, 1.5in left */
@@ -238,24 +238,15 @@ body.scriptora-modal-open {
   border-radius: 2px;
 }
 
-/* Screenplay Title Page Sheet (Symmetric 1.5in margins for true horizontal page centering) */
 .screenplay-title-page-sheet {
-  width: 100%;
-  max-width: 900px;
-  min-height: 1273px;
+  width: 900px !important;
+  max-width: 900px !important;
+  min-height: 1273px !important;
   aspect-ratio: 210 / 297;
-  background-color: #ffffff;
-  padding: 82px 122px 82px 122px !important;
-  box-sizing: border-box;
-  font-family: 'Courier Prime', 'Courier New', Courier, monospace;
-  font-size: 12pt;
-  line-height: 1.25;
-  color: #0f172a;
-  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(226, 232, 240, 0.85);
-  border-radius: 2px;
+  padding: 82px 82px 82px 122px !important;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 940px) {
   .screenplay-page-sheet {
     width: calc(100% - 16px) !important;
     max-width: 900px !important;

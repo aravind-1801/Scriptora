@@ -51,6 +51,11 @@ function getDraftSceneSnippet(draft) {
 }
 
 export function renderWorkspaceScreen() {
+  // Purge any rogue dropdowns or floating overlays from the editor
+  document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup, [data-scriptora-popup]').forEach(el => {
+    try { el.remove(); } catch (_) {}
+  });
+
   const scripts = store.state.scripts || [];
   const hasScripts = scripts.length > 0;
   // State B: Only display current draft spotlight if a screenplay exists with isCurrentDraft === true

@@ -3297,6 +3297,58 @@ export function attachContainerListeners() {
     handleBlockKeydown(e, block, editable);
   });
 
+  // Delegated beforeinput on container to intercept mobile virtual keyboard Enter & special inputs
+  container.addEventListener('beforeinput', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!el || !container.contains(el)) return;
+    const block = el.closest('.screenplay-block');
+    if (!block) return;
+    const editable = getBlockEditable(block);
+    if (!editable) return;
+
+    // 1. Mobile Virtual Keyboard Enter / Line Break key -> contextual screenplay transitions
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+      e.preventDefault();
+      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
+      return;
+    }
+
+    // 2. Space on empty block
+    if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
+      if (isBlockContentEmpty(editable)) {
+        if (handleSpaceNavigation(block, editable)) {
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+
+    // 3. Auto-detect "(" on empty dialogue or action block -> parenthetical
+    const bType = block.getAttribute('data-block-type') || 'action';
+    if ((bType === 'dialogue' || bType === 'action') && isBlockContentEmpty(editable)) {
+      if (e.data === '(' || (e.inputType === 'insertText' && e.data === '(')) {
+        e.preventDefault();
+        convertBlockType(block, 'parenthetical');
+        const updatedBlock = document.getElementById(block.getAttribute('data-block-id'));
+        if (updatedBlock) {
+          const ed = getBlockEditable(updatedBlock);
+          if (ed) {
+            ed.innerText = '()';
+            updateBlockModel(updatedBlock, '()');
+            setCaretCharacterOffsetWithin(ed, 1);
+            highlightElementButton('parenthetical');
+            triggerAutocomplete(updatedBlock, ed);
+          }
+        }
+        return;
+      }
+    }
+  });
+
   // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
   container.addEventListener('input', (e) => {
     hasUnsavedChanges = true;
@@ -3324,8 +3376,8 @@ export function attachContainerListeners() {
       }
     }
 
-    // Auto-detect opening parenthesis on dialogue line: transform directly to parenthetical
-    if (type === 'dialogue') {
+    // Auto-detect opening parenthesis on dialogue or action line: transform directly to parenthetical
+    if (type === 'dialogue' || type === 'action') {
       const trimmedText = (editable.innerText || '').trim();
       if (trimmedText === '(' || (e.data === '(' && isBlockContentEmpty(editable))) {
         convertBlockType(block, 'parenthetical');
@@ -3415,11 +3467,41 @@ function attachSingleBlockListeners(block) {
   });
 
   editable.addEventListener('beforeinput', (e) => {
+    // 1. Mobile Virtual Keyboard Enter / Line Break key -> handle screenplay transition
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+      e.preventDefault();
+      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
+      return;
+    }
+
+    // 2. Space on empty block navigation
     if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
       if (isBlockContentEmpty(editable)) {
         if (handleSpaceNavigation(block, editable)) {
           e.preventDefault();
+          return;
         }
+      }
+    }
+
+    // 3. Auto-detect "(" on empty dialogue or action block -> parenthetical
+    const bType = block.getAttribute('data-block-type') || 'action';
+    if ((bType === 'dialogue' || bType === 'action') && isBlockContentEmpty(editable)) {
+      if (e.data === '(' || (e.inputType === 'insertText' && e.data === '(')) {
+        e.preventDefault();
+        convertBlockType(block, 'parenthetical');
+        const updatedBlock = document.getElementById(block.getAttribute('data-block-id'));
+        if (updatedBlock) {
+          const ed = getBlockEditable(updatedBlock);
+          if (ed) {
+            ed.innerText = '()';
+            updateBlockModel(updatedBlock, '()');
+            setCaretCharacterOffsetWithin(ed, 1);
+            highlightElementButton('parenthetical');
+            triggerAutocomplete(updatedBlock, ed);
+          }
+        }
+        return;
       }
     }
   });
@@ -4334,7 +4416,9 @@ function createNewSceneAfter(sceneId, fromBlockId = null) {
     if (headingEl) {
       const ed = getBlockEditable(headingEl);
       if (ed) {
+        activeBlockId = newHeadingBlockId;
         setCursorAtEnd(ed);
+        highlightElementButton('scene');
         triggerAutocomplete(headingEl, ed);
       }
     }
@@ -4516,6 +4600,7 @@ function setupAutocomplete() {
 
   document.addEventListener('click', handleOutsideDismissal, { capture: true });
   document.addEventListener('pointerdown', handleOutsideDismissal, { capture: true });
+  document.addEventListener('touchstart', handleOutsideDismissal, { capture: true, passive: true });
 
   const updateAcPos = () => {
     const dropdown = document.getElementById('editor-autocomplete-dropdown');
@@ -4546,6 +4631,7 @@ function setupAutocomplete() {
 function hideAutocomplete() {
   document.querySelectorAll('#editor-autocomplete-dropdown').forEach(dropdown => {
     dropdown.classList.add('hidden');
+    dropdown.style.display = 'none';
     dropdown.innerHTML = '';
   });
 }
@@ -4599,10 +4685,10 @@ function getActiveCaretOrBlockRect(editableEl) {
 function positionAutocomplete(dropdown, editableEl) {
   if (!dropdown || !editableEl) return;
 
-  // Portal to #scriptora-modal-portal so it cleans up automatically on route transitions
-  const portal = document.getElementById('scriptora-modal-portal') || document.body;
-  if (dropdown.parentElement !== portal) {
-    portal.appendChild(dropdown);
+  // Keep dropdown inside editor view container so it stays scoped and never leaks to other routes
+  const editorContainer = document.getElementById('editor-view-container');
+  if (editorContainer && dropdown.parentElement !== editorContainer) {
+    editorContainer.appendChild(dropdown);
   }
 
   const anchorRect = getActiveCaretOrBlockRect(editableEl);
@@ -4627,6 +4713,8 @@ function positionAutocomplete(dropdown, editableEl) {
 
   const dropdownWidth = Math.min(270, viewportWidth - 24);
   dropdown.style.width = `${dropdownWidth}px`;
+  dropdown.style.display = 'block';
+  dropdown.classList.remove('hidden');
   
   const preferredHeight = Math.min(220, dropdown.scrollHeight || 180);
   const spaceBelow = (viewportTop + viewportHeight) - anchorRect.bottom - 8;
@@ -4973,9 +5061,12 @@ function triggerAutocomplete(blockEl, editableEl) {
         if (parenBlock) {
           insertNewBlockAfter(sceneId, parenBlock.id, 'dialogue', '');
         }
-      } else if (itemType === 'parenthetical') {
-        editableEl.innerText = val;
-        updateBlockModel(blockEl, val);
+      } else if (itemType === 'parenthetical' || type === 'parenthetical') {
+        const raw = val || '';
+        const inner = raw.replace(/^\(+|\)+$/g, '').trim();
+        const formattedVal = inner ? `(${inner})` : '()';
+        editableEl.innerText = formattedVal;
+        updateBlockModel(blockEl, formattedVal);
         hideAutocomplete();
         // Automatically move to dialogue line immediately!
         insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
@@ -5223,16 +5314,14 @@ function setupElementBar() {
 
   if (!window.__scriptoraElementBarSyncAttached) {
     window.__scriptoraElementBarSyncAttached = true;
-    document.addEventListener('selectionchange', () => {
-      syncElementBarWithCursor();
-    });
-    const pagesContainer = document.getElementById('screenplay-pages-container');
-    if (pagesContainer) {
-      pagesContainer.addEventListener('pointerup', syncElementBarWithCursor);
-      pagesContainer.addEventListener('touchend', syncElementBarWithCursor);
-      pagesContainer.addEventListener('keyup', syncElementBarWithCursor);
-    }
+    document.addEventListener('selectionchange', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('focusin', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('pointerup', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('touchend', () => setTimeout(syncElementBarWithCursor, 40), { passive: true });
+    document.addEventListener('keyup', syncElementBarWithCursor, { passive: true });
   }
+
+  setTimeout(syncElementBarWithCursor, 50);
 }
 
 export const typingOverrides = {
@@ -5468,19 +5557,37 @@ export function highlightElementButton(type) {
 }
 
 export function syncElementBarWithCursor() {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const node = sel.anchorNode;
-  if (!node) return;
-  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  if (!el) return;
-  const container = document.getElementById('screenplay-pages-container');
-  if (!container || !container.contains(el)) return;
+  const bar = document.getElementById('element-bar');
+  if (!bar) return;
 
-  const block = el.closest('.screenplay-block');
-  if (block) {
-    const blockId = block.getAttribute('data-block-id');
-    const type = block.getAttribute('data-block-type') || 'action';
+  let targetBlock = null;
+
+  // 1. Check document.activeElement (most authoritative when focused)
+  const activeEl = document.activeElement;
+  if (activeEl && typeof activeEl.closest === 'function') {
+    targetBlock = activeEl.closest('.screenplay-block');
+  }
+
+  // 2. Check window selection
+  if (!targetBlock) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && sel.anchorNode) {
+      const node = sel.anchorNode;
+      const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      if (el && typeof el.closest === 'function') {
+        targetBlock = el.closest('.screenplay-block');
+      }
+    }
+  }
+
+  // 3. Fallback to activeBlockId
+  if (!targetBlock && activeBlockId) {
+    targetBlock = document.getElementById(activeBlockId);
+  }
+
+  if (targetBlock) {
+    const blockId = targetBlock.getAttribute('data-block-id');
+    const type = targetBlock.getAttribute('data-block-type') || 'action';
     if (blockId && blockId !== activeBlockId) {
       activeBlockId = blockId;
     }
