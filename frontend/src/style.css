@@ -27,6 +27,13 @@
   line-height: 1;
 }
 
+/* Screenplay Selection Action Toolbar — Pure Black Uniformity */
+#screenplay-multi-selection-bar button,
+#screenplay-multi-selection-bar span.material-symbols-outlined {
+  color: #000000 !important;
+}
+
+
 /* Screenplay Paper Monospace */
 .font-courier {
   font-family: 'Courier Prime', Courier, monospace;
