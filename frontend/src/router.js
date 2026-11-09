@@ -401,6 +401,9 @@ class Router {
     } else {
       document.body.classList.remove('editor-mode');
       document.documentElement.classList.remove('editor-mode');
+      document.querySelectorAll('#editor-autocomplete-dropdown, #screenplay-multi-selection-bar, .scriptora-popup, [data-scriptora-popup]').forEach(el => {
+        try { el.remove(); } catch (_) {}
+      });
     }
 
     // Check authentication for protected routes

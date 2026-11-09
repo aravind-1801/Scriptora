@@ -2019,10 +2019,10 @@ function renderBlockHtml(block, sceneNumber, sceneId) {
   if (isScene) {
     const formatted = renderFormattedContent(block.content);
     return `
-      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-baseline font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
+      <div id="${block.id}" data-block-id="${block.id}" data-scene-id="${sceneId}" data-block-type="scene" class="screenplay-block flex items-start font-bold text-slate-900 first:mt-0 mt-4 mb-2 group w-full">
         <!-- Scene Number shown in left gutter -->
         <span contenteditable="false" class="scene-num-indicator -ml-10 w-7 mr-3 shrink-0 font-mono text-slate-400 font-bold select-none text-[12pt] text-right ${sceneNumbersEnabled ? '' : 'hidden'}">${sceneNumber}</span>
-        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.25em] leading-[1.25]" spellcheck="false">${formatted || '<br>'}</div>
+        <div class="screenplay-block-text flex-1 tracking-wider uppercase outline-none focus:bg-blue-50/50 rounded px-1 cursor-text min-h-[1.4em] leading-normal" spellcheck="false">${formatted || '<br>'}</div>
       </div>
     `;
   }
@@ -3297,6 +3297,37 @@ export function attachContainerListeners() {
     handleBlockKeydown(e, block, editable);
   });
 
+  // Delegated beforeinput on container to intercept mobile keyboard Enter & special inputs
+  container.addEventListener('beforeinput', (e) => {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+    if (!el || !container.contains(el)) return;
+    const block = el.closest('.screenplay-block');
+    if (!block) return;
+    const editable = getBlockEditable(block);
+    if (!editable) return;
+
+    // Mobile Virtual Keyboard Enter / Line Break key -> contextual screenplay transitions
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+      e.preventDefault();
+      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
+      return;
+    }
+
+    // Mobile Space key navigation on empty line
+    if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
+      if (isBlockContentEmpty(editable)) {
+        if (handleSpaceNavigation(block, editable)) {
+          e.preventDefault();
+          return;
+        }
+      }
+    }
+  });
+
   // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
   container.addEventListener('input', (e) => {
     hasUnsavedChanges = true;
@@ -3415,11 +3446,83 @@ function attachSingleBlockListeners(block) {
   });
 
   editable.addEventListener('beforeinput', (e) => {
+    // 1. Mobile Virtual Keyboard Enter / Line Break key
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+      e.preventDefault();
+      handleBlockKeydown(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }), block, editable);
+      return;
+    }
+
+    // 2. Space on empty line navigation
     if (e.data === ' ' || (e.inputType === 'insertText' && e.data === ' ')) {
       if (isBlockContentEmpty(editable)) {
         if (handleSpaceNavigation(block, editable)) {
           e.preventDefault();
+          return;
         }
+      }
+    }
+
+    // 3. Mobile "(" auto-detection & parenthesis auto-pairing
+    if (e.data === '(' || (e.inputType === 'insertText' && e.data === '(')) {
+      const type = block.getAttribute('data-block-type') || 'action';
+      if ((type === 'dialogue' || type === 'character' || type === 'action') && isBlockContentEmpty(editable)) {
+        e.preventDefault();
+        convertBlockType(block, 'parenthetical');
+        const updatedBlock = document.getElementById(block.getAttribute('data-block-id'));
+        if (updatedBlock) {
+          const ed = getBlockEditable(updatedBlock);
+          if (ed) {
+            ed.innerText = '()';
+            updateBlockModel(updatedBlock, '()');
+            setCaretCharacterOffsetWithin(ed, 1);
+            highlightElementButton('parenthetical');
+            triggerAutocomplete(updatedBlock, ed);
+          }
+        }
+        return;
+      }
+      if (type === 'character') {
+        const rawText = editable.innerText;
+        if (!rawText.includes('(')) {
+          e.preventDefault();
+          const offset = getCaretCharacterOffsetWithin(editable);
+          const before = rawText.slice(0, offset).trimEnd();
+          const after = rawText.slice(offset).trimStart();
+          const newText = before + ' (' + (after.includes(')') ? after : after + ')');
+          editable.innerText = newText;
+          updateBlockModel(block, newText);
+          const parenPos = newText.indexOf('(');
+          setCaretCharacterOffsetWithin(editable, parenPos + 1);
+          triggerAutocomplete(block, editable);
+          return;
+        }
+      }
+      if (type === 'parenthetical') {
+        const rawText = editable.innerText;
+        if (!rawText.includes(')')) {
+          e.preventDefault();
+          const offset = getCaretCharacterOffsetWithin(editable);
+          const before = rawText.slice(0, offset);
+          const after = rawText.slice(offset);
+          const newText = before + '()' + after;
+          editable.innerText = newText;
+          updateBlockModel(block, newText);
+          setCaretCharacterOffsetWithin(editable, offset + 1);
+          triggerAutocomplete(block, editable);
+          return;
+        }
+      }
+    }
+
+    // 4. Mobile ")" overtype
+    if (e.data === ')' || (e.inputType === 'insertText' && e.data === ')')) {
+      const rawText = editable.innerText;
+      const offset = getCaretCharacterOffsetWithin(editable);
+      if (offset < rawText.length && rawText.charAt(offset) === ')') {
+        e.preventDefault();
+        setCaretCharacterOffsetWithin(editable, offset + 1);
+        return;
       }
     }
   });
@@ -4973,11 +5076,14 @@ function triggerAutocomplete(blockEl, editableEl) {
         if (parenBlock) {
           insertNewBlockAfter(sceneId, parenBlock.id, 'dialogue', '');
         }
-      } else if (itemType === 'parenthetical') {
-        editableEl.innerText = val;
-        updateBlockModel(blockEl, val);
+      } else if (itemType === 'parenthetical' || type === 'parenthetical') {
+        const raw = val || '';
+        const inner = raw.replace(/^\(+|\)+$/g, '').trim();
+        const formattedVal = inner ? `(${inner})` : '()';
+        editableEl.innerText = formattedVal;
+        updateBlockModel(blockEl, formattedVal);
         hideAutocomplete();
-        // Automatically move to dialogue line immediately!
+        // Automatically move to dialogue line immediately with 0 extra clicks!
         insertNewBlockAfter(sceneId, blockId, 'dialogue', '');
       } else if (type === 'character') {
         editableEl.innerText = val;
@@ -5223,16 +5329,14 @@ function setupElementBar() {
 
   if (!window.__scriptoraElementBarSyncAttached) {
     window.__scriptoraElementBarSyncAttached = true;
-    document.addEventListener('selectionchange', () => {
-      syncElementBarWithCursor();
-    });
-    const pagesContainer = document.getElementById('screenplay-pages-container');
-    if (pagesContainer) {
-      pagesContainer.addEventListener('pointerup', syncElementBarWithCursor);
-      pagesContainer.addEventListener('touchend', syncElementBarWithCursor);
-      pagesContainer.addEventListener('keyup', syncElementBarWithCursor);
-    }
+    document.addEventListener('selectionchange', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('focusin', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('pointerup', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('touchend', syncElementBarWithCursor, { passive: true });
+    document.addEventListener('keyup', syncElementBarWithCursor, { passive: true });
   }
+  // Re-sync immediately on bar setup
+  setTimeout(syncElementBarWithCursor, 50);
 }
 
 export const typingOverrides = {
@@ -5468,19 +5572,29 @@ export function highlightElementButton(type) {
 }
 
 export function syncElementBarWithCursor() {
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return;
-  const node = sel.anchorNode;
-  if (!node) return;
-  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  if (!el) return;
-  const container = document.getElementById('screenplay-pages-container');
-  if (!container || !container.contains(el)) return;
+  const bar = document.getElementById('element-bar');
+  if (!bar) return;
 
-  const block = el.closest('.screenplay-block');
-  if (block) {
-    const blockId = block.getAttribute('data-block-id');
-    const type = block.getAttribute('data-block-type') || 'action';
+  let targetBlock = null;
+  const activeEl = document.activeElement;
+  if (activeEl && typeof activeEl.closest === 'function') {
+    targetBlock = activeEl.closest('.screenplay-block');
+  }
+
+  if (!targetBlock) {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && sel.anchorNode) {
+      const node = sel.anchorNode;
+      const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+      if (el && typeof el.closest === 'function') {
+        targetBlock = el.closest('.screenplay-block');
+      }
+    }
+  }
+
+  if (targetBlock) {
+    const blockId = targetBlock.getAttribute('data-block-id');
+    const type = targetBlock.getAttribute('data-block-type') || 'action';
     if (blockId && blockId !== activeBlockId) {
       activeBlockId = blockId;
     }

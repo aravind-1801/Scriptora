@@ -459,3 +459,21 @@ h1.page-heading {
   }
 }
 
+
+
+/* Standard ISO A4 Print & Export Geometry (210mm x 297mm) */
+@page {
+  size: A4 portrait;
+  margin: 0;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  body, html {
+    width: 210mm;
+    height: 297mm;
+  }
+}

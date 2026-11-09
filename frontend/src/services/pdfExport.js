@@ -128,9 +128,9 @@ export function downloadPdfBlob(blob, filename) {
 
 // Low-level builder that compiles vector draw instructions into compliant PDF 1.4 binary
 export function compilePdfDocument(pages, options = {}) {
-  // Page size: Standard US Letter (612 x 792 pt)
-  const pageWidth = options.pageWidth || 612;
-  const pageHeight = options.pageHeight || 792;
+  // Page size: Standard ISO A4 (595.28 x 841.89 pt at 72 DPI, 210mm x 297mm)
+  const pageWidth = options.pageWidth || 595.28;
+  const pageHeight = options.pageHeight || 841.89;
   const totalPages = pages.length;
 
   const allObjects = [];
