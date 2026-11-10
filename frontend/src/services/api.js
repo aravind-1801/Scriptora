@@ -3963,16 +3963,117 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
   }
 
   // Direct synchronous fallback if job endpoint unavailable
-  const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
-    method: 'POST',
-    body: JSON.stringify({ ...params, provider })
-  });
-  if (res?.imageUrl) {
-    res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
-    return res;
+  try {
+    const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
+      method: 'POST',
+      body: JSON.stringify({ ...params, provider })
+    });
+    if (res?.imageUrl) {
+      res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
+      return res;
+    }
+  } catch (backendErr) {
+    if (backendErr.message && !backendErr.message.includes('404') && !backendErr.message.includes('not found') && !backendErr.message.includes('Failed to fetch')) {
+      throw backendErr;
+    }
+    // Backend offline / static deploy fallback (e.g. GitHub Pages without running local backend)
+    console.info('[Storyboard AI] Backend unavailable, executing direct client-side Pollinations FLUX generation...');
+    return await generateClientPollinationsShot(params, onProgress);
   }
 
   throw new Error('Image generation returned empty from provider');
+}
+
+export async function generateClientPollinationsShot(params = {}, onProgress = null) {
+  const {
+    prompt = "",
+    aspectRatio = "2.39:1",
+    visualStyle = "Cinematic Concept Art",
+    shotSize = "Medium Shot",
+    cameraAngle = "Eye Level",
+    focalLength = "50mm Prime",
+    lightingMood = "Natural Daylight",
+    sceneHeading = "SCENE"
+  } = params;
+
+  let width = 1024;
+  let height = 428;
+  if (aspectRatio === "16:9") {
+    width = 1024;
+    height = 576;
+  } else if (aspectRatio === "1:1") {
+    width = 1024;
+    height = 1024;
+  } else if (aspectRatio === "4:3") {
+    width = 1024;
+    height = 768;
+  } else if (aspectRatio === "9:16") {
+    width = 720;
+    height = 1280;
+  }
+
+  const cleanPrompt = (prompt || "Cinematic film still, beautiful atmospheric lighting, highly detailed").trim();
+  const stylePrefix = (visualStyle && visualStyle !== "None") ? `${visualStyle} style.` : "";
+  const cameraSpecs = [shotSize, cameraAngle, focalLength, lightingMood].filter(Boolean).join(", ");
+  const fullPrompt = `${stylePrefix} Cinematic film still for ${sceneHeading}: ${cleanPrompt}. Camera: ${cameraSpecs}. 8k resolution, authentic movie still, detailed environment, photorealistic cinematography.`.trim();
+
+  const seed = params.seed || (params.isVariation ? Math.floor(Math.random() * 900000) + 100000 : 42);
+  const encodedPrompt = encodeURIComponent(fullPrompt);
+  const cdnUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+
+  if (typeof onProgress === 'function') {
+    onProgress({ status: 'processing', progress: 50, statusMessage: 'Synthesizing cinematic frame with FLUX.1...' });
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 40000);
+
+  try {
+    const resp = await fetch(cdnUrl, {
+      method: 'GET',
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      let errJson = null;
+      try { errJson = JSON.parse(text); } catch (_) {}
+      const errorMsg = errJson?.error?.message || errJson?.message || text || `HTTP ${resp.status}`;
+      if (resp.status === 402 || resp.status === 429 || errorMsg.includes("limit") || errorMsg.includes("45 seconds")) {
+        throw new Error("Pollinations free tier rate limit reached (1 image per 45s). Please wait a moment and click Retry.");
+      }
+      throw new Error(`Pollinations AI error (${resp.status}): ${errorMsg}`);
+    }
+
+    const contentType = resp.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      const json = await resp.json().catch(() => ({}));
+      throw new Error(json.error?.message || json.message || "Pollinations returned non-image response");
+    }
+
+    return {
+      imageUrl: cdnUrl,
+      sourceUrl: cdnUrl,
+      cdnUrl: cdnUrl,
+      provider: "pollinations-flux",
+      model: "flux",
+      quality: params.quality || "hd",
+      costEstimate: "Free (Pollinations AI)",
+      prompt: cleanPrompt,
+      fullPrompt,
+      seed,
+      aspectRatio,
+      width,
+      height
+    };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error("Pollinations AI generation timed out (40s). Please click Retry.");
+    }
+    throw err;
+  }
 }
 
 export async function generateStoryboardSequence(scriptId, sceneId, params = {}) {

@@ -37,6 +37,68 @@ export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
   return `/production/storyboard/images/${filename}`;
 }
 
+export async function recoverMissingImage(filename) {
+  try {
+    ensureStoryboardsInitialized('chronicles-of-dust');
+    let targetSourceUrl = null;
+
+    // Scan all storyboards and shot revision histories for matching filename
+    for (const sb of (db.storyboards || [])) {
+      for (const s of (sb.shots || [])) {
+        if ((s.imageUrl && s.imageUrl.includes(filename)) || (s.sourceUrl && s.sourceUrl.includes(filename))) {
+          targetSourceUrl = s.sourceUrl || s.cdnUrl;
+          break;
+        }
+        if (Array.isArray(s.history)) {
+          for (const h of s.history) {
+            if ((h.previousImageUrl && h.previousImageUrl.includes(filename)) || (h.previousSourceUrl && h.previousSourceUrl.includes(filename))) {
+              targetSourceUrl = h.previousSourceUrl || h.sourceUrl;
+              break;
+            }
+          }
+        }
+        if (targetSourceUrl) break;
+      }
+      if (targetSourceUrl) break;
+    }
+
+    if (!targetSourceUrl) return null;
+
+    console.log(`[Storage Self-Healing] Recovering missing image ${filename} from CDN: ${targetSourceUrl}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+    const resp = await fetch(targetSourceUrl, {
+      headers: { 'User-Agent': 'SCRIPTORA/1.0.4' },
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+
+    if (!resp.ok) return null;
+
+    const arrayBuf = await resp.arrayBuffer();
+    const buf = Buffer.from(arrayBuf);
+    if (buf.length < 5000) return null;
+
+    const targetPath = path.resolve(STORAGE_DIR, filename);
+    const dir = path.dirname(targetPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(targetPath, buf);
+
+    try {
+      const publicPath = path.resolve(BASE_PROJECT_DIR, 'frontend', 'public', 'assets', 'storyboard', 'generated', filename);
+      const pDir = path.dirname(publicPath);
+      if (!fs.existsSync(pDir)) fs.mkdirSync(pDir, { recursive: true });
+      fs.writeFileSync(publicPath, buf);
+    } catch (_) {}
+
+    return targetPath;
+  } catch (err) {
+    console.warn(`[Storage Self-Healing] Failed to recover ${filename}:`, err.message);
+    return null;
+  }
+}
+
 export function persistStoryboardDb() {
   try {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -184,6 +246,8 @@ export function addShot(scriptId, sceneId, shotData) {
     prompt: shotData.prompt || "",
     negativePrompt: shotData.negativePrompt || "",
     imageUrl: shotData.imageUrl || null,
+    sourceUrl: shotData.sourceUrl || shotData.cdnUrl || null,
+    cdnUrl: shotData.cdnUrl || shotData.sourceUrl || null,
     imageSource: shotData.imageSource || (shotData.imageUrl ? "imported" : null),
     provider: shotData.provider || null,
     quality: shotData.quality || "standard",
@@ -227,6 +291,7 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
   if ((updates.imageUrl && updates.imageUrl !== shot.imageUrl) || (updates.prompt && updates.prompt !== shot.prompt)) {
     shot.history.push({
       previousImageUrl: shot.imageUrl,
+      previousSourceUrl: shot.sourceUrl || shot.cdnUrl || null,
       previousPrompt: shot.prompt,
       provider: shot.provider || "scriptora-concept",
       generationType: updates.isVariation ? 'variation' : (updates.generationType || 'take'),
@@ -791,6 +856,8 @@ export async function generateShotImage(params = {}) {
       return {
         imageUrl: persistentUrl,
         persistentUrl,
+        sourceUrl: url,
+        cdnUrl: url,
         dataUri,
         provider: "pollinations-flux",
         model: "flux",

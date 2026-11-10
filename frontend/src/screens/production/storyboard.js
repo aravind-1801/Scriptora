@@ -1157,6 +1157,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
   // In-modal shot creation draft state
   let currentModalDraftImage = null;
+  let currentModalDraftSourceUrl = null;
   let currentModalDraftPrompt = '';
   let currentModalDraftApproval = 'draft';
 
@@ -1427,6 +1428,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         approvalStatus: document.getElementById('input-shot-approval')?.value || 'draft',
         directorNotes: document.getElementById('input-shot-notes')?.value.trim() || '',
         imageUrl: currentModalDraftImage,
+        sourceUrl: currentModalDraftSourceUrl || (currentModalDraftImage && currentModalDraftImage.startsWith('http') ? currentModalDraftImage : null),
+        cdnUrl: currentModalDraftSourceUrl || (currentModalDraftImage && currentModalDraftImage.startsWith('http') ? currentModalDraftImage : null),
         imageSource: currentModalDraftImage ? (currentModalDraftImage.startsWith('data:image/svg') ? 'ai' : 'imported') : null,
         continuity: {
           screenDirection: directionVal
@@ -1891,6 +1894,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
           if (res?.imageUrl) {
             currentModalDraftImage = res.imageUrl;
+            currentModalDraftSourceUrl = res.sourceUrl || res.cdnUrl || (res.imageUrl.startsWith('http') ? res.imageUrl : null);
             currentModalDraftPrompt = structuredPrompt;
 
             const inputStyle = document.getElementById('input-shot-style');
@@ -2577,6 +2581,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     selectStyleCard(activeStyle);
 
     currentModalDraftImage = shot?.imageUrl ? resolveAssetUrl(shot.imageUrl, shot.shotNumber) : null;
+    currentModalDraftSourceUrl = shot?.sourceUrl || shot?.cdnUrl || (shot?.imageUrl && shot.imageUrl.startsWith('http') ? shot.imageUrl : null);
     currentModalDraftPrompt = shot?.prompt || '';
     currentModalDraftApproval = shot?.approvalStatus || 'draft';
 

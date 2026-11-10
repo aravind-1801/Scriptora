@@ -125,6 +125,37 @@ async function runTests() {
     assert.strictEqual(resolveAssetUrl(testBase64Jpg), testBase64Jpg, 'Real base64 JPEG must NOT be discarded in stylePreviews');
     console.log('✓ TEST 4 PASSED: Asset resolution correctly handles persistent URLs and base64 raster images.\n');
 
+    // 5. Verify Self-Healing / Ephemeral Container Redeployment Recovery
+    console.log('[TEST 5] Testing storage self-healing after ephemeral container wipe...');
+    const recoverFilename = 'shot_recovery_test_seed42.jpg';
+    const cdnTestUrl = 'https://image.pollinations.ai/prompt/Cinematic%20test%20recovery%20frame?model=flux&width=1024&height=576&seed=4242&nologo=true';
+
+    // Register shot with sourceUrl
+    addShot(testScriptId, testSceneId, {
+      title: 'Ephemeral Wipe Test Shot',
+      prompt: 'Cinematic test recovery frame',
+      imageUrl: `/production/storyboard/images/${recoverFilename}`,
+      sourceUrl: cdnTestUrl,
+      cdnUrl: cdnTestUrl,
+      aspectRatio: '16:9',
+      visualStyle: 'Cinematic Concept Art',
+      provider: 'pollinations-flux'
+    });
+
+    // Ensure file does NOT exist on disk (simulating wiped container)
+    const wipedPath = path.resolve(process.cwd(), 'backend', 'data', 'storage', 'storyboard', recoverFilename);
+    if (fs.existsSync(wipedPath)) fs.unlinkSync(wipedPath);
+    assert(!fs.existsSync(wipedPath), 'Confirmed file is missing from disk before self-healing');
+
+    // Request missing image via HTTP - server should self-heal and fetch from CDN
+    console.log('[TEST 5] Fetching missing image via HTTP to trigger on-demand self-healing...');
+    const resRecover = await httpGet(`/production/storyboard/images/${recoverFilename}`);
+    assert.strictEqual(resRecover.statusCode, 200, 'HTTP GET missing image returns 200 after self-healing');
+    assert.strictEqual(resRecover.headers['content-type'], 'image/jpeg', 'Content-Type should be image/jpeg');
+    assert(resRecover.body.length > 5000, `Recovered image buffer length (${resRecover.body.length}) should be > 5000`);
+    assert(fs.existsSync(wipedPath), 'Self-healing re-cached image file to persistent disk');
+    console.log('✓ TEST 5 PASSED: Server successfully self-healed missing image from CDN on ephemeral redeployment.\n');
+
     console.log('================================================================');
     console.log('ALL TESTS PASSED: Persistent image storage and cross-device retrieval are verified.');
     console.log('================================================================');

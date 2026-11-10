@@ -990,7 +990,10 @@ export const server = http.createServer(async (req, res) => {
         path.resolve(baseDir, 'frontend', 'public', 'assets', 'storyboard', 'generated', filename),
         path.resolve(baseDir, 'assets', 'storyboard', 'generated', filename)
       ];
-      const found = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+      let found = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+      if (!found) {
+        found = await storyboardService.recoverMissingImage(filename);
+      }
       if (found) {
         const ext = path.extname(found).toLowerCase();
         const mimeTypes = {
