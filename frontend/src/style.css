@@ -269,8 +269,9 @@ body.scriptora-modal-open {
     /* 97-98% mobile editor viewport width with clean, polished breathing room */
     width: calc(100% - 8px) !important;
     max-width: 794px !important;
-    /* Responsive mobile sheet: Defined writing area holding full A4 capacity without desktop pixel constraints */
-    min-height: max(720px, calc(100dvh - 120px)) !important;
+    /* Full A4 writing capacity height (1123px at 96 DPI): matches authoritative 54-line pagination capacity */
+    min-height: 1123px !important;
+    aspect-ratio: auto !important;
     height: auto !important;
     max-height: none !important;
     padding: 28px 14px 36px 18px !important;
@@ -287,7 +288,8 @@ body.scriptora-modal-open {
   .screenplay-title-page-sheet {
     width: calc(100% - 8px) !important;
     max-width: 794px !important;
-    min-height: max(720px, calc(100dvh - 120px)) !important;
+    min-height: 1123px !important;
+    aspect-ratio: auto !important;
     height: auto !important;
     max-height: none !important;
     padding: 28px 18px 36px 18px !important;

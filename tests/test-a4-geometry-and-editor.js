@@ -17,15 +17,15 @@ if (!styleCss.includes('min-height: 1123px;')) {
 }
 console.log('✓ Desktop A4 Sheet: Exact 794px max-width × 1123px min-height capacity verified');
 
-// 2. Mobile Responsive Geometry
+// 2. Mobile Responsive Geometry & Full A4 Vertical Capacity
 console.log('\n--- TEST 2: Mobile Responsive A4 Geometry ---');
 if (!styleCss.includes('width: calc(100% - 8px) !important;')) {
   throw new Error('style.css must size mobile sheet comfortably to 97-98% of available screen width');
 }
-if (!styleCss.includes('min-height: max(720px, calc(100dvh - 120px)) !important;')) {
-  throw new Error('style.css must maintain defined writing area min-height on mobile so empty pages never shrink');
+if (!styleCss.includes('min-height: 1123px !important;')) {
+  throw new Error('style.css must enforce full A4 capacity min-height: 1123px on mobile so empty/short pages never shrink');
 }
-console.log('✓ Mobile A4 Sheet: Defined writing area (97-98% width with 4px margin, min-height without desktop lock) verified');
+console.log('✓ Mobile A4 Sheet: Full A4 capacity (1123px min-height, 97-98% width with 4px margin) verified');
 
 // 3. Full-Page Usable Writing Area Structure
 console.log('\n--- TEST 3: Full-Page Writing Area & 3-Part Structure ---');
