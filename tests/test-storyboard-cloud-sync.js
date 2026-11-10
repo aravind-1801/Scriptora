@@ -23,13 +23,16 @@ async function runTests() {
   console.log(`[TEST] Backend server running at http://localhost:${PORT}`);
 
   try {
-    // 1. Verify Cloud Storage status reporting
-    console.log('[TEST 1] Verifying Cloud Storage Status reporting...');
+    // 1. Verify Cloud Storage status reporting & zero-cost policy
+    console.log('[TEST 1] Verifying Cloud Storage Status reporting & zero-cost policy...');
     const status = getCloudStorageStatus();
     assert(status.status, 'Status object should contain status string');
     assert(status.provider, 'Status object should describe provider');
-    console.log(`[TEST 1] Active provider: ${status.provider} (${status.status})`);
-    console.log('✓ TEST 1 PASSED: Cloud Storage status inspection operational.\n');
+    assert.strictEqual(status.firebaseStoragePolicy.enabled, false, 'Firebase Storage must be disabled to prevent Blaze billing');
+    assert.strictEqual(status.metadataDatabase.creditCardRequired, false, 'Metadata DB requires no credit card');
+    console.log(`[TEST 1] Active metadata: ${status.metadataDatabase.provider}`);
+    console.log(`[TEST 1] Firebase Storage Policy: ${status.firebaseStoragePolicy.reason}`);
+    console.log('✓ TEST 1 PASSED: Cloud Storage status inspection and zero-billing policy verified.\n');
 
     // 2. Verify Binary Image Upload Endpoint
     console.log('[TEST 2] Testing binary image upload to server cloud storage...');

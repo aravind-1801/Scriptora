@@ -1,55 +1,122 @@
 // SCRIPTORA Cloud Storage & Real-Time Sync Service
-// Provides genuine cloud-backed storage for storyboard metadata and generated image binaries.
-// Supports Firebase (Firestore + Firebase Cloud Storage) and SCRIPTORA Cloud Backend Server.
+// Provides genuine zero-cost cloud persistence for storyboard metadata and generated image binaries.
+// Architected strictly to prevent any credit-card requirements or pay-as-you-go billing traps.
+//
+// 1. Metadata Database: Firebase Firestore (Spark Plan: 100% Free, No Credit Card Required)
+// 2. Object Storage: Supabase Storage or Cloudinary (Zero Credit Card Required at signup or runtime)
+// 3. Fallback: SCRIPTORA Persistent Backend Server (Persistent Disk + On-Demand CDN Self-Healing)
+//
+// NOTE: Firebase Cloud Storage is intentionally disabled because Google requires
+// the Blaze pay-as-you-go billing plan as of February 3, 2026.
 
 import { firebaseConfig, isFirebaseConfigured } from './firebase.js';
 
 let firestoreInstance = null;
-let storageInstance = null;
+let firestoreConnectivityVerified = false;
+
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
+
+const SUPABASE_CONFIG = {
+  url: env.VITE_SUPABASE_URL || "",
+  anonKey: env.VITE_SUPABASE_ANON_KEY || "",
+  bucket: env.VITE_SUPABASE_BUCKET || "storyboards"
+};
+
+const CLOUDINARY_CONFIG = {
+  cloudName: env.VITE_CLOUDINARY_CLOUD_NAME || "",
+  uploadPreset: env.VITE_CLOUDINARY_UPLOAD_PRESET || ""
+};
 
 /**
- * Check if genuine cloud storage credentials are configured
+ * Check which cloud providers are configured
  */
 export function isCloudConfigured() {
-  const hasFirebase = Boolean(firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== '');
-  const hasBackend = typeof window !== 'undefined' && Boolean(window.SCRIPTORA_API_BASE || import.meta.env?.VITE_API_URL);
+  const hasFirestore = Boolean(firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== '');
+  const hasSupabase = Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+  const hasCloudinary = Boolean(CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset);
+  const hasBackend = typeof window !== 'undefined' && Boolean(window.SCRIPTORA_API_BASE || env.VITE_API_URL);
+
+  let activeImageProvider = 'none';
+  if (hasSupabase) activeImageProvider = 'supabase-storage';
+  else if (hasCloudinary) activeImageProvider = 'cloudinary';
+  else if (hasBackend) activeImageProvider = 'backend-server';
+
   return {
-    isConfigured: hasFirebase || hasBackend,
-    firebase: hasFirebase,
-    backend: hasBackend,
-    activeProvider: hasFirebase ? 'firebase' : (hasBackend ? 'backend-server' : 'none')
+    isConfigured: hasFirestore || hasSupabase || hasCloudinary || hasBackend,
+    hasFirestore,
+    hasSupabase,
+    hasCloudinary,
+    hasBackend,
+    activeImageProvider,
+    activeMetadataProvider: hasFirestore ? 'firestore' : (hasBackend ? 'backend' : 'local')
   };
 }
 
 /**
- * Get detailed cloud status for UI inspection and user settings
+ * Get honest, detailed cloud persistence status for UI and user settings
  */
 export function getCloudStorageStatus() {
-  const status = isCloudConfigured();
-  if (status.firebase) {
-    return {
+  const cfg = isCloudConfigured();
+
+  const metadataInfo = cfg.hasFirestore ? {
+    status: 'configured',
+    provider: 'Firebase Firestore (Spark Plan)',
+    projectId: firebaseConfig.projectId,
+    plan: '100% Free Spark Tier (1GB data, 50k reads/day, 20k writes/day)',
+    creditCardRequired: false,
+    notes: 'Requires Cloud Firestore to be initialized once in Firebase Console (Build > Firestore Database > Create Database).'
+  } : {
+    status: 'unconfigured',
+    provider: 'Backend / Local Storage',
+    creditCardRequired: false
+  };
+
+  let imageStorageInfo = {
+    status: 'unconfigured',
+    provider: 'None',
+    creditCardRequired: false,
+    details: 'Zero-cost cloud storage requires adding Supabase or Cloudinary credentials to frontend/.env. Firebase Cloud Storage is disabled to prevent Blaze billing.'
+  };
+
+  if (cfg.hasSupabase) {
+    imageStorageInfo = {
       status: 'connected',
-      provider: 'Firebase Cloud Storage & Firestore',
-      projectId: firebaseConfig.projectId,
-      bucket: firebaseConfig.storageBucket,
-      plan: 'Google Cloud Spark (Free Tier)',
-      details: 'Genuinely zero-cost cloud storage (5GB file storage + 1GB Firestore database).'
+      provider: 'Supabase Storage',
+      url: SUPABASE_CONFIG.url,
+      bucket: SUPABASE_CONFIG.bucket,
+      plan: 'Supabase Free Tier (1GB Storage, 2GB Bandwidth/mo)',
+      creditCardRequired: false,
+      details: 'Genuinely free object storage with hard quota stops (no overages or billing account needed).'
     };
-  }
-  if (status.backend) {
-    return {
+  } else if (cfg.hasCloudinary) {
+    imageStorageInfo = {
+      status: 'connected',
+      provider: 'Cloudinary',
+      cloudName: CLOUDINARY_CONFIG.cloudName,
+      plan: 'Cloudinary Free Tier (25 Credits / ~25GB Storage & Bandwidth)',
+      creditCardRequired: false,
+      details: 'Genuinely free image hosting with zero credit card required at sign up.'
+    };
+  } else if (cfg.hasBackend) {
+    imageStorageInfo = {
       status: 'connected',
       provider: 'SCRIPTORA Dedicated Backend',
-      endpoint: import.meta.env?.VITE_API_URL || '/api',
-      plan: 'Self-Hosted Cloud Server',
-      details: 'File-backed persistent storage with automatic on-demand CDN recovery.'
+      endpoint: env.VITE_API_URL || '/api',
+      plan: 'Self-Hosted Server Storage',
+      creditCardRequired: false,
+      details: 'File-backed persistent disk storage with automatic on-demand CDN image recovery.'
     };
   }
+
   return {
-    status: 'unconfigured',
-    provider: 'Local Storage / In-Browser Only',
-    plan: 'Dormant Cloud Credentials',
-    details: 'To enable cross-device cloud persistence, add VITE_FIREBASE_API_KEY in your environment.'
+    status: (cfg.hasFirestore || cfg.hasSupabase || cfg.hasCloudinary || cfg.hasBackend) ? 'connected' : 'unconfigured',
+    provider: `${metadataInfo.provider} / ${imageStorageInfo.provider}`,
+    metadataDatabase: metadataInfo,
+    imageStorage: imageStorageInfo,
+    firebaseStoragePolicy: {
+      enabled: false,
+      reason: 'Requires Blaze pay-as-you-go billing as of February 3, 2026. Intentionally disabled to honor zero-cost guarantee.'
+    }
   };
 }
 
@@ -66,72 +133,105 @@ async function getFirestore() {
     firestoreInstance = initFirestore(app);
     return firestoreInstance;
   } catch (err) {
-    console.warn('[CloudStorage] Failed to initialize Firestore:', err.message);
+    console.warn('[CloudStorage] Failed to initialize Firestore SDK:', err.message);
     return null;
   }
 }
 
 /**
- * Initialize Firebase Storage instance lazily
- */
-async function getFirebaseStorage() {
-  if (storageInstance) return storageInstance;
-  if (!firebaseConfig.apiKey) return null;
-  try {
-    const { initializeApp, getApps } = await import('firebase/app');
-    const { getStorage: initStorage } = await import('firebase/storage');
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-    storageInstance = initStorage(app);
-    return storageInstance;
-  } catch (err) {
-    console.warn('[CloudStorage] Failed to initialize Firebase Storage:', err.message);
-    return null;
-  }
-}
-
-/**
- * Upload genuine image binary/data URI to cloud storage
+ * Upload genuine image binary/data URI to genuinely free cloud object storage
  */
 export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-dust', filename = null) {
   const finalFilename = filename || `shot_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
 
-  // 1. Try Firebase Cloud Storage if configured
-  const fbStorage = await getFirebaseStorage();
-  if (fbStorage) {
+  // 1. Supabase Storage (Verified 0-cost, 0-credit-card object storage)
+  if (SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey) {
     try {
-      const { ref, uploadBytes, uploadString, getDownloadURL } = await import('firebase/storage');
-      const storageRef = ref(fbStorage, `storyboards/${scriptId}/images/${finalFilename}`);
+      let imageBuffer = null;
+      let contentType = 'image/jpeg';
 
-      let uploadRes;
       if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
-        uploadRes = await uploadString(storageRef, imageInput, 'data_url');
-      } else if (imageInput instanceof Blob || imageInput instanceof ArrayBuffer || ArrayBuffer.isView(imageInput)) {
-        uploadRes = await uploadBytes(storageRef, imageInput, { contentType: 'image/jpeg' });
+        const parts = imageInput.split(',');
+        const mimeMatch = parts[0].match(/:(.*?);/);
+        if (mimeMatch) contentType = mimeMatch[1];
+        const binaryStr = atob(parts[1]);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        imageBuffer = bytes.buffer;
       } else if (typeof imageInput === 'string' && imageInput.startsWith('http')) {
-        // Fetch external image (e.g. from Pollinations) and upload to Firebase
-        const fetchResp = await fetch(imageInput);
-        const blob = await fetchResp.blob();
-        uploadRes = await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+        const resp = await fetch(imageInput);
+        imageBuffer = await resp.arrayBuffer();
+      } else if (imageInput instanceof ArrayBuffer || ArrayBuffer.isView(imageInput)) {
+        imageBuffer = imageInput;
       }
 
-      if (uploadRes) {
-        const downloadUrl = await getDownloadURL(storageRef);
-        return {
-          success: true,
-          provider: 'firebase-storage',
-          imageUrl: downloadUrl,
-          cloudStorageUrl: downloadUrl,
-          storagePath: `storyboards/${scriptId}/images/${finalFilename}`,
-          filename: finalFilename
-        };
+      if (imageBuffer) {
+        const uploadUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/${SUPABASE_CONFIG.bucket}/storyboards/${scriptId}/${finalFilename}`;
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+            'apikey': SUPABASE_CONFIG.anonKey,
+            'Content-Type': contentType,
+            'x-upsert': 'true'
+          },
+          body: imageBuffer
+        });
+
+        if (uploadRes.ok) {
+          const publicUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/public/${SUPABASE_CONFIG.bucket}/storyboards/${scriptId}/${finalFilename}`;
+          return {
+            success: true,
+            provider: 'supabase-storage',
+            imageUrl: publicUrl,
+            cloudStorageUrl: publicUrl,
+            storagePath: `storyboards/${scriptId}/${finalFilename}`,
+            filename: finalFilename
+          };
+        } else {
+          console.warn('[CloudStorage] Supabase storage upload response not OK:', uploadRes.status);
+        }
       }
-    } catch (fbErr) {
-      console.warn('[CloudStorage] Firebase storage upload failed:', fbErr.message);
+    } catch (sbErr) {
+      console.warn('[CloudStorage] Supabase storage upload failed:', sbErr.message);
     }
   }
 
-  // 2. Try SCRIPTORA backend server upload if available
-  const apiBase = (typeof window !== 'undefined' && window.SCRIPTORA_API_BASE) || import.meta.env?.VITE_API_URL || '/api';
+  // 2. Cloudinary (Verified 0-cost, 0-credit-card image hosting)
+  if (CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset) {
+    try {
+      const formData = new FormData();
+      formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+      formData.append('folder', `scriptora/${scriptId}`);
+
+      if (typeof imageInput === 'string') {
+        formData.append('file', imageInput);
+      } else if (imageInput instanceof Blob) {
+        formData.append('file', imageInput, finalFilename);
+      }
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          success: true,
+          provider: 'cloudinary',
+          imageUrl: data.secure_url,
+          cloudStorageUrl: data.secure_url,
+          filename: finalFilename
+        };
+      }
+    } catch (cldErr) {
+      console.warn('[CloudStorage] Cloudinary upload failed:', cldErr.message);
+    }
+  }
+
+  // 3. SCRIPTORA Dedicated Backend Server
+  const apiBase = (typeof window !== 'undefined' && window.SCRIPTORA_API_BASE) || env.VITE_API_URL || '/api';
   try {
     let base64Payload = '';
     if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
@@ -168,13 +268,13 @@ export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-d
       }
     }
   } catch (backendErr) {
-    // Backend offline / not responding
+    // Backend server offline
   }
 
   return {
     success: false,
     provider: 'local',
-    error: 'No persistent cloud storage available. Set VITE_FIREBASE_API_KEY in frontend/.env to enable Firebase Storage.'
+    error: 'No persistent cloud storage available. Set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY (100% free, no credit card) in frontend/.env to enable Cloud Storage.'
   };
 }
 
@@ -196,7 +296,11 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
     await setDoc(docRef, payload, { merge: true });
     return { success: true, provider: 'firestore', id: `${scriptId}_${sceneId}` };
   } catch (err) {
-    console.warn('[CloudStorage] Firestore sync failed:', err.message);
+    if (err.message && err.message.includes('403')) {
+      console.info('[CloudStorage] Firestore database not yet provisioned in project scriptora-1801. Visit https://console.firebase.google.com/project/scriptora-1801/firestore to create it.');
+    } else {
+      console.warn('[CloudStorage] Firestore sync notice:', err.message);
+    }
     return null;
   }
 }
@@ -216,8 +320,11 @@ export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
     }
     return null;
   } catch (err) {
-    console.warn('[CloudStorage] Firestore read failed:', err.message);
+    if (err.message && err.message.includes('403')) {
+      console.info('[CloudStorage] Firestore database not yet provisioned in project scriptora-1801.');
+    } else {
+      console.warn('[CloudStorage] Firestore read notice:', err.message);
+    }
     return null;
   }
 }
-
