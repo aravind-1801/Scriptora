@@ -854,17 +854,6 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
           </div>
 
           <form id="storyboard-pref-form" class="flex flex-col gap-3 text-xs">
-            <div class="flex items-center justify-between p-2.5 rounded-xl bg-blue-50/70 border border-blue-100">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-blue-600 text-[18px]">verified</span>
-                <div>
-                  <div class="font-bold text-blue-950 text-[11px]">Experience Level</div>
-                  <div class="text-[10px] text-blue-700">Intermediate Storyboard Studio active</div>
-                </div>
-              </div>
-              <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-2xs">Intermediate</span>
-            </div>
-
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold text-slate-700">Default Visual Style</label>
