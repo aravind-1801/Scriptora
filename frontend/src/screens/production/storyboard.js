@@ -1054,7 +1054,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
       <!-- ===================================================================== -->
       <!-- MODAL 5: FULL-SCREEN CINEMATIC LIGHTBOX -->
       <!-- ===================================================================== -->
-      <div id="lightbox-modal" class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 hidden">
+      <div id="lightbox-modal" class="scriptora-modal-overlay fixed inset-0 z-[150] bg-black/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-6 hidden">
         <!-- Top Toolbar -->
         <div class="flex items-center justify-between text-white shrink-0">
           <div class="flex items-center gap-3">
@@ -2267,7 +2267,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (historyDone) historyDone.onclick = () => closeModal(historyModal);
 
   // Modal 5 (Lightbox)
-  if (lbClose) lbClose.onclick = () => lightboxModal?.classList.add('hidden');
+  if (lbClose) lbClose.onclick = () => closeModal(lightboxModal);
   if (lbPrev) {
     lbPrev.onclick = () => {
       const shots = currentStoryboard?.shots || [];
@@ -2320,7 +2320,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   // Keyboard navigation for Lightbox
   const keyHandler = (e) => {
     if (lightboxModal && !lightboxModal.classList.contains('hidden')) {
-      if (e.key === 'Escape') lightboxModal.classList.add('hidden');
+      if (e.key === 'Escape') closeModal(lightboxModal);
       if (e.key === 'ArrowLeft' && lbPrev) lbPrev.click();
       if (e.key === 'ArrowRight' && lbNext) lbNext.click();
     }
@@ -3099,7 +3099,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (!shots.length) return;
     activeLightboxShotIndex = (index >= 0 && index < shots.length) ? index : 0;
     updateLightboxUI();
-    lightboxModal?.classList.remove('hidden');
+    openModal(lightboxModal);
   }
 
   function openLightboxWithShot(shot) {
@@ -3126,7 +3126,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (approveBtn) approveBtn.classList.add('hidden');
     if (rejectBtn) rejectBtn.classList.add('hidden');
 
-    lightboxModal?.classList.remove('hidden');
+    openModal(lightboxModal);
   }
 
   function updateLightboxUI() {

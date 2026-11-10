@@ -31,13 +31,24 @@ export function getModalPortal() {
 
 /**
  * Move a modal overlay element into the top-level portal container.
+ * Always appends to the portal so that newly opened/focused modals are brought to the top of the DOM order.
  */
 export function portalModal(overlayEl) {
   if (!overlayEl) return;
   const portal = getModalPortal();
-  if (overlayEl.parentElement !== portal) {
-    portal.appendChild(overlayEl);
-  }
+  portal.appendChild(overlayEl);
+}
+
+/**
+ * Active modal stack tracker for robust nested modal layering, z-index hierarchy,
+ * backdrop dimming, and reverse navigation.
+ */
+export const activeModalStack = [];
+const BASE_MODAL_Z_INDEX = 10000;
+const Z_INDEX_STEP = 50;
+
+export function getActiveModalStack() {
+  return [...activeModalStack];
 }
 
 /**
@@ -45,7 +56,7 @@ export function portalModal(overlayEl) {
  * and applies or removes the scroll lock classes accordingly.
  */
 export function updateBodyScrollLock() {
-  const anyVisible = !!document.querySelector(
+  const anyVisible = activeModalStack.length > 0 || !!document.querySelector(
     '#scriptora-modal-portal .scriptora-modal-overlay:not(.hidden), .scriptora-modal-overlay:not(.hidden)'
   );
   if (anyVisible) {
@@ -61,8 +72,8 @@ export function updateBodyScrollLock() {
  * Lock background page scroll without changing scroll position.
  */
 export function lockBodyScroll() {
-  document.documentElement.classList.add('scriptora-modal-open');
-  document.body.classList.add('scriptora-modal-open');
+  document.documentElement?.classList.add('scriptora-modal-open');
+  document.body?.classList.add('scriptora-modal-open');
 }
 
 /**
@@ -73,11 +84,25 @@ export function unlockBodyScroll() {
 }
 
 /**
- * Open a modal overlay: portals it, shows it, locks scroll, and resets internal scroll to top.
+ * Open a modal overlay: portals it to the top of the DOM, layers its z-index
+ * above all active parent modals, locks scroll, and manages focus.
  */
 export function openModal(overlayEl) {
   if (!overlayEl) return;
   portalModal(overlayEl);
+
+  // Manage active modal stack
+  const existingIdx = activeModalStack.indexOf(overlayEl);
+  if (existingIdx !== -1) {
+    activeModalStack.splice(existingIdx, 1);
+  }
+  activeModalStack.push(overlayEl);
+
+  // Calculate dynamic progressive z-index (Base: 10000, Level 1: 10050, Level 2: 10100...)
+  const stackLevel = activeModalStack.length - 1;
+  const targetZ = BASE_MODAL_Z_INDEX + (stackLevel * Z_INDEX_STEP);
+  overlayEl.style.setProperty('z-index', String(targetZ), 'important');
+
   overlayEl.classList.remove('hidden');
   overlayEl.classList.add('flex');
   lockBodyScroll();
@@ -90,10 +115,19 @@ export function openModal(overlayEl) {
     const modalBody = card.querySelector('.scriptora-modal-body, .overflow-y-auto');
     if (modalBody) modalBody.scrollTop = 0;
   }
+
+  // Focus management: focus first sensible interactive element in the newly opened modal
+  requestAnimationFrame(() => {
+    const focusTarget = overlayEl.querySelector('input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled])');
+    if (focusTarget && document.activeElement && !overlayEl.contains(document.activeElement)) {
+      focusTarget.focus({ preventScroll: true });
+    }
+  });
 }
 
 /**
- * Close a modal overlay: hides it and updates body scroll lock.
+ * Close a modal overlay: hides it, pops it from the active stack, clears inline z-index,
+ * and restores focus and foreground state to the previous parent modal.
  */
 export function closeModal(overlayEl) {
   if (!overlayEl) return;
@@ -101,6 +135,27 @@ export function closeModal(overlayEl) {
     overlayEl.classList.add('hidden');
     overlayEl.classList.remove('flex');
   }
+
+  // Remove from active modal stack
+  const idx = activeModalStack.indexOf(overlayEl);
+  if (idx !== -1) {
+    activeModalStack.splice(idx, 1);
+  }
+  overlayEl.style.removeProperty('z-index');
+
+  // If there are parent modals remaining in the stack, restore focus to the top active modal
+  if (activeModalStack.length > 0) {
+    const parentModal = activeModalStack[activeModalStack.length - 1];
+    requestAnimationFrame(() => {
+      if (parentModal && !parentModal.classList.contains('hidden')) {
+        const parentFocus = parentModal.querySelector('input:not([type="hidden"]):not([disabled]), select:not([disabled]), button:not([disabled])');
+        if (parentFocus && document.activeElement && !parentModal.contains(document.activeElement)) {
+          parentFocus.focus({ preventScroll: true });
+        }
+      }
+    });
+  }
+
   updateBodyScrollLock();
 }
 
@@ -407,6 +462,10 @@ if (typeof document !== 'undefined') {
   // 2. Escape key to close topmost modal
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      if (activeModalStack.length > 0) {
+        closeModal(activeModalStack[activeModalStack.length - 1]);
+        return;
+      }
       const openModals = Array.from(document.querySelectorAll(
         '#scriptora-modal-portal .scriptora-modal-overlay:not(.hidden), .scriptora-modal-overlay:not(.hidden)'
       ));
@@ -418,15 +477,27 @@ if (typeof document !== 'undefined') {
 
   // 3. MutationObserver to automatically portal any modal overlay that is displayed
   const initModalObserver = () => {
+    if (typeof MutationObserver === 'undefined') return;
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
           const target = mutation.target;
           if (target && target.classList && target.classList.contains('scriptora-modal-overlay')) {
             if (!target.classList.contains('hidden')) {
+              if (!activeModalStack.includes(target)) {
+                activeModalStack.push(target);
+                const stackLevel = activeModalStack.length - 1;
+                const targetZ = BASE_MODAL_Z_INDEX + (stackLevel * Z_INDEX_STEP);
+                target.style.setProperty('z-index', String(targetZ), 'important');
+              }
               portalModal(target);
               updateBodyScrollLock();
             } else {
+              const idx = activeModalStack.indexOf(target);
+              if (idx !== -1) {
+                activeModalStack.splice(idx, 1);
+              }
+              target.style.removeProperty('z-index');
               updateBodyScrollLock();
             }
           }

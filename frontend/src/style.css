@@ -99,7 +99,7 @@ button, a {
 .scriptora-modal-overlay {
   position: fixed !important;
   inset: 0 !important;
-  z-index: 9999 !important;
+  z-index: 9999;
   background-color: rgba(15, 23, 42, 0.58) !important;
   backdrop-filter: blur(4px) !important;
   -webkit-backdrop-filter: blur(4px) !important;
