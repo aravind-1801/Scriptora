@@ -933,6 +933,29 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, result);
     }
 
+    // Storyboard Asynchronous Generation Jobs API
+    const prodSbJobCreateMatch = pathname.match(/^\/(?:api\/v1|production\/([a-zA-Z0-9_-]+))\/storyboard\/jobs\/generate$/);
+    if (prodSbJobCreateMatch && method === 'POST') {
+      const scriptId = prodSbJobCreateMatch[1] || 'chronicles-of-dust';
+      const body = await readBody(req);
+      try {
+        const job = storyboardService.createGenerationJob(scriptId, body);
+        return sendJson(res, 202, job);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
+    const prodSbJobStatusMatch = pathname.match(/^\/(?:api\/v1|production\/[a-zA-Z0-9_-]+)\/storyboard\/jobs\/([a-zA-Z0-9_.-]+)$/);
+    if (prodSbJobStatusMatch && method === 'GET') {
+      const jobId = prodSbJobStatusMatch[1];
+      const job = storyboardService.getGenerationJob(jobId);
+      if (!job) {
+        return sendJson(res, 404, { error: "Job not found" });
+      }
+      return sendJson(res, 200, job);
+    }
+
     const prodSbGenShotMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-shot$/);
     if (prodSbGenShotMatch && method === 'POST') {
       const scriptId = prodSbGenShotMatch[1];

@@ -3231,6 +3231,32 @@ export async function getAiImageProviders() {
 
   return [
     {
+      id: "pollinations-flux",
+      name: "Pollinations AI (FLUX.1)",
+      model: "flux",
+      isConfigured: true,
+      pricingType: "free",
+      costPerImage: 0.0,
+      costLabel: "Free (No Key Required)",
+      requiresApiKey: false,
+      aspectRatios: ["16:9", "2.39:1", "1:1", "4:3", "9:16"],
+      styles: [
+        "Cinematic Concept Art",
+        "Photorealistic / Live Action",
+        "Storyboard Ink",
+        "Pencil Sketch",
+        "3D Animation",
+        "Anime / Illustration",
+        "Storyboard Sketch",
+        "Graphic Novel",
+        "Noir / High Contrast B&W",
+        "Watercolor",
+        "Vintage Film",
+        "Cyberpunk / Neon"
+      ],
+      description: "High-fidelity photorealistic and cinematic storyboard frame generation via Black Forest Labs FLUX.1 engine."
+    },
+    {
       id: "scriptora-concept",
       name: "SCRIPTORA Concept Engine",
       model: "v2.4 High-Res Vector & Composition",
@@ -3841,70 +3867,100 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
   return { storyboard: sb, affectedCount: count };
 }
 
-export async function generateStoryboardShot(scriptId, params = {}) {
-  try {
-    const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
-      method: 'POST',
-      body: JSON.stringify(params)
-    });
-    if (res?.imageUrl) {
-      res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
-      return res;
-    }
-  } catch (e) {
-    console.warn('[Storyboard API] Backend generation failed or timed out:', e.message, '. Using local concept sketch fallback.');
-  }
+export async function createStoryboardJob(scriptId, params = {}) {
+  return await request(`/production/${scriptId}/storyboard/jobs/generate`, {
+    method: 'POST',
+    body: JSON.stringify(params)
+  });
+}
 
-  // Fallback to client-side authentic storyboard concept sketch
-  const sizeLower = (params.shotSize || "").toLowerCase();
-  const headingUpper = (params.sceneHeading || "").toUpperCase();
-  const fullText = `${params.sceneHeading || ''} ${params.prompt || ''} ${params.description || ""}`.toLowerCase();
-  const shotNum = (params.shotNumber || "1A").toUpperCase();
-  const varType = (params.variationType || "").toLowerCase();
+export async function getStoryboardJob(scriptId, jobId) {
+  return await request(`/production/${scriptId}/storyboard/jobs/${jobId}`);
+}
 
-  let sketchFile = "shot_1a_wide_outpost.jpg";
-  if (params.isVariation) {
-    if (varType === 'angle' || varType === 'framing') {
-      sketchFile = "shot_10a_valve_breach.jpg";
-    } else if (varType === 'lighting') {
-      sketchFile = "shot_10b_pumping_hall.jpg";
-    } else if (varType === 'composition') {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNum.includes("A") || sizeLower.includes("wide")) {
-      sketchFile = "shot_10b_pumping_hall.jpg";
-    } else if (shotNum.includes("B") || sizeLower.includes("two")) {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNum.includes("C") || sizeLower.includes("close")) {
-      sketchFile = "shot_10a_valve_breach.jpg";
-    } else {
-      sketchFile = "shot_1d_macro_insert.jpg";
-    }
-  } else {
+export async function generateStoryboardShot(scriptId, params = {}, onProgress = null) {
+  const provider = params.provider || "pollinations-flux";
+
+  // If user explicitly chose built-in vector concept engine
+  if (provider === "scriptora-concept") {
+    try {
+      const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
+        method: 'POST',
+        body: JSON.stringify(params)
+      });
+      if (res?.imageUrl) {
+        res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
+        return res;
+      }
+    } catch (_) {}
+
+    // Built-in concept sketch fallback for offline vector mode
+    const sizeLower = (params.shotSize || "").toLowerCase();
+    const headingUpper = (params.sceneHeading || "").toUpperCase();
+    const fullText = `${params.sceneHeading || ''} ${params.prompt || ''} ${params.description || ""}`.toLowerCase();
+    const shotNum = (params.shotNumber || "1A").toUpperCase();
+    let sketchFile = "shot_1a_wide_outpost.jpg";
     if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
       sketchFile = (fullText.includes("valve") || headingUpper.includes("10")) ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
-    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
+    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot")) {
       sketchFile = "shot_1b_two_shot_standoff.jpg";
-    } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
-      sketchFile = "shot_1d_macro_insert.jpg";
-    } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
-      sketchFile = "shot_10b_pumping_hall.jpg";
     } else if (shotNum.includes("B")) {
       sketchFile = "shot_1b_two_shot_standoff.jpg";
-    } else if (shotNum.includes("C")) {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNum.includes("D")) {
-      sketchFile = "shot_1d_macro_insert.jpg";
+    }
+    return {
+      imageUrl: `${BASE_ASSET_URL}assets/storyboard/${sketchFile}`,
+      provider: "scriptora-concept",
+      quality: params.quality || "hd",
+      costEstimate: "Free (Built-in)",
+      prompt: params.prompt || ""
+    };
+  }
+
+  // Real AI Generation (Pollinations FLUX.1 / Cloud Providers) via Asynchronous Job Pipeline
+  try {
+    const jobInit = await createStoryboardJob(scriptId, { ...params, provider });
+    if (jobInit && jobInit.jobId) {
+      const { jobId } = jobInit;
+      const startTime = Date.now();
+      const maxWaitMs = 50000; // 50s max polling
+
+      while (Date.now() - startTime < maxWaitMs) {
+        await new Promise(r => setTimeout(r, 2000));
+        const job = await getStoryboardJob(scriptId, jobId);
+        if (!job) break;
+
+        if (typeof onProgress === 'function') {
+          onProgress(job);
+        }
+
+        if (job.status === 'completed' && job.result?.imageUrl) {
+          job.result.imageUrl = resolveStoryboardAssetUrl(job.result.imageUrl, params.shotNumber);
+          return job.result;
+        }
+
+        if (job.status === 'failed') {
+          throw new Error(job.error || 'AI generation failed');
+        }
+      }
+    }
+  } catch (jobErr) {
+    if (jobErr.message && !jobErr.message.includes('404') && !jobErr.message.includes('not found')) {
+      // Re-throw honest errors from the provider (e.g. rate-limit, auth, timeout)
+      throw jobErr;
     }
   }
 
-  const img = `${BASE_ASSET_URL}assets/storyboard/${sketchFile}`;
-  return {
-    imageUrl: img,
-    provider: params.provider || "scriptora-concept",
-    quality: params.quality || "hd",
-    costEstimate: "Free (Built-in)",
-    prompt: params.prompt || ""
-  };
+  // Direct synchronous fallback if job endpoint unavailable
+  const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
+    method: 'POST',
+    body: JSON.stringify({ ...params, provider })
+  });
+  if (res?.imageUrl) {
+    res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
+    return res;
+  }
+
+  throw new Error('Image generation returned empty from provider');
 }
 
 export async function generateStoryboardSequence(scriptId, sceneId, params = {}) {

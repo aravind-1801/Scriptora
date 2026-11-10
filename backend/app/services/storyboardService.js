@@ -413,6 +413,76 @@ export function batchApproveShots(scriptId, sceneId, shotIds = [], status = 'app
 }
 
 // ---------------------------------------------------------------------------
+// ASYNCHRONOUS GENERATION JOBS STORE & MANAGER
+// ---------------------------------------------------------------------------
+
+const generationJobs = new Map();
+
+export function createGenerationJob(scriptId, params = {}) {
+  const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const job = {
+    id: jobId,
+    scriptId,
+    sceneId: params.sceneId || null,
+    shotId: params.shotId || null,
+    shotNumber: params.shotNumber || '1A',
+    status: 'queued', // 'queued' | 'processing' | 'completed' | 'failed'
+    progress: 10,
+    statusMessage: 'Generation job queued...',
+    params,
+    result: null,
+    error: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  generationJobs.set(jobId, job);
+
+  // Auto clean-up jobs older than 30 minutes
+  const thirtyMinsAgo = Date.now() - 30 * 60 * 1000;
+  for (const [id, j] of generationJobs.entries()) {
+    if (new Date(j.createdAt).getTime() < thirtyMinsAgo) {
+      generationJobs.delete(id);
+    }
+  }
+
+  // Trigger async execution
+  processGenerationJob(jobId).catch(err => {
+    console.error(`[Storyboard Job ${jobId}] Execution error:`, err);
+  });
+
+  return { jobId, status: 'queued', estimatedSeconds: 9 };
+}
+
+async function processGenerationJob(jobId) {
+  const job = generationJobs.get(jobId);
+  if (!job) return;
+
+  job.status = 'processing';
+  job.progress = 30;
+  job.statusMessage = 'Connecting to FLUX.1 generation engine...';
+  job.updatedAt = new Date().toISOString();
+
+  try {
+    const result = await generateShotImage(job.params);
+    job.status = 'completed';
+    job.progress = 100;
+    job.statusMessage = 'Storyboard frame generated successfully';
+    job.result = result;
+    job.updatedAt = new Date().toISOString();
+  } catch (err) {
+    job.status = 'failed';
+    job.progress = 100;
+    job.error = err.message || 'Generation failed';
+    job.statusMessage = `Failed: ${job.error}`;
+    job.updatedAt = new Date().toISOString();
+  }
+}
+
+export function getGenerationJob(jobId) {
+  return generationJobs.get(jobId) || null;
+}
+
+// ---------------------------------------------------------------------------
 // AI PROVIDERS, GENERATION & ADAPTER ENGINE
 // ---------------------------------------------------------------------------
 
@@ -423,6 +493,32 @@ export function getAiProviders() {
   const hasNvidiaKey = Boolean(process.env.NVIDIA_API_KEY && process.env.NVIDIA_API_KEY.trim() !== "");
 
   return [
+    {
+      id: "pollinations-flux",
+      name: "Pollinations AI (FLUX.1)",
+      model: "flux",
+      isConfigured: true,
+      pricingType: "free",
+      costPerImage: 0.0,
+      costLabel: "Free (No Key Required)",
+      requiresApiKey: false,
+      aspectRatios: ["16:9", "2.39:1", "1:1", "4:3", "9:16"],
+      styles: [
+        "Cinematic Concept Art",
+        "Photorealistic / Live Action",
+        "Storyboard Ink",
+        "Pencil Sketch",
+        "3D Animation",
+        "Anime / Illustration",
+        "Storyboard Sketch",
+        "Graphic Novel",
+        "Noir / High Contrast B&W",
+        "Watercolor",
+        "Vintage Film",
+        "Cyberpunk / Neon"
+      ],
+      description: "High-fidelity photorealistic and cinematic storyboard frame generation via Black Forest Labs FLUX.1 engine."
+    },
     {
       id: "scriptora-concept",
       name: "SCRIPTORA Concept Engine",
@@ -517,7 +613,7 @@ export function getAiProviders() {
 
 export async function generateShotImage(params = {}) {
   const {
-    provider = "scriptora-concept",
+    provider = "pollinations-flux",
     prompt = "",
     shotSize = "Medium Shot",
     cameraAngle = "Eye Level",
@@ -536,27 +632,114 @@ export async function generateShotImage(params = {}) {
   if (selectedProvider.requiresApiKey && !selectedProvider.isConfigured) {
     throw new Error(
       `Provider '${selectedProvider.name}' is not configured: ${selectedProvider.envVarName} is missing in the backend server environment. ` +
-      `Please configure your API key in backend/.env or choose SCRIPTORA Concept Engine (Free / Built-in) or Manual Image Import.`
+      `Please configure your API key in backend/.env or choose Pollinations AI (Free / FLUX.1) or SCRIPTORA Concept Engine.`
     );
+  }
+
+  // 1. Real AI Image Generation via Pollinations (Black Forest Labs FLUX.1 Engine)
+  if (provider === "pollinations-flux" || provider === "pollinations" || (!provider && !selectedProvider.requiresApiKey)) {
+    let width = 1024;
+    let height = 1024;
+    if (aspectRatio === "16:9") {
+      width = 1280;
+      height = 720;
+    } else if (aspectRatio === "2.39:1") {
+      width = 1344;
+      height = 560;
+    } else if (aspectRatio === "4:3") {
+      width = 1024;
+      height = 768;
+    } else if (aspectRatio === "9:16") {
+      width = 720;
+      height = 1280;
+    }
+
+    const cleanPrompt = (prompt || "Cinematic film still, beautiful atmospheric lighting, highly detailed").trim();
+    const stylePrefix = (visualStyle && visualStyle !== "None") ? `${visualStyle} style.` : "";
+    const cameraSpecs = [shotSize, cameraAngle, focalLength, lightingMood].filter(Boolean).join(", ");
+    const fullPrompt = `${stylePrefix} Cinematic film still for ${sceneHeading}: ${cleanPrompt}. Camera: ${cameraSpecs}. 8k resolution, authentic movie still, detailed environment, photorealistic cinematography.`.trim();
+
+    // Preserve reproducible seed or generate fresh seed for variation
+    const seed = params.seed || (params.isVariation ? Math.floor(Math.random() * 900000) + 100000 : 42);
+    const encodedPrompt = encodeURIComponent(fullPrompt);
+    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 35000);
+
+    try {
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Accept": "image/*, application/json",
+          "User-Agent": "SCRIPTORA-Storyboard/1.0"
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => "");
+        let errJson = null;
+        try { errJson = JSON.parse(text); } catch (_) {}
+        const errorMsg = errJson?.error?.message || errJson?.message || text || `HTTP ${resp.status} ${resp.statusText}`;
+        if (resp.status === 402 || resp.status === 429 || errorMsg.includes("limit") || errorMsg.includes("45 seconds")) {
+          throw new Error("Pollinations free tier rate limit reached (1 image per 45s). Please wait a moment and click Retry.");
+        }
+        throw new Error(`Pollinations AI error (${resp.status}): ${errorMsg}`);
+      }
+
+      const contentType = resp.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const json = await resp.json().catch(() => ({}));
+        throw new Error(json.error?.message || json.message || "Pollinations returned non-image response");
+      }
+
+      const arrayBuf = await resp.arrayBuffer();
+      const buf = Buffer.from(arrayBuf);
+      if (buf.length < 5000) {
+        throw new Error("Received invalid or corrupted image data from Pollinations AI.");
+      }
+
+      // Verify JPEG or PNG magic bytes
+      const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
+      const mime = isPng ? "image/png" : "image/jpeg";
+
+      const base64Data = buf.toString("base64");
+      const imageUrl = `data:${mime};base64,${base64Data}`;
+
+      return {
+        imageUrl,
+        provider: "pollinations-flux",
+        model: "flux",
+        quality: params.quality || "hd",
+        costEstimate: "Free (Pollinations AI)",
+        prompt: cleanPrompt,
+        fullPrompt,
+        seed,
+        aspectRatio,
+        width,
+        height
+      };
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        throw new Error("Pollinations AI generation timed out (35s). Please click Retry.");
+      }
+      throw err;
+    }
   }
 
   // If NVIDIA NIM is requested
   if (provider === "nvidia-nim") {
     if (!process.env.NVIDIA_API_KEY) {
-      console.warn("[NVIDIA NIM] NVIDIA_API_KEY missing in environment. Falling back to SCRIPTORA Concept Engine.");
-      const fallback = renderConceptEngineSketch(params);
-      return {
-        ...fallback,
-        requestedProvider: "nvidia-nim",
-        fallbackUsed: true,
-        notice: "NVIDIA API key not configured. Rendered with SCRIPTORA Concept Engine."
-      };
+      throw new Error("NVIDIA API key not configured in backend/.env. Please use Pollinations AI (FLUX.1).");
     }
 
     const apiKey = process.env.NVIDIA_API_KEY.trim();
     const endpoint = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev";
 
-    // Set dimensions supported by FLUX.1-dev (valid values: 768, 832, 896, 960, 1024, 1088, 1152, 1216, 1280, 1344)
     let width = 1024;
     let height = 1024;
     if (aspectRatio === "16:9" || aspectRatio === "2.39:1") {
@@ -660,31 +843,18 @@ export async function generateShotImage(params = {}) {
         }
       }
 
-      // If NVIDIA returned 402/403/500/etc. or missing image data:
-      console.warn(`[NVIDIA NIM] API returned status ${resp.status}. Falling back seamlessly to SCRIPTORA Concept Engine.`);
-      const fallback = renderConceptEngineSketch(params);
-      return {
-        ...fallback,
-        requestedProvider: "nvidia-nim",
-        model: "black-forest-labs/flux.1-dev",
-        fallbackUsed: true,
-        notice: (resp.status === 402 || resp.status === 403)
-          ? "NVIDIA cloud developer credits paused or restricted. Generated with SCRIPTORA Concept Engine."
-          : `NVIDIA cloud service returned status ${resp.status}. Generated with SCRIPTORA Concept Engine.`
-      };
+      // If NVIDIA returned an error status or missing image data:
+      throw new Error(
+        (resp.status === 402 || resp.status === 403)
+          ? "NVIDIA cloud developer credits paused or restricted. Please choose Pollinations AI (FLUX.1)."
+          : `NVIDIA NIM cloud service returned HTTP ${resp.status}. Please use Pollinations AI (FLUX.1).`
+      );
     } catch (err) {
       clearTimeout(timeoutId);
-      console.warn("[NVIDIA NIM] Request failed/timed out:", err.message, ". Falling back seamlessly to SCRIPTORA Concept Engine.");
-      const fallback = renderConceptEngineSketch(params);
-      return {
-        ...fallback,
-        requestedProvider: "nvidia-nim",
-        model: "black-forest-labs/flux.1-dev",
-        fallbackUsed: true,
-        notice: err.name === 'AbortError'
-          ? "NVIDIA cloud queue latency exceeded 20s. Rendered with SCRIPTORA Concept Engine."
-          : `NVIDIA cloud unavailable (${err.message}). Rendered with SCRIPTORA Concept Engine.`
-      };
+      if (err.name === 'AbortError') {
+        throw new Error("NVIDIA NIM cloud queue latency exceeded 20s. Please switch to Pollinations AI (FLUX.1).");
+      }
+      throw err;
     }
   }
 
