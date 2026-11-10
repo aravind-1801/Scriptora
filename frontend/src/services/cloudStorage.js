@@ -220,3 +220,4 @@ export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
     return null;
   }
 }
+
