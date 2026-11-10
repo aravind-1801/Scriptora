@@ -37,13 +37,13 @@ console.log('✓ Test 3 Passed: Dialogue parentheticals accurately maintained');
 
 console.log('\n--- TEST 4: Style CSS A4 Dimensions ---');
 const cssContent = fs.readFileSync('frontend/src/style.css', 'utf-8');
-if (!cssContent.includes('width: 900px !important;') || !cssContent.includes('min-height: 1273px !important;')) {
-  throw new Error('Missing 900px x 1273px CSS definitions in style.css');
+if (!cssContent.includes('max-width: 794px;') || !cssContent.includes('min-height: 1123px;')) {
+  throw new Error('Missing 794px x 1123px ISO A4 CSS definitions in style.css');
 }
 if (!cssContent.includes('aspect-ratio: 210 / 297;')) {
   throw new Error('Missing 210 / 297 aspect ratio in style.css');
 }
-console.log('✓ Test 4 Passed: style.css enforces 900px x 1273px with 210/297 aspect ratio');
+console.log('✓ Test 4 Passed: style.css enforces genuine ISO A4 794px x 1123px geometry with 210/297 aspect ratio');
 
 console.log('\n--- TEST 5: Editor.js Autocomplete & Element Bar Sync Logic ---');
 const editorContent = fs.readFileSync('frontend/src/screens/editor.js', 'utf-8');

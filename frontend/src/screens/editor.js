@@ -139,8 +139,23 @@ function handleSpaceNavigation(blockEl, editableEl) {
   return true;
 }
 
-// Standard A4 screenplay page capacity (~54 lines of Courier Prime 12pt)
+// Standard ISO A4 screenplay page capacity (~54 lines of Courier Prime 12pt at 96 DPI: 794 x 1123px)
 const A4_PAGE_CAPACITY_LINES = 54;
+
+export function getPageCapacityLines() {
+  if (typeof window === 'undefined') return A4_PAGE_CAPACITY_LINES;
+  if (window.innerWidth >= 820) {
+    return A4_PAGE_CAPACITY_LINES;
+  }
+  // On mobile: calculate based on rendered sheet height preserving exact A4 ratio (210:297)
+  const renderedWidth = Math.max(280, Math.min(794, window.innerWidth - 16));
+  const renderedHeight = renderedWidth * (297 / 210);
+  // Subtract top/bottom margins & padding (approx. 64px on mobile)
+  const usableHeight = renderedHeight - 64;
+  // Courier Prime 12pt rendered line height with element spacing (~19.5px)
+  const capacity = Math.floor(usableHeight / 19.5);
+  return Math.max(18, Math.min(A4_PAGE_CAPACITY_LINES, capacity));
+}
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript || {
@@ -478,10 +493,10 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <!-- ========================================================= -->
       <!-- CONTINUOUS A4-STYLE MULTI-PAGE SCREENPLAY WORKSPACE      -->
       <!-- Single vertical scroll container, Header stays fixed      -->
-      <main id="editor-main-scroll" class="flex-1 w-full pb-20 sm:pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-1 sm:pt-3 bg-[#eceff3]">
+      <main id="editor-main-scroll" class="flex-1 w-full pb-10 sm:pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-1 sm:pt-3 bg-[#eceff3]">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
-        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8 pt-1 sm:pt-4 pb-8 sm:pb-12 px-1 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
+        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8 pt-1 sm:pt-3 pb-8 sm:pb-12 px-1 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -490,7 +505,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
         <div id="title-page-container" class="w-full max-w-5xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
-          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[900px] min-h-[1273px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
+          <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[794px] min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">
               <span class="material-symbols-outlined text-[18px]">close</span>
@@ -519,8 +534,11 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           </div>
         </div>
 
-        <!-- Telemetry Footer Bar with Professional Document Controls -->
-        <div class="w-full max-w-5xl px-4 py-2 mt-4 flex flex-wrap items-center justify-between gap-2 text-slate-500 font-caption text-xs select-none border-t border-slate-200 bg-white/70 backdrop-blur-xs rounded-xl shadow-2xs">
+      </main>
+
+      <!-- Stationary Bottom Toolbar (Outside the paper, non-overlapping, with mobile pb-safe) -->
+      <footer id="editor-telemetry-bar" class="w-full shrink-0 border-t border-slate-200/90 bg-white/95 backdrop-blur-md px-3 sm:px-6 py-2 pb-safe z-30 flex items-center justify-center select-none shadow-xs">
+        <div class="w-full max-w-5xl flex flex-wrap items-center justify-between gap-2 text-slate-500 font-caption text-xs">
           <div class="flex items-center gap-2">
             <span class="flex items-center gap-1 font-mono">
               <span class="material-symbols-outlined text-[14px]">format_shapes</span>
@@ -554,8 +572,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             <span id="telemetry-word-count">0 words</span>
           </div>
         </div>
-
-      </main>
+      </footer>
 
       <!-- ========================================================= -->
       <!-- AUTOCOMPLETE POPUP (Anchor to active line)                -->
@@ -1383,7 +1400,15 @@ function setupToolbarCollapseToggle() {
 
   // Measure and align header offset on initialization and window resize
   updateEditorHeaderOffset();
-  window.addEventListener('resize', updateEditorHeaderOffset);
+  let lastResizeCapacity = getPageCapacityLines();
+  window.addEventListener('resize', () => {
+    updateEditorHeaderOffset();
+    const currentCap = getPageCapacityLines();
+    if (currentCap !== lastResizeCapacity) {
+      lastResizeCapacity = currentCap;
+      renderScreenplayPages();
+    }
+  });
 
   if (toggleBtn) {
     toggleBtn.onclick = (e) => {
@@ -1653,8 +1678,9 @@ function renderScreenplayPages() {
     }
 
     const lines = estimateBlockLines(item.block);
+    const capacity = getPageCapacityLines();
     // If adding this block exceeds page line capacity and current page is not empty: start next A4 page
-    if (currentLines + lines > A4_PAGE_CAPACITY_LINES && currentPage.items.length > 0) {
+    if (currentLines + lines > capacity && currentPage.items.length > 0) {
       pages.push(currentPage);
       currentPage = { pageNumber: pages.length + 1, items: [] };
       currentLines = 0;
@@ -1683,20 +1709,20 @@ function renderScreenplayPages() {
 
   // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
-    <div class="screenplay-page-sheet w-full max-w-[900px] min-h-[1273px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
+    <div class="screenplay-page-sheet w-full max-w-[794px] min-h-[1123px] bg-white rounded-md sm:rounded-lg shadow-md border border-slate-200/90 flex flex-col font-courier text-[12pt] leading-[1.25] text-slate-900 relative transition-all" data-page-num="${page.pageNumber}">
       
       <!-- Top Page Header: Page number in top right -->
-      <div contenteditable="false" class="w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier shrink-0">
+      <div contenteditable="false" class="screenplay-page-top-margin w-full flex items-center justify-end h-7 pb-2 select-none text-[12pt] text-slate-600 font-courier shrink-0">
         <span>${page.pageNumber}.</span>
       </div>
 
       <!-- Screenplay Blocks naturally flowing across this A4 page (Full usable vertical area) -->
-      <div class="page-blocks-wrapper flex flex-col flex-1 w-full">
+      <div class="page-blocks-wrapper flex flex-col flex-1 w-full min-h-0 cursor-text">
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
       <!-- Bottom Page Boundary indicator with Page Controls (Pinned to bottom margin of A4 sheet) -->
-      <div contenteditable="false" class="w-full pt-4 pb-2 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-auto shrink-0">
+      <div contenteditable="false" class="screenplay-page-bottom-margin w-full pt-4 pb-2 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-auto shrink-0">
         <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
           <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
           <span class="hidden sm:inline">Add Page Before</span>
@@ -4321,7 +4347,8 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
       totalLines += estimateBlockLines({ type: bType, content: text });
     });
 
-    if (totalLines > A4_PAGE_CAPACITY_LINES) {
+    const capacity = getPageCapacityLines();
+    if (totalLines > capacity) {
       renderScreenplayPages();
       setTimeout(() => {
         const el = document.getElementById(newBlockId);

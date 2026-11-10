@@ -221,14 +221,15 @@ body.scriptora-modal-open {
   }
 }
 
-/* Professional Screenplay Page Sheet (Standard ISO A4 Geometry: 210mm x 297mm, Spacious 900px Display) */
+/* Professional Screenplay Page Sheet (Standard ISO A4 Geometry: 210mm x 297mm, 794px x 1123px at 96 DPI) */
 .screenplay-page-sheet {
   width: 100%;
-  max-width: 900px; /* Spacious A4 display width (approx. 900px) */
-  min-height: 1273px; /* Exact proportional A4 height: 900 * 297 / 210 = 1272.85px */
+  max-width: 794px;
+  height: 1123px;
+  min-height: 1123px;
   aspect-ratio: 210 / 297;
   background-color: #ffffff;
-  padding: 82px 82px 82px 122px !important; /* Scaled proportionally from standard 1.0in top/right/bottom, 1.5in left */
+  padding: 72px 72px 72px 108px !important; /* Scaled Writers Guild margins: 1.0in top/right/bottom, 1.5in left */
   box-sizing: border-box;
   font-family: 'Courier Prime', 'Courier New', Courier, monospace;
   font-size: 12pt;
@@ -239,15 +240,17 @@ body.scriptora-modal-open {
   display: flex !important;
   flex-direction: column !important;
   position: relative;
+  overflow: hidden;
 }
 
 .screenplay-title-page-sheet {
   width: 100%;
-  max-width: 900px;
-  min-height: 1273px;
+  max-width: 794px;
+  height: 1123px;
+  min-height: 1123px;
   aspect-ratio: 210 / 297;
   background-color: #ffffff;
-  padding: 82px 122px 82px 122px !important;
+  padding: 72px 108px 72px 108px !important;
   box-sizing: border-box;
   font-family: 'Courier Prime', 'Courier New', Courier, monospace;
   font-size: 12pt;
@@ -258,16 +261,35 @@ body.scriptora-modal-open {
   display: flex !important;
   flex-direction: column !important;
   position: relative;
+  overflow: hidden;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 820px) {
   .screenplay-page-sheet {
     width: calc(100% - 16px) !important;
-    max-width: 900px !important;
-    /* ISO A4 210x297mm full-height sheet at 96 DPI (1123px) ensuring full 54-line vertical capacity */
-    min-height: max(1123px, calc(100dvh - 110px)) !important;
-    aspect-ratio: auto !important;
-    padding: 36px 16px 36px 24px !important;
+    max-width: 794px !important;
+    /* ISO A4 proportional height derived strictly from rendered width: width * 297 / 210 */
+    height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    min-height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    max-height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    aspect-ratio: 210 / 297 !important;
+    padding: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) calc(72px * (min(794px, calc(100vw - 16px)) / 794)) calc(72px * (min(794px, calc(100vw - 16px)) / 794)) calc(108px * (min(794px, calc(100vw - 16px)) / 794)) !important;
+    margin: 0 auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
+    border-radius: 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .screenplay-title-page-sheet {
+    width: calc(100% - 16px) !important;
+    max-width: 794px !important;
+    height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    min-height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    max-height: calc(min(794px, calc(100vw - 16px)) * 297 / 210) !important;
+    aspect-ratio: 210 / 297 !important;
+    padding: calc(72px * (min(794px, calc(100vw - 16px)) / 794)) calc(108px * (min(794px, calc(100vw - 16px)) / 794)) calc(72px * (min(794px, calc(100vw - 16px)) / 794)) calc(108px * (min(794px, calc(100vw - 16px)) / 794)) !important;
     margin: 0 auto !important;
     overflow-x: hidden !important;
     box-sizing: border-box !important;
@@ -277,15 +299,15 @@ body.scriptora-modal-open {
     flex-direction: column !important;
   }
   .screenplay-block[data-block-type="character"] {
-    margin-left: 18% !important;
+    margin-left: 28% !important;
     max-width: 100% !important;
   }
   .screenplay-block[data-block-type="parenthetical"] {
-    margin-left: 12% !important;
+    margin-left: 20% !important;
     max-width: 100% !important;
   }
   .screenplay-block[data-block-type="dialogue"] {
-    margin-left: 8% !important;
+    margin-left: 12% !important;
     max-width: 100% !important;
   }
   .scene-num-indicator {
@@ -293,20 +315,6 @@ body.scriptora-modal-open {
     width: 20px !important;
     margin-right: 6px !important;
     font-size: 10pt !important;
-  }
-  .screenplay-title-page-sheet {
-    width: calc(100% - 16px) !important;
-    max-width: 900px !important;
-    min-height: max(1123px, calc(100dvh - 110px)) !important;
-    aspect-ratio: auto !important;
-    padding: 36px 20px 36px 20px !important;
-    margin: 0 auto !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-    box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(226, 232, 240, 0.8) !important;
-    border-radius: 2px !important;
-    display: flex !important;
-    flex-direction: column !important;
   }
 }
 
