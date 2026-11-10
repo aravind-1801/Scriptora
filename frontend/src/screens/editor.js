@@ -140,22 +140,24 @@ function handleSpaceNavigation(blockEl, editableEl) {
 }
 
 // Standard ISO A4 screenplay page capacity (~54 lines of Courier Prime 12pt at 96 DPI: 794 x 1123px)
-const A4_PAGE_CAPACITY_LINES = 54;
+// Physical A4: 210mm x 297mm (595.28pt x 841.89pt). Printable height = 297mm - 2*25.4mm = 246.2mm = 9.69in.
+// 9.69in * 6 lines/in (standard 12pt Courier pitch) = ~54 lines per page.
+// Single source of truth for both editor pagination and PDF export across all devices.
+import {
+  A4_PAGE_CAPACITY_LINES,
+  getPageCapacityLines,
+  countScreenplayTextLines,
+  estimateBlockLines,
+  paginateScreenplayBlocks
+} from '../utils/pagination.js';
 
-export function getPageCapacityLines() {
-  if (typeof window === 'undefined') return A4_PAGE_CAPACITY_LINES;
-  if (window.innerWidth >= 820) {
-    return A4_PAGE_CAPACITY_LINES;
-  }
-  // On mobile: calculate based on rendered sheet height preserving exact A4 ratio (210:297)
-  const renderedWidth = Math.max(280, Math.min(794, window.innerWidth - 16));
-  const renderedHeight = renderedWidth * (297 / 210);
-  // Subtract top/bottom margins & padding (approx. 64px on mobile)
-  const usableHeight = renderedHeight - 64;
-  // Courier Prime 12pt rendered line height with element spacing (~19.5px)
-  const capacity = Math.floor(usableHeight / 19.5);
-  return Math.max(18, Math.min(A4_PAGE_CAPACITY_LINES, capacity));
-}
+export {
+  A4_PAGE_CAPACITY_LINES,
+  getPageCapacityLines,
+  countScreenplayTextLines,
+  estimateBlockLines,
+  paginateScreenplayBlocks
+};
 
 export function renderEditorScreen(scriptId, targetScene = null) {
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript || {
@@ -1640,72 +1642,75 @@ function initTitlePageDocEvents() {
 
 
 // =========================================================================
-// NATURAL A4 MULTI-PAGE SCREENPLAY RENDERING (Sections 11, 12, 13, 23)
-// Continuous document flowing across A4-sized sheets based on line capacity.
-// Scenes and transitions DO NOT force artificial page breaks!
 // =========================================================================
+// NATURAL A4 MULTI-PAGE SCREENPLAY RENDERING & DYNAMIC PAGINATION
+// Driven by authoritative pagination engine in utils/pagination.js.
+// =========================================================================
+
+let dynamicPaginationDebounce = null;
+export function scheduleDynamicPaginationCheck() {
+  if (dynamicPaginationDebounce) clearTimeout(dynamicPaginationDebounce);
+  dynamicPaginationDebounce = setTimeout(() => {
+    checkAndApplyDynamicPagination();
+  }, 250);
+}
+
+function checkAndApplyDynamicPagination() {
+  if (!currentScreenplay) return;
+  const container = document.getElementById('screenplay-pages-container');
+  if (!container) return;
+
+  const newPages = paginateScreenplayBlocks(currentScreenplay, A4_PAGE_CAPACITY_LINES);
+  const currentSheets = Array.from(container.querySelectorAll('.screenplay-page-sheet:not(.screenplay-title-page-sheet)'));
+
+  // Check if page count or distribution changed
+  let changed = newPages.length !== currentSheets.length;
+  if (!changed) {
+    for (let i = 0; i < newPages.length; i++) {
+      const page = newPages[i];
+      const sheet = currentSheets[i];
+      const domBlockIds = Array.from(sheet.querySelectorAll('.screenplay-block')).map(b => b.getAttribute('data-block-id'));
+      const newBlockIds = page.items.map(it => it.block.id);
+      if (domBlockIds.length !== newBlockIds.length || !domBlockIds.every((id, idx) => id === newBlockIds[idx])) {
+        changed = true;
+        break;
+      }
+    }
+  }
+
+  if (changed) {
+    const focusedId = activeBlockId;
+    let caretPos = null;
+    if (focusedId) {
+      const el = document.getElementById(focusedId);
+      const ed = el ? getBlockEditable(el) : null;
+      if (ed) caretPos = getCaretCharacterOffsetWithin(ed);
+    }
+
+    renderScreenplayPages();
+
+    if (focusedId) {
+      const el = document.getElementById(focusedId);
+      const ed = el ? getBlockEditable(el) : null;
+      if (ed) {
+        activeBlockId = focusedId;
+        if (caretPos !== null) {
+          setCaretCharacterOffsetWithin(ed, caretPos);
+        } else {
+          setCursorAtEnd(ed);
+        }
+      }
+    }
+  } else {
+    updateTelemetry();
+  }
+}
+
 function renderScreenplayPages() {
   const container = document.getElementById('screenplay-pages-container');
   if (!container || !currentScreenplay) return;
 
-  const scenes = currentScreenplay.scenes || [];
-  
-  // Flatten all blocks with scene metadata
-  const allItems = [];
-  scenes.forEach(scene => {
-    (scene.blocks || []).forEach(block => {
-      allItems.push({
-        block,
-        sceneNumber: scene.number,
-        sceneId: scene.id,
-        slugline: scene.slugline
-      });
-    });
-  });
-
-  // Flow items naturally across standard A4 pages based on line capacity
-  const pages = [];
-  let currentPage = { pageNumber: 1, items: [] };
-  let currentLines = 0;
-
-  allItems.forEach(item => {
-    if (item.block.type === 'pagebreak') {
-      currentPage.items.push(item);
-      pages.push(currentPage);
-      currentPage = { pageNumber: pages.length + 1, items: [] };
-      currentLines = 0;
-      return;
-    }
-
-    const lines = estimateBlockLines(item.block);
-    const capacity = getPageCapacityLines();
-    // If adding this block exceeds page line capacity and current page is not empty: start next A4 page
-    if (currentLines + lines > capacity && currentPage.items.length > 0) {
-      pages.push(currentPage);
-      currentPage = { pageNumber: pages.length + 1, items: [] };
-      currentLines = 0;
-    }
-    currentPage.items.push(item);
-    currentLines += lines;
-  });
-
-  if (currentPage.items.length > 0) {
-    pages.push(currentPage);
-  }
-
-  if (pages.length === 0) {
-    pages.push({
-      pageNumber: 1,
-      items: [
-        {
-          block: { id: `b-${Date.now()}-1`, type: 'scene', content: '' },
-          sceneNumber: 1,
-          sceneId: 'scene-1',
-          slugline: ''
-        }
-      ]
-    });
-  }
+  const pages = paginateScreenplayBlocks(currentScreenplay, A4_PAGE_CAPACITY_LINES);
 
   // Render each continuous A4 sheet
   container.innerHTML = pages.map(page => `
@@ -1721,8 +1726,8 @@ function renderScreenplayPages() {
         ${page.items.map(it => renderBlockHtml(it.block, it.sceneNumber, it.sceneId)).join('')}
       </div>
 
-      <!-- Bottom Page Boundary indicator with Page Controls (Pinned to bottom margin of A4 sheet) -->
-      <div contenteditable="false" class="screenplay-page-bottom-margin w-full pt-4 pb-2 select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-slate-100 mt-auto shrink-0">
+      <!-- Bottom Page Boundary indicator with Page Controls -->
+      <div contenteditable="false" class="screenplay-page-bottom-margin w-full pt-4 pb-2 mt-auto select-none flex items-center justify-between text-[11px] text-slate-400 font-sans border-t border-dashed border-slate-200 shrink-0">
         <button type="button" class="btn-page-add-before px-2 py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center gap-1 transition-all" data-page-num="${page.pageNumber}" title="Add a new page before Page ${page.pageNumber}">
           <span class="material-symbols-outlined text-[14px]">arrow_upward</span>
           <span class="hidden sm:inline">Add Page Before</span>
@@ -1742,27 +1747,6 @@ function renderScreenplayPages() {
 
   attachBlockListeners();
   updateTelemetry();
-}
-
-function estimateBlockLines(block) {
-  if (block.type === 'pagebreak') return 1;
-  const content = block.content || '';
-  if (block.type === 'scene') return 3;
-  if (block.type === 'action') return Math.max(1, Math.ceil(content.length / 60)) + 1;
-  if (block.type === 'character') return 2;
-  if (block.type === 'parenthetical') return 1;
-  if (block.type === 'dialogue') return Math.max(1, Math.ceil(content.length / 38)) + 1;
-  if (block.type === 'transition') return 2;
-  if (block.type === 'shot') return 2;
-  if (block.type === 'text') return Math.max(1, Math.ceil(content.length / 60)) + 1;
-  if (block.type === 'note') return 2;
-  if (block.type === 'outline') return 2;
-  if (block.type === 'act' || block.type === 'endact') return 3;
-  if (block.type === 'sequence') return 2;
-  if (block.type === 'dual') return 4;
-  if (block.type === 'lyrics') return 2;
-  if (block.type === 'image') return 10;
-  return 2;
 }
 
 // =========================================================================
@@ -3379,11 +3363,51 @@ export function attachContainerListeners() {
     }
   });
 
+  // IME Composition guards for Android keyboards & multilingual IMEs
+  let isImeComposing = false;
+  container.addEventListener('compositionstart', () => {
+    isImeComposing = true;
+  });
+  container.addEventListener('compositionend', () => {
+    isImeComposing = false;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const node = sel.anchorNode;
+      const el = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+      const block = el?.closest('.screenplay-block');
+      if (block) {
+        const ed = getBlockEditable(block);
+        if (ed) {
+          updateBlockModel(block, ed.innerHTML);
+          triggerAutocomplete(block, ed);
+        }
+      }
+    }
+    scheduleDynamicPaginationCheck();
+  });
+
   // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
   container.addEventListener('input', (e) => {
     hasUnsavedChanges = true;
     updateSaveStatus('Unsaved');
     if (autoSaveEnabled) scheduleAutosave();
+
+    // IME Composition Protection: Never mutate innerText or DOM while virtual keyboard is composing
+    if (e.isComposing || isImeComposing) {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const node = sel.anchorNode;
+        const el = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+        const block = el?.closest('.screenplay-block');
+        if (block) {
+          const ed = getBlockEditable(block);
+          if (ed) {
+            updateBlockModel(block, ed.innerHTML);
+          }
+        }
+      }
+      return;
+    }
 
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
@@ -3462,6 +3486,7 @@ export function attachContainerListeners() {
     updateBlockModel(block, contentToUpdate);
     triggerAutocomplete(block, editable);
     scheduleTelemetryUpdate();
+    scheduleDynamicPaginationCheck();
   });
 }
 
@@ -4203,12 +4228,12 @@ function handleBlockKeydown(e, blockEl, editableEl) {
       // Never inherit extensions from previous dialogue blocks.
       const extToUse = userExt || null;
 
-      if (priorAppearance && !userAlreadyHasContd) {
+      if (isValidCharacterName(baseName) && priorAppearance && !userAlreadyHasContd) {
         // Character is returning in the scene: append (CONT'D).
         // If the user explicitly entered an extension (e.g. V.O.), it becomes NAME (V.O.) (CONT'D).
         // Otherwise, it is simply NAME (CONT'D).
         finalCue = formatCharacterCue(baseName, extToUse, true);
-      } else if (!priorAppearance && extToUse) {
+      } else if (isValidCharacterName(baseName) && !priorAppearance && extToUse) {
         finalCue = formatCharacterCue(baseName, extToUse, false);
       } else if (!userAlreadyHasContd && baseName) {
         finalCue = baseName;
@@ -5704,6 +5729,7 @@ export function setupTextFormattingControls() {
   if (mainScroll) {
     mainScroll.addEventListener('keyup', updateTextFormatButtonStates);
     mainScroll.addEventListener('mouseup', updateTextFormatButtonStates);
+    mainScroll.addEventListener('scroll', updateTelemetryOnScroll, { passive: true });
   }
 }
 
@@ -6521,8 +6547,8 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
   const CENTER_X = PAGE_WIDTH / 2; // 297.64 pt
   const LEFT_MARGIN = 108.0; // 1.5 in from left page edge
   const RIGHT_MARGIN_X = 525.0; // 1.0 in from right page edge boundary
-  const LINE_HEIGHT_12 = 14.4; // 12pt Courier line pitch
-  const PARAGRAPH_GAP = 14.4; // single blank line separation
+  const LINE_HEIGHT_12 = 13.5; // 12pt Courier line pitch (54 lines fit in usable 730pt height)
+  const PARAGRAPH_GAP = 13.5; // single blank line separation
 
   const getTextWidth = (text, size = 12) => (text ? text.length : 0) * (size * 0.6);
   const getCenterX = (text, size = 12) => Math.round(CENTER_X - getTextWidth(text, size) / 2);
@@ -6597,35 +6623,50 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
     titlePageAdded = true;
   }
 
-  // 2. Continuous A4 Screenplay Pages
-  pageSheets.forEach(sheet => {
-    // Exclude title page sheet element if matched accidentally
-    if (sheet.classList && sheet.classList.contains('screenplay-title-page-sheet')) return;
+  // 2. Continuous A4 Screenplay Pages (Derived with exact same pagination rules as editor)
+  const pagesData = (pageSheets && pageSheets.length > 0)
+    ? pageSheets.filter(sheet => !(sheet.classList && sheet.classList.contains('screenplay-title-page-sheet'))).map(sheet => ({
+        pageNum: parseInt(sheet.getAttribute('data-page-num'), 10) || 1,
+        blocks: Array.from(sheet.querySelectorAll('.screenplay-block')).map(bEl => ({
+          type: bEl.getAttribute('data-block-type'),
+          text: (getBlockEditable(bEl)?.innerText || bEl.innerText || '').trim(),
+          sceneNumber: bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '',
+          caption: getBlockEditable(bEl)?.innerText?.trim() || 'Storyboard Image'
+        }))
+      }))
+    : paginateScreenplayBlocks(screenplay, A4_PAGE_CAPACITY_LINES).map(p => ({
+        pageNum: p.pageNumber,
+        blocks: p.items.map(it => ({
+          type: it.block.type,
+          text: (it.block.content || '').replace(/<[^>]+>/g, '').trim(),
+          sceneNumber: String(it.sceneNumber || ''),
+          caption: (it.block.content || '').replace(/<[^>]+>/g, '').trim() || 'Storyboard Image'
+        }))
+      }));
 
-    const pageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+  pagesData.forEach(page => {
+    const pageNum = page.pageNum;
     if (!targetPageNumbers.has(pageNum)) return;
 
     const pageLines = [];
     let hasActualContent = false;
 
-    // Page number: top right flush with right margin (525pt, y=805)
+    // Page number: top right flush with right margin (525pt, y=810)
     if (includePageNumbers) {
       const pageNumStr = `${pageNum}.`;
       pageLines.push({
         text: pageNumStr,
         x: getRightX(pageNumStr, 12, RIGHT_MARGIN_X),
-        y: 805,
+        y: 810,
         font: 'F1',
         size: 12
       });
     }
 
-    let y = 765;
-    const blocks = sheet.querySelectorAll('.screenplay-block');
-
-    blocks.forEach(bEl => {
-      if (y < 65) return;
-      const bType = bEl.getAttribute('data-block-type');
+    let y = 770;
+    page.blocks.forEach(b => {
+      if (y < 45) return;
+      const bType = b.type;
 
       if (bType === 'pagebreak') {
         if (preservePageBreaks) {
@@ -6638,10 +6679,9 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
       }
 
       if (bType === 'scene') {
-        const editable = getBlockEditable(bEl);
-        const text = (editable ? editable.innerText.trim() : bEl.innerText.trim()).toUpperCase();
+        const text = (b.text || '').toUpperCase();
         if (text) hasActualContent = true;
-        const sNum = sceneNumbers ? (bEl.querySelector('.scene-num-indicator')?.innerText?.trim() || '') : '';
+        const sNum = sceneNumbers ? b.sceneNumber : '';
 
         y -= PARAGRAPH_GAP;
         const sceneLines = wrapPdfText(text, 57);
@@ -6654,14 +6694,14 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
           y -= LINE_HEIGHT_12;
         });
       } else if (bType === 'character') {
-        const text = bEl.innerText.trim().toUpperCase();
+        const text = (b.text || '').toUpperCase();
         if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         // Character cue indented to 3.7 inches from page left edge (266pt)
         pageLines.push({ text, x: 266, y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'parenthetical') {
-        let text = bEl.innerText.trim();
+        let text = b.text || '';
         if (text) hasActualContent = true;
         if (!text.startsWith('(')) text = '(' + text;
         if (!text.endsWith(')')) text = text + ')';
@@ -6671,7 +6711,7 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
           y -= LINE_HEIGHT_12;
         });
       } else if (bType === 'dialogue') {
-        const text = bEl.innerText.trim();
+        const text = b.text || '';
         if (text) hasActualContent = true;
         // Dialogue indented to 2.5 inches (180pt), max width 35ch
         wrapPdfText(text, 35).forEach(line => {
@@ -6679,26 +6719,26 @@ function generateScreenplayPdfBlob(screenplay, targetPageNumbers, options = {}) 
           y -= LINE_HEIGHT_12;
         });
       } else if (bType === 'transition') {
-        const text = bEl.innerText.trim().toUpperCase();
+        const text = (b.text || '').toUpperCase();
         if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         // Transition flush with right writing boundary (525pt)
         pageLines.push({ text, x: getRightX(text, 12, RIGHT_MARGIN_X), y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'shot') {
-        const text = bEl.innerText.trim().toUpperCase();
+        const text = (b.text || '').toUpperCase();
         if (text) hasActualContent = true;
         y -= PARAGRAPH_GAP;
         pageLines.push({ text, x: LEFT_MARGIN, y, font: 'F2', size: 12 });
         y -= LINE_HEIGHT_12;
       } else if (bType === 'image') {
-        const caption = getBlockEditable(bEl)?.innerText?.trim() || 'Storyboard Image';
+        const caption = b.caption || 'Storyboard Image';
         hasActualContent = true;
         y -= PARAGRAPH_GAP;
         pageLines.push({ text: `[STORYBOARD: ${caption}]`, x: LEFT_MARGIN, y, font: 'F1', size: 12 });
         y -= LINE_HEIGHT_12;
       } else {
-        const text = bEl.innerText.trim();
+        const text = b.text || '';
         if (text) {
           hasActualContent = true;
           y -= PARAGRAPH_GAP;
@@ -7215,6 +7255,25 @@ function scheduleTelemetryUpdate() {
   }, 300);
 }
 
+export function updateTelemetryOnScroll() {
+  const pageSheets = Array.from(document.querySelectorAll('#screenplay-pages-container .screenplay-page-sheet:not(.screenplay-title-page-sheet)'));
+  if (pageSheets.length === 0) return;
+  const pageEl = document.getElementById('telemetry-page-count');
+  if (!pageEl) return;
+
+  const scrollEl = document.getElementById('editor-main-scroll');
+  const scrollMid = scrollEl ? scrollEl.scrollTop + scrollEl.clientHeight / 3 : window.innerHeight / 3;
+
+  let activePage = 1;
+  for (const sheet of pageSheets) {
+    const rect = sheet.getBoundingClientRect();
+    if (rect.top <= scrollMid) {
+      activePage = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+    }
+  }
+  pageEl.textContent = `Page ${activePage} of ${pageSheets.length}`;
+}
+
 function updateTelemetry() {
   if (!currentScreenplay) return;
   let words = 0;
@@ -7231,6 +7290,15 @@ function updateTelemetry() {
   const pageEl = document.getElementById('telemetry-page-count');
   const wordEl = document.getElementById('telemetry-word-count');
 
-  if (pageEl) pageEl.textContent = `Page 1 of ${pageCount}`;
+  let curPageNum = 1;
+  if (activeBlockId) {
+    const activeEl = document.getElementById(activeBlockId);
+    const sheet = activeEl ? activeEl.closest('.screenplay-page-sheet') : null;
+    if (sheet) {
+      curPageNum = parseInt(sheet.getAttribute('data-page-num'), 10) || 1;
+    }
+  }
+
+  if (pageEl) pageEl.textContent = `Page ${curPageNum} of ${pageCount}`;
   if (wordEl) wordEl.textContent = `${words.toLocaleString()} words`;
 }
