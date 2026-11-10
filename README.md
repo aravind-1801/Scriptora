@@ -91,9 +91,11 @@ Every core production tool opens as a **dedicated workspace** with stable screen
    - **Individual Frame Regeneration**: Regenerate only a single frame (e.g., Shot 2 of 4) while preserving all other frames, their approval statuses, and their sequence orders. Automatically archives the previous image and prompt in the shot's history.
    - **Shot History & Version Safety**: Persistent generation history for every shot recording timestamp, prompt, provider, quality, and draft version, with one-click "Restore This Version" capabilities and source screenplay draft staleness warnings.
    - **Full-Screen Cinematic Lightbox**: Full-bleed high-res preview modal with anamorphic/letterbox framing, camera telemetry overlay (`REC`, shot number, aspect ratio, lens, shot size, camera angle), scene heading, description, previous/next shot keyboard navigation, and quick approval toggles.
-   - **Transparent Provider Architecture**:
-     - **SCRIPTORA Concept Engine (Free / Built-in)**: High-resolution procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 12 visual style presets.
-     - **External Providers**: OpenAI DALL-E 3 (`OPENAI_API_KEY`), Google Imagen 3 (`GEMINI_API_KEY` or `GOOGLE_AI_API_KEY`), and Stability AI SDXL (`STABILITY_API_KEY`), with transparent cost estimates, credential validation, and clear error guidance when unconfigured.
+   - **Transparent Provider & Cloud Storage Architecture**:
+     - **Pollinations FLUX.1 Engine (Free / Zero-Cost)**: High-resolution photorealistic concept art and cinematic storyboard synthesis powered by FLUX.1. Completely free, requires no API key, no billing activation, and no credit card.
+     - **Cloud-Backed Persistence (Firebase Spark Tier)**: Genuine cross-device storage integrating Firebase Cloud Storage (5 GB free storage) for image binaries and Cloud Firestore (1 GB free database) for storyboard metadata, version history, and recycle bins without paid billing.
+     - **Self-Healing Backend Storage**: Persistent file-backed storage on server disk with automatic on-demand CDN recovery (`recoverMissingImage`) ensuring images survive container redeployments and disk wipes.
+     - **SCRIPTORA Concept Engine (Free / Built-in Offline Fallback)**: Procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 12 visual style presets.
    - **Android-First Ergonomics & Compact Modal Architecture**:
      - Zero horizontal page overflow, balanced modals with natural content wrapping (`height: auto`, eliminating artificial vertical blank space), mobile-friendly touch targets, and responsive shooting-day assignment select controls.
 

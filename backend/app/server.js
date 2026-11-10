@@ -980,6 +980,24 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Storyboard Image Upload Endpoint
+    const prodSbUploadMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/upload$/);
+    if (prodSbUploadMatch && method === 'POST') {
+      const scriptId = prodSbUploadMatch[1];
+      const body = await readBody(req);
+      if (!body.imageData) {
+        return sendJson(res, 400, { error: "Missing imageData in request body" });
+      }
+      try {
+        const base64Data = body.imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+        const buf = Buffer.from(base64Data, 'base64');
+        const result = storyboardService.uploadShotImage(buf, body.extension || 'jpg');
+        return sendJson(res, 200, result);
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
+    }
+
     // Persistent Storyboard Images Serving
     const prodSbImgMatch = pathname.match(/^\/(?:production\/storyboard\/images|(?:api\/)?v1\/storage\/storyboard)\/([a-zA-Z0-9_.-]+)$/);
     if (prodSbImgMatch && method === 'GET') {

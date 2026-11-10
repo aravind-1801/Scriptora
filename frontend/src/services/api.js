@@ -6,6 +6,21 @@ import {
   decryptScreenplayContent,
   importRawKeyFromBase64
 } from './crypto.js';
+import {
+  isCloudConfigured,
+  getCloudStorageStatus,
+  uploadImageToCloud,
+  syncStoryboardToFirestore,
+  fetchStoryboardFromFirestore
+} from './cloudStorage.js';
+
+export {
+  isCloudConfigured,
+  getCloudStorageStatus,
+  uploadImageToCloud,
+  syncStoryboardToFirestore,
+  fetchStoryboardFromFirestore
+};
 
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)) || '/api';
 
@@ -3502,6 +3517,16 @@ if (typeof window !== 'undefined') {
 }
 
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
+  // 1. Try Cloud Database (Firestore) if configured
+  try {
+    const cloudSb = await fetchStoryboardFromFirestore(scriptId, sceneId);
+    if (cloudSb) {
+      safeSetStoredStoryboard(scriptId, sceneId, cloudSb);
+      return sanitizeStoryboard(cloudSb);
+    }
+  } catch (_) {}
+
+  // 2. Try SCRIPTORA backend server
   try {
     const data = await request(`/production/${scriptId}/storyboard?sceneId=${sceneId}`);
     if (data?.storyboard) {
@@ -3510,6 +3535,7 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
     }
   } catch (e) {}
 
+  // 3. Fall back to local browser storage
   const cached = localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`);
   if (cached) {
     try { return sanitizeStoryboard(JSON.parse(cached)); } catch (_) {}
@@ -3659,6 +3685,11 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
 }
 
 export async function saveStoryboard(scriptId, storyboardData) {
+  const sceneId = storyboardData.sceneId || `scene-${storyboardData.sceneNumber || 1}`;
+
+  // Sync to Cloud Database (Firestore) in background if configured
+  syncStoryboardToFirestore(scriptId, sceneId, storyboardData).catch(() => {});
+
   try {
     const res = await request(`/production/${scriptId}/storyboard`, {
       method: 'POST',
@@ -3670,7 +3701,6 @@ export async function saveStoryboard(scriptId, storyboardData) {
     }
   } catch (e) {}
 
-  const sceneId = storyboardData.sceneId || `scene-${storyboardData.sceneNumber || 1}`;
   safeSetStoredStoryboard(scriptId, sceneId, storyboardData);
   return storyboardData;
 }
@@ -3737,6 +3767,7 @@ export async function addStoryboardShot(scriptId, sceneId, shotData) {
   sb.shots.push(newShot);
   sb.updatedAt = new Date().toISOString();
   safeSetStoredStoryboard(scriptId, sceneId, sb);
+  syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, shot: newShot };
 }
 
@@ -3749,6 +3780,7 @@ export async function updateStoryboardShot(scriptId, sceneId, shotId, updates) {
     if (res?.shot) {
       if (res.storyboard) {
         safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+        syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
       }
       return res;
     }
@@ -3764,6 +3796,7 @@ export async function updateStoryboardShot(scriptId, sceneId, shotId, updates) {
   Object.assign(shot, updates, { updatedAt: new Date().toISOString() });
   sb.updatedAt = new Date().toISOString();
   safeSetStoredStoryboard(scriptId, sceneId, sb);
+  syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, shot };
 }
 
@@ -3775,6 +3808,7 @@ export async function deleteStoryboardShot(scriptId, sceneId, shotId) {
     if (res?.success) {
       if (res.storyboard) {
         safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+        syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
       }
       return res;
     }
@@ -3787,6 +3821,7 @@ export async function deleteStoryboardShot(scriptId, sceneId, shotId) {
     sb.shots.forEach((s, i) => { s.order = i + 1; });
     sb.updatedAt = new Date().toISOString();
     safeSetStoredStoryboard(scriptId, sceneId, sb);
+    syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   }
   return { success: true, removedId: shotId, storyboard: sb };
 }
@@ -3978,7 +4013,17 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
     }
     // Backend offline / static deploy fallback (e.g. GitHub Pages without running local backend)
     console.info('[Storyboard AI] Backend unavailable, executing direct client-side Pollinations FLUX generation...');
-    return await generateClientPollinationsShot(params, onProgress);
+    const clientRes = await generateClientPollinationsShot(params, onProgress);
+    if (clientRes?.imageUrl && isCloudConfigured().isConfigured) {
+      try {
+        const uploadRes = await uploadImageToCloud(clientRes.imageUrl, scriptId);
+        if (uploadRes?.success && uploadRes.cloudStorageUrl) {
+          clientRes.cloudStorageUrl = uploadRes.cloudStorageUrl;
+          clientRes.imageUrl = uploadRes.cloudStorageUrl;
+        }
+      } catch (_) {}
+    }
+    return clientRes;
   }
 
   throw new Error('Image generation returned empty from provider');

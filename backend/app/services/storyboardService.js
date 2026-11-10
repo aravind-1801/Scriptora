@@ -37,6 +37,24 @@ export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
   return `/production/storyboard/images/${filename}`;
 }
 
+export function uploadShotImage(buffer, extension = 'jpg') {
+  if (!buffer || buffer.length < 10) {
+    throw new Error("Invalid or empty image buffer");
+  }
+  const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47;
+  const isJpg = buffer[0] === 0xFF && buffer[1] === 0xD8;
+  const isWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
+  const ext = isPng ? 'png' : (isWebp ? 'webp' : (isJpg ? 'jpg' : extension));
+  const persistentUrl = saveImageToPersistentStorage(buffer, ext);
+  return {
+    success: true,
+    imageUrl: persistentUrl,
+    persistentUrl,
+    filename: path.basename(persistentUrl),
+    bytes: buffer.length
+  };
+}
+
 export async function recoverMissingImage(filename) {
   try {
     ensureStoryboardsInitialized('chronicles-of-dust');

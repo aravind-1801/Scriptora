@@ -142,9 +142,14 @@ async function runTests() {
       provider: 'pollinations-flux'
     });
 
-    // Ensure file does NOT exist on disk (simulating wiped container)
+    // Ensure file does NOT exist on disk across all storage candidates (simulating completely wiped container)
     const wipedPath = path.resolve(process.cwd(), 'backend', 'data', 'storage', 'storyboard', recoverFilename);
-    if (fs.existsSync(wipedPath)) fs.unlinkSync(wipedPath);
+    const candidatesToClean = [
+      wipedPath,
+      path.resolve(process.cwd(), 'frontend', 'public', 'assets', 'storyboard', 'generated', recoverFilename),
+      path.resolve(process.cwd(), 'assets', 'storyboard', 'generated', recoverFilename)
+    ];
+    candidatesToClean.forEach(p => { if (fs.existsSync(p)) fs.unlinkSync(p); });
     assert(!fs.existsSync(wipedPath), 'Confirmed file is missing from disk before self-healing');
 
     // Request missing image via HTTP - server should self-heal and fetch from CDN

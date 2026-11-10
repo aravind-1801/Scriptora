@@ -5,13 +5,15 @@ let auth = null;
 let googleProvider = null;
 let isFirebaseConfigured = false;
 
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || `${import.meta.env.VITE_GOOGLE_PROJECT_ID || 'scriptora-511616'}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_GOOGLE_PROJECT_ID || import.meta.env.VITE_FIREBASE_PROJECT_ID || "scriptora-511616",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || `${import.meta.env.VITE_GOOGLE_PROJECT_ID || 'scriptora-511616'}.appspot.com`,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "756924881120",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+  apiKey: env.VITE_FIREBASE_API_KEY || env.FIREBASE_API_KEY || "",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || `${env.VITE_GOOGLE_PROJECT_ID || 'scriptora-511616'}.firebaseapp.com`,
+  projectId: env.VITE_GOOGLE_PROJECT_ID || env.VITE_FIREBASE_PROJECT_ID || "scriptora-511616",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || `${env.VITE_GOOGLE_PROJECT_ID || 'scriptora-511616'}.appspot.com`,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "756924881120",
+  appId: env.VITE_FIREBASE_APP_ID || ""
 };
 
 /**
