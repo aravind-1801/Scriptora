@@ -3854,6 +3854,7 @@ export async function reorderStoryboardShots(scriptId, sceneId, shotIds = []) {
   sb.shots = reordered;
   sb.updatedAt = new Date().toISOString();
   safeSetStoredStoryboard(scriptId, sceneId, sb);
+  syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb };
 }
 
@@ -3866,6 +3867,7 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
     if (res?.shot) {
       if (res.storyboard) {
         safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+        syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
       }
       return res;
     }
@@ -3881,6 +3883,7 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
     safeSetStoredStoryboard(scriptId, sceneId, sb);
+    syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   }
   return { storyboard: sb, shot };
 }
@@ -3893,6 +3896,7 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
     });
     if (res?.storyboard) {
       safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+      syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
       return res;
     }
   } catch (e) {}
@@ -3911,6 +3915,7 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
   }
   sb.updatedAt = new Date().toISOString();
   safeSetStoredStoryboard(scriptId, sceneId, sb);
+  syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, affectedCount: count };
 }
 

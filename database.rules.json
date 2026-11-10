@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "storyboards": {
+      "$scriptId": {
+        "$sceneId": {
+          ".read": true,
+          ".write": "auth != null || !data.exists() || data.child('userId').val() === auth.uid"
+        }
+      }
+    }
+  }
+}

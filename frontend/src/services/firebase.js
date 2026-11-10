@@ -11,6 +11,7 @@ const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || env.FIREBASE_API_KEY || "AIzaSyBP-A_C-stn7hDu8GEvrJ-CsarTAKOBkrc",
   authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "scriptora-1801.firebaseapp.com",
   projectId: env.VITE_FIREBASE_PROJECT_ID || env.VITE_GOOGLE_PROJECT_ID || "scriptora-1801",
+  databaseURL: env.VITE_FIREBASE_DATABASE_URL || "https://scriptora-1801-default-rtdb.firebaseio.com",
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "scriptora-1801.firebasestorage.app",
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "971249636867",
   appId: env.VITE_FIREBASE_APP_ID || "1:971249636867:web:2a11f1738592a3020b6036",

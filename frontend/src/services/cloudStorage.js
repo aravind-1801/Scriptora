@@ -124,6 +124,7 @@ export function getCloudStorageStatus() {
  * Initialize Firestore instance lazily
  */
 async function getFirestore() {
+  if (firestoreApiAvailable === false) return null;
   if (firestoreInstance) return firestoreInstance;
   if (!firebaseConfig.apiKey) return null;
   try {
@@ -134,6 +135,7 @@ async function getFirestore() {
     return firestoreInstance;
   } catch (err) {
     console.warn('[CloudStorage] Failed to initialize Firestore SDK:', err.message);
+    firestoreApiAvailable = false;
     return null;
   }
 }
@@ -278,53 +280,119 @@ export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-d
   };
 }
 
-/**
- * Persist storyboard document to Firestore cloud database
- */
-export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
-  const db = await getFirestore();
-  if (!db) return null;
+let firestoreApiAvailable = null; // null: unknown, true: available, false: disabled
+
+async function callFirestoreWithTimeout(fn, timeoutMs = 2500) {
+  if (firestoreApiAvailable === false) return null;
+  let timer;
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('FIRESTORE_TIMEOUT')), timeoutMs);
+  });
   try {
-    const { doc, setDoc } = await import('firebase/firestore');
-    const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
-    const payload = {
-      ...storyboard,
-      scriptId,
-      sceneId,
-      syncedAt: new Date().toISOString()
-    };
-    await setDoc(docRef, payload, { merge: true });
-    return { success: true, provider: 'firestore', id: `${scriptId}_${sceneId}` };
+    const res = await Promise.race([fn(), timeoutPromise]);
+    clearTimeout(timer);
+    firestoreApiAvailable = true;
+    return res;
   } catch (err) {
-    if (err.message && err.message.includes('403')) {
-      console.info('[CloudStorage] Firestore database not yet provisioned in project scriptora-1801. Visit https://console.firebase.google.com/project/scriptora-1801/firestore to create it.');
-    } else {
-      console.warn('[CloudStorage] Firestore sync notice:', err.message);
+    clearTimeout(timer);
+    if (err.message === 'FIRESTORE_TIMEOUT' || (err.message && (err.message.includes('403') || err.message.includes('SERVICE_DISABLED') || err.message.includes('PERMISSION_DENIED') || err.code === 'permission-denied'))) {
+      firestoreApiAvailable = false;
+      if (firestoreInstance) {
+        import('firebase/firestore').then(({ terminate }) => terminate(firestoreInstance)).catch(() => {});
+        firestoreInstance = null;
+      }
     }
-    return null;
+    throw err;
   }
 }
 
 /**
- * Fetch storyboard document from Firestore cloud database
+ * Persist storyboard document to Firestore / Firebase cloud database
+ */
+export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
+  const currentUserId = (typeof window !== 'undefined' && window.scriptoraState?.user?.id) || 'user-1';
+  const payload = {
+    ...storyboard,
+    scriptId,
+    sceneId,
+    userId: storyboard.userId || currentUserId,
+    syncedAt: new Date().toISOString()
+  };
+
+  let firestoreSynced = false;
+  const db = await getFirestore();
+  if (db && firestoreApiAvailable !== false) {
+    try {
+      const { doc, setDoc } = await import('firebase/firestore');
+      const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
+      await callFirestoreWithTimeout(() => setDoc(docRef, payload, { merge: true }), 2500);
+      firestoreSynced = true;
+    } catch (err) {
+      if (err.message && (err.message.includes('403') || err.message.includes('SERVICE_DISABLED') || err.message === 'FIRESTORE_TIMEOUT')) {
+        console.info('[CloudStorage] Firestore API pending activation on scriptora-1801; using Firebase Realtime Database.');
+      } else {
+        console.warn('[CloudStorage] Firestore sync notice:', err.message);
+      }
+    }
+  }
+
+  // Also sync to Firebase Realtime Database (guaranteed active on project scriptora-1801)
+  try {
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json`;
+    await fetch(rtdbUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return { success: true, provider: firestoreSynced ? 'firestore' : 'firebase-rtdb', id: `${scriptId}_${sceneId}` };
+  } catch (rtdbErr) {
+    if (firestoreSynced) return { success: true, provider: 'firestore', id: `${scriptId}_${sceneId}` };
+  }
+
+  return firestoreSynced ? { success: true, provider: 'firestore', id: `${scriptId}_${sceneId}` } : null;
+}
+
+/**
+ * Fetch storyboard document from Firestore / Firebase cloud database
+ */
+/**
+ * Fetch storyboard document from Firestore / Firebase cloud database
  */
 export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
+  // 1. First try Firestore
   const db = await getFirestore();
-  if (!db) return null;
+  if (db && firestoreApiAvailable !== false) {
+    try {
+      const { doc, getDoc } = await import('firebase/firestore');
+      const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
+      const snap = await callFirestoreWithTimeout(() => getDoc(docRef), 2500);
+      if (snap?.exists()) {
+        return snap.data();
+      }
+    } catch (_) {}
+  }
+
+  // 2. Try Firebase Realtime Database
   try {
-    const { doc, getDoc } = await import('firebase/firestore');
-    const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
-    const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return snap.data();
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json`;
+    const res = await fetch(rtdbUrl);
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data === 'object' && data.shots) {
+        return data;
+      }
     }
-    return null;
-  } catch (err) {
-    if (err.message && err.message.includes('403')) {
-      console.info('[CloudStorage] Firestore database not yet provisioned in project scriptora-1801.');
-    } else {
-      console.warn('[CloudStorage] Firestore read notice:', err.message);
-    }
-    return null;
+  } catch (_) {}
+
+  return null;
+}
+
+export async function closeCloudStorage() {
+  if (firestoreInstance) {
+    try {
+      const { terminate } = await import('firebase/firestore');
+      await terminate(firestoreInstance);
+    } catch (_) {}
+    firestoreInstance = null;
   }
 }

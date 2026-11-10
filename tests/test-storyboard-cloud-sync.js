@@ -12,7 +12,7 @@ import {
   updateShot
 } from '../backend/app/services/storyboardService.js';
 import { server } from '../backend/app/server.js';
-import { isCloudConfigured, getCloudStorageStatus } from '../frontend/src/services/cloudStorage.js';
+import { isCloudConfigured, getCloudStorageStatus, closeCloudStorage } from '../frontend/src/services/cloudStorage.js';
 
 const PORT = 8130;
 
@@ -107,6 +107,41 @@ async function runTests() {
     assert.strictEqual(streamRes.length, 8192, 'Streamed byte count matches uploaded file');
     console.log('✓ TEST 4 PASSED: Uploaded cloud image correctly streamed via server.\n');
 
+    // 5. Test Live Firebase Database Metadata Sync & Retrieval
+    console.log('[TEST 5] Testing Live Firebase Cloud Metadata Sync & Retrieval...');
+    const { syncStoryboardToFirestore, fetchStoryboardFromFirestore } = await import('../frontend/src/services/cloudStorage.js');
+    const testScriptId = 'chronicles-of-dust';
+    const testSceneId = `test-scene-${Date.now()}`;
+    const testSbData = {
+      scriptId: testScriptId,
+      sceneId: testSceneId,
+      title: 'Cloud Metadata Sync Scene',
+      userId: 'user-verification-1',
+      shots: [
+        {
+          id: 'shot-cloud-1',
+          title: 'Opening Desert Dawn',
+          prompt: 'Cinematic wide frame of dawn in the desert',
+          aspectRatio: '16:9',
+          approvalStatus: 'approved',
+          order: 1
+        }
+      ]
+    };
+
+    const syncRes = await syncStoryboardToFirestore(testScriptId, testSceneId, testSbData);
+    assert(syncRes, 'Cloud sync returned response');
+    assert(syncRes.success, 'Cloud sync reported success');
+    console.log(`[TEST 5] Synced to cloud provider: ${syncRes.provider}`);
+
+    const fetchedSb = await fetchStoryboardFromFirestore(testScriptId, testSceneId);
+    assert(fetchedSb, 'Successfully fetched storyboard from cloud database');
+    assert.strictEqual(fetchedSb.scriptId, testScriptId, 'Script ID matches');
+    assert.strictEqual(fetchedSb.userId, 'user-verification-1', 'User ID matches');
+    assert.strictEqual(fetchedSb.shots.length, 1, 'Shots count matches');
+    assert.strictEqual(fetchedSb.shots[0].title, 'Opening Desert Dawn', 'Shot title matches');
+    console.log('✓ TEST 5 PASSED: Live Firebase Cloud metadata save and retrieval verified.\n');
+
     // Clean up test file
     if (fs.existsSync(diskFile)) fs.unlinkSync(diskFile);
 
@@ -114,7 +149,9 @@ async function runTests() {
     console.log('ALL CLOUD PERSISTENCE INTEGRATION TESTS PASSED');
     console.log('================================================================');
   } finally {
+    await closeCloudStorage();
     server.close();
+    setTimeout(() => process.exit(0), 200);
   }
 }
 
