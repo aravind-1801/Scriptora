@@ -33,6 +33,14 @@ let editorToolbarExpanded = false; // Master visibility control for secondary to
 let canEditScreenplay = true;
 let currentUserRole = 'Owner';
 
+// Screenplay State-Based Undo / Redo Engine
+let undoStack = [];
+let redoStack = [];
+const MAX_UNDO_STACK_SIZE = 60;
+let isPerformingUndoRedo = false;
+let typingBurstActive = false;
+let typingBurstTimer = null;
+
 // Hierarchical Navigation Stack (Prompts 23, 23A, 23B)
 const editorNavStack = [];
 
@@ -1214,6 +1222,7 @@ export async function attachEditorEvents(scriptId, navigate) {
 
   renderScreenplayPages();
   populateNavigators();
+  resetUndoRedoHistory();
 
   // Synchronize dynamic script title and draft tag immediately with actual loaded screenplay
   if (currentScreenplay) {
@@ -1331,6 +1340,16 @@ export async function attachEditorEvents(scriptId, navigate) {
 }
 
 function handleGlobalKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    executeUndo();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+    e.preventDefault();
+    executeRedo();
+    return;
+  }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
     e.preventDefault();
     performSave(true);
@@ -1598,6 +1617,7 @@ function initTitlePageDocEvents() {
 
   const onTpInput = () => {
     if (!currentScreenplay) return;
+    recordTypingUndoSnapshot();
     if (!currentScreenplay.titlePage) currentScreenplay.titlePage = {};
     
     const titleVal = tEl ? tEl.innerText.trim() : '';
@@ -1753,6 +1773,8 @@ function renderScreenplayPages() {
 // PAGE MANAGEMENT ENGINE (Prompt Add-on)
 // =========================================================================
 function removePageBreak(blockId) {
+  commitTypingBurst();
+  recordUndoSnapshot();
   let found = false;
   (currentScreenplay.scenes || []).forEach(scene => {
     const idx = (scene.blocks || []).findIndex(b => b.id === blockId);
@@ -1770,6 +1792,8 @@ function removePageBreak(blockId) {
 }
 
 function insertPageBreak(targetBlockId = null) {
+  commitTypingBurst();
+  recordUndoSnapshot();
   const blockId = targetBlockId || activeBlockId;
   const scenes = currentScreenplay.scenes || [];
   if (scenes.length === 0) return;
@@ -1872,6 +1896,8 @@ function insertPageAfterPage(pageNum) {
 }
 
 function addPageAtEnd() {
+  commitTypingBurst();
+  recordUndoSnapshot();
   const scenes = currentScreenplay.scenes || [];
   const nextSceneNum = scenes.length + 1;
   const newScene = {
@@ -1903,6 +1929,8 @@ function addPageAtEnd() {
 }
 
 function addPageBefore(targetPageNum = null) {
+  commitTypingBurst();
+  recordUndoSnapshot();
   let pageNum = targetPageNum;
   if (!pageNum) {
     if (activeBlockId) {
@@ -3251,6 +3279,17 @@ export function attachContainerListeners() {
 
   // 2. Keydown handler on container: forwards to handleBlockKeydown if in a block
   container.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      executeUndo();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+      e.preventDefault();
+      executeRedo();
+      return;
+    }
+
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const node = sel.anchorNode;
@@ -3388,6 +3427,7 @@ export function attachContainerListeners() {
 
   // 3. Input handler on container: updates the active block's model with immediate auto-capitalization
   container.addEventListener('input', (e) => {
+    recordTypingUndoSnapshot();
     hasUnsavedChanges = true;
     updateSaveStatus('Unsaved');
     if (autoSaveEnabled) scheduleAutosave();
@@ -3769,6 +3809,8 @@ function updateBlockModel(blockEl, text) {
 // Delete block from model & DOM (Prompt 23: 10-14)
 function deleteBlock(sceneId, blockId) {
   if (!currentScreenplay) return;
+  commitTypingBurst();
+  recordUndoSnapshot();
   const scene = currentScreenplay.scenes.find(s => s.id === sceneId);
   if (!scene) return;
   const bIdx = scene.blocks.findIndex(b => b.id === blockId);
@@ -3859,7 +3901,7 @@ function handleBlockKeydown(e, blockEl, editableEl) {
     }
   }
 
-  // Undo Space navigation if empty and Ctrl+Z pressed
+  // Screenplay State Undo / Redo Shortcuts: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
     if (spaceNavHistory.length > 0) {
       const lastNav = spaceNavHistory[spaceNavHistory.length - 1];
@@ -3870,6 +3912,14 @@ function handleBlockKeydown(e, blockEl, editableEl) {
         return;
       }
     }
+    e.preventDefault();
+    executeUndo();
+    return;
+  }
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+    e.preventDefault();
+    executeRedo();
+    return;
   }
 
   // Formatting keyboard shortcuts: Ctrl+B, Ctrl+I, Ctrl+U
@@ -4327,6 +4377,9 @@ function insertNewBlockAfter(sceneId, targetBlockId, newType, initialContent) {
     }
   }
 
+  commitTypingBurst();
+  recordUndoSnapshot();
+
   const newBlockId = `b-${Date.now().toString().slice(-6)}`;
   const newBlock = {
     id: newBlockId,
@@ -4450,6 +4503,7 @@ function createNewSceneAfter(sceneId, fromBlockId = null) {
 
   renderScreenplayPages();
   populateNavigators();
+  resetUndoRedoHistory();
 
   // Synchronize dynamic script title and draft tag immediately with actual loaded screenplay
   if (currentScreenplay) {
@@ -4543,6 +4597,9 @@ function convertBlockType(blockEl, newType) {
   if (!scene) return;
   const b = scene.blocks.find(x => x.id === blockId);
   if (!b) return;
+
+  commitTypingBurst();
+  recordUndoSnapshot();
 
   b.type = newType;
   if (newType === 'character' || newType === 'scene' || newType === 'transition') {
@@ -5087,6 +5144,8 @@ function triggerAutocomplete(blockEl, editableEl) {
     });
     el.onclick = (ev) => {
       ev.stopPropagation();
+      commitTypingBurst();
+      recordUndoSnapshot();
       const idx = parseInt(el.getAttribute('data-idx'), 10);
       const item = suggestions[idx] || {};
       const val = el.getAttribute('data-val');
@@ -5361,6 +5420,12 @@ function setupElementBar() {
   if (!bar) return;
 
   bar.querySelectorAll('.element-btn').forEach(btn => {
+    btn.onpointerdown = (e) => {
+      const targetType = btn.getAttribute('data-type');
+      if (targetType === 'undo' || targetType === 'redo') {
+        e.preventDefault();
+      }
+    };
     btn.onclick = (e) => {
       e.preventDefault();
       const targetType = btn.getAttribute('data-type');
@@ -5472,6 +5537,8 @@ export function applyTextFormatting(cmd) {
   const hasTextSelected = sel && !sel.isCollapsed && sel.rangeCount > 0 && sel.toString().trim().length > 0;
 
   if (hasTextSelected) {
+    commitTypingBurst();
+    recordUndoSnapshot();
     // 1. Highlighted text: execute command directly on selection
     try {
       document.execCommand(cmd, false, null);
@@ -5497,44 +5564,207 @@ export function applyTextFormatting(cmd) {
   }
 }
 
-export function executeUndo() {
-  if (isToolbarOpen) clearMultiBlockSelection();
-  const container = document.getElementById('screenplay-pages-container');
-  if (activeBlockId) {
-    const el = document.getElementById(activeBlockId);
-    const ed = getBlockEditable(el);
-    if (ed && document.activeElement !== ed) ed.focus();
-  } else if (container && document.activeElement !== container && !container.contains(document.activeElement)) {
-    container.focus();
+// =========================================================================
+// SCREENPLAY STATE-BASED UNDO / REDO ENGINE
+// =========================================================================
+function getActiveCaretOffset() {
+  if (!activeBlockId) return 0;
+  const el = document.getElementById(activeBlockId);
+  const ed = el ? getBlockEditable(el) : null;
+  return ed ? getCaretCharacterOffsetWithin(ed) : 0;
+}
+
+function createScreenplaySnapshot() {
+  if (!currentScreenplay) return null;
+  return {
+    screenplay: {
+      scenes: JSON.parse(JSON.stringify(currentScreenplay.scenes || [])),
+      titlePage: currentScreenplay.titlePage ? JSON.parse(JSON.stringify(currentScreenplay.titlePage)) : null,
+      title: currentScreenplay.title || ''
+    },
+    activeBlockId: activeBlockId || null,
+    caretOffset: getActiveCaretOffset()
+  };
+}
+
+export function recordUndoSnapshot() {
+  if (isPerformingUndoRedo || !currentScreenplay || !canEditScreenplay) return;
+  const snapshot = createScreenplaySnapshot();
+  if (!snapshot) return;
+
+  // Avoid recording identical consecutive states
+  if (undoStack.length > 0) {
+    const last = undoStack[undoStack.length - 1];
+    if (JSON.stringify(last.screenplay) === JSON.stringify(snapshot.screenplay)) {
+      return;
+    }
   }
-  try {
-    document.execCommand('undo', false, null);
-  } catch (_) {}
-  hasUnsavedChanges = true;
-  updateSaveStatus('Unsaved');
-  if (autoSaveEnabled) scheduleAutosave();
-  updateTextFormatButtonStates();
-  updateTelemetry();
+
+  undoStack.push(snapshot);
+  if (undoStack.length > MAX_UNDO_STACK_SIZE) {
+    undoStack.shift();
+  }
+  redoStack = [];
+  updateUndoRedoButtonStates();
+}
+
+export function recordTypingUndoSnapshot() {
+  if (isPerformingUndoRedo || !currentScreenplay || !canEditScreenplay) return;
+  if (!typingBurstActive) {
+    recordUndoSnapshot();
+    typingBurstActive = true;
+  }
+  if (typingBurstTimer) clearTimeout(typingBurstTimer);
+  typingBurstTimer = setTimeout(() => {
+    typingBurstActive = false;
+  }, 700);
+}
+
+export function commitTypingBurst() {
+  if (typingBurstTimer) {
+    clearTimeout(typingBurstTimer);
+    typingBurstTimer = null;
+  }
+  typingBurstActive = false;
+}
+
+export function resetUndoRedoHistory() {
+  undoStack = [];
+  redoStack = [];
+  commitTypingBurst();
+  updateUndoRedoButtonStates();
+}
+
+export function getUndoStackDepth() {
+  return undoStack.length;
+}
+
+export function getRedoStackDepth() {
+  return redoStack.length;
+}
+
+export function executeUndo() {
+  if (!canEditScreenplay) return;
+  if (isToolbarOpen) clearMultiBlockSelection();
+  commitTypingBurst();
+
+  if (undoStack.length === 0) {
+    updateUndoRedoButtonStates();
+    return;
+  }
+
+  // Preserve current document state onto redo stack before restoring
+  const currentSnapshot = createScreenplaySnapshot();
+  if (currentSnapshot) {
+    redoStack.push(currentSnapshot);
+    if (redoStack.length > MAX_UNDO_STACK_SIZE) {
+      redoStack.shift();
+    }
+  }
+
+  const previousSnapshot = undoStack.pop();
+  applyUndoRedoSnapshot(previousSnapshot);
 }
 
 export function executeRedo() {
+  if (!canEditScreenplay) return;
   if (isToolbarOpen) clearMultiBlockSelection();
-  const container = document.getElementById('screenplay-pages-container');
-  if (activeBlockId) {
-    const el = document.getElementById(activeBlockId);
-    const ed = getBlockEditable(el);
-    if (ed && document.activeElement !== ed) ed.focus();
-  } else if (container && document.activeElement !== container && !container.contains(document.activeElement)) {
-    container.focus();
+  commitTypingBurst();
+
+  if (redoStack.length === 0) {
+    updateUndoRedoButtonStates();
+    return;
   }
+
+  // Preserve current document state onto undo stack before restoring
+  const currentSnapshot = createScreenplaySnapshot();
+  if (currentSnapshot) {
+    undoStack.push(currentSnapshot);
+    if (undoStack.length > MAX_UNDO_STACK_SIZE) {
+      undoStack.shift();
+    }
+  }
+
+  const nextSnapshot = redoStack.pop();
+  applyUndoRedoSnapshot(nextSnapshot);
+}
+
+function applyUndoRedoSnapshot(snapshot) {
+  if (!snapshot || !snapshot.screenplay || !currentScreenplay) return;
+  isPerformingUndoRedo = true;
   try {
-    document.execCommand('redo', false, null);
-  } catch (_) {}
-  hasUnsavedChanges = true;
-  updateSaveStatus('Unsaved');
-  if (autoSaveEnabled) scheduleAutosave();
-  updateTextFormatButtonStates();
-  updateTelemetry();
+    currentScreenplay.scenes = JSON.parse(JSON.stringify(snapshot.screenplay.scenes || []));
+    if (snapshot.screenplay.titlePage) {
+      currentScreenplay.titlePage = JSON.parse(JSON.stringify(snapshot.screenplay.titlePage));
+    }
+    if (snapshot.screenplay.title) {
+      currentScreenplay.title = snapshot.screenplay.title;
+    }
+
+    renderScreenplayPages();
+    populateTitlePageDoc();
+    populateNavigators();
+
+    // Restore active block focus & caret position
+    if (snapshot.activeBlockId) {
+      const el = document.getElementById(snapshot.activeBlockId);
+      if (el) {
+        activeBlockId = snapshot.activeBlockId;
+        const ed = getBlockEditable(el);
+        if (ed) {
+          const type = el.getAttribute('data-block-type') || 'action';
+          highlightElementButton(type);
+          ed.focus();
+          if (typeof snapshot.caretOffset === 'number') {
+            setCaretCharacterOffsetWithin(ed, snapshot.caretOffset);
+          } else {
+            setCursorAtEnd(ed);
+          }
+        }
+      }
+    }
+
+    hasUnsavedChanges = true;
+    updateSaveStatus('Unsaved');
+    if (autoSaveEnabled) scheduleAutosave();
+    updateTextFormatButtonStates();
+    updateTelemetry();
+    updateUndoRedoButtonStates();
+  } finally {
+    isPerformingUndoRedo = false;
+  }
+}
+
+export function updateUndoRedoButtonStates() {
+  const canUndo = undoStack.length > 0;
+  const canRedo = redoStack.length > 0;
+
+  const undoBtn = document.getElementById('btn-undo');
+  const redoBtn = document.getElementById('btn-redo');
+  const elementUndoBtn = document.querySelector('.element-btn[data-type="undo"]');
+  const elementRedoBtn = document.querySelector('.element-btn[data-type="redo"]');
+
+  [undoBtn, elementUndoBtn].forEach(btn => {
+    if (btn) {
+      if (canUndo) {
+        btn.classList.remove('opacity-40', 'cursor-not-allowed');
+        btn.removeAttribute('disabled');
+      } else {
+        btn.classList.add('opacity-40');
+      }
+    }
+  });
+
+  [redoBtn, elementRedoBtn].forEach(btn => {
+    if (btn) {
+      if (canRedo) {
+        btn.classList.remove('opacity-40', 'cursor-not-allowed');
+        btn.removeAttribute('disabled');
+      } else {
+        btn.classList.add('opacity-40');
+      }
+    }
+  });
 }
 
 function handleToolbarToolClick(type) {
@@ -6330,6 +6560,8 @@ function setupModals(scriptId) {
 
   if (insertImg) {
     insertImg.onclick = () => {
+      commitTypingBurst();
+      recordUndoSnapshot();
       const urlInput = imgUrlInput?.value.trim();
       const caption = imgCaptionInput?.value.trim();
       let finalUrl = selectedImageDataUrl || urlInput;
