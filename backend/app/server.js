@@ -991,7 +991,7 @@ export const server = http.createServer(async (req, res) => {
       try {
         const base64Data = body.imageData.replace(/^data:image\/[a-z]+;base64,/, '');
         const buf = Buffer.from(base64Data, 'base64');
-        const result = storyboardService.uploadShotImage(buf, body.extension || 'jpg');
+        const result = await storyboardService.uploadShotImage(buf, body.extension || 'jpg', scriptId);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });

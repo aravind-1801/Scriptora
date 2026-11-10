@@ -65,7 +65,8 @@ async function runTests() {
     });
 
     assert.strictEqual(uploadRes.status, 200, 'Upload endpoint returns 200');
-    assert(uploadRes.data.imageUrl.startsWith('/production/storyboard/images/'), 'Returns valid server image URL');
+    assert(uploadRes.data.imageUrl.startsWith('/production/storyboard/images/') || uploadRes.data.imageUrl.includes('supabase.co'), 'Returns valid server or cloud image URL');
+    assert(uploadRes.data.persistentUrl.startsWith('/production/storyboard/images/'), 'Returns valid local persistent URL');
     assert.strictEqual(uploadRes.data.bytes, 8192, 'Uploaded byte length matches original');
 
     const uploadedFilename = uploadRes.data.filename;
@@ -91,7 +92,7 @@ async function runTests() {
     // 4. Verify HTTP stream of uploaded image
     console.log('[TEST 4] Testing HTTP streaming of uploaded cloud image...');
     const streamRes = await new Promise((resolve, reject) => {
-      http.get(`http://localhost:${PORT}${uploadRes.data.imageUrl}`, (res) => {
+      http.get(`http://localhost:${PORT}${uploadRes.data.persistentUrl}`, (res) => {
         const chunks = [];
         res.on('data', c => chunks.push(c));
         res.on('end', () => resolve({

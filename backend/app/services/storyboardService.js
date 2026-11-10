@@ -37,7 +37,33 @@ export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
   return `/production/storyboard/images/${filename}`;
 }
 
-export function uploadShotImage(buffer, extension = 'jpg') {
+export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chronicles-of-dust') {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !secretKey) return null;
+
+  try {
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/storyboards/storyboards/${scriptId}/${filename}`;
+    const res = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': secretKey,
+        'Authorization': `Bearer ${secretKey}`,
+        'Content-Type': filename.endsWith('.png') ? 'image/png' : 'image/jpeg',
+        'x-upsert': 'true'
+      },
+      body: buffer
+    });
+    if (res.ok) {
+      return `${supabaseUrl}/storage/v1/object/public/storyboards/storyboards/${scriptId}/${filename}`;
+    }
+  } catch (err) {
+    console.warn('[Supabase Storage] Notice:', err.message);
+  }
+  return null;
+}
+
+export async function uploadShotImage(buffer, extension = 'jpg', scriptId = 'chronicles-of-dust') {
   if (!buffer || buffer.length < 10) {
     throw new Error("Invalid or empty image buffer");
   }
@@ -46,11 +72,16 @@ export function uploadShotImage(buffer, extension = 'jpg') {
   const isWebp = buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
   const ext = isPng ? 'png' : (isWebp ? 'webp' : (isJpg ? 'jpg' : extension));
   const persistentUrl = saveImageToPersistentStorage(buffer, ext);
+  const filename = path.basename(persistentUrl);
+
+  const supabaseUrl = await uploadToSupabaseStorage(buffer, filename, scriptId);
+
   return {
     success: true,
-    imageUrl: persistentUrl,
+    imageUrl: supabaseUrl || persistentUrl,
+    cloudStorageUrl: supabaseUrl || null,
     persistentUrl,
-    filename: path.basename(persistentUrl),
+    filename,
     bytes: buffer.length
   };
 }
