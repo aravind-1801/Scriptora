@@ -100,3 +100,4 @@ async function testLiveFirestore() {
 testLiveFirestore().then(success => {
   process.exit(success ? 0 : 1);
 });
+
