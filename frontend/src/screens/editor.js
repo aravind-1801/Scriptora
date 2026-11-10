@@ -498,7 +498,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
       <main id="editor-main-scroll" class="flex-1 w-full pb-10 sm:pb-16 overflow-y-auto min-h-0 flex flex-col items-center pt-1 sm:pt-3 bg-[#eceff3]">
         
         <!-- Document 1: Continuous A4 Sheets Container (Unified Screenplay Editing & Selection Surface) -->
-        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8 pt-1 sm:pt-3 pb-8 sm:pb-12 px-1 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
+        <div id="screenplay-pages-container" class="w-full max-w-5xl flex flex-col items-center gap-6 sm:gap-8 pt-1 sm:pt-3 pb-8 sm:pb-12 px-0 sm:px-4 outline-none" contenteditable="true" spellcheck="false">
           <div class="w-full flex items-center justify-center py-20 text-slate-400">
             <span class="material-symbols-outlined animate-spin text-[28px] mr-2">progress_activity</span>
             <span>Loading screenplay studio...</span>
@@ -506,7 +506,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
         </div>
 
         <!-- Document 2: Screenplay Title Page (Parallel document view as in reference) -->
-        <div id="title-page-container" class="w-full max-w-5xl hidden flex flex-col items-center py-6 px-2 sm:px-4">
+        <div id="title-page-container" class="w-full max-w-5xl hidden flex flex-col items-center py-6 px-0 sm:px-4">
           <div class="screenplay-page-sheet screenplay-title-page-sheet bg-white shadow-md border border-slate-200/90 w-full max-w-[794px] min-h-[1123px] flex flex-col justify-between font-courier text-slate-900 rounded-md relative select-text" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
             <!-- Close Title Page button at top right -->
             <button id="btn-close-titlepage-sheet" type="button" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all shadow-2xs cursor-pointer active:scale-95" title="Close Title Page (Return to Screenplay)" aria-label="Close Title Page">

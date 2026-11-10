@@ -71,3 +71,4 @@ console.log('✓ Page capacity comfortably accommodates compact screenplay scene
 console.log('\n================================================================');
 console.log('🎉 ALL SCREENPLAY A4 PDF EXPORT TESTS PASSED!');
 console.log('================================================================');
+

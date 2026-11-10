@@ -214,3 +214,4 @@ export function paginateScreenplayBlocks(screenplay, capacity = A4_PAGE_CAPACITY
 
   return pages;
 }
+
