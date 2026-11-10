@@ -524,6 +524,7 @@ const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import
   ? import.meta.env.BASE_URL
   : '/';
 const BASE = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)) || '/api';
 
 export const VISUAL_STYLE_PREVIEWS = [
   {
@@ -664,11 +665,21 @@ export function resolveAssetUrl(url, fallbackNum = '') {
   }
 
   // 3. If it's an external URL (http / https) or base64 data URL
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/png') || url.startsWith('data:image/jpeg')) {
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/png') || url.startsWith('data:image/jpeg') || url.startsWith('data:image/webp')) {
     return url;
   }
 
-  // 4. If it's a path like /assets/storyboard/... or assets/storyboard/...
+  // 4. If it's a persistent server image endpoint (/production/storyboard/images/... or /api/v1/storage/...)
+  if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
+    if (baseClean) {
+      return `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
+    }
+    return url;
+  }
+
+  // 5. If it's a path like /assets/storyboard/... or assets/storyboard/...
   if (url.includes('assets/storyboard/') || url.includes('assets/styles/')) {
     const clean = url.replace(/^\/?(Scriptora\/)?/, '');
     return `${BASE}${clean}`;

@@ -980,6 +980,34 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Persistent Storyboard Images Serving
+    const prodSbImgMatch = pathname.match(/^\/(?:production\/storyboard\/images|(?:api\/)?v1\/storage\/storyboard)\/([a-zA-Z0-9_.-]+)$/);
+    if (prodSbImgMatch && method === 'GET') {
+      const filename = prodSbImgMatch[1];
+      const baseDir = process.cwd().endsWith('backend') ? path.resolve(process.cwd(), '..') : process.cwd();
+      const candidates = [
+        path.resolve(baseDir, 'backend', 'data', 'storage', 'storyboard', filename),
+        path.resolve(baseDir, 'frontend', 'public', 'assets', 'storyboard', 'generated', filename),
+        path.resolve(baseDir, 'assets', 'storyboard', 'generated', filename)
+      ];
+      const found = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+      if (found) {
+        const ext = path.extname(found).toLowerCase();
+        const mimeTypes = {
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.png': 'image/png',
+          '.webp': 'image/webp'
+        };
+        res.statusCode = 200;
+        res.setHeader('Content-Type', mimeTypes[ext] || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        fs.createReadStream(found).pipe(res);
+        return;
+      }
+      return sendJson(res, 404, { error: `Image not found: ${filename}` });
+    }
+
     // Static assets serving
     const cleanAssetPath = pathname.replace(/^\/?(Scriptora\/)?assets\//, '');
     if (pathname.includes('/assets/')) {

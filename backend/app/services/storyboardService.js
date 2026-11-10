@@ -6,6 +6,71 @@ import { db } from '../models/db.js';
 // Supports scene-grounded shot sequences, camera parameters, continuity tracking,
 // AI generation workflows with transparent cost disclosure, and multi-format export.
 
+const BASE_PROJECT_DIR = process.cwd().endsWith('backend') ? path.resolve(process.cwd(), '..') : process.cwd();
+const DATA_DIR = path.resolve(BASE_PROJECT_DIR, 'backend', 'data');
+const STORAGE_DIR = path.resolve(DATA_DIR, 'storage', 'storyboard');
+const STORYBOARDS_FILE = path.resolve(DATA_DIR, 'storyboards.json');
+
+// Ensure persistent storage directories exist
+try {
+  fs.mkdirSync(STORAGE_DIR, { recursive: true });
+  fs.mkdirSync(path.resolve(BASE_PROJECT_DIR, 'frontend', 'public', 'assets', 'storyboard', 'generated'), { recursive: true });
+  fs.mkdirSync(path.resolve(BASE_PROJECT_DIR, 'assets', 'storyboard', 'generated'), { recursive: true });
+} catch (_) {}
+
+export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
+  const filename = `shot_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${extension}`;
+  const targets = [
+    path.resolve(STORAGE_DIR, filename),
+    path.resolve(BASE_PROJECT_DIR, 'frontend', 'public', 'assets', 'storyboard', 'generated', filename),
+    path.resolve(BASE_PROJECT_DIR, 'assets', 'storyboard', 'generated', filename)
+  ];
+
+  for (const target of targets) {
+    try {
+      const dir = path.dirname(target);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(target, buffer);
+    } catch (_) {}
+  }
+
+  return `/production/storyboard/images/${filename}`;
+}
+
+export function persistStoryboardDb() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(STORYBOARDS_FILE, JSON.stringify(db.storyboards || [], null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[Storyboard Storage] Failed to persist storyboards to disk:', err.message);
+  }
+}
+
+let storyboardsLoadedFromDisk = false;
+export function loadPersistedStoryboards(force = false) {
+  if (storyboardsLoadedFromDisk && !force) return;
+  try {
+    if (fs.existsSync(STORYBOARDS_FILE)) {
+      const raw = fs.readFileSync(STORYBOARDS_FILE, 'utf8');
+      const loaded = JSON.parse(raw);
+      if (Array.isArray(loaded) && loaded.length > 0) {
+        if (!db.storyboards || force) db.storyboards = [];
+        for (const item of loaded) {
+          const idx = db.storyboards.findIndex(s => s.id === item.id);
+          if (idx !== -1) {
+            db.storyboards[idx] = item;
+          } else {
+            db.storyboards.push(item);
+          }
+        }
+      }
+    }
+    storyboardsLoadedFromDisk = true;
+  } catch (err) {
+    console.warn('[Storyboard Storage] Failed to load storyboards from disk:', err.message);
+  }
+}
+
 
 function getSketchImageSvg(filename, width = 1200, height = 675) {
   const assetUrl = `/assets/storyboard/${filename}`;
@@ -93,6 +158,7 @@ export function saveStoryboard(scriptId, data) {
     db.storyboards.push(sb);
   }
 
+  persistStoryboardDb();
   return sb;
 }
 
@@ -144,6 +210,7 @@ export function addShot(scriptId, sceneId, shotData) {
 
   sb.shots.push(newShot);
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
   return { storyboard: sb, shot: newShot };
 }
 
@@ -180,6 +247,7 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
 
   Object.assign(shot, updates, { updatedAt: new Date().toISOString() });
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
   return { storyboard: sb, shot };
 }
 
@@ -210,6 +278,7 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
   if (hist.approvalStatus) shot.approvalStatus = hist.approvalStatus;
   shot.updatedAt = new Date().toISOString();
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
 
   return { storyboard: sb, shot };
 }
@@ -240,6 +309,7 @@ export function deleteShot(scriptId, sceneId, shotId) {
     deletedAt: new Date().toISOString()
   };
   db.storyboardRecycleBin.unshift(recycleItem);
+  persistStoryboardDb();
 
   return { success: true, removedId: shotId, storyboard: sb, recycleItem };
 }
@@ -264,6 +334,7 @@ export function softDeleteScene(scriptId, sceneId) {
     deletedAt: new Date().toISOString()
   };
   db.storyboardRecycleBin.unshift(recycleItem);
+  persistStoryboardDb();
 
   return { success: true, removedId: sceneId, recycleItem };
 }
@@ -290,6 +361,7 @@ export function restoreRecycleBinItem(scriptId, itemId) {
     restoredShot.order = sb.shots.length + 1;
     sb.shots.push(restoredShot);
     sb.updatedAt = new Date().toISOString();
+    persistStoryboardDb();
     return { success: true, type: 'shot', restored: restoredShot, storyboard: sb };
   } else if (item.type === 'scene') {
     ensureStoryboardsInitialized(scriptId);
@@ -300,6 +372,7 @@ export function restoreRecycleBinItem(scriptId, itemId) {
     } else {
       db.storyboards.push(restoredSb);
     }
+    persistStoryboardDb();
     return { success: true, type: 'scene', restored: restoredSb, storyboard: restoredSb };
   }
 
@@ -375,6 +448,7 @@ export function reorderShots(scriptId, sceneId, shotIds = []) {
 
   sb.shots = reordered;
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
   return { storyboard: sb };
 }
 
@@ -389,6 +463,7 @@ export function approveShot(scriptId, sceneId, shotId, status = 'approved', note
   shot.approvedAt = new Date().toISOString();
   shot.updatedAt = new Date().toISOString();
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
 
   return { storyboard: sb, shot };
 }
@@ -409,6 +484,7 @@ export function batchApproveShots(scriptId, sceneId, shotIds = [], status = 'app
   }
 
   sb.updatedAt = new Date().toISOString();
+  persistStoryboardDb();
   return { storyboard: sb, affectedCount: affected.length };
 }
 
@@ -705,12 +781,17 @@ export async function generateShotImage(params = {}) {
       // Verify JPEG or PNG magic bytes
       const isPng = buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47;
       const mime = isPng ? "image/png" : "image/jpeg";
+      const ext = isPng ? "png" : "jpg";
 
+      // Save to server-side persistent storage on disk
+      const persistentUrl = saveImageToPersistentStorage(buf, ext);
       const base64Data = buf.toString("base64");
-      const imageUrl = `data:${mime};base64,${base64Data}`;
+      const dataUri = `data:${mime};base64,${base64Data}`;
 
       return {
-        imageUrl,
+        imageUrl: persistentUrl,
+        persistentUrl,
+        dataUri,
         provider: "pollinations-flux",
         model: "flux",
         quality: params.quality || "hd",
@@ -1599,6 +1680,7 @@ function generateProceduralConceptFrame(opts = {}) {
 }
 
 function ensureStoryboardsInitialized(scriptId) {
+  loadPersistedStoryboards();
   if (!db.storyboards) {
     db.storyboards = [];
   }

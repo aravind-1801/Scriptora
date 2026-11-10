@@ -36,3 +36,12 @@ Thumbs.db
 *.sw?
 .agents/
 skills-lock.json
+
+# Storyboard persistent storage & generated runtime cache
+backend/data/*.json
+backend/data/storage/storyboard/*
+!backend/data/storage/storyboard/.gitkeep
+assets/storyboard/generated/*
+!assets/storyboard/generated/.gitkeep
+frontend/public/assets/storyboard/generated/*
+!frontend/public/assets/storyboard/generated/.gitkeep

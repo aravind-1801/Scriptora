@@ -7,7 +7,7 @@ import {
   importRawKeyFromBase64
 } from './crypto.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)) || '/api';
 
 const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
   ? import.meta.env.BASE_URL
@@ -3386,8 +3386,13 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
     } catch (_) {}
   }
 
-  // 2. If it's a legacy procedural SVG or oversized base64
-  if (url.startsWith('data:image/svg') || (url.startsWith('data:image/') && url.length > 50000)) {
+  // 2. If it's a real raster image data URI (JPEG, PNG, WebP) from AI generation or user upload
+  if (url.startsWith('data:image/jpeg') || url.startsWith('data:image/png') || url.startsWith('data:image/webp')) {
+    return url;
+  }
+
+  // 3. If it's a legacy procedural dark silhouette SVG
+  if (url.startsWith('data:image/svg') && !url.includes('<image')) {
     const num = (shotNumber || '').toUpperCase();
     if (num.includes('1A')) return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
     if (num.includes('1B')) return `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
@@ -3398,9 +3403,16 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
     return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
   }
 
-  // 3. If it starts with http / https or small data URI (e.g. user upload)
+  // 4. If it starts with http / https or any other data URI
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/')) {
     return url;
+  }
+
+  // 5. If it's a server image endpoint path (/production/storyboard/images/... or /api/v1/storage/...)
+  if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
+    if (url.startsWith('http')) return url;
+    const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
+    return `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
   }
 
   // 4. If it's a path like /assets/... or assets/...
