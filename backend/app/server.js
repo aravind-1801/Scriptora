@@ -965,7 +965,7 @@ export const server = http.createServer(async (req, res) => {
     const prodSbSignedUrlMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/signed-url$/);
     if (prodSbSignedUrlMatch && method === 'POST') {
       const scriptId = prodSbSignedUrlMatch[1];
-      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const user = authService.verifyAuthToken(req.headers['authorization'], false);
       const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
@@ -990,7 +990,7 @@ export const server = http.createServer(async (req, res) => {
     const prodSbGenShotMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-shot$/);
     if (prodSbGenShotMatch && method === 'POST') {
       const scriptId = prodSbGenShotMatch[1];
-      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const user = authService.verifyAuthToken(req.headers['authorization'], false);
       const access = authService.checkScriptAccess(user, scriptId, 'Editor');
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
@@ -1007,7 +1007,7 @@ export const server = http.createServer(async (req, res) => {
     const prodSbGenSeqMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-sequence$/);
     if (prodSbGenSeqMatch && method === 'POST') {
       const scriptId = prodSbGenSeqMatch[1];
-      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const user = authService.verifyAuthToken(req.headers['authorization'], false);
       const access = authService.checkScriptAccess(user, scriptId, 'Editor');
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
@@ -1025,7 +1025,7 @@ export const server = http.createServer(async (req, res) => {
     const prodSbUploadMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/upload$/);
     if (prodSbUploadMatch && method === 'POST') {
       const scriptId = prodSbUploadMatch[1];
-      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const user = authService.verifyAuthToken(req.headers['authorization'], false);
       const access = authService.checkScriptAccess(user, scriptId, 'Editor');
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
@@ -1112,13 +1112,32 @@ export const server = http.createServer(async (req, res) => {
   }
 });
 
-export function startServer(port = PORT) {
-  return server.listen(port, () => {
-    console.log(`[SCRIPTORA Backend] Server listening at http://localhost:${port}`);
+server.on('error', (err) => {
+  console.error('[SCRIPTORA Backend] Server startup error:', err.message);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[SCRIPTORA Backend] Fatal: Port ${PORT} is already in use.`);
+  }
+  process.exit(1);
+});
+
+export function startServer(port = PORT, host = '0.0.0.0') {
+  return server.listen(port, host, () => {
+    console.log(`[SCRIPTORA Backend] Production server active at http://${host}:${port} (Node ${process.version}, PID ${process.pid})`);
   });
 }
 
+// Graceful termination handling for container platforms like Render
+process.on('SIGTERM', () => {
+  console.log('[SCRIPTORA Backend] Received SIGTERM, shutting down gracefully...');
+  server.close(() => process.exit(0));
+});
+
+process.on('SIGINT', () => {
+  console.log('[SCRIPTORA Backend] Received SIGINT, exiting...');
+  server.close(() => process.exit(0));
+});
+
 // Auto-start if executed directly
 if (process.argv[1] && (process.argv[1].endsWith('server.js') || process.argv[1].endsWith('server'))) {
-  startServer(PORT);
+  startServer(PORT, '0.0.0.0');
 }

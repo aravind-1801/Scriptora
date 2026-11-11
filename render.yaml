@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: scriptora-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://aravind-1801.github.io
+      - key: CORS_ORIGINS
+        value: https://aravind-1801.github.io,http://localhost:3000,http://localhost:5173
+      - key: GOOGLE_PROJECT_ID
+        value: scriptora-1801
+      - key: FIREBASE_DATABASE_URL
+        value: https://scriptora-1801-default-rtdb.firebaseio.com
+      - key: SUPABASE_URL
+        value: https://wfnutbkbvnbvxieiegwz.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+

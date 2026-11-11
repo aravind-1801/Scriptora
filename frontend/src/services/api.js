@@ -32,7 +32,20 @@ export {
   VISUAL_STYLE_DEFINITIONS
 };
 
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)) || '/api';
+export function getApiBaseUrl() {
+  if (typeof window !== 'undefined' && window.SCRIPTORA_API_BASE) {
+    return String(window.SCRIPTORA_API_BASE).replace(/\/+$/, '');
+  }
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    if (import.meta.env.VITE_API_URL) return String(import.meta.env.VITE_API_URL).replace(/\/+$/, '');
+    if (import.meta.env.VITE_API_BASE_URL) return String(import.meta.env.VITE_API_BASE_URL).replace(/\/+$/, '');
+  }
+  if (typeof localStorage !== 'undefined') {
+    const customApi = localStorage.getItem('scriptora_api_url');
+    if (customApi) return String(customApi).replace(/\/+$/, '');
+  }
+  return '/api';
+}
 
 const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.BASE_URL)
   ? import.meta.env.BASE_URL
@@ -40,7 +53,9 @@ const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import
 const BASE_ASSET_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
 async function request(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `${baseUrl}${cleanEndpoint}`;
   const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
   const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 

@@ -5,8 +5,13 @@ const PORT = 8099;
 process.env.NODE_ENV = 'test';
 
 function request(path, options = {}) {
+  const headers = { ...options.headers };
+  if (!headers['Authorization'] && !headers['authorization'] && path.includes('/storyboard/')) {
+    headers['Authorization'] = 'Bearer test-token';
+  }
+  const opts = { ...options, headers };
   return new Promise((resolve, reject) => {
-    const req = http.request(`http://localhost:${PORT}${path}`, options, (res) => {
+    const req = http.request(`http://localhost:${PORT}${path}`, opts, (res) => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
@@ -18,7 +23,7 @@ function request(path, options = {}) {
       });
     });
     req.on('error', reject);
-    if (options.body) req.write(typeof options.body === 'string' ? options.body : JSON.stringify(options.body));
+    if (opts.body) req.write(typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body));
     req.end();
   });
 }
