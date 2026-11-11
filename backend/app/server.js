@@ -1085,6 +1085,63 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    // Storyboard Authenticated Image Download Endpoint (Private Storage Proxy)
+    const prodSbDownloadMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/download$/);
+    if (prodSbDownloadMatch && method === 'GET') {
+      const scriptId = prodSbDownloadMatch[1];
+      const user = authService.verifyAuthToken(req.headers['authorization'], false);
+      const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
+
+      const storagePath = url.searchParams.get('storagePath');
+      const filename = url.searchParams.get('filename') || 'storyboard-frame.jpg';
+      let buffer = null;
+      let contentType = 'image/jpeg';
+
+      if (storagePath) {
+        const signedUrl = await storyboardService.createSignedImageUrl(storagePath, 300);
+        if (signedUrl) {
+          try {
+            const resp = await fetch(signedUrl);
+            if (resp.ok) {
+              const ab = await resp.arrayBuffer();
+              buffer = Buffer.from(ab);
+              contentType = resp.headers.get('content-type') || contentType;
+            }
+          } catch (_) {}
+        }
+      }
+
+      if (!buffer) {
+        const baseDir = process.cwd().endsWith('backend') ? path.resolve(process.cwd(), '..') : process.cwd();
+        const baseName = path.basename(storagePath || filename);
+        const candidates = [
+          path.resolve(baseDir, 'backend', 'data', 'storage', 'storyboard', baseName),
+          path.resolve(baseDir, 'frontend', 'public', 'assets', 'storyboard', 'generated', baseName),
+          path.resolve(baseDir, 'assets', 'storyboard', 'generated', baseName),
+          path.resolve(baseDir, 'frontend', 'public', 'assets', 'storyboard', baseName)
+        ];
+        const found = candidates.find(c => fs.existsSync(c) && fs.statSync(c).isFile());
+        if (found) {
+          buffer = fs.readFileSync(found);
+          const ext = path.extname(found).toLowerCase();
+          contentType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+        }
+      }
+
+      if (!buffer) {
+        return sendJson(res, 404, { error: 'Image not found' });
+      }
+
+      res.statusCode = 200;
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(filename)}"`);
+      res.end(buffer);
+      return;
+    }
+
     const prodSbGenShotMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-shot$/);
     if (prodSbGenShotMatch && method === 'POST') {
       const scriptId = prodSbGenShotMatch[1];

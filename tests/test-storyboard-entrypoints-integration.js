@@ -530,7 +530,8 @@ async function runRealGenerationTests() {
     assert.ok(result.fullPrompt.includes('Subject Staging: Dock at Dawn.'));
 
     // Verify image was saved to disk
-    const savedPath = path.resolve('backend/data/storage/storyboard', path.basename(result.imageUrl));
+    const cleanFileName = path.basename(result.storagePath || result.imageUrl).split('?')[0];
+    const savedPath = path.resolve('backend/data/storage/storyboard', cleanFileName);
     assert.ok(fs.existsSync(savedPath), `Generated image must exist on disk at ${savedPath}`);
     const stats = fs.statSync(savedPath);
     assert.ok(stats.size > 10000, `Image file size must be substantial (>10KB), got ${stats.size} bytes`);
@@ -573,7 +574,8 @@ async function runRealGenerationTests() {
     assert.ok(result.fullPrompt.includes('Camera Movement: Cinematic dolly camera movement'));
     assert.ok(result.fullPrompt.includes('Continuity: Screen direction'));
 
-    const savedPath = path.resolve('backend/data/storage/storyboard', path.basename(result.imageUrl));
+    const cleanFileName2 = path.basename(result.storagePath || result.imageUrl).split('?')[0];
+    const savedPath = path.resolve('backend/data/storage/storyboard', cleanFileName2);
     assert.ok(fs.existsSync(savedPath), `Generated image must exist on disk`);
     const stats = fs.statSync(savedPath);
     assert.ok(stats.size > 10000, `Image file size must be >10KB, got ${stats.size} bytes`);

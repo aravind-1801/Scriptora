@@ -3558,6 +3558,163 @@ export async function getStoryboardSignedUrl(scriptId, storagePath) {
   }
 }
 
+export function generateStoryboardImageFilename({
+  scriptTitle = 'Scriptora',
+  sceneNumber = 1,
+  shotNumber = '1A',
+  shotTitle = '',
+  extension = 'jpg'
+} = {}) {
+  const sanitize = (str) => String(str || '')
+    .trim()
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  const cleanScript = sanitize(scriptTitle) || 'Scriptora';
+  const cleanScene = `Scene_${String(sceneNumber).replace(/^scene-/i, '')}`;
+  const cleanShot = `Shot_${sanitize(shotNumber) || '1A'}`;
+  const cleanTitle = sanitize(shotTitle);
+
+  const parts = [cleanScript, cleanScene, cleanShot];
+  if (cleanTitle) parts.push(cleanTitle);
+
+  const cleanExt = (extension || 'jpg').replace(/^\./, '').toLowerCase();
+  return `${parts.join('_')}.${cleanExt}`;
+}
+
+export async function downloadStoryboardImage(imageUrl, options = {}) {
+  if (!imageUrl) {
+    throw new Error('No image available to download');
+  }
+
+  const {
+    scriptTitle = 'Scriptora',
+    sceneNumber = 1,
+    shotNumber = '1A',
+    shotTitle = '',
+    scriptId = 'chronicles-of-dust',
+    storagePath = null
+  } = options;
+
+  let blob = null;
+  const resolved = resolveStoryboardAssetUrl(imageUrl, shotNumber);
+
+  // 1. Data URI
+  if (resolved.startsWith('data:')) {
+    if (resolved.startsWith('data:image/svg+xml')) {
+      const commaIdx = resolved.indexOf(',');
+      const header = resolved.substring(0, commaIdx);
+      const content = resolved.substring(commaIdx + 1);
+      const isBase64 = header.includes(';base64');
+      const svgText = isBase64 ? atob(content) : decodeURIComponent(content);
+      blob = new Blob([svgText], { type: 'image/svg+xml' });
+    } else {
+      const commaIdx = resolved.indexOf(',');
+      const header = resolved.substring(0, commaIdx);
+      const content = resolved.substring(commaIdx + 1);
+      const mime = header.match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const byteString = atob(content);
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      blob = new Blob([ab], { type: mime });
+    }
+  } else {
+    // 2. Direct HTTP or asset path fetch
+    try {
+      const res = await fetch(resolved, { mode: 'cors' });
+      if (res.ok) {
+        blob = await res.blob();
+      }
+    } catch (e) {
+      console.warn('[downloadStoryboardImage] Direct fetch failed:', e.message);
+    }
+
+    // 3. Expired signed URL refresh
+    if (!blob && storagePath && scriptId) {
+      try {
+        const freshUrl = await getStoryboardSignedUrl(scriptId, storagePath);
+        if (freshUrl) {
+          const res = await fetch(freshUrl, { mode: 'cors' });
+          if (res.ok) {
+            blob = await res.blob();
+          }
+        }
+      } catch (e) {
+        console.warn('[downloadStoryboardImage] Fresh signed URL fetch failed:', e.message);
+      }
+    }
+
+    // 4. Authenticated backend download proxy fallback
+    if (!blob && scriptId && (storagePath || resolved.includes('/production/storyboard/images/'))) {
+      try {
+        const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
+        const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const filenameParam = resolved.split('/').pop();
+        const proxyUrl = `${getApiBaseUrl()}/production/${scriptId}/storyboard/download?${storagePath ? `storagePath=${encodeURIComponent(storagePath)}` : `filename=${encodeURIComponent(filenameParam)}`}`;
+        const res = await fetch(proxyUrl, { headers: authHeader });
+        if (res.ok) {
+          blob = await res.blob();
+        }
+      } catch (e) {
+        console.warn('[downloadStoryboardImage] Backend proxy fetch failed:', e.message);
+      }
+    }
+  }
+
+  if (!blob) {
+    throw new Error('Unable to retrieve image file for download');
+  }
+
+  // Detect extension
+  let ext = 'jpg';
+  const type = blob.type.toLowerCase();
+  if (type.includes('png')) ext = 'png';
+  else if (type.includes('webp')) ext = 'webp';
+  else if (type.includes('svg')) ext = 'svg';
+  else if (type.includes('jpeg') || type.includes('jpg')) ext = 'jpg';
+  else if (type.includes('gif')) ext = 'gif';
+  else {
+    try {
+      const slice = await blob.slice(0, 8).arrayBuffer();
+      const u8 = new Uint8Array(slice);
+      if (u8[0] === 0x89 && u8[1] === 0x50 && u8[2] === 0x4E && u8[3] === 0x47) ext = 'png';
+      else if (u8[0] === 0x52 && u8[1] === 0x49 && u8[2] === 0x46 && u8[3] === 0x46) ext = 'webp';
+      else ext = 'jpg';
+    } catch (_) {
+      ext = 'jpg';
+    }
+  }
+
+  const filename = generateStoryboardImageFilename({
+    scriptTitle,
+    sceneNumber,
+    shotNumber,
+    shotTitle,
+    extension: ext
+  });
+
+  if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.style.display = 'none';
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(objectUrl);
+    }, 2500);
+  }
+
+  return { success: true, filename, size: blob.size, mime: blob.type };
+}
+
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
   // Read local cache first to compare timestamps / shot counts
   const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`) : null;

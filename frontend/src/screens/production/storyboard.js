@@ -250,8 +250,11 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </label>
             </div>
 
-            <!-- Post-Generation Review & History Actions Bar (4 Icon Buttons, No Text to Prevent Overflow) -->
-            <div id="modal-post-gen-actions" class="hidden grid grid-cols-4 gap-2 p-1.5 rounded-xl bg-slate-50 border border-slate-200/70">
+            <!-- Post-Generation Review & History Actions Bar (5 Icon Buttons) -->
+            <div id="modal-post-gen-actions" class="hidden grid grid-cols-5 gap-2 p-1.5 rounded-xl bg-slate-50 border border-slate-200/70">
+              <button type="button" id="modal-btn-download-shot" title="Download Image" aria-label="Download Image" class="h-9 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:bg-slate-50 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs">
+                <span class="material-symbols-outlined text-[18px]">download</span>
+              </button>
               <button type="button" id="modal-btn-view-fullscreen" title="Inspect Fullscreen" aria-label="Inspect Fullscreen" class="h-9 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-blue-600 hover:bg-slate-50 active:scale-95 text-xs font-semibold flex items-center justify-center cursor-pointer transition-all shadow-2xs">
                 <span class="material-symbols-outlined text-[18px]">fullscreen</span>
               </button>
@@ -439,6 +442,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
                 <span>Move to Recycle Bin</span>
               </button>
               <div class="flex items-center gap-2">
+                <button type="button" id="modal-btn-download-action" class="hidden px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-blue-600 active:scale-95 text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs">
+                  <span class="material-symbols-outlined text-[16px]">download</span>
+                  <span>Download Image</span>
+                </button>
                 <button type="button" id="modal-btn-cancel-shot" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 cursor-pointer">Cancel</button>
                 <button type="submit" id="modal-btn-save-shot" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer">Save Changes</button>
               </div>
@@ -663,6 +670,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </div>
               <div class="flex items-center gap-2">
                 <span id="gen-preview-count-label" class="text-xs font-mono font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-100">4 Shots Proposed</span>
+                <button type="button" id="gen-btn-download-all-proposed" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1 shadow-2xs" title="Download all proposed sequence images">
+                  <span class="material-symbols-outlined text-[14px]">download</span>
+                  <span>Download All</span>
+                </button>
                 <button type="button" id="gen-btn-approve-all-proposed" class="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 text-[11px] font-semibold cursor-pointer transition-all flex items-center gap-1">
                   <span class="material-symbols-outlined text-[14px]">done_all</span>
                   <span>Approve All</span>
@@ -1090,6 +1101,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
             <p id="lb-desc" class="text-xs text-white/70 line-clamp-1 mt-0.5">Visual description</p>
           </div>
           <div class="flex items-center gap-2 shrink-0">
+            <button id="lb-btn-download" class="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs" title="Download Image">
+              <span class="material-symbols-outlined text-[16px]">download</span>
+              <span>Download</span>
+            </button>
             <button id="lb-btn-approve" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors">
               <span class="material-symbols-outlined text-[16px]">check</span>
               <span id="lb-approve-label">Approve</span>
@@ -1163,6 +1178,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   const btnModalToggleApprove = document.getElementById('modal-btn-toggle-approve');
   const btnModalToggleReject = document.getElementById('modal-btn-toggle-reject');
   const btnModalOpenHistory = document.getElementById('modal-btn-open-history');
+  const btnModalDownloadShot = document.getElementById('modal-btn-download-shot');
+  const btnModalDownloadAction = document.getElementById('modal-btn-download-action');
 
   const genModal = document.getElementById('ai-generate-modal');
   const genClose = document.getElementById('gen-modal-close');
@@ -1195,6 +1212,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   const lbNext = document.getElementById('lb-next');
   const lbBtnApprove = document.getElementById('lb-btn-approve');
   const lbBtnReject = document.getElementById('lb-btn-reject');
+  const lbBtnDownload = document.getElementById('lb-btn-download');
+  let currentLightboxSingleShot = null;
 
   // Storyboard and Scenes Memory State
   let allScenes = [];
@@ -1357,6 +1376,45 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         showToast('No previous versions available for this new shot');
       }
     };
+  }
+
+  // Modal 1: Immediate Image Download (Before or after Save Changes)
+  async function handleInspectorImageDownload() {
+    if (!currentModalDraftImage) {
+      showToast('No image available to download');
+      return;
+    }
+    const shotNum = document.getElementById('input-shot-number')?.value.trim() || '1A';
+    const shotTitle = document.getElementById('input-shot-title')?.value.trim() || '';
+    const sceneObj = allScenes.find(s => s.id === currentSceneId) || {};
+    const sceneNum = sceneObj.number || currentStoryboard?.sceneNumber || String(currentSceneId).replace(/^scene-/, '') || 1;
+    const scriptTitle = currentStoryboard?.scriptTitle || store.state.selectedScript?.title || 'Scriptora';
+
+    const activeShot = activeEditingShotId ? currentStoryboard?.shots?.find(s => s.id === activeEditingShotId) : null;
+    const storagePath = activeShot?.storagePath || null;
+
+    showToast(`Downloading Shot ${shotNum}...`);
+    try {
+      await api.downloadStoryboardImage(currentModalDraftImage, {
+        scriptTitle,
+        sceneNumber: sceneNum,
+        shotNumber: shotNum,
+        shotTitle,
+        scriptId,
+        storagePath
+      });
+      showToast(`Shot ${shotNum} downloaded successfully`);
+    } catch (err) {
+      console.error('Download error:', err);
+      showToast('Failed to download image: ' + (err.message || 'Network error'));
+    }
+  }
+
+  if (btnModalDownloadShot) {
+    btnModalDownloadShot.onclick = handleInspectorImageDownload;
+  }
+  if (btnModalDownloadAction) {
+    btnModalDownloadAction.onclick = handleInspectorImageDownload;
   }
 
   // Modal 1: Form submission & Save
@@ -2181,6 +2239,38 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   }
 
   // Sequence review buttons
+  const btnDownloadAllProp = document.getElementById('gen-btn-download-all-proposed');
+  if (btnDownloadAllProp) {
+    btnDownloadAllProp.onclick = async () => {
+      const available = proposedSequenceShots.filter(s => s && s.imageUrl);
+      if (!available.length) {
+        showToast('No images available to download');
+        return;
+      }
+      showToast(`Downloading ${available.length} images...`);
+      const sceneObj = allScenes.find(s => s.id === currentSceneId) || {};
+      const sceneNum = sceneObj.number || currentStoryboard?.sceneNumber || String(currentSceneId).replace(/^scene-/, '') || 1;
+      const scriptTitle = currentStoryboard?.scriptTitle || store.state.selectedScript?.title || 'Scriptora';
+
+      for (const [i, s] of available.entries()) {
+        try {
+          await api.downloadStoryboardImage(s.imageUrl, {
+            scriptTitle,
+            sceneNumber: sceneNum,
+            shotNumber: s.shotNumber || `${i + 1}A`,
+            shotTitle: s.title || '',
+            scriptId,
+            storagePath: s.storagePath || null
+          });
+          await new Promise(r => setTimeout(r, 350));
+        } catch (err) {
+          console.warn(`Failed downloading ${s.shotNumber}:`, err);
+        }
+      }
+      showToast('Finished downloading proposed sequence images');
+    };
+  }
+
   const btnApproveAllProp = document.getElementById('gen-btn-approve-all-proposed');
   if (btnApproveAllProp) {
     btnApproveAllProp.onclick = () => {
@@ -2435,6 +2525,41 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         renderCurrentView();
       } catch (e) {
         showToast('Failed to reject shot');
+      }
+    };
+  }
+
+  // Lightbox: Download Frame at original resolution
+  if (lbBtnDownload) {
+    lbBtnDownload.onclick = async () => {
+      let activeShot = null;
+      if (currentLightboxSingleShot) {
+        activeShot = currentLightboxSingleShot;
+      } else if (activeLightboxShotIndex >= 0 && currentStoryboard?.shots?.[activeLightboxShotIndex]) {
+        activeShot = currentStoryboard.shots[activeLightboxShotIndex];
+      }
+      if (!activeShot || !activeShot.imageUrl) {
+        showToast('No image available to download');
+        return;
+      }
+      const sceneObj = allScenes.find(s => s.id === currentSceneId) || {};
+      const sceneNum = sceneObj.number || currentStoryboard?.sceneNumber || String(currentSceneId).replace(/^scene-/, '') || 1;
+      const scriptTitle = currentStoryboard?.scriptTitle || store.state.selectedScript?.title || 'Scriptora';
+
+      showToast(`Downloading Shot ${activeShot.shotNumber}...`);
+      try {
+        await api.downloadStoryboardImage(activeShot.imageUrl, {
+          scriptTitle,
+          sceneNumber: sceneNum,
+          shotNumber: activeShot.shotNumber || '1A',
+          shotTitle: activeShot.title || activeShot.description || '',
+          scriptId,
+          storagePath: activeShot.storagePath || null
+        });
+        showToast(`Shot ${activeShot.shotNumber} downloaded successfully`);
+      } catch (err) {
+        console.error('Download error:', err);
+        showToast('Failed to download image: ' + (err.message || 'Error'));
       }
     };
   }
@@ -2724,6 +2849,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const historyBtn = document.getElementById('modal-btn-open-history');
     const approveLabel = document.getElementById('modal-approve-toggle-label');
     const historyCountEl = document.getElementById('modal-history-count');
+    const downloadActionBtn = document.getElementById('modal-btn-download-action');
 
     if (currentModalDraftImage) {
       if (imgEl) {
@@ -2734,12 +2860,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       if (placeholderEl) placeholderEl.classList.add('hidden');
       if (postGenBar) postGenBar.classList.remove('hidden');
       if (fullscreenBtn) fullscreenBtn.classList.remove('hidden');
+      if (downloadActionBtn) downloadActionBtn.classList.remove('hidden');
       if (genActionLabel) genActionLabel.textContent = 'Regenerate Image';
     } else {
       if (imgEl) imgEl.classList.add('hidden');
       if (placeholderEl) placeholderEl.classList.remove('hidden');
       if (postGenBar) postGenBar.classList.add('hidden');
       if (fullscreenBtn) fullscreenBtn.classList.add('hidden');
+      if (downloadActionBtn) downloadActionBtn.classList.add('hidden');
       if (genActionLabel) genActionLabel.textContent = 'Generate Image';
     }
 
@@ -2966,9 +3094,15 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
         <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-100">
           <span>${shot.shotSize || 'Wide'} · ${shot.cameraAngle || 'Eye Level'}</span>
-          <button type="button" class="btn-prop-regen text-blue-600 hover:text-blue-800 font-semibold cursor-pointer" data-proposed-idx="${idx}">
-            Regenerate
-          </button>
+          <div class="flex items-center gap-2">
+            <button type="button" class="btn-prop-download text-slate-600 hover:text-blue-600 font-semibold cursor-pointer flex items-center gap-0.5" data-proposed-idx="${idx}" title="Download Image">
+              <span class="material-symbols-outlined text-[13px]">download</span>
+              <span>Download</span>
+            </button>
+            <button type="button" class="btn-prop-regen text-blue-600 hover:text-blue-800 font-semibold cursor-pointer" data-proposed-idx="${idx}">
+              Regenerate
+            </button>
+          </div>
         </div>
       </div>
     `).join('');
@@ -2991,6 +3125,38 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         const idx = Number(el.getAttribute('data-proposed-idx'));
         if (proposedSequenceShots[idx]) {
           openLightboxWithShot(proposedSequenceShots[idx]);
+        }
+      };
+    });
+
+    // Download individual proposed shot immediately
+    grid.querySelectorAll('.btn-prop-download').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        const idx = Number(btn.getAttribute('data-proposed-idx'));
+        const shot = proposedSequenceShots[idx];
+        if (!shot || !shot.imageUrl) {
+          showToast('No image available to download');
+          return;
+        }
+        const sceneObj = allScenes.find(s => s.id === currentSceneId) || {};
+        const sceneNum = sceneObj.number || currentStoryboard?.sceneNumber || String(currentSceneId).replace(/^scene-/, '') || 1;
+        const scriptTitle = currentStoryboard?.scriptTitle || store.state.selectedScript?.title || 'Scriptora';
+
+        showToast(`Downloading frame ${shot.shotNumber}...`);
+        try {
+          await api.downloadStoryboardImage(shot.imageUrl, {
+            scriptTitle,
+            sceneNumber: sceneNum,
+            shotNumber: shot.shotNumber || `${idx + 1}A`,
+            shotTitle: shot.title || '',
+            scriptId,
+            storagePath: shot.storagePath || null
+          });
+          showToast(`Downloaded frame ${shot.shotNumber}`);
+        } catch (err) {
+          console.error('Download error:', err);
+          showToast('Download failed: ' + (err.message || 'Error'));
         }
       };
     });
@@ -3311,12 +3477,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   function openLightbox(index) {
     const shots = currentStoryboard?.shots || [];
     if (!shots.length) return;
+    currentLightboxSingleShot = null;
     activeLightboxShotIndex = (index >= 0 && index < shots.length) ? index : 0;
     updateLightboxUI();
     openModal(lightboxModal);
   }
 
   function openLightboxWithShot(shot) {
+    currentLightboxSingleShot = shot;
     const imgEl = document.getElementById('lb-image');
     const numEl = document.getElementById('lb-shot-num');
     const specsEl = document.getElementById('lb-specs');
@@ -3339,6 +3507,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (nextBtn) nextBtn.classList.add('hidden');
     if (approveBtn) approveBtn.classList.add('hidden');
     if (rejectBtn) rejectBtn.classList.add('hidden');
+    if (lbBtnDownload) lbBtnDownload.classList.toggle('hidden', !shot.imageUrl);
 
     openModal(lightboxModal);
   }
@@ -3362,6 +3531,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (prevBtn) prevBtn.classList.remove('hidden');
     if (nextBtn) nextBtn.classList.remove('hidden');
     if (approveBtn) approveBtn.classList.remove('hidden');
+    if (rejectBtn) rejectBtn.classList.remove('hidden');
+    if (lbBtnDownload) lbBtnDownload.classList.toggle('hidden', !shot.imageUrl);
     if (rejectBtn) rejectBtn.classList.remove('hidden');
 
     if (imgEl) {
@@ -3601,9 +3772,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                     <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
                       ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
                     </div>
-                    <button class="absolute bottom-2 right-2 p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="View Full Size">
-                      <span class="material-symbols-outlined text-[14px]">fullscreen</span>
-                    </button>
+                    <div class="absolute bottom-2 right-2 flex items-center gap-1">
+                      <button type="button" class="btn-quick-download-card p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="Download Image" data-shot-id="${s.id}">
+                        <span class="material-symbols-outlined text-[14px]">download</span>
+                      </button>
+                      <button type="button" class="btn-open-lightbox p-1 rounded bg-black/60 hover:bg-black/80 text-white text-[12px] opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer" title="View Full Size" data-shot-id="${s.id}">
+                        <span class="material-symbols-outlined text-[14px]">fullscreen</span>
+                      </button>
+                    </div>
                   ` : `
                     <div class="flex flex-col items-center justify-center text-slate-500 gap-1 p-4 text-center">
                       <span class="material-symbols-outlined text-2xl text-slate-600">art_track</span>
@@ -3622,19 +3798,22 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                 </div>
               </div>
 
-              <!-- Card Action Bar: EDIT, RETRY, VARIATION, UPLOAD -->
+              <!-- Card Action Bar: EDIT, VARIATION, DOWNLOAD, RETRY, UPLOAD -->
               <div class="p-2.5 border-t border-slate-100 bg-slate-50/70 flex flex-col gap-2">
                 <div class="grid grid-cols-2 gap-1.5">
                   <button type="button" class="btn-open-inspector py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs" data-shot-id="${s.id}">
                     EDIT
                   </button>
-                  <button type="button" class="btn-card-retry-gen py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-1 shadow-2xs" data-shot-id="${s.id}">
-                    <span class="material-symbols-outlined text-[13px]">refresh</span> RETRY
-                  </button>
                   <button type="button" class="btn-card-variation py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs" data-shot-id="${s.id}">
                     VARIATION
                   </button>
-                  <label class="btn-card-upload-label py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs flex items-center justify-center">
+                  <button type="button" class="btn-card-download py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 hover:text-blue-600 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs flex items-center justify-center gap-1 ${!s.imageUrl ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}" data-shot-id="${s.id}" title="Download Image">
+                    <span class="material-symbols-outlined text-[13px]">download</span> DOWNLOAD
+                  </button>
+                  <button type="button" class="btn-card-retry-gen py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all flex items-center justify-center gap-1 shadow-2xs" data-shot-id="${s.id}">
+                    <span class="material-symbols-outlined text-[13px]">refresh</span> RETRY
+                  </button>
+                  <label class="col-span-2 btn-card-upload-label py-1.5 px-2 rounded-lg bg-white hover:bg-slate-100 active:scale-98 border border-slate-200 text-slate-700 font-bold text-[10px] tracking-wider uppercase cursor-pointer transition-all text-center shadow-2xs flex items-center justify-center">
                     UPLOAD
                     <input type="file" accept="image/*" class="hidden input-card-upload-file" data-shot-id="${s.id}" />
                   </label>
@@ -3777,6 +3956,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
                 <!-- Action Controls -->
                 <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-center mt-1 sm:mt-0">
+                  <button type="button" class="btn-card-download p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 active:scale-95 text-xs cursor-pointer transition-all ${!s.imageUrl ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}" data-shot-id="${s.id}" title="Download Image">
+                    <span class="material-symbols-outlined text-[16px]">download</span>
+                  </button>
                   <button class="btn-quick-approve p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-emerald-600 active:scale-95 text-xs cursor-pointer transition-all" data-shot-id="${s.id}" title="${s.approvalStatus === 'approved' ? 'Mark as Draft' : 'Approve Shot'}">
                     <span class="material-symbols-outlined text-[16px]">${s.approvalStatus === 'approved' ? 'check_circle' : 'check'}</span>
                   </button>
@@ -4170,6 +4352,40 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         const shots = currentStoryboard?.shots || [];
         const idx = shots.findIndex(s => s.id === shotId);
         openLightbox(idx !== -1 ? idx : 0);
+      };
+    });
+
+    // Download Shot Image from Card or Hover Overlay
+    document.querySelectorAll('.btn-card-download, .btn-quick-download-card').forEach(btn => {
+      btn.onclick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const shotId = btn.getAttribute('data-shot-id');
+        const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+        if (!shot || !shot.imageUrl) {
+          showToast('No image available to download');
+          return;
+        }
+
+        const sceneObj = allScenes.find(s => s.id === currentSceneId) || {};
+        const sceneNum = sceneObj.number || currentStoryboard?.sceneNumber || String(currentSceneId).replace(/^scene-/, '') || 1;
+        const scriptTitle = currentStoryboard?.scriptTitle || store.state.selectedScript?.title || 'Scriptora';
+
+        showToast(`Downloading Shot ${shot.shotNumber}...`);
+        try {
+          await api.downloadStoryboardImage(shot.imageUrl, {
+            scriptTitle,
+            sceneNumber: sceneNum,
+            shotNumber: shot.shotNumber,
+            shotTitle: shot.title || shot.description || '',
+            scriptId,
+            storagePath: shot.storagePath || null
+          });
+          showToast(`Shot ${shot.shotNumber} downloaded successfully`);
+        } catch (err) {
+          console.error('Download error:', err);
+          showToast('Failed to download image: ' + (err.message || 'Error'));
+        }
       };
     });
 
