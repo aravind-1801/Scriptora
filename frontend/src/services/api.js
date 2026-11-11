@@ -13,13 +13,23 @@ import {
   syncStoryboardToFirestore,
   fetchStoryboardFromFirestore
 } from './cloudStorage.js';
+import {
+  buildStoryboardGenerationPrompt,
+  resolveEffectiveSettings,
+  ASPECT_RATIO_SPECS,
+  VISUAL_STYLE_DEFINITIONS
+} from './promptBuilder.js';
 
 export {
   isCloudConfigured,
   getCloudStorageStatus,
   uploadImageToCloud,
   syncStoryboardToFirestore,
-  fetchStoryboardFromFirestore
+  fetchStoryboardFromFirestore,
+  buildStoryboardGenerationPrompt,
+  resolveEffectiveSettings,
+  ASPECT_RATIO_SPECS,
+  VISUAL_STYLE_DEFINITIONS
 };
 
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env && (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL)) || '/api';
@@ -4035,44 +4045,21 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
 }
 
 export async function generateClientPollinationsShot(params = {}, onProgress = null) {
+  // Use centralized prompt builder to respect every visual setting
+  const built = buildStoryboardGenerationPrompt(params);
   const {
-    prompt = "",
-    aspectRatio = "2.39:1",
-    visualStyle = "Cinematic Concept Art",
-    shotSize = "Medium Shot",
-    cameraAngle = "Eye Level",
-    focalLength = "50mm Prime",
-    lightingMood = "Natural Daylight",
-    sceneHeading = "SCENE"
-  } = params;
-
-  let width = 1024;
-  let height = 428;
-  if (aspectRatio === "16:9") {
-    width = 1024;
-    height = 576;
-  } else if (aspectRatio === "1:1") {
-    width = 1024;
-    height = 1024;
-  } else if (aspectRatio === "4:3") {
-    width = 1024;
-    height = 768;
-  } else if (aspectRatio === "9:16") {
-    width = 720;
-    height = 1280;
-  }
-
-  const cleanPrompt = (prompt || "Cinematic film still, beautiful atmospheric lighting, highly detailed").trim();
-  const stylePrefix = (visualStyle && visualStyle !== "None") ? `${visualStyle} style.` : "";
-  const cameraSpecs = [shotSize, cameraAngle, focalLength, lightingMood].filter(Boolean).join(", ");
-  const fullPrompt = `${stylePrefix} Cinematic film still for ${sceneHeading}: ${cleanPrompt}. Camera: ${cameraSpecs}. 8k resolution, authentic movie still, detailed environment, photorealistic cinematography.`.trim();
-
-  const seed = params.seed || (params.isVariation ? Math.floor(Math.random() * 900000) + 100000 : 42);
-  const encodedPrompt = encodeURIComponent(fullPrompt);
-  const cdnUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+    pollinationsUrl: cdnUrl,
+    width,
+    height,
+    seed,
+    model,
+    fullPrompt,
+    cleanUserPrompt,
+    effectiveSettings
+  } = built;
 
   if (typeof onProgress === 'function') {
-    onProgress({ status: 'processing', progress: 50, statusMessage: 'Synthesizing cinematic frame with FLUX.1...' });
+    onProgress({ status: 'processing', progress: 50, statusMessage: `Synthesizing ${effectiveSettings.visualStyle} frame with FLUX.1...` });
   }
 
   const controller = new AbortController();
@@ -4107,15 +4094,23 @@ export async function generateClientPollinationsShot(params = {}, onProgress = n
       sourceUrl: cdnUrl,
       cdnUrl: cdnUrl,
       provider: "pollinations-flux",
-      model: "flux",
+      model: model || "flux",
       quality: params.quality || "hd",
       costEstimate: "Free (Pollinations AI)",
-      prompt: cleanPrompt,
+      prompt: cleanUserPrompt,
       fullPrompt,
+      visualStyle: effectiveSettings.visualStyle,
+      aspectRatio: effectiveSettings.aspectRatio,
+      shotSize: effectiveSettings.shotSize,
+      cameraAngle: effectiveSettings.cameraAngle,
+      lens: effectiveSettings.lens,
+      focalLength: effectiveSettings.lens,
+      lighting: effectiveSettings.lighting,
+      lightingMood: effectiveSettings.lighting,
       seed,
-      aspectRatio,
       width,
-      height
+      height,
+      timestamp: new Date().toISOString()
     };
   } catch (err) {
     clearTimeout(timeoutId);

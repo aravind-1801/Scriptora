@@ -7,6 +7,7 @@ import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
 import { exportStoryboardPdf } from '../../services/pdfExport.js';
 import { openModal, closeModal } from '../../utils/popupPosition.js';
+import { buildStoryboardGenerationPrompt } from '../../services/promptBuilder.js';
 
 // SCRIPTORA Intermediate Filmmaking & Cinematography Options
 export const SHOT_TYPES = [
@@ -71,7 +72,8 @@ export const STYLE_PRESETS = [
   "Comic",
   "Cinematic",
   "Soft Pencil",
-  "Animation 3D",
+  "Animation",
+  "3D",
   "Watercolor Paint",
   "Photo / Commercial",
   "Charcoal Sketch",
@@ -1107,38 +1109,10 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
 }
 
 
-// Helper: Structured generation prompt construction
-function buildStructuredPrompt({
-  description,
-  visualStyle,
-  shotSize,
-  cameraAngle,
-  aspectRatio,
-  cameraMovement,
-  lens,
-  lighting,
-  screenDirection,
-  sceneContext
-}) {
-  const parts = [];
-  if (visualStyle) parts.push(`[Style: ${visualStyle}]`);
-  if (shotSize) parts.push(`[Framing: ${shotSize}]`);
-  if (cameraAngle) parts.push(`[Angle: ${cameraAngle}]`);
-  if (lens) parts.push(`[Lens: ${lens}]`);
-  if (cameraMovement && cameraMovement !== 'Static') parts.push(`[Movement: ${cameraMovement}]`);
-  if (lighting && lighting !== 'Auto / Scene-based') parts.push(`[Lighting: ${lighting}]`);
-  if (screenDirection && screenDirection !== 'Static') parts.push(`[Direction: ${screenDirection}]`);
-  if (aspectRatio) parts.push(`[Aspect: ${aspectRatio}]`);
-  if (sceneContext) parts.push(`[Scene Context: ${sceneContext}]`);
-
-  const desc = (description || '').trim();
-  if (desc) {
-    parts.push(desc);
-  } else {
-    parts.push('Cinematic storyboard composition');
-  }
-
-  return parts.join(' - ');
+// Helper: Structured generation prompt construction using centralized prompt builder
+function buildStructuredPrompt(params) {
+  const built = buildStoryboardGenerationPrompt(params);
+  return built.fullPrompt;
 }
 
 export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
@@ -1159,6 +1133,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   let currentModalDraftImage = null;
   let currentModalDraftSourceUrl = null;
   let currentModalDraftPrompt = '';
+  let currentModalDraftFullPrompt = null;
+  let currentModalDraftSeed = null;
+  let currentModalDraftModel = null;
   let currentModalDraftApproval = 'draft';
 
   // Primary DOM Elements
@@ -1424,7 +1401,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         lightingMood: lightingVal,
         lighting: lightingVal,
         visualStyle: styleVal,
-        prompt: structuredPrompt,
+        prompt: descVal || structuredPrompt,
+        fullPrompt: currentModalDraftFullPrompt || structuredPrompt,
+        seed: currentModalDraftSeed || null,
+        model: currentModalDraftModel || 'flux',
+        generationTimestamp: new Date().toISOString(),
         approvalStatus: document.getElementById('input-shot-approval')?.value || 'draft',
         directorNotes: document.getElementById('input-shot-notes')?.value.trim() || '',
         imageUrl: currentModalDraftImage,
@@ -1507,7 +1488,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (prefCancel) prefCancel.onclick = () => closeModal(prefModal);
 
   if (prefReset) {
-    prefReset.onclick = () => {
+    prefReset.onclick = async () => {
       const styleEl = document.getElementById('pref-default-style');
       const ratioEl = document.getElementById('pref-default-ratio');
       const sizeEl = document.getElementById('pref-default-size');
@@ -1521,7 +1502,30 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       if (angleEl) angleEl.value = 'Eye Level';
       if (lensEl) lensEl.value = '50mm';
       if (lightingEl) lightingEl.value = 'Auto / Scene-based';
-      showToast('Reset to default settings');
+
+      const resetPayload = {
+        visualStyle: 'Concept Art',
+        defaultStyle: 'Concept Art',
+        aspectRatio: '2.39:1',
+        defaultAspectRatio: '2.39:1',
+        shotSize: 'Medium',
+        defaultShotSize: 'Medium',
+        cameraAngle: 'Eye Level',
+        defaultCameraAngle: 'Eye Level',
+        lens: '50mm',
+        defaultLens: '50mm',
+        lighting: 'Auto / Scene-based',
+        defaultLighting: 'Auto / Scene-based',
+        experienceLevel: "Intermediate"
+      };
+
+      try {
+        await api.saveStoryboardPreferences(resetPayload);
+        cachedPreferences = resetPayload;
+        showToast('Default settings restored and saved');
+      } catch (_) {
+        showToast('Reset to default settings');
+      }
     };
   }
 
@@ -1895,14 +1899,29 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           if (res?.imageUrl) {
             currentModalDraftImage = res.imageUrl;
             currentModalDraftSourceUrl = res.sourceUrl || res.cdnUrl || (res.imageUrl.startsWith('http') ? res.imageUrl : null);
-            currentModalDraftPrompt = structuredPrompt;
+            currentModalDraftPrompt = res.prompt || descVal;
+            currentModalDraftFullPrompt = res.fullPrompt || null;
+            currentModalDraftSeed = res.seed || null;
+            currentModalDraftModel = res.model || 'flux';
 
             const inputStyle = document.getElementById('input-shot-style');
-            if (inputStyle) inputStyle.value = style;
-            selectStyleCard(style);
+            if (inputStyle) inputStyle.value = res.visualStyle || style;
+            selectStyleCard(res.visualStyle || style);
 
             const inputRatio = document.getElementById('input-shot-ratio');
-            if (inputRatio) inputRatio.value = ratio;
+            if (inputRatio) inputRatio.value = res.aspectRatio || ratio;
+
+            const inputSize = document.getElementById('input-shot-size');
+            if (inputSize && res.shotSize) inputSize.value = res.shotSize;
+
+            const inputAngle = document.getElementById('input-shot-angle');
+            if (inputAngle && res.cameraAngle) inputAngle.value = res.cameraAngle;
+
+            const inputFocal = document.getElementById('input-shot-focal');
+            if (inputFocal && (res.lens || res.focalLength)) inputFocal.value = res.lens || res.focalLength;
+
+            const inputLighting = document.getElementById('input-shot-lighting');
+            if (inputLighting && (res.lighting || res.lightingMood)) inputLighting.value = res.lighting || res.lightingMood;
 
             updateInspectorImagePreviewUI();
             closeModal(genModal);
@@ -2583,6 +2602,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     currentModalDraftImage = shot?.imageUrl ? resolveAssetUrl(shot.imageUrl, shot.shotNumber) : null;
     currentModalDraftSourceUrl = shot?.sourceUrl || shot?.cdnUrl || (shot?.imageUrl && shot.imageUrl.startsWith('http') ? shot.imageUrl : null);
     currentModalDraftPrompt = shot?.prompt || '';
+    currentModalDraftFullPrompt = shot?.fullPrompt || null;
+    currentModalDraftSeed = shot?.seed || null;
+    currentModalDraftModel = shot?.model || 'flux';
     currentModalDraftApproval = shot?.approvalStatus || 'draft';
 
     updateInspectorImagePreviewUI();
@@ -3090,21 +3112,56 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
               imageUrl: shot.imageUrl,
               previousImageUrl: shot.imageUrl,
               prompt: shot.prompt || shot.description || 'Current take before restore',
+              fullPrompt: shot.fullPrompt || null,
+              seed: shot.seed || null,
+              model: shot.model || 'flux',
               generationType: 'restore',
               visualStyle: shot.visualStyle,
+              settings: {
+                shotSize: shot.shotSize,
+                cameraAngle: shot.cameraAngle,
+                focalLength: shot.focalLength || shot.lens,
+                lens: shot.lens || shot.focalLength,
+                lightingMood: shot.lightingMood || shot.lighting,
+                lighting: shot.lighting || shot.lightingMood,
+                aspectRatio: shot.aspectRatio
+              },
               timestamp: new Date().toISOString()
             });
           }
 
           shot.imageUrl = restoredImg;
           if (selectedVer.prompt) shot.prompt = selectedVer.prompt;
+          if (selectedVer.fullPrompt) shot.fullPrompt = selectedVer.fullPrompt;
           if (selectedVer.visualStyle) shot.visualStyle = selectedVer.visualStyle;
+          if (selectedVer.seed !== undefined) shot.seed = selectedVer.seed;
+          if (selectedVer.model) shot.model = selectedVer.model;
+
+          if (selectedVer.settings) {
+            if (selectedVer.settings.shotSize) shot.shotSize = selectedVer.settings.shotSize;
+            if (selectedVer.settings.cameraAngle) shot.cameraAngle = selectedVer.settings.cameraAngle;
+            if (selectedVer.settings.focalLength) shot.focalLength = selectedVer.settings.focalLength;
+            if (selectedVer.settings.lens) shot.lens = selectedVer.settings.lens;
+            if (selectedVer.settings.lightingMood) shot.lightingMood = selectedVer.settings.lightingMood;
+            if (selectedVer.settings.lighting) shot.lighting = selectedVer.settings.lighting;
+            if (selectedVer.settings.aspectRatio) shot.aspectRatio = selectedVer.settings.aspectRatio;
+          }
 
           try {
             await api.updateStoryboardShot(scriptId, currentSceneId, activeHistoryShotId, {
               imageUrl: restoredImg,
               prompt: shot.prompt,
-              visualStyle: shot.visualStyle
+              fullPrompt: shot.fullPrompt,
+              visualStyle: shot.visualStyle,
+              shotSize: shot.shotSize,
+              cameraAngle: shot.cameraAngle,
+              focalLength: shot.focalLength || shot.lens,
+              lens: shot.lens || shot.focalLength,
+              lightingMood: shot.lightingMood || shot.lighting,
+              lighting: shot.lighting || shot.lightingMood,
+              aspectRatio: shot.aspectRatio,
+              seed: shot.seed,
+              model: shot.model
             });
           } catch (_) {}
           try {
@@ -3808,6 +3865,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           });
         }
         shot.imageUrl = resolvedUrl;
+        if (res.fullPrompt) shot.fullPrompt = res.fullPrompt;
+        if (res.seed !== undefined) shot.seed = res.seed;
+        if (res.model) shot.model = res.model;
         shot.isGenerating = false;
         shot.generatingStatus = null;
         shot.generationError = null;
@@ -3816,6 +3876,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
             imageUrl: resolvedUrl,
             prompt: variationPrompt,
+            fullPrompt: shot.fullPrompt,
+            seed: shot.seed,
+            model: shot.model,
             isVariation: true,
             variationType: variationType
           });
@@ -3912,13 +3975,19 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           });
         }
         shot.imageUrl = resolvedUrl;
+        if (res.fullPrompt) shot.fullPrompt = res.fullPrompt;
+        if (res.seed !== undefined) shot.seed = res.seed;
+        if (res.model) shot.model = res.model;
         shot.isGenerating = false;
         shot.generatingStatus = null;
         shot.generationError = null;
 
         try {
           await api.updateStoryboardShot(scriptId, currentSceneId, shotId, {
-            imageUrl: resolvedUrl
+            imageUrl: resolvedUrl,
+            fullPrompt: shot.fullPrompt,
+            seed: shot.seed,
+            model: shot.model
           });
         } catch (_) {}
         try {

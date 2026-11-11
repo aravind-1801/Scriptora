@@ -77,6 +77,17 @@ Every core production tool opens as a **dedicated workspace** with stable screen
    - **Dual Complementary Views**:
      - **Contact Sheet**: Visually organized grid of image cards where the generated frame is the primary visual element. Features camera telemetry overlays, shot numbers, approval badges, quick approval toggles, direct regeneration, photo replacement, version history, card-level shot deletion, and single-click full-screen cinematic lightbox.
      - **Sequence Editor**: Chronological screenplay-ordered timeline with multi-select checkboxes for batch operations (Approve All, Approve Selected, Reject Selected, Delete), up/down reordering without distracting helper text, and technical specification chips.
+   - **Centralized Generation Prompt Builder & Visual Setting Controls**:
+     - **Precise Visual Settings Influence**: Every visual control directly influences the generated Pollinations FLUX.1 frame rather than acting as metadata only:
+       - **17 Visual Art Styles**: Comic, Cinematic, Soft Pencil, Animation, 3D, Watercolor Paint, Photo / Commercial, Charcoal Sketch, Dark Anime, Flat / Vector, Noir, Stick Figure, Graphic Novel, Concept Art, Cinematic Realism, Storyboard Sketch, Photorealistic. Distinct mediums are strictly separated (e.g. Soft Pencil vs Charcoal vs Storyboard Sketch vs Flat Vector vs Stick Figure vs Photorealistic) with negative medium constraints.
+       - **4 Aspect Ratios & Native Dimensions**: 2.39:1 (1024×428 anamorphic scope), 16:9 (1024×576 landscape), 4:3 (1024×768 Academy ratio), 9:16 (720×1280 mobile vertical). Drives API generation dimensions and prompt composition framing.
+       - **5 Shot Sizes**: Extreme Wide, Wide, Medium, Close-up, Extreme Close-up.
+       - **6 Camera Angles**: Eye Level, Low Angle, High Angle, Bird's Eye View, Over-the-Shoulder, Dutch Angle.
+       - **4 Lenses**: 24mm (expansive field of view), 35mm (natural environmental context), 50mm (distortion-free human eye), 85mm (portrait telephoto compression and subject isolation).
+       - **6 Lighting Options**: Auto / Scene-based, Daylight, Night, Golden Hour, Low-key, Backlit.
+     - **4-Level Settings Precedence**: 1) Explicit per-shot setting $\to$ 2) Project/scene override $\to$ 3) Saved Default Storyboard Settings $\to$ 4) Original app defaults. Selected SCRIPTORA controls take precedence over conflicting free-text prompt keywords.
+     - **Reset Defaults Persistence**: Resets preferences to factory defaults and persists immediately without deleting scripts, storyboards, or generated images.
+     - **Reopening & Variation Retention**: Reopening a shot populates its visual controls, Retry preserves exact take settings, Variation preserves visual direction with fresh seeds, and version restoration restores both image and generation settings.
    - **Genuine 12 Visual Style Reference System**: Authentic visual reference stills across all 12 supported artistic styles demonstrating a consistent cinematic desert checkpoint scene (*Mojave Outpost Gate 4*):
      - Cinematic Concept Art, Storyboard Ink, Pencil Sketch, Photorealistic / Live Action, 3D Animation, Anime / Illustration, Cyberpunk, Film Noir, Watercolor, Graphic Novel / Comic, Soft Pastel, and Monochrome Charcoal.
    - **Two Distinct Generation Workflows**:

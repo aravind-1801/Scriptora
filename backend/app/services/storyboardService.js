@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { db } from '../models/db.js';
+import { buildStoryboardGenerationPrompt } from './promptBuilder.js';
 
 // Pre-Production Service: Storyboard Studio Data & Operations
 // Supports scene-grounded shot sequences, camera parameters, continuity tracking,
@@ -538,6 +539,25 @@ export function saveStoryboardPreferences(prefs = {}) {
   return db.settings.storyboard;
 }
 
+export function resetStoryboardPreferences() {
+  db.settings.storyboard = {
+    defaultStyle: "Concept Art",
+    defaultAspectRatio: "2.39:1",
+    defaultShotSize: "Medium",
+    defaultCameraAngle: "Eye Level",
+    defaultLens: "50mm",
+    defaultLighting: "Auto / Scene-based",
+    visualStyle: "Concept Art",
+    aspectRatio: "2.39:1",
+    shotSize: "Medium",
+    cameraAngle: "Eye Level",
+    lens: "50mm",
+    lighting: "Auto / Scene-based",
+    experienceLevel: "Intermediate"
+  };
+  return db.settings.storyboard;
+}
+
 export function reorderShots(scriptId, sceneId, shotIds = []) {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const idMap = new Map(sb.shots.map(s => [s.id, s]));
@@ -828,31 +848,18 @@ export async function generateShotImage(params = {}) {
 
   // 1. Real AI Image Generation via Pollinations (Black Forest Labs FLUX.1 Engine)
   if (provider === "pollinations-flux" || provider === "pollinations" || (!provider && !selectedProvider.requiresApiKey)) {
-    let width = 1024;
-    let height = 1024;
-    if (aspectRatio === "16:9") {
-      width = 1280;
-      height = 720;
-    } else if (aspectRatio === "2.39:1") {
-      width = 1344;
-      height = 560;
-    } else if (aspectRatio === "4:3") {
-      width = 1024;
-      height = 768;
-    } else if (aspectRatio === "9:16") {
-      width = 720;
-      height = 1280;
-    }
-
-    const cleanPrompt = (prompt || "Cinematic film still, beautiful atmospheric lighting, highly detailed").trim();
-    const stylePrefix = (visualStyle && visualStyle !== "None") ? `${visualStyle} style.` : "";
-    const cameraSpecs = [shotSize, cameraAngle, focalLength, lightingMood].filter(Boolean).join(", ");
-    const fullPrompt = `${stylePrefix} Cinematic film still for ${sceneHeading}: ${cleanPrompt}. Camera: ${cameraSpecs}. 8k resolution, authentic movie still, detailed environment, photorealistic cinematography.`.trim();
-
-    // Preserve reproducible seed or generate fresh seed for variation
-    const seed = params.seed || (params.isVariation ? Math.floor(Math.random() * 900000) + 100000 : 42);
-    const encodedPrompt = encodeURIComponent(fullPrompt);
-    const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&nologo=true`;
+    const preferences = getStoryboardPreferences();
+    const built = buildStoryboardGenerationPrompt(params, preferences);
+    const {
+      pollinationsUrl: url,
+      width,
+      height,
+      seed,
+      model,
+      fullPrompt,
+      cleanUserPrompt,
+      effectiveSettings
+    } = built;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 35000);
@@ -909,15 +916,23 @@ export async function generateShotImage(params = {}) {
         cdnUrl: url,
         dataUri,
         provider: "pollinations-flux",
-        model: "flux",
+        model: model || "flux",
         quality: params.quality || "hd",
         costEstimate: "Free (Pollinations AI)",
-        prompt: cleanPrompt,
+        prompt: cleanUserPrompt,
         fullPrompt,
+        visualStyle: effectiveSettings.visualStyle,
+        aspectRatio: effectiveSettings.aspectRatio,
+        shotSize: effectiveSettings.shotSize,
+        cameraAngle: effectiveSettings.cameraAngle,
+        lens: effectiveSettings.lens,
+        focalLength: effectiveSettings.lens,
+        lighting: effectiveSettings.lighting,
+        lightingMood: effectiveSettings.lighting,
         seed,
-        aspectRatio,
         width,
-        height
+        height,
+        timestamp: new Date().toISOString()
       };
     } catch (err) {
       clearTimeout(timeoutId);

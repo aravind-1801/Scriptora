@@ -811,6 +811,11 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
+    if (pathname === '/production/storyboard/preferences/reset' && method === 'POST') {
+      const preferences = storyboardService.resetStoryboardPreferences();
+      return sendJson(res, 200, { preferences, success: true });
+    }
+
     const prodSbRbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin$/);
     if (prodSbRbMatch && method === 'GET') {
       const scriptId = prodSbRbMatch[1];
