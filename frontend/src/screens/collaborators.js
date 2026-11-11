@@ -2,6 +2,8 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 import { showToast } from '../components/toast.js';
 import { setupPopupToggle, openModal, closeModal } from '../utils/popupPosition.js';
 import {
@@ -57,7 +59,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
           </button>
           <div class="flex flex-col min-w-0">
             <h1 class="page-heading font-heading font-bold text-2xl sm:text-3xl text-slate-900 tracking-tight truncate">Collaborators</h1>
-            <p class="text-xs text-slate-500 mt-0.5 truncate">Granular roles, secure invitations & end-to-end encrypted collaboration.</p>
+            <p class="text-xs text-slate-500 mt-0.5 truncate">${isLocalMode() ? 'Isolated Local Workspace · Multi-user real-time invitations & cloud sync are disabled in this mode.' : 'Granular roles, secure invitations & end-to-end encrypted collaboration.'}</p>
           </div>
         </div>
 
@@ -1196,12 +1198,20 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           const rawBase64 = await exportRawKeyBase64(masterKey);
           const fingerprint = await computeKeyFingerprint(rawBase64);
 
-          try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), rawBase64); } catch {}
+          if (isLocalMode()) {
+            await localRepo.setCryptoValue(`screenplay_key_${scriptId}`, rawBase64).catch(() => {});
+          } else {
+            try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), rawBase64); } catch {}
+          }
 
           const currentSp = await api.getScreenplay(scriptId);
           if (currentSp && currentSp.scenes) {
             const encPayload = await encryptScreenplayContent(currentSp, masterKey, 1);
-            try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
+            if (isLocalMode()) {
+              await localRepo.setCryptoValue(`screenplay_enc_${scriptId}`, encPayload).catch(() => {});
+            } else {
+              try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
+            }
           }
 
           btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Registering Zero-Knowledge Vault...</span>`;
@@ -1250,12 +1260,20 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           const newFingerprint = await computeKeyFingerprint(newRawBase64);
           const nextVersion = (e2eeData?.keyVersion || 1) + 1;
 
-          try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), newRawBase64); } catch {}
+          if (isLocalMode()) {
+            await localRepo.setCryptoValue(`screenplay_key_${scriptId}`, newRawBase64).catch(() => {});
+          } else {
+            try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), newRawBase64); } catch {}
+          }
 
           const currentSp = await api.getScreenplay(scriptId);
           if (currentSp && currentSp.scenes) {
             const encPayload = await encryptScreenplayContent(currentSp, newMasterKey, nextVersion);
-            try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
+            if (isLocalMode()) {
+              await localRepo.setCryptoValue(`screenplay_enc_${scriptId}`, encPayload).catch(() => {});
+            } else {
+              try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
+            }
           }
 
           const res = await api.rotateE2EEKey(scriptId, {
@@ -1287,17 +1305,26 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
         disableBtn.textContent = 'Deactivating...';
 
         try {
-          const encData = localStorage.getItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
-          const rawKey = localStorage.getItem(api.getUserStorageKey(`screenplay_key_${scriptId}`));
+          const encData = isLocalMode()
+            ? localRepo.getCachedCryptoValue(`screenplay_enc_${scriptId}`)
+            : localStorage.getItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
+          const rawKey = isLocalMode()
+            ? localRepo.getCachedCryptoValue(`screenplay_key_${scriptId}`)
+            : localStorage.getItem(api.getUserStorageKey(`screenplay_key_${scriptId}`));
           if (encData && rawKey) {
             try {
+              const parsedEnc = typeof encData === 'string' ? JSON.parse(encData) : encData;
               const masterKey = await importRawKeyFromBase64(rawKey);
-              const decrypted = await decryptScreenplayContent(JSON.parse(encData), masterKey);
+              const decrypted = await decryptScreenplayContent(parsedEnc, masterKey);
               if (decrypted && decrypted.scenes) {
                 await api.saveScreenplay(scriptId, decrypted);
               }
             } catch {}
-            localStorage.removeItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
+            if (isLocalMode()) {
+              await localRepo.setCryptoValue(`screenplay_enc_${scriptId}`, null).catch(() => {});
+            } else {
+              localStorage.removeItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
+            }
           }
 
           await api.disableE2EE(scriptId);

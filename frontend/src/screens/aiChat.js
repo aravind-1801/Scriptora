@@ -2,6 +2,8 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 import { promptAIConsentForEncryptedScript } from '../services/crypto.js';
 
 // AI Chat Screen (Universal Natural-Language Assistant)
@@ -128,6 +130,7 @@ export function attachAiChatEvents(navigate) {
   }
 
   // Load saved history if any
+  if (isLocalMode()) return localRepo.getCachedChatHistory();
   const saved = localStorage.getItem(api.getUserStorageKey('chat_history'));
   if (saved) {
     try {
@@ -167,11 +170,15 @@ export function attachAiChatEvents(navigate) {
     container.scrollTop = container.scrollHeight;
 
     if (save) {
-      try {
-        const history = JSON.parse(localStorage.getItem(api.getUserStorageKey('chat_history')) || '[]');
-        history.push({ role, text, timestamp: new Date().toISOString() });
-        localStorage.setItem(api.getUserStorageKey('chat_history'), JSON.stringify(history.slice(-30)));
-      } catch (_) {}
+      if (isLocalMode()) {
+        localRepo.appendChatMessage(role, text).catch(() => {});
+      } else {
+        try {
+          const history = JSON.parse(localStorage.getItem(api.getUserStorageKey('chat_history')) || '[]');
+          history.push({ role, text, timestamp: new Date().toISOString() });
+          localStorage.setItem(api.getUserStorageKey('chat_history'), JSON.stringify(history.slice(-30)));
+        } catch (_) {}
+      }
     }
   }
 
@@ -241,7 +248,11 @@ export function attachAiChatEvents(navigate) {
 
   if (clearBtn) {
     clearBtn.onclick = () => {
-      localStorage.removeItem(api.getUserStorageKey('chat_history'));
+      if (isLocalMode()) {
+        localRepo.clearChatHistory().catch(() => {});
+      } else {
+        localStorage.removeItem(api.getUserStorageKey('chat_history'));
+      }
       container.innerHTML = `
         <div class="flex items-start gap-2.5 max-w-[88%]">
           <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">

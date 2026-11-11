@@ -2,6 +2,9 @@
 // Matches user reference: Comic, Cinematic, Soft Pencil, Animation 3D, Watercolor Paint,
 // Photo / Commercial, Charcoal Sketch, Dark Anime, Flat / Vector, Noir, Stick Figure, Graphic Novel, and Custom Style (+)
 
+import { resolveBlobUriSync } from '../services/localRepository.js';
+import { isLocalMode } from '../services/dataMode.js';
+
 function svgData(content) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(content.trim())}`;
 }
@@ -641,6 +644,19 @@ export function resolveAssetUrl(url, fallbackNum = '') {
     return NEUTRAL_STORYBOARD_FALLBACK_SVG;
   }
 
+  // 0. Resolve local IndexedDB Blob URI (idb-blob://<id>) to managed objectURL
+  if (url.startsWith('idb-blob://')) {
+    const resolvedBlobUrl = resolveBlobUriSync(url);
+    if (resolvedBlobUrl && resolvedBlobUrl.startsWith('blob:')) {
+      return resolvedBlobUrl;
+    }
+    return NEUTRAL_STORYBOARD_FALLBACK_SVG;
+  }
+
+  if (url.startsWith('blob:')) {
+    return url;
+  }
+
   // 1. If it's an SVG data URI wrapping a storyboard asset or file
   if (url.startsWith('data:image/svg+xml') && (url.includes('assets/storyboard') || url.includes('assets%2Fstoryboard'))) {
     try {
@@ -659,6 +675,9 @@ export function resolveAssetUrl(url, fallbackNum = '') {
 
   // 3. If it's a persistent server image endpoint (/production/storyboard/images/... or /api/v1/storage/...)
   if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
+    if (isLocalMode()) {
+      return NEUTRAL_STORYBOARD_FALLBACK_SVG;
+    }
     const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
     let fullUrl = (url.startsWith('http://') || url.startsWith('https://'))
       ? url

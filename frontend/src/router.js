@@ -1,4 +1,5 @@
 import { store } from './state/store.js';
+import { isLocalMode } from './services/dataMode.js';
 import { renderHeader } from './components/header.js';
 import { renderBottomNav, updateBottomNav } from './components/bottomNav.js';
 import { renderAuthScreen, attachAuthEvents } from './screens/auth.js';
@@ -410,8 +411,9 @@ class Router {
       });
     }
 
-    // Check authentication for protected routes
-    const isAuth = !!store.state.currentUser;
+    // Check authentication for protected routes (bypassed in primary Local Workspace mode)
+    const localMode = isLocalMode();
+    const isAuth = localMode || !!store.state.currentUser;
     const publicPaths = ['/welcome', '/auth'];
 
     if (!isAuth && !publicPaths.includes(path)) {
@@ -419,14 +421,14 @@ class Router {
       return;
     }
 
-    if (isAuth && path === '/auth') {
+    if (!localMode && isAuth && path === '/auth') {
       this.navigate('/workspace', true);
       return;
     }
 
     // Match routes
     if (path === '/') {
-      if (isAuth) {
+      if (localMode || isAuth) {
         this.navigate('/workspace', true);
       } else {
         this.navigate('/welcome', true);

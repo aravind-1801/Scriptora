@@ -19,6 +19,9 @@ import {
   ASPECT_RATIO_SPECS,
   VISUAL_STYLE_DEFINITIONS
 } from './promptBuilder.js';
+import { getDataMode, isLocalMode, isCloudMode } from './dataMode.js';
+import { getInstallationIdSync } from './localDatabase.js';
+import * as localRepo from './localRepository.js';
 
 export {
   isCloudConfigured,
@@ -29,7 +32,10 @@ export {
   buildStoryboardGenerationPrompt,
   resolveEffectiveSettings,
   ASPECT_RATIO_SPECS,
-  VISUAL_STYLE_DEFINITIONS
+  VISUAL_STYLE_DEFINITIONS,
+  getDataMode,
+  isLocalMode,
+  isCloudMode
 };
 
 export function getApiBaseUrl() {
@@ -62,6 +68,11 @@ function getAuthToken() {
 }
 
 async function request(endpoint, options = {}) {
+  if (isLocalMode()) {
+    const localErr = new Error('Cloud backend requests are disabled in Local Workspace mode.');
+    localErr.isLocalDisabled = true;
+    throw localErr;
+  }
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${cleanEndpoint}`;
@@ -106,6 +117,9 @@ async function request(endpoint, options = {}) {
 export const DEFAULT_SCRIPTS = [];
 
 export async function getCurrentUser() {
+  if (isLocalMode()) {
+    return await localRepo.getProfile();
+  }
   try {
     const data = await request('/auth/me');
     if (data && 'user' in data) {
@@ -131,6 +145,10 @@ export async function getCurrentUser() {
 }
 
 export function getUserStorageKey(key) {
+  if (isLocalMode()) {
+    const instId = localRepo.getInstallationId() || getInstallationIdSync();
+    return `scriptora_local_${instId}_${key}`;
+  }
   let uid = 'anon';
   if (typeof localStorage !== 'undefined') {
     try {
@@ -142,6 +160,21 @@ export function getUserStorageKey(key) {
 }
 
 export async function login(credentials) {
+  if (isLocalMode()) {
+    const email = String(credentials?.email || '').trim().toLowerCase();
+    const existing = (await localRepo.getProfile()) || {};
+    const name = existing.name || (email ? email.split('@')[0] : 'Local Writer');
+    const localUser = {
+      ...existing,
+      id: existing.id || localRepo.getInstallationId() || getInstallationIdSync(),
+      name,
+      displayName: existing.displayName || name,
+      email: email || existing.email || '',
+      role: existing.role || 'Screenwriter & Director',
+      mode: 'local'
+    };
+    return await localRepo.saveProfile(localUser);
+  }
   const data = await request('/auth/login', {
     method: 'POST',
     body: JSON.stringify(credentials)
@@ -158,6 +191,21 @@ export async function login(credentials) {
 }
 
 export async function googleLogin(payload = {}) {
+  if (isLocalMode()) {
+    const existing = (await localRepo.getProfile()) || {};
+    const name = payload.name || payload.displayName || existing.name || 'Local Writer';
+    const localUser = {
+      ...existing,
+      id: existing.id || localRepo.getInstallationId() || getInstallationIdSync(),
+      name,
+      displayName: name,
+      email: payload.email || existing.email || '',
+      avatarUrl: payload.avatarUrl || payload.picture || existing.avatarUrl || null,
+      role: existing.role || 'Screenwriter & Director',
+      mode: 'local'
+    };
+    return await localRepo.saveProfile(localUser);
+  }
   const data = await request('/auth/google', {
     method: 'POST',
     body: JSON.stringify({ ...payload, provider: 'google' })
@@ -175,6 +223,18 @@ export async function googleLogin(payload = {}) {
 }
 
 export async function register(data) {
+  if (isLocalMode()) {
+    const name = String(data?.name || data?.displayName || 'Local Writer').trim();
+    const localUser = {
+      id: localRepo.getInstallationId() || getInstallationIdSync(),
+      name,
+      displayName: name,
+      email: String(data?.email || '').trim().toLowerCase(),
+      role: 'Screenwriter & Director',
+      mode: 'local'
+    };
+    return await localRepo.saveProfile(localUser);
+  }
   const res = await request('/auth/register', {
     method: 'POST',
     body: JSON.stringify(data)
@@ -191,6 +251,18 @@ export async function register(data) {
 }
 
 export async function verifyOtp(phone) {
+  if (isLocalMode()) {
+    const existing = (await localRepo.getProfile()) || {};
+    const localUser = {
+      ...existing,
+      id: existing.id || localRepo.getInstallationId() || getInstallationIdSync(),
+      name: existing.name || 'Local Writer',
+      displayName: existing.displayName || existing.name || 'Local Writer',
+      phone: typeof phone === 'object' ? phone.phone : phone,
+      mode: 'local'
+    };
+    return await localRepo.saveProfile(localUser);
+  }
   const res = await request('/auth/otp', {
     method: 'POST',
     body: JSON.stringify(typeof phone === 'object' ? phone : { phone })
@@ -208,9 +280,16 @@ export async function verifyOtp(phone) {
 
 export function clearLocalUserData() {
   if (typeof localStorage === 'undefined') return;
-  localStorage.removeItem('scriptora_user');
   localStorage.removeItem('scriptora_auth_token');
   localStorage.removeItem('scriptora_token');
+
+  // In local-first mode, auth/session reset must NEVER delete IndexedDB workspace data.
+  if (isLocalMode()) {
+    try { sessionStorage.clear(); } catch {}
+    return;
+  }
+
+  localStorage.removeItem('scriptora_user');
   localStorage.removeItem('scriptora_scripts');
   localStorage.removeItem('scriptora_selected_script');
   localStorage.removeItem('scriptora_settings');
@@ -246,7 +325,26 @@ export function clearLocalUserData() {
   } catch {}
 }
 
+export async function resetLocalWorkspace() {
+  clearLocalUserData();
+  if (typeof localStorage !== 'undefined') {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('scriptora_') && k !== 'scriptora_installation_id') {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  }
+  return await localRepo.resetLocalWorkspace();
+}
+
 export async function signOut() {
+  if (isLocalMode()) {
+    clearLocalUserData();
+    return { success: true, mode: 'local', workspacePreserved: true };
+  }
   try {
     await request('/auth/logout', { method: 'POST' });
   } catch (err) {
@@ -262,33 +360,30 @@ export async function deleteAccount(confirmation) {
     throw new Error('Confirmation mismatch. Please type "DELETE MY ACCOUNT" exactly to confirm account deletion.');
   }
 
-  try {
-    const res = await request('/auth/delete-account', {
-      method: 'POST',
-      body: JSON.stringify({ confirmation: cleanConfirmation })
-    });
-    clearLocalUserData();
-    return res;
-  } catch (err) {
-    // If backend endpoint is unreachable or 404 (e.g. pure static deployment / offline), complete local session deletion safely
-    const isOfflineOrUnreachable = !err.status ||
-      err.message?.includes('404') ||
-      err.message?.includes('Failed to fetch') ||
-      err.message?.includes('NetworkError') ||
-      err.message?.includes('Load failed');
-    if (isOfflineOrUnreachable) {
-      clearLocalUserData();
-      return {
-        success: true,
-        message: 'Account and associated personal records have been permanently deleted.'
-      };
-    }
-    throw err;
+  if (isLocalMode()) {
+    await localRepo.saveProfile(null);
+    await resetLocalWorkspace();
+    return {
+      success: true,
+      localOnly: true,
+      message: 'Local workspace profile and all browser data in this profile have been permanently cleared.'
+    };
   }
+
+  const res = await request('/auth/delete-account', {
+    method: 'POST',
+    body: JSON.stringify({ confirmation: cleanConfirmation })
+  });
+  clearLocalUserData();
+  return res;
 }
 
 // 2. SCRIPTS API
 export async function getScripts(query = '') {
+  if (isLocalMode()) {
+    const search = typeof query === 'string' ? query : (query?.search || '');
+    return await localRepo.getScripts({ search });
+  }
   const storageKey = getUserStorageKey('scripts');
   try {
     const endpoint = query ? `/scripts?q=${encodeURIComponent(query)}` : '/scripts';
@@ -321,6 +416,9 @@ export async function getScripts(query = '') {
 }
 
 export async function getScript(id) {
+  if (isLocalMode()) {
+    return await localRepo.getScript(id);
+  }
   try {
     const data = await request(`/scripts/${id}`);
     if (data.script) return data.script;
@@ -333,6 +431,9 @@ export async function getScript(id) {
 }
 
 export async function createScript(scriptData) {
+  if (isLocalMode()) {
+    return await localRepo.createScript(scriptData);
+  }
   const newScriptId = (scriptData.title || "untitled").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
   const emptyScreenplay = {
     id: newScriptId,
@@ -418,6 +519,9 @@ export async function createScript(scriptData) {
 }
 
 export async function setCurrentDraft(scriptId) {
+  if (isLocalMode()) {
+    return await localRepo.setCurrentDraft(scriptId);
+  }
   if (!scriptId) return await getScripts();
   try {
     const data = await request(`/scripts/${scriptId}/current-draft`, { method: 'POST' });
@@ -448,6 +552,9 @@ export async function setCurrentDraft(scriptId) {
 }
 
 export async function updateScript(id, updates) {
+  if (isLocalMode()) {
+    return await localRepo.updateScript(id, updates);
+  }
   try {
     const data = await request(`/scripts/${id}`, {
       method: 'PUT',
@@ -470,6 +577,9 @@ export async function updateScript(id, updates) {
 }
 
 export async function deleteScript(id) {
+  if (isLocalMode()) {
+    return await localRepo.deleteScript(id);
+  }
   try {
     await request(`/scripts/${id}`, { method: 'DELETE' });
   } catch (err) {
@@ -498,6 +608,9 @@ export async function deleteScript(id) {
 }
 
 export async function duplicateScript(id) {
+  if (isLocalMode()) {
+    return await localRepo.duplicateScript(id);
+  }
   try {
     const data = await request(`/scripts/${id}/duplicate`, { method: 'POST' });
     if (data.script) {
@@ -523,6 +636,9 @@ export async function duplicateScript(id) {
 }
 
 export async function archiveScript(id) {
+  if (isLocalMode()) {
+    return await localRepo.archiveScript(id);
+  }
   try {
     await request(`/scripts/${id}/archive`, { method: 'POST' });
   } catch (err) {
@@ -537,6 +653,21 @@ export async function archiveScript(id) {
 
 // 3. SCREENPLAY API
 export async function getScreenplay(scriptId) {
+  if (isLocalMode()) {
+    const encStored = await localRepo.getCryptoValue(`screenplay_enc_${scriptId}`, null);
+    const rawKey = await localRepo.getCryptoValue(`screenplay_key_${scriptId}`, null);
+    if (encStored && rawKey) {
+      try {
+        const masterKey = await importRawKeyFromBase64(rawKey);
+        const encObj = typeof encStored === 'string' ? JSON.parse(encStored) : encStored;
+        const dec = await decryptScreenplayContent(encObj, masterKey);
+        if (dec && dec.scenes) return dec;
+      } catch (err) {
+        console.warn('Failed to decrypt E2EE screenplay payload:', err);
+      }
+    }
+    return await localRepo.getScreenplay(scriptId);
+  }
   let screenplay = null;
 
   // If encrypted payload exists for E2EE, decrypt it with local master key
@@ -625,6 +756,21 @@ export async function getScreenplay(scriptId) {
 }
 
 export async function saveScreenplay(scriptId, screenplay) {
+  if (isLocalMode()) {
+    const e2eeSetting = await localRepo.getCryptoValue(`e2ee_${scriptId}`, null);
+    const rawKey = await localRepo.getCryptoValue(`screenplay_key_${scriptId}`, null);
+    if (e2eeSetting?.enabled && rawKey) {
+      try {
+        const masterKey = await importRawKeyFromBase64(rawKey);
+        const encPayload = await encryptScreenplayContent(screenplay, masterKey, e2eeSetting.keyVersion || 1);
+        await localRepo.setCryptoValue(`screenplay_enc_${scriptId}`, encPayload);
+      } catch (e) {
+        console.warn('E2EE auto-encrypt on save skipped:', e);
+      }
+    }
+    const saved = await localRepo.saveScreenplay(scriptId, screenplay);
+    return { success: true, screenplay: saved };
+  }
   localStorage.setItem(getUserStorageKey(`screenplay_${scriptId}`), JSON.stringify(screenplay));
 
   // If E2EE is enabled, also encrypt content locally with the master key
@@ -655,6 +801,9 @@ export async function saveScreenplay(scriptId, screenplay) {
 
 // 4. VERSIONS API
 export async function getVersions(scriptId) {
+  if (isLocalMode()) {
+    return await localRepo.getVersions(scriptId);
+  }
   try {
     const data = await request(`/versions/${scriptId}`);
     return data.versions;
@@ -664,6 +813,9 @@ export async function getVersions(scriptId) {
 }
 
 export async function createVersion(scriptId, versionData) {
+  if (isLocalMode()) {
+    return await localRepo.createVersion(scriptId, versionData);
+  }
   try {
     const data = await request(`/versions/${scriptId}`, {
       method: 'POST',
@@ -687,8 +839,11 @@ export async function createVersion(scriptId, versionData) {
 // 5. COLLABORATION API
 const DEFAULT_COLLABORATORS = [];
 
+const LOCAL_COLLAB_DISABLED_MSG = 'Live multi-user collaboration is unavailable in isolated Local Workspace mode.';
+
 export async function getCollaborators(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) return [];
   try {
     const data = await request(`/collaborators/${scriptId}`);
     if (data.collaborators && Array.isArray(data.collaborators)) {
@@ -711,6 +866,29 @@ export async function getCollaborators(scriptId) {
 }
 
 export async function getUserPermissions(scriptId) {
+  if (isLocalMode()) {
+    return {
+      role: 'Owner',
+      permissions: {
+        'screenplay.read': true,
+        'screenplay.edit': true,
+        'scene.create': true,
+        'scene.delete': true,
+        'character.manage': true,
+        'dialogue.edit': true,
+        'storyboard.view': true,
+        'storyboard.edit': true,
+        'analysis.run': true,
+        'comments.create': true,
+        'production.view': true,
+        'production.manage': true,
+        'collaborators.invite': false,
+        'collaborators.manage': false,
+        'screenplay.export': true,
+        'security.manage': true
+      }
+    };
+  }
   try {
     const data = await request(`/collaborators/${scriptId}/permissions`);
     return data;
@@ -740,6 +918,9 @@ export async function getUserPermissions(scriptId) {
 }
 
 export async function inviteCollaborator(scriptId, inviteData) {
+  if (isLocalMode()) {
+    throw new Error(LOCAL_COLLAB_DISABLED_MSG);
+  }
   const email = (inviteData.email || '').trim().toLowerCase();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('Please provide a valid email address.');
@@ -788,6 +969,7 @@ export async function inviteCollaborator(scriptId, inviteData) {
 }
 
 export async function getPendingInvitations(scriptId) {
+  if (isLocalMode()) return [];
   try {
     const data = await request(`/collaborators/${scriptId}/invitations`);
     if (data.invitations && Array.isArray(data.invitations)) {
@@ -809,6 +991,7 @@ export async function getPendingInvitations(scriptId) {
 }
 
 export async function revokeInvitation(scriptId, inviteId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const res = await request(`/collaborators/${scriptId}/invitations/${inviteId}`, {
       method: 'DELETE'
@@ -828,6 +1011,7 @@ export async function revokeInvitation(scriptId, inviteId) {
 }
 
 export async function resendInvitation(scriptId, inviteId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const res = await request(`/collaborators/${scriptId}/invitations/${inviteId}/resend`, {
       method: 'POST'
@@ -853,6 +1037,7 @@ export async function resendInvitation(scriptId, inviteId) {
 }
 
 export async function acceptInvitation(token) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const res = await request(`/collaborators/invitations/${token}/accept`, {
       method: 'POST'
@@ -897,6 +1082,7 @@ export async function acceptInvitation(token) {
 }
 
 export async function changeCollaboratorRole(scriptId, memberId, newRole) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const data = await request(`/collaborators/${scriptId}/${memberId}`, {
       method: 'PUT',
@@ -921,6 +1107,7 @@ export async function changeCollaboratorRole(scriptId, memberId, newRole) {
 }
 
 export async function removeCollaborator(scriptId, memberId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const res = await request(`/collaborators/${scriptId}/${memberId}`, {
       method: 'DELETE'
@@ -941,6 +1128,9 @@ export async function removeCollaborator(scriptId, memberId) {
 
 // 6. JOIN CODE & ACCESS REQUEST API
 export async function getJoinCodeConfig(scriptId) {
+  if (isLocalMode()) {
+    return { code: null, status: 'disabled_local', allowedRoles: [] };
+  }
   try {
     const data = await request(`/join-code/config/${scriptId}`);
     return data.config;
@@ -955,6 +1145,7 @@ export async function getJoinCodeConfig(scriptId) {
 }
 
 export async function generateJoinCode(scriptId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   try {
     const data = await request(`/join-code/generate/${scriptId}`, {
       method: 'POST'
@@ -970,12 +1161,14 @@ export async function generateJoinCode(scriptId) {
 }
 
 export async function revokeJoinCode(scriptId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await request(`/join-code/revoke/${scriptId}`, {
     method: 'POST'
   });
 }
 
 export async function validateJoinCode(code) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await request('/join-code/validate', {
     method: 'POST',
     body: JSON.stringify({ code })
@@ -983,6 +1176,7 @@ export async function validateJoinCode(code) {
 }
 
 export async function requestJoinAccess(code, requestData) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await request('/join-code/request-access', {
     method: 'POST',
     body: JSON.stringify({ code, ...requestData })
@@ -990,6 +1184,7 @@ export async function requestJoinAccess(code, requestData) {
 }
 
 export async function getAccessRequests(scriptId) {
+  if (isLocalMode()) return [];
   try {
     const data = await request(`/collaborators/${scriptId}/requests`);
     return data.requests || [];
@@ -999,6 +1194,7 @@ export async function getAccessRequests(scriptId) {
 }
 
 export async function approveAccessRequest(scriptId, requestId, assignedRole) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await request(`/collaborators/${scriptId}/requests/${requestId}/approve`, {
     method: 'POST',
     body: JSON.stringify({ role: assignedRole })
@@ -1006,17 +1202,20 @@ export async function approveAccessRequest(scriptId, requestId, assignedRole) {
 }
 
 export async function rejectAccessRequest(scriptId, requestId) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await request(`/collaborators/${scriptId}/requests/${requestId}/reject`, {
     method: 'POST'
   });
 }
 
 export async function joinWithCode(code) {
+  if (isLocalMode()) throw new Error(LOCAL_COLLAB_DISABLED_MSG);
   return await requestJoinAccess(code, { requestedRole: 'Viewer' });
 }
 
 // 6b. SECURITY ACTIVITY LOG API
 export async function getSecurityActivity(scriptId) {
+  if (isLocalMode()) return [];
   try {
     const data = await request(`/collaborators/${scriptId}/security-activity`);
     return data.activity || [];
@@ -1027,6 +1226,18 @@ export async function getSecurityActivity(scriptId) {
 
 // 6c. END-TO-END ENCRYPTION (E2EE) API
 export async function getE2EESettings(scriptId) {
+  if (isLocalMode()) {
+    const saved = await localRepo.getCryptoValue(`e2ee_${scriptId}`, null);
+    if (saved) return saved;
+    return {
+      enabled: false,
+      algorithm: 'AES-GCM-256',
+      keyVersion: 1,
+      keyFingerprint: null,
+      lastRotated: null,
+      wrappedKeys: {}
+    };
+  }
   try {
     const data = await request(`/collaborators/${scriptId}/e2ee`);
     if (data?.e2ee) {
@@ -1051,6 +1262,18 @@ export async function getE2EESettings(scriptId) {
 }
 
 export async function enableE2EE(scriptId, payload) {
+  if (isLocalMode()) {
+    const e2ee = {
+      enabled: true,
+      algorithm: 'AES-GCM-256',
+      keyVersion: 1,
+      keyFingerprint: payload.keyFingerprint || `sha256-${Date.now()}`,
+      lastRotated: new Date().toISOString(),
+      wrappedKeys: payload.wrappedKeys || {}
+    };
+    await localRepo.setCryptoValue(`e2ee_${scriptId}`, e2ee);
+    return { success: true, e2ee };
+  }
   try {
     const res = await request(`/collaborators/${scriptId}/e2ee/enable`, {
       method: 'POST',
@@ -1075,6 +1298,19 @@ export async function enableE2EE(scriptId, payload) {
 }
 
 export async function rotateE2EEKey(scriptId, payload) {
+  if (isLocalMode()) {
+    const prev = (await localRepo.getCryptoValue(`e2ee_${scriptId}`, null)) || {};
+    const e2ee = {
+      ...prev,
+      enabled: true,
+      keyVersion: (prev.keyVersion || 1) + 1,
+      keyFingerprint: payload.newKeyFingerprint || `sha256-v${(prev.keyVersion || 1) + 1}-${Date.now()}`,
+      lastRotated: new Date().toISOString(),
+      wrappedKeys: payload.wrappedKeys || prev.wrappedKeys || {}
+    };
+    await localRepo.setCryptoValue(`e2ee_${scriptId}`, e2ee);
+    return { success: true, e2ee };
+  }
   try {
     const res = await request(`/collaborators/${scriptId}/e2ee/rotate`, {
       method: 'POST',
@@ -1100,6 +1336,16 @@ export async function rotateE2EEKey(scriptId, payload) {
 }
 
 export async function disableE2EE(scriptId) {
+  if (isLocalMode()) {
+    const prev = (await localRepo.getCryptoValue(`e2ee_${scriptId}`, null)) || {};
+    const e2ee = {
+      ...prev,
+      enabled: false,
+      disabledAt: new Date().toISOString()
+    };
+    await localRepo.setCryptoValue(`e2ee_${scriptId}`, e2ee);
+    return { success: true, e2ee };
+  }
   try {
     const res = await request(`/collaborators/${scriptId}/e2ee/disable`, {
       method: 'POST'
@@ -1121,6 +1367,7 @@ export async function disableE2EE(scriptId) {
 }
 
 export async function registerUserPublicKey(publicKeyJwk) {
+  if (isLocalMode()) return { success: false, localOnly: true };
   return await request('/e2ee/public-key', {
     method: 'POST',
     body: JSON.stringify({ publicKeyJwk })
@@ -1128,6 +1375,7 @@ export async function registerUserPublicKey(publicKeyJwk) {
 }
 
 export async function getUserPublicKey(email) {
+  if (isLocalMode()) return null;
   try {
     const data = await request(`/e2ee/public-key/${encodeURIComponent(email)}`);
     return data.keyRecord;
@@ -1138,6 +1386,9 @@ export async function getUserPublicKey(email) {
 
 // 7. NOTIFICATIONS API
 export async function getNotifications() {
+  if (isLocalMode()) {
+    return await localRepo.getNotifications();
+  }
   try {
     const data = await request('/notifications');
     return data;
@@ -1150,6 +1401,9 @@ export async function getNotifications() {
 }
 
 export async function markNotificationRead(id) {
+  if (isLocalMode()) {
+    return await localRepo.markNotificationRead(id);
+  }
   try {
     return await request(`/notifications/${id}/read`, { method: 'POST' });
   } catch {
@@ -1158,6 +1412,9 @@ export async function markNotificationRead(id) {
 }
 
 export async function markAllNotificationsRead() {
+  if (isLocalMode()) {
+    return await localRepo.markAllNotificationsRead();
+  }
   try {
     return await request('/notifications/read-all', { method: 'POST' });
   } catch {
@@ -1172,6 +1429,9 @@ export async function getUnreadNotificationCount() {
 
 // 8. PROFILE & SETTINGS API
 export async function getProfile() {
+  if (isLocalMode()) {
+    return await localRepo.getProfile();
+  }
   try {
     const data = await request('/profile');
     return data.profile;
@@ -1181,6 +1441,21 @@ export async function getProfile() {
 }
 
 export async function updateProfile(updates) {
+  if (isLocalMode()) {
+    const current = (await localRepo.getProfile()) || {
+      id: localRepo.getInstallationId() || getInstallationIdSync(),
+      name: 'Local Writer',
+      role: 'Screenwriter & Director',
+      mode: 'local'
+    };
+    const updated = { ...current, ...updates };
+    if (updates.name) {
+      const parts = updates.name.trim().split(/\s+/);
+      updated.initials = ((parts[0]?.[0] || 'A') + (parts[1]?.[0] || '')).toUpperCase();
+      updated.displayName = updates.name;
+    }
+    return await localRepo.saveProfile(updated);
+  }
   try {
     const data = await request('/profile', {
       method: 'PUT',
@@ -1202,6 +1477,9 @@ export async function updateProfile(updates) {
 }
 
 export async function getSettings() {
+  if (isLocalMode()) {
+    return await localRepo.getSettings();
+  }
   try {
     const data = await request('/settings');
     return data.settings;
@@ -1240,6 +1518,9 @@ export async function getSettings() {
 }
 
 export async function updateSettings(updates) {
+  if (isLocalMode()) {
+    return await localRepo.saveSettings(updates);
+  }
   try {
     const data = await request('/settings', {
       method: 'PUT',
@@ -1257,6 +1538,10 @@ export async function updateSettings(updates) {
 
 // 9. INTELLIGENCE API
 export async function getIntelligenceContext(scriptId) {
+  if (isLocalMode()) {
+    const rec = await localRepo.getIntelligenceRecord(scriptId);
+    return rec.context;
+  }
   try {
     const data = await request(`/intelligence/${scriptId}/context`);
     return data.context;
@@ -1273,6 +1558,9 @@ export async function getIntelligenceContext(scriptId) {
 }
 
 export async function updateIntelligenceContext(scriptId, context) {
+  if (isLocalMode()) {
+    return await localRepo.saveIntelligenceContext(scriptId, context);
+  }
   try {
     const data = await request(`/intelligence/${scriptId}/context`, {
       method: 'PUT',
@@ -1285,6 +1573,11 @@ export async function updateIntelligenceContext(scriptId, context) {
 }
 
 export async function getIntelligenceAnalysis(scriptId) {
+  if (isLocalMode()) {
+    const script = await localRepo.getScript(scriptId);
+    const screenplay = await localRepo.getScreenplay(scriptId);
+    return localRepo.computeLocalIntelligenceAnalysis(script, screenplay);
+  }
   try {
     const data = await request(`/intelligence/${scriptId}/analysis`);
     return data;
@@ -1315,6 +1608,24 @@ export async function getIntelligenceAnalysis(scriptId) {
 }
 
 export async function queryIntelligence(query, scriptId) {
+  if (isLocalMode()) {
+    const script = await localRepo.getScript(scriptId);
+    const screenplay = await localRepo.getScreenplay(scriptId);
+    const stats = localRepo.computeLocalIntelligenceAnalysis(script, screenplay);
+    const title = script?.title || 'your current screenplay';
+    const scCount = stats.summary?.scenesCount || 0;
+    const chCount = stats.summary?.charactersCount || 0;
+    const wCount = stats.summary?.wordCount || 0;
+    if (!wCount) {
+      return `"${title}" is currently a blank draft (${scCount} scene, 0 words). Start writing scenes and dialogue in the Editor for deeper local structural analysis.`;
+    }
+    const qLower = String(query || '').toLowerCase();
+    const scenesList = (screenplay?.scenes || []).slice(0, 5).map((s, i) => `Scene ${s.number || i + 1}: ${s.slugline || 'Untitled'}`).join(', ');
+    if (qLower.includes('character') || qLower.includes('cast')) {
+      return `Local Analysis for "${title}": ${chCount} active characters across ${scCount} scenes (${wCount} words). Key scene headings: ${scenesList}.`;
+    }
+    return `Local Analysis for "${title}": ${scCount} scenes, ${chCount} characters, ~${wCount} words (overall score ${stats.scores.overall}/100, pacing ${stats.scores.pacing}/100, dialogue ${stats.scores.dialogue}/100). Computed locally from your IndexedDB workspace.`;
+  }
   try {
     const data = await request('/intelligence/query', {
       method: 'POST',
@@ -1332,6 +1643,9 @@ export async function queryIntelligence(query, scriptId) {
 
 export async function getProductionWorkspace(scriptId) {
   if (!scriptId) return null;
+  if (isLocalMode()) {
+    return await localRepo.getProductionWorkspace(scriptId);
+  }
   try {
     const data = await request(`/production/${scriptId}`);
     if (data?.workspace) {
@@ -1378,6 +1692,9 @@ export async function getProductionWorkspace(scriptId) {
 }
 
 export async function updateProductionWorkspace(scriptId, updates) {
+  if (isLocalMode()) {
+    return await localRepo.updateProductionWorkspace(scriptId, updates);
+  }
   try {
     const data = await request(`/production/${scriptId}`, {
       method: 'PUT',
@@ -1397,6 +1714,13 @@ export async function updateProductionWorkspace(scriptId, updates) {
 }
 
 export async function pinProductionSourceVersion(scriptId, newVersion) {
+  if (isLocalMode()) {
+    return await localRepo.updateProductionWorkspace(scriptId, {
+      pinnedSourceVersion: newVersion,
+      pinnedTimestamp: 'Just now',
+      isStale: false
+    });
+  }
   try {
     const data = await request(`/production/${scriptId}/pin`, {
       method: 'POST',
@@ -1419,6 +1743,13 @@ export async function pinProductionSourceVersion(scriptId, newVersion) {
 
 export async function getProductionResources(scriptId, category = null) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    const list = await localRepo.getProductionSection(scriptId, 'resources', []);
+    if (category && category !== 'all') {
+      return list.filter(r => (r.category || '').toLowerCase() === category.toLowerCase());
+    }
+    return list;
+  }
   try {
     const url = `/production/${scriptId}/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`;
     const data = await request(url);
@@ -1444,6 +1775,9 @@ export async function getProductionResources(scriptId, category = null) {
 
 export async function getProductionDocuments(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'documents', []);
+  }
   try {
     const data = await request(`/production/${scriptId}/documents`);
     if (data?.documents) {
@@ -1462,6 +1796,9 @@ export async function getProductionDocuments(scriptId) {
 
 export async function getProductionProposals(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'proposals', []);
+  }
   try {
     const data = await request(`/production/${scriptId}/proposals`);
     if (data?.proposals) {
@@ -1479,6 +1816,24 @@ export async function getProductionProposals(scriptId) {
 }
 
 export async function submitProductionProposal(scriptId, proposal) {
+  if (isLocalMode()) {
+    const list = await localRepo.getProductionSection(scriptId, 'proposals', []);
+    const newProp = {
+      id: `prop-${Date.now()}`,
+      scriptId,
+      sourceVersion: proposal.sourceVersion || 'Draft 1.0',
+      title: proposal.title || 'Production Schedule Change',
+      description: proposal.description || '',
+      category: proposal.category || 'General',
+      submittedBy: proposal.submittedBy || localRepo.getCachedProfile()?.name || 'Local Writer',
+      submitterRole: proposal.submitterRole || 'Owner',
+      status: 'Awaiting review',
+      impact: proposal.impact || 'Requires schedule adjustment',
+      createdAt: new Date().toISOString()
+    };
+    await localRepo.saveProductionSection(scriptId, 'proposals', [newProp, ...list]);
+    return newProp;
+  }
   try {
     const data = await request(`/production/${scriptId}/proposals`, {
       method: 'POST',
@@ -1512,6 +1867,17 @@ export async function submitProductionProposal(scriptId, proposal) {
 }
 
 export async function reviewProductionProposal(scriptId, proposalId, action, reviewNotes = '') {
+  if (isLocalMode()) {
+    const list = await localRepo.getProductionSection(scriptId, 'proposals', []);
+    const prop = list.find(p => p.id === proposalId);
+    if (prop) {
+      prop.status = action === 'accept' ? 'Accepted' : (action === 'reject' ? 'Rejected' : 'Conflict');
+      prop.resolvedAt = new Date().toISOString();
+      prop.resolutionNotes = reviewNotes || (action === 'accept' ? 'Accepted locally' : 'Declined locally');
+      await localRepo.saveProductionSection(scriptId, 'proposals', list);
+    }
+    return prop;
+  }
   try {
     const data = await request(`/production/${scriptId}/proposals/${proposalId}/review`, {
       method: 'POST',
@@ -1539,6 +1905,9 @@ export async function reviewProductionProposal(scriptId, proposalId, action, rev
 
 export async function getProductionAuditTrail(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'audit', []);
+  }
   try {
     const data = await request(`/production/${scriptId}/audit`);
     if (data?.auditTrail) {
@@ -1561,6 +1930,9 @@ export async function getProductionAuditTrail(scriptId) {
 
 export async function getProductionScenes(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionScenes(scriptId);
+  }
   try {
     const data = await request(`/production/${scriptId}/scenes`);
     if (data?.scenes) {
@@ -1578,6 +1950,14 @@ export async function getProductionScenes(scriptId) {
 }
 
 export async function getProductionScene(scriptId, sceneId) {
+  if (isLocalMode()) {
+    const scenes = await localRepo.getProductionScenes(scriptId);
+    const scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId));
+    if (!scene) return null;
+    const breakdown = await getProductionBreakdown(scriptId);
+    const elements = breakdown.filter(b => b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber)));
+    return { ...scene, elements };
+  }
   try {
     const data = await request(`/production/${scriptId}/scenes/${sceneId}`);
     if (data?.scene) return data.scene;
@@ -1592,6 +1972,9 @@ export async function getProductionScene(scriptId, sceneId) {
 }
 
 export async function updateProductionScene(scriptId, sceneId, updates) {
+  if (isLocalMode()) {
+    return await localRepo.updateProductionScene(scriptId, sceneId, updates);
+  }
   try {
     const data = await request(`/production/${scriptId}/scenes/${sceneId}`, {
       method: 'PUT',
@@ -1612,6 +1995,17 @@ export async function updateProductionScene(scriptId, sceneId, updates) {
 
 export async function getProductionBreakdown(scriptId, category = null, scene = null) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    let list = await localRepo.getProductionSection(scriptId, 'breakdown', []);
+    if (category && category !== 'all') {
+      list = list.filter(b => (b.category || '').toLowerCase() === category.toLowerCase());
+    }
+    if (scene && scene !== 'all') {
+      const sceneNum = Number(String(scene).replace('scene-', ''));
+      list = list.filter(b => b.sceneId === scene || String(b.sceneNumber) === String(scene) || (Array.isArray(b.scenes) && b.scenes.includes(sceneNum)) || b.sceneNumber === sceneNum);
+    }
+    return list;
+  }
   try {
     const query = new URLSearchParams();
     if (category) query.set('category', category);
@@ -1641,6 +2035,32 @@ export async function getProductionBreakdown(scriptId, category = null, scene = 
 }
 
 export async function updateBreakdownItem(scriptId, itemId, updates) {
+  if (isLocalMode()) {
+    const list = await localRepo.getProductionSection(scriptId, 'breakdown', []);
+    const item = list.find(b => b.id === itemId);
+    if (item) {
+      const ownerLabel = (localRepo.getCachedProfile()?.name || 'Local Writer') + ' (Owner)';
+      if ((updates.name && updates.name !== item.name) || (updates.description && updates.description !== item.description)) {
+        item.userCorrection = {
+          previousName: item.name,
+          previousDesc: item.description,
+          correctedBy: ownerLabel,
+          correctedAt: new Date().toISOString()
+        };
+      }
+      Object.assign(item, updates);
+      if (updates.status === 'Confirmed') {
+        item.isHumanConfirmed = true;
+        item.confirmedBy = ownerLabel;
+        item.confirmedAt = new Date().toISOString();
+      } else if (updates.status === 'Needs Review') {
+        item.isHumanConfirmed = false;
+      }
+      await localRepo.saveProductionSection(scriptId, 'breakdown', list);
+      return item;
+    }
+    return updates;
+  }
   try {
     const data = await request(`/production/${scriptId}/breakdown/${itemId}`, {
       method: 'PUT',
@@ -1684,6 +2104,12 @@ export async function updateBreakdownItem(scriptId, itemId, updates) {
 }
 
 export async function deleteBreakdownItem(scriptId, itemId) {
+  if (isLocalMode()) {
+    const list = await localRepo.getProductionSection(scriptId, 'breakdown', []);
+    const filtered = list.filter(b => b.id !== itemId);
+    await localRepo.saveProductionSection(scriptId, 'breakdown', filtered);
+    return { success: true, removedId: itemId };
+  }
   try {
     const data = await request(`/production/${scriptId}/breakdown/${itemId}`, {
       method: 'DELETE'
@@ -1717,7 +2143,7 @@ export async function createBreakdownItem(scriptId, itemData) {
   } catch (e) {}
 
   const list = await getProductionBreakdown(scriptId);
-  const ownerLabel = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
+  const ownerLabel = (localRepo.getCachedProfile()?.name || "Screenplay Owner") + " (Owner)";
   const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 1));
   const newItem = {
     id: `elem-${Date.now()}`,
@@ -1762,12 +2188,19 @@ export async function createBreakdownItem(scriptId, itemData) {
     operationalRequirements: itemData.operationalRequirements || ""
   };
   list.unshift(newItem);
-  localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'breakdown', list);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
+  }
   return newItem;
 }
 
 export async function getProductionCallSheets(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'callSheets', []);
+  }
   try {
     const data = await request(`/production/${scriptId}/call-sheets`);
     if (data?.callSheets) {
@@ -1829,7 +2262,11 @@ export async function createProductionCallSheet(scriptId, data) {
     publishedAt: null
   };
   sheets.push(newCs);
-  localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'callSheets', sheets);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+  }
   return newCs;
 }
 
@@ -1846,7 +2283,11 @@ export async function updateProductionCallSheet(scriptId, callSheetId, updates) 
   const cs = sheets.find(c => c.id === callSheetId);
   if (cs) {
     Object.assign(cs, updates);
-    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+    if (isLocalMode()) {
+      await localRepo.saveProductionSection(scriptId, 'callSheets', sheets);
+    } else {
+      localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+    }
     return cs;
   }
   return updates;
@@ -1866,9 +2307,13 @@ export async function publishProductionCallSheet(scriptId, callSheetId) {
     cs.status = "Confirmed";
     cs.isPublished = true;
     cs.version = "v1.0 (Snapshot)";
-    cs.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
+    cs.approvedBy = (localRepo.getCachedProfile()?.name || "Screenplay Owner") + " (Owner)";
     cs.publishedAt = new Date().toISOString();
-    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+    if (isLocalMode()) {
+      await localRepo.saveProductionSection(scriptId, 'callSheets', sheets);
+    } else {
+      localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
+    }
     return cs;
   }
   return null;
@@ -1876,6 +2321,9 @@ export async function publishProductionCallSheet(scriptId, callSheetId) {
 
 export async function getProductionSchedule(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'schedule', []);
+  }
   try {
     const data = await request(`/production/${scriptId}/schedule`);
     if (data?.schedule) {
@@ -1905,7 +2353,11 @@ export async function updateProductionScheduleDay(scriptId, dayNumber, updates) 
   const day = schedule.find(d => d.dayNumber === Number(dayNumber));
   if (day) {
     Object.assign(day, updates);
-    localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
+    if (isLocalMode()) {
+      await localRepo.saveProductionSection(scriptId, 'schedule', schedule);
+    } else {
+      localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
+    }
     return day;
   }
   return updates;
@@ -1924,7 +2376,11 @@ export async function confirmProductionSchedule(scriptId) {
     day.status = "Confirmed";
     day.isLocked = true;
   });
-  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'schedule', schedule);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
+  }
   return schedule;
 }
 
@@ -1950,6 +2406,9 @@ export async function reorderSceneWithinDay(scriptId, dayNumber, newSceneNumbers
 
 export async function getProductionReadiness(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getProductionSection(scriptId, 'readiness', []) || [];
+  }
   try {
     const data = await request(`/production/${scriptId}/readiness`);
     if (data?.readiness) {
@@ -1979,7 +2438,11 @@ export async function resolveProductionReadiness(scriptId, readinessId) {
   if (item) {
     item.status = "resolved";
     item.severity = "ready";
-    localStorage.setItem(getUserStorageKey(`prod_readiness_${scriptId}`), JSON.stringify(list));
+    if (isLocalMode()) {
+      await localRepo.saveProductionSection(scriptId, 'readiness', list);
+    } else {
+      localStorage.setItem(getUserStorageKey(`prod_readiness_${scriptId}`), JSON.stringify(list));
+    }
     return item;
   }
   return null;
@@ -1993,6 +2456,14 @@ export async function restoreProductionSnapshot(scriptId, versionTag) {
     });
     if (res?.workspace) return res.workspace;
   } catch (e) {}
+
+  if (isLocalMode()) {
+    return await localRepo.updateProductionWorkspace(scriptId, {
+      pinnedSourceVersion: versionTag,
+      pinnedTimestamp: 'Just now (Restored)',
+      isStale: false
+    });
+  }
 
   const ws = await getProductionWorkspace(scriptId);
   ws.pinnedSourceVersion = versionTag;
@@ -2015,7 +2486,11 @@ export async function deleteProductionCallSheet(scriptId, csId) {
 
   const sheets = await getProductionCallSheets(scriptId);
   const filtered = sheets.filter(c => c.id !== csId);
-  localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(filtered));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'callSheets', filtered);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(filtered));
+  }
   return { success: true, removedId: csId };
 }
 
@@ -2048,7 +2523,11 @@ export async function addProductionScheduleDay(scriptId, dayData) {
     status: "Draft"
   };
   days.push(newDay);
-  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(days));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'schedule', days);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(days));
+  }
   return newDay;
 }
 
@@ -2066,7 +2545,11 @@ export async function deleteProductionScheduleDay(scriptId, dayNumber) {
 
   const days = await getProductionSchedule(scriptId);
   const filtered = days.filter(d => d.dayNumber !== num);
-  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(filtered));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'schedule', filtered);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(filtered));
+  }
   return { success: true, removedDayNumber: num };
 }
 
@@ -2100,8 +2583,12 @@ export async function createProductionResource(scriptId, resData) {
     notes: resData.notes || ""
   };
   list.push(newRes);
-  localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
-  localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'resources', list);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
+  }
   return newRes;
 }
 
@@ -2125,8 +2612,12 @@ export async function updateProductionResource(scriptId, resId, updates) {
   const item = list.find(r => r.id === resId);
   if (item) {
     Object.assign(item, updates);
-    localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
-    localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
+    if (isLocalMode()) {
+      await localRepo.saveProductionSection(scriptId, 'resources', list);
+    } else {
+      localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
+    }
     return item;
   }
   return updates;
@@ -2146,8 +2637,12 @@ export async function deleteProductionResource(scriptId, resId) {
 
   const list = await getProductionResources(scriptId);
   const filtered = list.filter(r => r.id !== resId);
-  localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(filtered));
-  localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(filtered));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'resources', filtered);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(filtered));
+    localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(filtered));
+  }
   return { success: true, removedId: resId };
 }
 
@@ -2181,7 +2676,11 @@ export async function createProductionDocument(scriptId, docData) {
     version: docData.version || "v0.9"
   };
   docs.unshift(newDoc);
-  localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(docs));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'documents', docs);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(docs));
+  }
   return newDoc;
 }
 
@@ -2198,7 +2697,11 @@ export async function deleteProductionDocument(scriptId, docId) {
 
   const docs = await getProductionDocuments(scriptId);
   const filtered = docs.filter(d => d.id !== docId);
-  localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(filtered));
+  if (isLocalMode()) {
+    await localRepo.saveProductionSection(scriptId, 'documents', filtered);
+  } else {
+    localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(filtered));
+  }
   return { success: true, removedId: docId };
 }
 
@@ -2333,6 +2836,9 @@ export async function getAiImageProviders() {
 
 export async function getStoryboards(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getStoryboards(scriptId);
+  }
   const storageKey = getUserStorageKey(`storyboards_${scriptId}`);
   try {
     const data = await request(`/production/${scriptId}/storyboards`);
@@ -2373,6 +2879,19 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
     return NEUTRAL_STORYBOARD_FALLBACK;
   }
 
+  // 0. Resolve local IndexedDB binary blob reference (idb-blob://<id>)
+  if (url.startsWith('idb-blob://')) {
+    const resolvedBlobUrl = localRepo.resolveBlobUriSync(url);
+    if (resolvedBlobUrl && resolvedBlobUrl.startsWith('blob:')) {
+      return resolvedBlobUrl;
+    }
+    return NEUTRAL_STORYBOARD_FALLBACK;
+  }
+
+  if (url.startsWith('blob:')) {
+    return url;
+  }
+
   // 1. If it's an SVG data URI wrapping a storyboard asset
   if (url.startsWith('data:image/svg+xml') && (url.includes('assets/storyboard') || url.includes('assets%2Fstoryboard'))) {
     try {
@@ -2396,6 +2915,9 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
 
   // 5. If it's a server image endpoint path (/production/storyboard/images/... or /api/v1/storage/...)
   if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
+    if (isLocalMode()) {
+      return NEUTRAL_STORYBOARD_FALLBACK;
+    }
     const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
     let fullUrl = url.startsWith('http') ? url : `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
     const token = getAuthToken();
@@ -2483,17 +3005,23 @@ export function safeStorageSetItem(key, value) {
 
 export function safeSetStoredStoryboard(scriptId, sceneId, storyboard) {
   if (!storyboard) return;
+  if (isLocalMode()) {
+    return localRepo.saveStoryboard(scriptId, sceneId, storyboard).catch((err) => {
+      console.error('[SCRIPTORA LocalDB] Failed to save storyboard:', err);
+    });
+  }
   const sanitized = sanitizeStoryboard(storyboard);
   const storageKey = getUserStorageKey(`storyboard_${scriptId}_${sceneId}`);
   safeStorageSetItem(storageKey, JSON.stringify(sanitized));
 }
 
-// Auto-run legacy storage migration on startup
-if (typeof window !== 'undefined') {
+// Auto-run legacy storage migration on startup (cloud fallback mode only)
+if (typeof window !== 'undefined' && !isLocalMode()) {
   setTimeout(cleanupLegacyStoryboardStorage, 100);
 }
 
 export async function getStoryboardSignedUrl(scriptId, storagePath) {
+  if (isLocalMode()) return null;
   try {
     const data = await request(`/production/${scriptId}/storyboard/signed-url`, {
       method: 'POST',
@@ -2547,10 +3075,23 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
   } = options;
 
   let blob = null;
+  const targetBlobId = options.blobId || localRepo.extractBlobId(imageUrl);
+  if (targetBlobId) {
+    try {
+      const rec = await localRepo.getStoryboardBlobRecord(targetBlobId);
+      if (rec?.blob) blob = rec.blob;
+    } catch (_) {}
+  }
+
   const resolved = resolveStoryboardAssetUrl(imageUrl, shotNumber);
 
-  // 1. Data URI
-  if (resolved.startsWith('data:')) {
+  // 1. Direct object URL (blob:) or Data URI
+  if (!blob && resolved.startsWith('blob:')) {
+    try {
+      const res = await fetch(resolved);
+      if (res.ok) blob = await res.blob();
+    } catch (_) {}
+  } else if (!blob && resolved.startsWith('data:')) {
     if (resolved.startsWith('data:image/svg+xml')) {
       const commaIdx = resolved.indexOf(',');
       const header = resolved.substring(0, commaIdx);
@@ -2571,7 +3112,7 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
       }
       blob = new Blob([ab], { type: mime });
     }
-  } else {
+  } else if (!blob) {
     // 2. Direct HTTP or asset path fetch
     try {
       const res = await fetch(resolved, { mode: 'cors' });
@@ -2582,8 +3123,8 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
       console.warn('[downloadStoryboardImage] Direct fetch failed:', e.message);
     }
 
-    // 3. Expired signed URL refresh
-    if (!blob && storagePath && scriptId) {
+    // 3. Expired signed URL refresh (cloud mode only)
+    if (!blob && !isLocalMode() && storagePath && scriptId) {
       try {
         const freshUrl = await getStoryboardSignedUrl(scriptId, storagePath);
         if (freshUrl) {
@@ -2597,8 +3138,8 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
       }
     }
 
-    // 4. Authenticated backend download proxy fallback
-    if (!blob && scriptId && (storagePath || resolved.includes('/production/storyboard/images/'))) {
+    // 4. Authenticated backend download proxy fallback (cloud mode only)
+    if (!blob && !isLocalMode() && scriptId && (storagePath || resolved.includes('/production/storyboard/images/'))) {
       try {
         const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
         const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -2665,6 +3206,21 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
 
 export async function getStoryboard(scriptId, sceneId = 'scene-1') {
   if (!scriptId) return null;
+  if (isLocalMode()) {
+    const sb = await localRepo.getStoryboard(scriptId, sceneId);
+    if (!sb.sceneHeading) {
+      const scenes = await getProductionScenes(scriptId);
+      const sceneNum = Number(String(sceneId).replace('scene-', '')) || 1;
+      const scene = (scenes && scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum)) || null;
+      if (scene) {
+        sb.sceneNumber = scene.sceneNumber;
+        sb.sceneHeading = scene.heading;
+        sb.intExt = scene.intExt || 'INT';
+        sb.dayNight = scene.dayNight || 'DAY';
+      }
+    }
+    return sb;
+  }
   // Read user-scoped local cache first to compare timestamps / shot counts
   const storageKey = getUserStorageKey(`storyboard_${scriptId}_${sceneId}`);
   const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
@@ -2740,6 +3296,9 @@ export async function getStoryboard(scriptId, sceneId = 'scene-1') {
 
 export async function saveStoryboard(scriptId, storyboardData) {
   const sceneId = storyboardData.sceneId || `scene-${storyboardData.sceneNumber || 1}`;
+  if (isLocalMode()) {
+    return await localRepo.saveStoryboard(scriptId, sceneId, storyboardData);
+  }
 
   // Sync to Cloud Database (Firestore) in background if configured
   syncStoryboardToFirestore(scriptId, sceneId, storyboardData).catch(() => {});
@@ -2822,6 +3381,11 @@ export async function addStoryboardShot(scriptId, sceneId, shotData) {
 
   sb.shots.push(newShot);
   sb.updatedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+    const savedShot = savedSb.shots.find(s => s.id === newShot.id) || newShot;
+    return { storyboard: savedSb, shot: savedShot };
+  }
   safeSetStoredStoryboard(scriptId, sceneId, sb);
   syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, shot: newShot };
@@ -2851,31 +3415,53 @@ export async function updateStoryboardShot(scriptId, sceneId, shotId, updates) {
   }
   Object.assign(shot, updates, { updatedAt: new Date().toISOString() });
   sb.updatedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+    const savedShot = savedSb.shots.find(s => s.id === shotId) || shot;
+    return { storyboard: savedSb, shot: savedShot };
+  }
   safeSetStoredStoryboard(scriptId, sceneId, sb);
   syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, shot };
 }
 
 export async function deleteStoryboardShot(scriptId, sceneId, shotId) {
-  try {
-    const res = await request(`/production/${scriptId}/storyboard/${sceneId}/shots/${shotId}`, {
-      method: 'DELETE'
-    });
-    if (res?.success) {
-      if (res.storyboard) {
-        safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
-        syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
+  if (!isLocalMode()) {
+    try {
+      const res = await request(`/production/${scriptId}/storyboard/${sceneId}/shots/${shotId}`, {
+        method: 'DELETE'
+      });
+      if (res?.success) {
+        if (res.storyboard) {
+          safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+          syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
+        }
+        return res;
       }
-      return res;
-    }
-  } catch (e) {}
+    } catch (e) {}
+  }
 
   const sb = await getStoryboard(scriptId, sceneId);
   const idx = sb.shots.findIndex(s => s.id === shotId);
   if (idx !== -1) {
-    sb.shots.splice(idx, 1);
+    const [removed] = sb.shots.splice(idx, 1);
     sb.shots.forEach((s, i) => { s.order = i + 1; });
     sb.updatedAt = new Date().toISOString();
+    if (isLocalMode()) {
+      const bin = await localRepo.getStoryboardRecycleBin(scriptId);
+      const binEntry = {
+        id: `bin-shot-${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+        type: 'shot',
+        scriptId,
+        sceneId,
+        sceneHeading: sb.sceneHeading || `Scene ${sb.sceneNumber || 1}`,
+        shot: removed,
+        deletedAt: new Date().toISOString()
+      };
+      await localRepo.saveStoryboardRecycleBin(scriptId, [binEntry, ...bin]);
+      const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+      return { success: true, removedId: shotId, storyboard: savedSb };
+    }
     safeSetStoredStoryboard(scriptId, sceneId, sb);
     syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   }
@@ -2909,6 +3495,10 @@ export async function reorderStoryboardShots(scriptId, sceneId, shotIds = []) {
   reordered.forEach((s, idx) => { s.order = idx + 1; });
   sb.shots = reordered;
   sb.updatedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+    return { storyboard: savedSb };
+  }
   safeSetStoredStoryboard(scriptId, sceneId, sb);
   syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb };
@@ -2934,10 +3524,14 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
   if (shot) {
     shot.approvalStatus = status;
     shot.approvalNotes = notes || shot.approvalNotes || "";
-    shot.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
+    shot.approvedBy = (localRepo.getCachedProfile()?.name || "Local Writer") + " (Owner)";
     shot.approvedAt = new Date().toISOString();
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
+    if (isLocalMode()) {
+      const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+      return { storyboard: savedSb, shot: savedSb.shots.find(s => s.id === shotId) || shot };
+    }
     safeSetStoredStoryboard(scriptId, sceneId, sb);
     syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   }
@@ -2959,17 +3553,22 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
 
   const sb = await getStoryboard(scriptId, sceneId);
   let count = 0;
+  const ownerName = (localRepo.getCachedProfile()?.name || "Local Writer") + " (Owner)";
   for (const s of sb.shots) {
     if (shotIds.includes(s.id)) {
       s.approvalStatus = status;
       if (notes) s.approvalNotes = notes;
-      s.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
+      s.approvedBy = ownerName;
       s.approvedAt = new Date().toISOString();
       s.updatedAt = new Date().toISOString();
       count++;
     }
   }
   sb.updatedAt = new Date().toISOString();
+  if (isLocalMode()) {
+    const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+    return { storyboard: savedSb, affectedCount: count };
+  }
   safeSetStoredStoryboard(scriptId, sceneId, sb);
   syncStoryboardToFirestore(scriptId, sceneId, sb).catch(() => {});
   return { storyboard: sb, affectedCount: count };
@@ -2991,23 +3590,43 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
 
   // If user explicitly chose built-in vector concept engine
   if (provider === "scriptora-concept") {
-    try {
-      const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
-        method: 'POST',
-        body: JSON.stringify(params)
-      });
-      if (res?.imageUrl) {
-        res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
-        return res;
-      }
-    } catch (_) {}
+    if (!isLocalMode()) {
+      try {
+        const res = await request(`/production/${scriptId}/storyboard/generate-shot`, {
+          method: 'POST',
+          body: JSON.stringify(params)
+        });
+        if (res?.imageUrl) {
+          res.imageUrl = resolveStoryboardAssetUrl(res.imageUrl, params.shotNumber);
+          return res;
+        }
+      } catch (_) {}
+    }
 
-    // Built-in procedural concept sketch fallback for offline vector mode
+    // Built-in procedural concept sketch for local / offline vector mode
     const esc = (s = '') => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const shotLabel = esc(`${params.shotNumber || '1A'} · ${params.shotSize || 'Medium Shot'}`);
     const headingLabel = esc((params.sceneHeading || 'STORYBOARD CONCEPT').slice(0, 48));
     const promptSnippet = esc((params.prompt || params.description || 'Procedural storyboard frame').slice(0, 72));
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675"><rect width="1200" height="675" fill="#111827"/><rect x="40" y="40" width="1120" height="595" fill="none" stroke="#374151" stroke-width="2" stroke-dasharray="10 8"/><line x1="400" y1="40" x2="400" y2="635" stroke="#1f2937" stroke-width="1.5"/><line x1="800" y1="40" x2="800" y2="635" stroke="#1f2937" stroke-width="1.5"/><line x1="40" y1="238" x2="1160" y2="238" stroke="#1f2937" stroke-width="1.5"/><line x1="40" y1="437" x2="1160" y2="437" stroke="#1f2937" stroke-width="1.5"/><circle cx="600" cy="310" r="88" fill="none" stroke="#4b5563" stroke-width="2.5"/><text x="600" y="190" text-anchor="middle" fill="#60a5fa" font-family="monospace" font-size="22" font-weight="700">${shotLabel}</text><text x="600" y="318" text-anchor="middle" fill="#e5e7eb" font-family="system-ui, sans-serif" font-size="24" font-weight="600">${headingLabel}</text><text x="600" y="490" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="18">${promptSnippet}</text></svg>`;
+    if (isLocalMode() && typeof Blob !== 'undefined') {
+      const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
+      const stored = await localRepo.saveStoryboardBlob(svgBlob, {
+        scriptId,
+        sceneId: params.sceneId || null,
+        shotId: params.shotId || null,
+        mimeType: 'image/svg+xml'
+      });
+      return {
+        imageUrl: stored.blobUri,
+        previewUrl: stored.objectUrl,
+        blobId: stored.blobId,
+        provider: "scriptora-concept",
+        quality: params.quality || "hd",
+        costEstimate: "Free (Built-in Local)",
+        prompt: params.prompt || ""
+      };
+    }
     return {
       imageUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
       provider: "scriptora-concept",
@@ -3015,6 +3634,11 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
       costEstimate: "Free (Built-in)",
       prompt: params.prompt || ""
     };
+  }
+
+  // In local-first mode, generate directly via client-side Pollinations FLUX.1 & store binary Blob in IndexedDB
+  if (isLocalMode()) {
+    return await generateClientPollinationsShot({ ...params, scriptId }, onProgress);
   }
 
   // Real AI Generation (Pollinations FLUX.1 / Cloud Providers) via Asynchronous Job Pipeline
@@ -3128,8 +3752,30 @@ export async function generateClientPollinationsShot(params = {}, onProgress = n
       throw new Error(json.error?.message || json.message || "Pollinations returned non-image response");
     }
 
+    let finalImageUrl = cdnUrl;
+    let previewUrl = cdnUrl;
+    let blobId = null;
+
+    if (isLocalMode()) {
+      const blob = await resp.blob();
+      if (!blob || blob.size === 0) {
+        throw new Error("Generated image binary was empty.");
+      }
+      const stored = await localRepo.saveStoryboardBlob(blob, {
+        scriptId: params.scriptId || null,
+        sceneId: params.sceneId || null,
+        shotId: params.shotId || null,
+        mimeType: blob.type || contentType || 'image/jpeg'
+      });
+      finalImageUrl = stored.blobUri;
+      previewUrl = stored.objectUrl;
+      blobId = stored.blobId;
+    }
+
     return {
-      imageUrl: cdnUrl,
+      imageUrl: finalImageUrl,
+      previewUrl,
+      blobId,
       sourceUrl: cdnUrl,
       cdnUrl: cdnUrl,
       provider: "pollinations-flux",
@@ -3167,15 +3813,17 @@ export async function generateClientPollinationsShot(params = {}, onProgress = n
 }
 
 export async function generateStoryboardSequence(scriptId, sceneId, params = {}) {
-  try {
-    const res = await request(`/production/${scriptId}/storyboard/generate-sequence`, {
-      method: 'POST',
-      body: JSON.stringify({ sceneId, ...params })
-    });
-    if (res?.proposedShots) return res;
-  } catch (e) {
-    if (params.provider && params.provider !== 'scriptora-concept') {
-      throw e;
+  if (!isLocalMode()) {
+    try {
+      const res = await request(`/production/${scriptId}/storyboard/generate-sequence`, {
+        method: 'POST',
+        body: JSON.stringify({ sceneId, ...params })
+      });
+      if (res?.proposedShots) return res;
+    } catch (e) {
+      if (params.provider && params.provider !== 'scriptora-concept') {
+        throw e;
+      }
     }
   }
 
@@ -3371,7 +4019,7 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
       approvalStatus: shot.approvalStatus || "draft",
       sourceVersion: sb.sourceVersion || "Draft 1.0",
       timestamp: new Date().toISOString(),
-      updatedBy: (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)"
+      updatedBy: (localRepo.getCachedProfile()?.name || "Local Writer") + " (Owner)"
     });
     shot.imageUrl = target.previousImageUrl;
     if (target.previousPrompt) shot.prompt = target.previousPrompt;
@@ -3379,6 +4027,10 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
     if (target.approvalStatus) shot.approvalStatus = target.approvalStatus;
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
+    if (isLocalMode()) {
+      const savedSb = await localRepo.saveStoryboard(scriptId, sceneId, sb);
+      return { storyboard: savedSb, shot: savedSb.shots.find(s => s.id === shotId) || shot };
+    }
     safeSetStoredStoryboard(scriptId, sceneId, sb);
   }
   return { storyboard: sb, shot };
@@ -3386,6 +4038,9 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
 
 
 export async function getStoryboardPreferences() {
+  if (isLocalMode()) {
+    return await localRepo.getStoryboardPreferences();
+  }
   const prefKey = getUserStorageKey('storyboard_preferences');
   try {
     const res = await request('/production/storyboard/preferences');
@@ -3412,6 +4067,9 @@ export async function getStoryboardPreferences() {
 }
 
 export async function saveStoryboardPreferences(prefs = {}) {
+  if (isLocalMode()) {
+    return await localRepo.saveStoryboardPreferences(prefs);
+  }
   const prefKey = getUserStorageKey('storyboard_preferences');
   try {
     const res = await request('/production/storyboard/preferences', {
@@ -3434,6 +4092,9 @@ export async function saveStoryboardPreferences(prefs = {}) {
 
 export async function getStoryboardRecycleBin(scriptId) {
   if (!scriptId) return [];
+  if (isLocalMode()) {
+    return await localRepo.getStoryboardRecycleBin(scriptId);
+  }
   const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin`);
@@ -3452,6 +4113,27 @@ export async function getStoryboardRecycleBin(scriptId) {
 }
 
 export async function restoreStoryboardRecycleBinItem(scriptId, itemId) {
+  if (isLocalMode()) {
+    const bin = await localRepo.getStoryboardRecycleBin(scriptId);
+    const target = bin.find(i => i.id === itemId);
+    if (!target) return { success: false, error: 'Recycle bin item not found' };
+
+    if (target.type === 'scene' && Array.isArray(target.shots)) {
+      const sb = await getStoryboard(scriptId, target.sceneId);
+      sb.shots = [...(sb.shots || []), ...target.shots];
+      sb.shots.forEach((s, idx) => { s.order = idx + 1; });
+      await saveStoryboard(scriptId, sb);
+    } else if (target.shot) {
+      const sb = await getStoryboard(scriptId, target.sceneId || 'scene-1');
+      sb.shots = [...(sb.shots || []), target.shot];
+      sb.shots.forEach((s, idx) => { s.order = idx + 1; });
+      await saveStoryboard(scriptId, sb);
+    }
+
+    const remaining = bin.filter(i => i.id !== itemId);
+    await localRepo.saveStoryboardRecycleBin(scriptId, remaining);
+    return { success: true };
+  }
   const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/restore`, {
@@ -3472,6 +4154,22 @@ export async function restoreStoryboardRecycleBinItem(scriptId, itemId) {
 }
 
 export async function permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId) {
+  if (isLocalMode()) {
+    const bin = await localRepo.getStoryboardRecycleBin(scriptId);
+    const target = bin.find(i => i.id === itemId);
+    if (target?.shot) {
+      const bId = target.shot.blobId || localRepo.extractBlobId(target.shot.imageUrl);
+      if (bId) await localRepo.deleteStoryboardBlob(bId);
+    } else if (Array.isArray(target?.shots)) {
+      for (const s of target.shots) {
+        const bId = s?.blobId || localRepo.extractBlobId(s?.imageUrl);
+        if (bId) await localRepo.deleteStoryboardBlob(bId);
+      }
+    }
+    const remaining = bin.filter(i => i.id !== itemId);
+    await localRepo.saveStoryboardRecycleBin(scriptId, remaining);
+    return { success: true, removedId: itemId };
+  }
   const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/${itemId}`, {
@@ -3490,6 +4188,22 @@ export async function permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId
 }
 
 export async function emptyStoryboardRecycleBin(scriptId) {
+  if (isLocalMode()) {
+    const bin = await localRepo.getStoryboardRecycleBin(scriptId);
+    for (const item of bin) {
+      if (item?.shot) {
+        const bId = item.shot.blobId || localRepo.extractBlobId(item.shot.imageUrl);
+        if (bId) await localRepo.deleteStoryboardBlob(bId);
+      } else if (Array.isArray(item?.shots)) {
+        for (const s of item.shots) {
+          const bId = s?.blobId || localRepo.extractBlobId(s?.imageUrl);
+          if (bId) await localRepo.deleteStoryboardBlob(bId);
+        }
+      }
+    }
+    await localRepo.saveStoryboardRecycleBin(scriptId, []);
+    return { success: true };
+  }
   const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/empty`, {
@@ -3505,6 +4219,9 @@ export async function emptyStoryboardRecycleBin(scriptId) {
 }
 
 export async function deleteStoryboardScene(scriptId, sceneId) {
+  if (isLocalMode()) {
+    return await localRepo.deleteStoryboardScene(scriptId, sceneId);
+  }
   try {
     const res = await request(`/production/${scriptId}/storyboard/scenes/${sceneId}/soft-delete`, {
       method: 'POST'

@@ -3,6 +3,7 @@ import { renderBottomNav } from '../../components/bottomNav.js';
 import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
+import { isLocalMode } from '../../services/dataMode.js';
 import { showToast } from '../../components/toast.js';
 import { exportCallSheetPdf } from '../../services/pdfExport.js';
 
@@ -63,9 +64,11 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
   if (!container) return;
 
   const resolvedScriptId = store.state.activeScript?.id || store.state.selectedScriptId;
-  const userRole = (typeof localStorage !== 'undefined' && localStorage.getItem(api.getUserStorageKey(`prod_role_${resolvedScriptId}`))) ||
-                   store.state.activeScriptPermissions?.role ||
-                   'Viewer';
+  const userRole = isLocalMode()
+    ? 'Owner'
+    : ((typeof localStorage !== 'undefined' && localStorage.getItem(api.getUserStorageKey(`prod_role_${resolvedScriptId}`))) ||
+       store.state.activeScriptPermissions?.role ||
+       'Viewer');
   const isOwner = userRole === 'Owner';
 
   if (isEdit && csId) {

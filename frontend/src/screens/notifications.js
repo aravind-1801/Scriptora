@@ -40,11 +40,11 @@ export function renderNotificationsScreen() {
             <div class="flex items-center gap-1.5">
               <button class="h-8 px-3 rounded-full bg-slate-900 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all" id="filter-all-btn">
                 <span>All</span>
-                <span class="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]" id="badge-all-count">5</span>
+                <span class="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]" id="badge-all-count">0</span>
               </button>
               <button class="h-8 px-3 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center gap-1.5 transition-all" id="filter-unread-btn">
                 <span>Unread</span>
-                <span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px]" id="badge-unread-count">3</span>
+                <span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white text-[10px]" id="badge-unread-count">0</span>
               </button>
             </div>
 
@@ -76,7 +76,7 @@ export function renderNotificationsScreen() {
           <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-slate-100/80 text-slate-600 text-xs">
             <div class="flex items-center gap-1.5">
               <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-              <span class="text-[11px] font-medium">Scriptora Cloud Sync Engine Active</span>
+              <span class="text-[11px] font-medium">Local Workspace Activity Engine</span>
             </div>
             <span class="text-[10px] font-mono text-slate-400">v4.2.1</span>
           </div>

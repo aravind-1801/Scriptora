@@ -5,6 +5,8 @@ import { renderProdSubNav } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
+import { isLocalMode } from '../../services/dataMode.js';
+import { saveStoryboardBlob } from '../../services/localRepository.js';
 import { exportStoryboardPdf } from '../../services/pdfExport.js';
 import { openModal, closeModal } from '../../utils/popupPosition.js';
 import { buildStoryboardGenerationPrompt } from '../../services/promptBuilder.js';
@@ -1312,9 +1314,24 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
   // Modal 1: File import (Reference image support)
   if (modalFileImport) {
-    modalFileImport.onchange = (e) => {
+    modalFileImport.onchange = async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
+
+      if (isLocalMode()) {
+        try {
+          const rec = await saveStoryboardBlob(file, {
+            mimeType: file.type || 'image/png',
+            source: 'upload'
+          });
+          currentModalDraftImage = rec.blobUri;
+          updateInspectorImagePreviewUI();
+          showToast('Reference image saved to local workspace');
+        } catch (err) {
+          showToast(err.message || 'Failed to store uploaded image in IndexedDB', 'error');
+        }
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -4475,10 +4492,41 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     // Upload custom image directly to card
     document.querySelectorAll('.input-card-upload-file').forEach(input => {
-      input.onchange = (e) => {
+      input.onchange = async (e) => {
         const shotId = input.getAttribute('data-shot-id');
         const file = e.target.files && e.target.files[0];
         if (!file || !shotId) return;
+
+        if (isLocalMode()) {
+          const shot = currentStoryboard?.shots?.find(s => s.id === shotId);
+          if (!shot) return;
+          if (!shot.history) shot.history = [];
+          if (shot.imageUrl) {
+            shot.history.unshift({
+              imageUrl: shot.imageUrl,
+              blobId: shot.blobId || null,
+              prompt: shot.prompt || shot.description,
+              visualStyle: shot.visualStyle,
+              provider: shot.provider,
+              createdAt: new Date().toISOString()
+            });
+          }
+          try {
+            const rec = await saveStoryboardBlob(file, {
+              mimeType: file.type || 'image/png',
+              source: 'upload'
+            });
+            shot.imageUrl = rec.blobUri;
+            shot.blobId = rec.blobId;
+            shot.imageSource = 'upload';
+            await api.saveStoryboard(scriptId, currentStoryboard);
+            renderStoryboardView();
+            showToast(`Uploaded new frame for Shot ${shot.shotNumber}`);
+          } catch (err) {
+            showToast(err.message || 'Failed to save uploaded image', 'error');
+          }
+          return;
+        }
 
         const reader = new FileReader();
         reader.onload = async (ev) => {

@@ -1,5 +1,7 @@
 // Reactive application state management for Scriptora
 import * as api from '../services/api.js';
+import { isLocalMode, getDataMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 
 class Store {
   constructor() {
@@ -8,8 +10,11 @@ class Store {
     } catch (e) {}
 
     this.state = {
+      dataMode: getDataMode(),
+      installationId: null,
+      storageError: null,
       currentUser: null,
-      selectedScriptId: localStorage.getItem(api.getUserStorageKey('selected_script')) || null,
+      selectedScriptId: isLocalMode() ? null : (localStorage.getItem(api.getUserStorageKey('selected_script')) || null),
       selectedVersionId: null,
       currentSceneId: null,
       unreadNotifications: 0,
@@ -20,6 +25,7 @@ class Store {
       historyStack: []
     };
     this.listeners = new Set();
+    this._localChangeUnsub = null;
   }
 
   subscribe(listener) {
@@ -40,7 +46,11 @@ class Store {
   setState(partial) {
     this.state = { ...this.state, ...partial };
     if (partial.selectedScriptId) {
-      localStorage.setItem(api.getUserStorageKey('selected_script'), partial.selectedScriptId);
+      if (isLocalMode()) {
+        localRepo.setSelectedScriptId(partial.selectedScriptId).catch(() => {});
+      } else {
+        localStorage.setItem(api.getUserStorageKey('selected_script'), partial.selectedScriptId);
+      }
     }
     this.notify();
   }
@@ -79,7 +89,16 @@ class Store {
     } catch (e) {}
   }
 
-  resetUserSession() {
+  resetUserSession(options = {}) {
+    if (isLocalMode() && !options.clearWorkspace) {
+      this.setState({
+        currentUser: null,
+        historyStack: []
+      });
+      this.clearHistory();
+      return;
+    }
+
     try {
       localStorage.removeItem(api.getUserStorageKey('selected_script'));
     } catch (_) {}
@@ -98,6 +117,19 @@ class Store {
   }
 
   async init() {
+    if (isLocalMode()) {
+      await localRepo.initLocalRepository();
+      if (!this._localChangeUnsub) {
+        this._localChangeUnsub = localRepo.onLocalWorkspaceChange(async ({ area }) => {
+          if (['scripts', 'reset', 'backup-restored', 'reload', 'profile', 'settings', 'notifications', 'selectedScriptId'].includes(area)) {
+            await this.syncFromLocalSnapshot();
+          }
+        });
+      }
+      await this.syncFromLocalSnapshot();
+      return;
+    }
+
     try {
       const user = await api.getCurrentUser();
       const scripts = await api.getScripts();
@@ -139,6 +171,47 @@ class Store {
     }
   }
 
+  async syncFromLocalSnapshot() {
+    const user = await localRepo.getProfile();
+    const scripts = await localRepo.getScripts();
+    const { unreadCount } = await localRepo.getNotifications();
+    const settings = await localRepo.getSettings();
+
+    let selectedId = localRepo.getCachedSelectedScriptId();
+    const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
+    if (currentDraft) {
+      selectedId = currentDraft.id;
+    } else if (scripts && scripts.length > 0) {
+      if (!selectedId || !scripts.some(s => s.id === selectedId)) {
+        selectedId = scripts[0].id;
+      }
+    } else {
+      selectedId = null;
+    }
+
+    if (selectedId !== localRepo.getCachedSelectedScriptId()) {
+      await localRepo.setSelectedScriptId(selectedId);
+    }
+
+    const activeScript = (scripts && scripts.length > 0)
+      ? (scripts.find(s => s.id === selectedId) || scripts[0])
+      : null;
+
+    this.state = {
+      ...this.state,
+      dataMode: 'local',
+      installationId: localRepo.getInstallationId(),
+      storageError: null,
+      currentUser: user,
+      scripts: scripts || [],
+      selectedScriptId: selectedId,
+      activeScript,
+      unreadNotifications: unreadCount || 0,
+      settings
+    };
+    this.notify();
+  }
+
   async selectScript(scriptId) {
     if (!scriptId) return;
     const updatedScripts = await api.setCurrentDraft(scriptId);
@@ -167,7 +240,9 @@ class Store {
       selectedId = null;
     }
     const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === selectedId) || scripts[0]) : null;
-    if (selectedId) {
+    if (isLocalMode()) {
+      await localRepo.setSelectedScriptId(selectedId);
+    } else if (selectedId) {
       localStorage.setItem(api.getUserStorageKey('selected_script'), selectedId);
     } else {
       localStorage.removeItem(api.getUserStorageKey('selected_script'));

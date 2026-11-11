@@ -2,14 +2,20 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 import { showToast } from '../components/toast.js';
 import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js';
 function getDraftSceneSnippet(draft) {
   if (!draft) return '';
   try {
-    const saved = localStorage.getItem(api.getUserStorageKey(`screenplay_${draft.id}`));
-    if (saved) {
-      const sp = JSON.parse(saved);
+    const sp = isLocalMode()
+      ? localRepo.getCachedScreenplay(draft.id)
+      : (() => {
+          const saved = localStorage.getItem(api.getUserStorageKey(`screenplay_${draft.id}`));
+          return saved ? JSON.parse(saved) : null;
+        })();
+    if (sp) {
       if (sp && Array.isArray(sp.scenes) && sp.scenes.length > 0) {
         const sceneNum = parseInt((draft.currentScene || '').replace(/\D+/g, ''), 10) || 1;
         const targetScene = sp.scenes.find(s => s.number === sceneNum) || sp.scenes[0];

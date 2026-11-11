@@ -10,6 +10,7 @@
 // the Blaze pay-as-you-go billing plan as of February 3, 2026.
 
 import { firebaseConfig, isFirebaseConfigured } from './firebase.js';
+import { isLocalMode } from './dataMode.js';
 
 let firestoreInstance = null;
 let firestoreConnectivityVerified = false;
@@ -31,6 +32,17 @@ const CLOUDINARY_CONFIG = {
  * Check which cloud providers are configured
  */
 export function isCloudConfigured() {
+  if (isLocalMode()) {
+    return {
+      isConfigured: false,
+      hasFirestore: false,
+      hasSupabase: false,
+      hasCloudinary: false,
+      hasBackend: false,
+      activeImageProvider: 'local-indexeddb',
+      activeMetadataProvider: 'local-indexeddb'
+    };
+  }
   const hasFirestore = Boolean(firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== '');
   const hasSupabase = Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
   const hasCloudinary = Boolean(CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset);
@@ -56,6 +68,23 @@ export function isCloudConfigured() {
  * Get honest, detailed cloud persistence status for UI and user settings
  */
 export function getCloudStorageStatus() {
+  if (isLocalMode()) {
+    return {
+      status: 'local-only',
+      provider: 'IndexedDB (Local Workspace)',
+      metadataDatabase: {
+        status: 'local',
+        provider: 'Browser IndexedDB (Isolated Device Profile)',
+        creditCardRequired: false
+      },
+      imageStorage: {
+        status: 'local',
+        provider: 'Browser IndexedDB Blob Store',
+        creditCardRequired: false,
+        details: 'All scripts, screenplays, production records, and storyboard images are stored locally inside this browser profile.'
+      }
+    };
+  }
   const cfg = isCloudConfigured();
 
   const metadataInfo = cfg.hasFirestore ? {
@@ -145,6 +174,9 @@ async function getFirestore() {
  * into private Supabase object storage (no public bucket exposure, per-project access enforced).
  */
 export async function uploadImageToCloud(imageInput, scriptId = null, filename = null) {
+  if (isLocalMode()) {
+    return { success: false, disabled: true, reason: 'Local-first mode active' };
+  }
   const targetScriptId = scriptId || 'default';
   const finalFilename = filename || `shot_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
 
@@ -278,6 +310,9 @@ function resolveCurrentUserId() {
  * Persist storyboard document to Firestore / Firebase cloud database (User-Scoped)
  */
 export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
+  if (isLocalMode()) {
+    return null;
+  }
   const currentUserId = resolveCurrentUserId();
   if (!currentUserId) {
     return null; // Do not sync unauthenticated user data to shared cloud locations
@@ -338,6 +373,9 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
  * Fetch storyboard document from Firestore / Firebase cloud database (User-Scoped)
  */
 export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
+  if (isLocalMode()) {
+    return null;
+  }
   const currentUserId = resolveCurrentUserId();
   if (!currentUserId) return null;
 

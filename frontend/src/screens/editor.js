@@ -1,5 +1,7 @@
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
 import {
@@ -27,7 +29,9 @@ let currentFindIndex = -1;
 let savedScrollBeforeFind = null;
 let savedActiveBlockBeforeFind = null;
 let savedActiveBlockBeforeImage = null;
-let autoSaveEnabled = localStorage.getItem('scriptora_autosave') !== 'false';
+let autoSaveEnabled = isLocalMode()
+  ? localRepo.getCachedAutoSave()
+  : (typeof localStorage !== 'undefined' ? localStorage.getItem('scriptora_autosave') !== 'false' : true);
 let activeDocumentTab = 'screenplay'; // 'screenplay' or 'titlepage'
 let editorToolbarExpanded = false; // Master visibility control for secondary toolbar rows (Default: collapsed)
 let canEditScreenplay = true;
@@ -1363,7 +1367,11 @@ function setupAutoSaveToggle() {
     toggleBtn.onclick = (e) => {
       e.stopPropagation();
       autoSaveEnabled = !autoSaveEnabled;
-      localStorage.setItem('scriptora_autosave', String(autoSaveEnabled));
+      if (isLocalMode()) {
+        localRepo.setAutoSavePreference(autoSaveEnabled).catch(() => {});
+      } else {
+        localStorage.setItem('scriptora_autosave', String(autoSaveEnabled));
+      }
 
       if (autoSaveEnabled) {
         if (dot) dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';

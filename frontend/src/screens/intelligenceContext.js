@@ -183,7 +183,7 @@ export function attachIntelligenceContextEvents(navigate) {
         b.className = "format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-white border border-slate-200 transition-all cursor-pointer hover:bg-slate-50";
       });
       btn.className = "format-card relative flex flex-col items-center justify-center p-3 rounded-xl bg-blue-50 border-2 border-blue-600 transition-all cursor-pointer";
-      
+
       if (selectedFormat === 'Short') {
         hours = 0; minutes = 25; seconds = 0;
       } else if (selectedFormat === 'Pilot') {

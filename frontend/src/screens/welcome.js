@@ -1,10 +1,12 @@
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
 import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
 
 export function renderWelcomeScreen() {
   const user = store.state.currentUser;
+  const localOnly = isLocalMode();
 
   return `
     <main class="flex-1 flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen">
@@ -12,14 +14,25 @@ export function renderWelcomeScreen() {
         
         <!-- Top Utility Bar -->
         <div class="w-full flex items-center justify-between text-secondary px-1">
-          <button id="welcome-sign-out" class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 transition-colors">
-            <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-            <span>Sign out</span>
-          </button>
-          <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-full text-slate-600 text-xs font-medium">
-            <span class="material-symbols-outlined text-blue-600 text-[14px]">check_circle</span>
-            <span>Authenticated</span>
-          </div>
+          ${localOnly ? `
+            <a href="/workspace" class="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900 transition-colors no-underline">
+              <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              <span>Open Workspace</span>
+            </a>
+            <div class="flex items-center gap-1.5 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-full text-blue-700 text-xs font-medium">
+              <span class="material-symbols-outlined text-blue-600 text-[14px]">devices</span>
+              <span>Local Workspace</span>
+            </div>
+          ` : `
+            <button id="welcome-sign-out" class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 transition-colors">
+              <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+              <span>Sign out</span>
+            </button>
+            <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-full text-slate-600 text-xs font-medium">
+              <span class="material-symbols-outlined text-blue-600 text-[14px]">check_circle</span>
+              <span>${user ? 'Authenticated' : 'Ready'}</span>
+            </div>
+          `}
         </div>
 
         <!-- Center Cohesive Cluster -->

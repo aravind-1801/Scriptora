@@ -2,6 +2,9 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
+import { exportWorkspaceBackupPayload, validateWorkspaceBackup, restoreWorkspaceBackupPayload } from '../services/localBackup.js';
 import { showToast } from '../components/toast.js';
 import { openModal, closeModal } from '../utils/popupPosition.js';
 
@@ -13,7 +16,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || (scriptId ? `/editor/${scriptId}` : '/workspace')) : '/workspace';
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.scripts?.[0] || {};
 
-  const user = store.state.currentUser || (() => {
+  const user = store.state.currentUser || (isLocalMode() ? localRepo.getCachedProfile() : (() => {
     try {
       const saved = localStorage.getItem('scriptora_user');
       if (saved) return JSON.parse(saved);
@@ -26,9 +29,9 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       initials: "SW",
       stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
     };
-  })();
+  })());
 
-  const settings = store.state.settings || (() => {
+  const settings = store.state.settings || (isLocalMode() ? (localRepo.getCachedSettings() || {}) : (() => {
     try {
       const saved = localStorage.getItem(api.getUserStorageKey('settings'));
       if (saved) return JSON.parse(saved);
@@ -64,10 +67,10 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
         encryption: true
       }
     };
-  })();
+  })());
 
   const totalScripts = Array.isArray(store.state.scripts) ? store.state.scripts.length : (user.stats?.drafts ?? 0);
-  const activeCoAuthors = 3;
+  const activeCoAuthors = isLocalMode() ? 0 : 3;
   const healthIndex = user.stats?.healthIndex || '98%';
 
   return `
@@ -290,7 +293,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
                 <div class="flex flex-col min-w-0">
                   <div class="flex items-center gap-2">
                     <span class="text-xs sm:text-sm font-semibold text-slate-800 leading-tight">Collaborators</span>
-                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700">3 active</span>
+                    <span class="inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700">${isLocalMode() ? 'Local mode' : '3 active'}</span>
                   </div>
                   <span class="text-xs text-slate-500 truncate mt-0.5">Co-writers, Script Doctor, Producer</span>
                 </div>
@@ -742,34 +745,43 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
         <div class="scriptora-modal-card bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl border border-slate-100 flex flex-col gap-3.5">
           <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-600 text-[20px]">cloud_done</span>
-              <h2 class="text-sm font-bold text-slate-900">Storage & Cloud Sync</h2>
+              <span class="material-symbols-outlined text-blue-600 text-[20px]">${isLocalMode() ? 'database' : 'cloud_done'}</span>
+              <h2 class="text-sm font-bold text-slate-900">${isLocalMode() ? 'Local IndexedDB Storage' : 'Storage & Cloud Sync'}</h2>
             </div>
             <button type="button" class="close-setting-modal p-1 text-slate-400 hover:text-slate-600 cursor-pointer"><span class="material-symbols-outlined text-[18px]">close</span></button>
           </div>
           <div class="flex flex-col gap-3">
             <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-2">
               <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-slate-700">Local Sandbox Storage</span>
-                <span class="text-[11px] font-mono font-bold text-blue-600" id="storage-quota-text">~148 KB / 5 MB</span>
+                <span class="text-xs font-semibold text-slate-700">${isLocalMode() ? 'Browser Profile Workspace' : 'Local Sandbox Storage'}</span>
+                <span class="text-[11px] font-mono font-bold text-blue-600" id="storage-quota-text">${isLocalMode() ? 'IndexedDB Isolated' : '~148 KB / 5 MB'}</span>
               </div>
               <div class="w-full h-1.5 rounded-full bg-slate-200 overflow-hidden">
-                <div class="h-full bg-blue-600 rounded-full w-[4%]"></div>
+                <div class="h-full bg-blue-600 rounded-full w-[12%]"></div>
               </div>
-              <span class="text-[10px] text-slate-400">Includes active scene blocks, versions & cached vectors</span>
+              <span class="text-[10px] text-slate-500">${isLocalMode() ? 'Stored privately in this browser profile only. Cloud sync is disabled.' : 'Includes active scene blocks, versions & cached vectors'}</span>
             </div>
             <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-medium">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span id="sync-status-msg">All screenplay drafts synchronized</span>
+              <span id="sync-status-msg">${isLocalMode() ? 'Local IndexedDB storage engine active' : 'All screenplay drafts synchronized'}</span>
             </div>
             <div class="flex flex-col gap-2 pt-1">
               <button type="button" id="btn-force-cloud-sync" class="w-full py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
-                <span class="material-symbols-outlined text-[16px]">sync</span>
-                <span>Force Cloud Re-sync</span>
+                <span class="material-symbols-outlined text-[16px]">${isLocalMode() ? 'verified' : 'sync'}</span>
+                <span>${isLocalMode() ? 'Verify Local IndexedDB Store' : 'Force Cloud Re-sync'}</span>
               </button>
+              <button type="button" id="btn-import-portfolio-data" class="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">upload_file</span>
+                <span>Import / Restore JSON Backup</span>
+              </button>
+              <input id="input-import-portfolio-file" type="file" accept="application/json,.json" class="hidden" />
               <button type="button" id="btn-clear-local-cache" class="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
                 <span class="material-symbols-outlined text-[16px]">cleaning_services</span>
-                <span>Optimize & Clean Local Cache</span>
+                <span>Clear Temporary Session Cache</span>
+              </button>
+              <button type="button" id="btn-reset-local-workspace" class="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+                <span class="material-symbols-outlined text-[16px]">delete_forever</span>
+                <span>Reset Local Workspace</span>
               </button>
             </div>
           </div>
@@ -792,7 +804,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor && scriptId ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
 
-  const user = store.state.currentUser || (() => {
+  const user = store.state.currentUser || (isLocalMode() ? localRepo.getCachedProfile() : (() => {
     try {
       const saved = localStorage.getItem('scriptora_user');
       if (saved) return JSON.parse(saved);
@@ -806,7 +818,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       avatarColor: "bg-blue-600",
       stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
     };
-  })();
+  })());
 
   const bottomReturnBtn = document.getElementById('profile-bottom-return-btn');
   if (bottomReturnBtn) {
@@ -891,12 +903,18 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   // Helper to persist and sync updated settings
   function persistSettings(updater) {
     let current = {};
-    try {
-      const saved = localStorage.getItem(api.getUserStorageKey('settings'));
-      if (saved) current = JSON.parse(saved);
-    } catch (_) {}
+    if (isLocalMode()) {
+      current = localRepo.getCachedSettings() || store.state.settings || {};
+    } else {
+      try {
+        const saved = localStorage.getItem(api.getUserStorageKey('settings'));
+        if (saved) current = JSON.parse(saved);
+      } catch (_) {}
+    }
     const updated = updater(current);
-    localStorage.setItem(api.getUserStorageKey('settings'), JSON.stringify(updated));
+    if (!isLocalMode()) {
+      localStorage.setItem(api.getUserStorageKey('settings'), JSON.stringify(updated));
+    }
     store.setState({ settings: updated });
     api.updateSettings(updated).catch(() => {});
     return updated;
@@ -924,8 +942,13 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
         }
       }));
 
-      // Sync auto-save preference to editor localStorage key
-      localStorage.setItem('scriptora_autosave', autoSave === 'Instant' ? 'true' : 'false');
+      // Sync auto-save preference to editor local store
+      const autoSaveOn = autoSave === 'Instant';
+      if (isLocalMode()) {
+        localRepo.setAutoSavePreference(autoSaveOn).catch(() => {});
+      } else {
+        localStorage.setItem('scriptora_autosave', autoSaveOn ? 'true' : 'false');
+      }
 
       const descEl = document.getElementById('desc-sheet-editor');
       if (descEl) descEl.textContent = `Numbers: ${showSceneNumbers ? 'On' : 'Off'} · Auto-save: ${autoSave}`;
@@ -990,10 +1013,18 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       // Apply theme preference to document element
       if (selectedTheme === 'Dark') {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('scriptora_theme', 'dark');
+        if (isLocalMode()) {
+          localRepo.setThemePreference('dark').catch(() => {});
+        } else {
+          localStorage.setItem('scriptora_theme', 'dark');
+        }
       } else {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('scriptora_theme', 'light');
+        if (isLocalMode()) {
+          localRepo.setThemePreference('light').catch(() => {});
+        } else {
+          localStorage.setItem('scriptora_theme', 'light');
+        }
       }
 
       const descEl = document.getElementById('desc-sheet-appearance');
@@ -1077,31 +1108,109 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
 
   const exportPortfolioBtn = document.getElementById('btn-export-portfolio-data');
   if (exportPortfolioBtn) {
-    exportPortfolioBtn.onclick = () => {
-      const backupData = {
-        exportedAt: new Date().toISOString(),
-        user: store.state.currentUser,
-        scripts: store.state.scripts,
-        screenplay: store.state.screenplay,
-        settings: store.state.settings
-      };
-      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `scriptora_portfolio_backup_${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('Portfolio archive downloaded successfully');
+    exportPortfolioBtn.onclick = async () => {
+      try {
+        exportPortfolioBtn.disabled = true;
+        const backupData = isLocalMode()
+          ? await exportWorkspaceBackupPayload()
+          : {
+              exportedAt: new Date().toISOString(),
+              user: store.state.currentUser,
+              scripts: store.state.scripts,
+              screenplay: store.state.screenplay,
+              settings: store.state.settings
+            };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `scriptora_workspace_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Complete workspace backup downloaded');
+      } catch (err) {
+        showToast(err.message || 'Failed to export workspace backup', 'error');
+      } finally {
+        exportPortfolioBtn.disabled = false;
+      }
     };
   }
 
-  // 7. Storage Sync & Cache Clean
+  const importPortfolioBtn = document.getElementById('btn-import-portfolio-data');
+  const importPortfolioInput = document.getElementById('input-import-portfolio-file');
+  if (importPortfolioBtn && importPortfolioInput) {
+    importPortfolioBtn.onclick = () => importPortfolioInput.click();
+    importPortfolioInput.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const validated = validateWorkspaceBackup(parsed);
+        const scriptCount = validated.data.scripts.length;
+        const blobCount = Array.isArray(validated.data.storyboardBlobs) ? validated.data.storyboardBlobs.length : 0;
+        const confirmed = window.confirm(
+          `Restore ${scriptCount} script(s) and ${blobCount} storyboard image(s) from this backup?\n\nThis will replace the current browser profile's local workspace.`
+        );
+        if (!confirmed) {
+          importPortfolioInput.value = '';
+          return;
+        }
+        await restoreWorkspaceBackupPayload(validated, { merge: false });
+        await store.init();
+        showToast(`Restored ${scriptCount} script(s) from backup`);
+        closeAllSettingModals();
+        navigate('/profile');
+      } catch (err) {
+        showToast(err.message || 'Failed to restore backup file', 'error');
+      } finally {
+        importPortfolioInput.value = '';
+      }
+    };
+  }
+
+  const resetLocalWorkspaceBtn = document.getElementById('btn-reset-local-workspace');
+  if (resetLocalWorkspaceBtn) {
+    resetLocalWorkspaceBtn.onclick = async () => {
+      const confirmed = window.confirm(
+        'Reset Local Workspace?\n\nThis permanently erases all scripts, screenplays, storyboards, and images stored in this browser profile.'
+      );
+      if (!confirmed) return;
+      try {
+        resetLocalWorkspaceBtn.disabled = true;
+        await api.resetLocalWorkspace();
+        store.resetUserSession({ clearWorkspace: true });
+        await store.init();
+        closeAllSettingModals();
+        showToast('Local workspace reset to empty state');
+        navigate('/workspace');
+      } catch (err) {
+        showToast(err.message || 'Failed to reset local workspace', 'error');
+      } finally {
+        resetLocalWorkspaceBtn.disabled = false;
+      }
+    };
+  }
+
+  // 7. Storage Status & Cache Clean
   const forceSyncBtn = document.getElementById('btn-force-cloud-sync');
   if (forceSyncBtn) {
-    forceSyncBtn.onclick = () => {
+    forceSyncBtn.onclick = async () => {
+      if (isLocalMode()) {
+        try {
+          forceSyncBtn.disabled = true;
+          await localRepo.reloadLocalRepository();
+          store.syncFromLocalSnapshot();
+          const msgEl = document.getElementById('sync-status-msg');
+          if (msgEl) msgEl.textContent = `Verified local IndexedDB at ${new Date().toLocaleTimeString()}`;
+          showToast('Local IndexedDB workspace verified (Cloud sync disabled in local mode)');
+        } finally {
+          forceSyncBtn.disabled = false;
+        }
+        return;
+      }
       forceSyncBtn.disabled = true;
       forceSyncBtn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>Synchronizing...</span>';
       setTimeout(() => {
@@ -1118,7 +1227,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   if (clearCacheBtn) {
     clearCacheBtn.onclick = () => {
       sessionStorage.clear();
-      showToast('Temporary cache and diagnostic buffers cleared');
+      showToast('Temporary session cache cleared (IndexedDB workspace preserved)');
     };
   }
 
@@ -1203,7 +1312,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
             avatarUrl: dataUrl
           };
           store.setState({ currentUser: updatedUser });
-          localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+          if (!isLocalMode()) {
+            localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+          }
           api.updateProfile({ avatarUrl: dataUrl }).catch(() => {});
 
           // Update profile card avatar
@@ -1243,7 +1354,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
         avatarUrl: null
       };
       store.setState({ currentUser: updatedUser });
-      localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+      if (!isLocalMode()) {
+        localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
+      }
       api.updateProfile({ avatarUrl: null }).catch(() => {});
 
       const initials = updatedUser.initials || (updatedUser.displayName || updatedUser.name || updatedUser.email || 'U').slice(0, 2).toUpperCase();
@@ -1416,20 +1529,24 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     }
 
     if (action === 'signout') {
-      actionTitle.textContent = 'Sign Out';
-      actionDesc.textContent = 'Are you sure you want to end your active session on this device? Unsaved changes in your draft have been synchronized.';
+      actionTitle.textContent = isLocalMode() ? 'Reset Session View' : 'Sign Out';
+      actionDesc.textContent = isLocalMode()
+        ? 'Your Local Workspace is stored safely in this browser profile (IndexedDB). Signing out will not delete your local scripts or storyboards.'
+        : 'Are you sure you want to end your active session on this device? Unsaved changes in your draft have been synchronized.';
       actionIcon.textContent = 'logout';
       actionIconBox.className = 'w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center';
       actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-900 cursor-pointer transition-colors flex items-center justify-center gap-1.5';
-      actionConfirm.textContent = 'Sign Out';
+      actionConfirm.textContent = isLocalMode() ? 'Keep Local & Reload' : 'Sign Out';
       if (actionInputWrap) actionInputWrap.classList.add('hidden');
     } else {
-      actionTitle.textContent = 'Delete Account';
-      actionDesc.textContent = 'This action will permanently delete your account, private screenplays, versions, and production records. Authorized collaborators on shared scripts will retain access.';
+      actionTitle.textContent = isLocalMode() ? 'Clear Local Account & Workspace' : 'Delete Account';
+      actionDesc.textContent = isLocalMode()
+        ? 'This clears your local browser profile, scripts, screenplays, and storyboards stored on this device. No remote cloud account is affected.'
+        : 'This action will permanently delete your account, private screenplays, versions, and production records. Authorized collaborators on shared scripts will retain access.';
       actionIcon.textContent = 'warning';
       actionIconBox.className = 'w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center';
       actionConfirm.className = 'flex-1 h-10 px-4 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-700 cursor-pointer transition-colors flex items-center justify-center gap-1.5';
-      actionConfirm.textContent = 'Delete Forever';
+      actionConfirm.textContent = isLocalMode() ? 'Erase Local Workspace' : 'Delete Forever';
       if (actionInputWrap) actionInputWrap.classList.remove('hidden');
     }
     openModal(actionModal);
@@ -1485,6 +1602,14 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
 
       try {
         if (currentAction === 'signout') {
+          if (isLocalMode()) {
+            await api.signOut();
+            store.resetUserSession();
+            closeModal(actionModal);
+            showToast('Local workspace preserved on this device');
+            navigate('/workspace');
+            return;
+          }
           await api.signOut();
           store.resetUserSession();
           if (window.scriptoraRouter?.clearHistory) {
@@ -1496,7 +1621,14 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
         } else {
           const phrase = (actionPhraseInput?.value || '').trim();
           const result = await api.deleteAccount(phrase);
-          store.resetUserSession();
+          store.resetUserSession({ clearWorkspace: isLocalMode() });
+          if (isLocalMode()) {
+            await store.init();
+            closeModal(actionModal);
+            showToast(result.message || 'Local browser workspace cleared');
+            navigate('/workspace');
+            return;
+          }
           if (window.scriptoraRouter?.clearHistory) {
             window.scriptoraRouter.clearHistory();
           }

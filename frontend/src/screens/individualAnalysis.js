@@ -2,6 +2,8 @@ import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
+import * as localRepo from '../services/localRepository.js';
 import { showToast } from '../components/toast.js';
 import { sanitizeCharacterList, cleanCharacterName } from '../utils/characters.js';
 
@@ -103,7 +105,11 @@ export function getScreenplayData(scriptId) {
   if (store.state.screenplay && store.state.screenplay.id === scriptId) {
     return store.state.screenplay;
   }
-  const saved = localStorage.getItem(api.getUserStorageKey(`screenplay_${scriptId}`));
+  const localSp = isLocalMode() ? localRepo.getCachedScreenplay(scriptId) : null;
+  if (localSp && localSp.scenes) {
+    return localSp;
+  }
+  const saved = !isLocalMode() ? localStorage.getItem(api.getUserStorageKey(`screenplay_${scriptId}`)) : null;
   if (saved) {
     try {
       const sp = JSON.parse(saved);
@@ -157,7 +163,11 @@ export function getAvailableCharacters(screenplay) {
     screenplay.characters = cleanedNames;
     if (screenplay.id) {
       try {
-        localStorage.setItem(api.getUserStorageKey(`screenplay_${screenplay.id}`), JSON.stringify(screenplay));
+        if (isLocalMode()) {
+          api.saveScreenplay(screenplay.id, screenplay).catch(() => {});
+        } else {
+          localStorage.setItem(api.getUserStorageKey(`screenplay_${screenplay.id}`), JSON.stringify(screenplay));
+        }
       } catch (_) {}
     }
   }
