@@ -135,16 +135,18 @@ function normalizeRole(role) {
 export function getScriptOwner(scriptId) {
   const script = db.scripts.find(s => s.id === scriptId);
   return {
-    id: script?.ownerId || db.currentUser?.id || 'user-1',
-    name: script?.ownerName || db.currentUser?.name || 'Arun Kumar',
-    email: script?.ownerEmail || db.currentUser?.email || 'arun.kumar@scriptora.studio'
+    id: script?.ownerId || 'user-1',
+    name: script?.ownerName || 'Arun Kumar',
+    email: script?.ownerEmail || 'arun.kumar@scriptora.studio'
   };
 }
 
 export function isScriptOwner(scriptId, user) {
-  if (!user) return true; // Default fallback to single-user local context
+  if (!user) {
+    return (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && !process.env.STRICT_AUTH;
+  }
   const owner = getScriptOwner(scriptId);
-  return user.id === owner.id || user.email === owner.email;
+  return (user.id && user.id === owner.id) || (user.email && user.email === owner.email);
 }
 
 export function getUserRole(scriptId, user = db.currentUser) {
@@ -477,7 +479,7 @@ export function removeCollaborator(scriptId, memberId, actorUser = db.currentUse
   }
 
   const collabs = db.collaborators[scriptId] || [];
-  const member = collabs.find(c => c.id === memberId);
+  const member = collabs.find(c => c.id === memberId || (c.email && c.email.toLowerCase() === memberId.toLowerCase()));
   if (!member) return false;
 
   // Prevent removing owner
@@ -487,7 +489,7 @@ export function removeCollaborator(scriptId, memberId, actorUser = db.currentUse
   }
 
   // Remove collaborator
-  db.collaborators[scriptId] = collabs.filter(c => c.id !== memberId);
+  db.collaborators[scriptId] = collabs.filter(c => c.id !== member.id && c.email !== member.email);
 
   // E2EE Key Rotation trigger on member removal
   let keyRotated = false;

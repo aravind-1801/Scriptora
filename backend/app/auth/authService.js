@@ -185,13 +185,18 @@ export function checkScriptAccess(user, scriptId, requiredRole = 'Viewer') {
   // Check script in db
   const script = (db.scripts || []).find(s => s.id === scriptId);
 
-  // Default scripts (e.g. chronicles-of-dust) are owned by user-1 (Arun Kumar)
-  const isOwner = (script && script.ownerId === user.id) ||
-                  (user.id === 'user-1' || user.email === 'arun.kumar@scriptora.studio') ||
-                  (script && !script.ownerId && (user.id === 'user-1' || user.email === 'arun.kumar@scriptora.studio'));
+  // Ownership check: If script specifies ownerId, only that user or their verified email is the owner.
+  // Default legacy/demo scripts without explicit ownerId belong to user-1 (Arun Kumar).
+  const isOwner = (script && script.ownerId)
+    ? (script.ownerId === user.id || (user.email && script.ownerEmail === user.email))
+    : (user.id === 'user-1' || user.email === 'arun.kumar@scriptora.studio');
 
   if (isOwner) {
     return { allowed: true, role: 'Owner' };
+  }
+
+  if (requiredRole === 'Owner') {
+    return { allowed: false, status: 403, error: 'Permission denied: Only the screenplay owner can perform this action.' };
   }
 
   // Collaborator check

@@ -59,6 +59,16 @@ function readBody(req) {
   });
 }
 
+function getAuthUser(req, allowFallback = true) {
+  if (req.headers['authorization']) {
+    return authService.verifyAuthToken(req.headers['authorization'], false);
+  }
+  if (allowFallback && (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && !process.env.STRICT_AUTH) {
+    return db.currentUser;
+  }
+  return null;
+}
+
 export const server = http.createServer(async (req, res) => {
   // 1. CORS
   if (handleCors(req, res)) return;
@@ -113,11 +123,22 @@ export const server = http.createServer(async (req, res) => {
 
     // 2. SCRIPTS
     if (pathname === '/scripts' && method === 'GET') {
-      return sendJson(res, 200, { scripts: scriptService.getScripts() });
+      const user = getAuthUser(req, true);
+      const allScripts = scriptService.getScripts();
+      if (user && user.id && user.id !== 'user-1') {
+        const userScripts = allScripts.filter(s => 
+          s.ownerId === user.id || 
+          (user.email && s.ownerEmail === user.email) ||
+          ((db.collaborators && db.collaborators[s.id]) || []).some(c => c.id === user.id || (user.email && c.email === user.email))
+        );
+        return sendJson(res, 200, { scripts: userScripts });
+      }
+      return sendJson(res, 200, { scripts: allScripts });
     }
     if (pathname === '/scripts' && method === 'POST') {
+      const user = getAuthUser(req, true);
       const body = await readBody(req);
-      const newScript = scriptService.createScript(body);
+      const newScript = scriptService.createScript(body, user);
       return sendJson(res, 201, { script: newScript });
     }
 
@@ -125,16 +146,31 @@ export const server = http.createServer(async (req, res) => {
     if (scriptMatch) {
       const id = scriptMatch[1];
       if (method === 'GET') {
+        const user = getAuthUser(req, true);
+        const access = authService.checkScriptAccess(user, id, 'Viewer');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         const script = scriptService.getScript(id);
         if (!script) return sendJson(res, 404, { error: "Script not found" });
         return sendJson(res, 200, { script });
       }
       if (method === 'PUT') {
+        const user = getAuthUser(req, true);
+        const access = authService.checkScriptAccess(user, id, 'Editor');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         const body = await readBody(req);
         const updated = scriptService.updateScript(id, body);
         return sendJson(res, 200, { script: updated });
       }
       if (method === 'DELETE') {
+        const user = getAuthUser(req, true);
+        const access = authService.checkScriptAccess(user, id, 'Owner');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         scriptService.deleteScript(id);
         return sendJson(res, 200, { success: true });
       }
@@ -142,6 +178,11 @@ export const server = http.createServer(async (req, res) => {
 
     const currentDraftMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/current-draft$/);
     if (currentDraftMatch && method === 'POST') {
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, currentDraftMatch[1], 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const script = scriptService.setCurrentDraft(currentDraftMatch[1]);
       if (!script) return sendJson(res, 404, { error: "Script not found" });
       return sendJson(res, 200, { script });
@@ -149,18 +190,33 @@ export const server = http.createServer(async (req, res) => {
 
     const dupMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/duplicate$/);
     if (dupMatch && method === 'POST') {
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, dupMatch[1], 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const dup = scriptService.duplicateScript(dupMatch[1]);
       return sendJson(res, 201, { script: dup });
     }
 
     const archMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/archive$/);
     if (archMatch && method === 'PUT') {
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, archMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const arch = scriptService.archiveScript(archMatch[1]);
       return sendJson(res, 200, { script: arch });
     }
 
     const restMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/restore$/);
     if (restMatch && method === 'PUT') {
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, restMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const rest = scriptService.restoreScript(restMatch[1]);
       return sendJson(res, 200, { script: rest });
     }
@@ -170,14 +226,18 @@ export const server = http.createServer(async (req, res) => {
     if (screenplayMatch) {
       const id = screenplayMatch[1];
       if (method === 'GET') {
+        const user = getAuthUser(req, true);
+        const access = authService.checkScriptAccess(user, id, 'Viewer');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         return sendJson(res, 200, { screenplay: screenplayService.getScreenplay(id) });
       }
       if (method === 'PUT' || method === 'POST') {
-        // Enforce backend permission: screenplay.edit
-        if (!collaborationService.checkPermission(id, 'screenplay.edit', db.currentUser)) {
-          return sendJson(res, 403, {
-            error: 'Permission denied: Your assigned collaborator role does not permit modifying screenplay content.'
-          });
+        const user = getAuthUser(req, true);
+        const access = authService.checkScriptAccess(user, id, 'Editor');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
         }
         const body = await readBody(req);
         const updated = screenplayService.saveScreenplay(id, body);
@@ -324,9 +384,15 @@ export const server = http.createServer(async (req, res) => {
 
     const inviteMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invite$/);
     if (inviteMatch && method === 'POST') {
+      const scriptId = inviteMatch[1];
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
         const body = await readBody(req);
-        const newCollab = collaborationService.inviteCollaborator(inviteMatch[1], body, db.currentUser);
+        const newCollab = collaborationService.inviteCollaborator(scriptId, body, user);
         return sendJson(res, 201, { collaborator: newCollab });
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -364,7 +430,8 @@ export const server = http.createServer(async (req, res) => {
     const invAcceptMatch = pathname.match(/^\/collaborators\/invitations\/([a-zA-Z0-9_-]+)\/accept$/);
     if (invAcceptMatch && method === 'POST') {
       try {
-        const result = collaborationService.acceptInvitation(invAcceptMatch[1], db.currentUser);
+        const user = getAuthUser(req, true);
+        const result = collaborationService.acceptInvitation(invAcceptMatch[1], user);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -379,19 +446,25 @@ export const server = http.createServer(async (req, res) => {
     }
     if (invTokenMatch && method === 'POST') {
       try {
-        const result = collaborationService.acceptInvitation(invTokenMatch[1], db.currentUser);
+        const user = getAuthUser(req, true);
+        const result = collaborationService.acceptInvitation(invTokenMatch[1], user);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
       }
     }
 
-    const collabMemberMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)$/);
+    const collabMemberMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.@-]+)$/);
     if (collabMemberMatch) {
       const [, scriptId, memberId] = collabMemberMatch;
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       if (method === 'DELETE') {
         try {
-          const result = collaborationService.removeCollaborator(scriptId, memberId, db.currentUser);
+          const result = collaborationService.removeCollaborator(scriptId, memberId, user);
           return sendJson(res, 200, result);
         } catch (err) {
           return sendJson(res, 400, { error: err.message });
@@ -400,7 +473,7 @@ export const server = http.createServer(async (req, res) => {
       if (method === 'PUT') {
         try {
           const body = await readBody(req);
-          const updated = collaborationService.updateRole(scriptId, memberId, body.role, db.currentUser);
+          const updated = collaborationService.updateRole(scriptId, memberId, body.role, user);
           return sendJson(res, 200, { collaborator: updated });
         } catch (err) {
           return sendJson(res, 400, { error: err.message });
@@ -856,19 +929,34 @@ export const server = http.createServer(async (req, res) => {
 
     const prodSbListMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboards$/);
     if (prodSbListMatch && method === 'GET') {
-      const storyboards = storyboardService.getStoryboards(prodSbListMatch[1]);
+      const scriptId = prodSbListMatch[1];
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
+      const storyboards = storyboardService.getStoryboards(scriptId);
       return sendJson(res, 200, { storyboards });
     }
 
     const prodSbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard$/);
     if (prodSbMatch) {
       const scriptId = prodSbMatch[1];
+      const user = getAuthUser(req, true);
       if (method === 'GET') {
+        const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         const sceneId = url.searchParams.get('sceneId') || 'scene-1';
         const storyboard = storyboardService.getStoryboardByScene(scriptId, sceneId);
         return sendJson(res, 200, { storyboard });
       }
       if (method === 'POST') {
+        const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
         const body = await readBody(req);
         const storyboard = storyboardService.saveStoryboard(scriptId, body);
         return sendJson(res, 200, { storyboard });
@@ -879,6 +967,11 @@ export const server = http.createServer(async (req, res) => {
     if (prodSbShotsMatch && method === 'POST') {
       const scriptId = prodSbShotsMatch[1];
       const sceneId = prodSbShotsMatch[2];
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       const result = storyboardService.addShot(scriptId, sceneId, body);
       return sendJson(res, 201, result);
@@ -889,6 +982,11 @@ export const server = http.createServer(async (req, res) => {
       const scriptId = prodSbShotDetailMatch[1];
       const sceneId = prodSbShotDetailMatch[2];
       const shotId = prodSbShotDetailMatch[3];
+      const user = getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       if (method === 'PUT') {
         const body = await readBody(req);
         const result = storyboardService.updateShot(scriptId, sceneId, shotId, body);

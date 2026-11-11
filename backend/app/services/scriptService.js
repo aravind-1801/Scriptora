@@ -8,13 +8,20 @@ export function getScript(id) {
   return db.scripts.find(s => s.id === id);
 }
 
-export function createScript(data) {
+export function createScript(data, ownerUser = null) {
   const title = (data.title || "Untitled Screenplay").trim();
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
   
+  const ownerId = (ownerUser && ownerUser.id) || data.ownerId || db.currentUser?.id || 'user-1';
+  const ownerEmail = (ownerUser && ownerUser.email) || data.ownerEmail || db.currentUser?.email || 'arun.kumar@scriptora.studio';
+  const ownerName = (ownerUser && ownerUser.name) || data.ownerName || db.currentUser?.displayName || db.currentUser?.name || 'Screenplay Writer';
+
   const newScript = {
     id,
     title,
+    ownerId,
+    ownerEmail,
+    ownerName,
     draft: "Draft 1.0",
     genre: data.genre || "Drama",
     format: data.format || "Feature",
