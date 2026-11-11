@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { db } from '../models/db.js';
 
 export function getCurrentUser() {
@@ -128,46 +129,152 @@ export function deleteAccount(confirmationText) {
   };
 }
 
+let cachedGoogleCerts = null;
+let certsExpiry = 0;
+
 /**
- * Verify authorization token from request header (supports Firebase ID token, JWT, dev/session tokens)
+ * Fetch and cache Google Firebase Auth public x509 certificates.
  */
-export function verifyAuthToken(authHeader, allowSessionFallback = true) {
+export async function fetchGooglePublicCerts() {
+  const now = Date.now();
+  if (cachedGoogleCerts && certsExpiry > now) {
+    return cachedGoogleCerts;
+  }
+  try {
+    const res = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+    if (res.ok) {
+      const data = await res.json();
+      cachedGoogleCerts = data;
+      const cc = res.headers.get('cache-control') || '';
+      const match = cc.match(/max-age=(\d+)/i);
+      const maxAgeSec = match ? parseInt(match[1], 10) : 21600;
+      certsExpiry = now + maxAgeSec * 1000;
+      return cachedGoogleCerts;
+    }
+  } catch (err) {
+    console.warn('[authService] Could not reach Google public certs endpoint:', err.message);
+  }
+  return cachedGoogleCerts || {};
+}
+
+/**
+ * Cryptographically verifies a Firebase ID Token using Google's public x509 keys and project claims.
+ * Rejects forged, expired, malformed or invalid tokens.
+ */
+export async function verifyFirebaseIdToken(token) {
+  if (!token || typeof token !== 'string') return null;
+
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+
+  try {
+    // 1. Header parsing & algorithm check
+    const headerJson = Buffer.from(parts[0], 'base64url').toString('utf8');
+    const header = JSON.parse(headerJson);
+    if (header.alg !== 'RS256' || !header.kid) {
+      return null;
+    }
+
+    // 2. Fetch Google public certificate matching kid
+    const certs = await fetchGooglePublicCerts();
+    const cert = certs[header.kid];
+    if (!cert) {
+      return null;
+    }
+
+    // 3. Cryptographic signature verification
+    const signingInput = Buffer.from(`${parts[0]}.${parts[1]}`);
+    const signature = Buffer.from(parts[2], 'base64url');
+    const isSignatureValid = crypto.verify('sha256', signingInput, cert, signature);
+    if (!isSignatureValid) {
+      console.warn('[authService] Cryptographic signature verification failed');
+      return null;
+    }
+
+    // 4. Claims verification
+    const payloadJson = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const payload = JSON.parse(payloadJson);
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    const projectId = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || 'scriptora-1801';
+
+    // Must not be expired
+    if (!payload.exp || payload.exp < nowSec) {
+      return null;
+    }
+    // Must be issued in the past (allowing 5m clock skew)
+    if (payload.iat && payload.iat > nowSec + 300) {
+      return null;
+    }
+    // Must match project audience
+    if (payload.aud !== projectId) {
+      return null;
+    }
+    // Must match project issuer
+    if (payload.iss !== `https://securetoken.google.com/${projectId}`) {
+      return null;
+    }
+    // Must have non-empty subject
+    if (!payload.sub || typeof payload.sub !== 'string' || payload.sub.trim() === '') {
+      return null;
+    }
+
+    return {
+      id: payload.sub,
+      uid: payload.sub,
+      email: payload.email || '',
+      name: payload.name || payload.displayName || 'Authenticated User'
+    };
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Verify authorization token from request header.
+ * In production, cryptographically validates genuine Firebase ID tokens.
+ * Only accepts test-token / dev-token in explicitly isolated test / development environments.
+ */
+export async function verifyAuthToken(authHeader, allowSessionFallback = true) {
+  const isTestOrDev = (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && !process.env.STRICT_AUTH;
+  const isProd = process.env.NODE_ENV === 'production' || process.env.STRICT_AUTH === 'true';
+
   if (authHeader) {
     const match = authHeader.match(/^Bearer\s+(.+)$/i);
     const token = match ? match[1].trim() : authHeader.trim();
     if (token) {
-      if (token === 'dev-token' || token === 'test-token') {
-        return db.currentUser || { id: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' };
-      }
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payloadBase64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf8');
-          const payload = JSON.parse(payloadJson);
-          const nowSec = Math.floor(Date.now() / 1000);
-          if (payload.exp && payload.exp < nowSec) return null;
-          const uid = payload.user_id || payload.sub || payload.uid;
-          return {
-            id: uid,
-            uid: uid,
-            email: payload.email || '',
-            name: payload.name || payload.displayName || 'Authenticated User'
-          };
+      // In isolated test/development mode ONLY, allow test tokens
+      if (!isProd && isTestOrDev) {
+        if (token === 'dev-token' || token === 'test-token') {
+          return db.currentUser || { id: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' };
         }
-      } catch (_) {
-        return null;
+        if (db.currentUser && (token === db.currentUser.id || token === db.currentUser.email)) {
+          return db.currentUser;
+        }
+        // Support test collaborator lookup from db in test mode
+        if (token.startsWith('mock-user:')) {
+          const parts = token.split(':');
+          return { id: parts[1], uid: parts[1], email: parts[2] || '', name: parts[3] || 'Mock User' };
+        }
+        for (const list of Object.values(db.collaborators || {})) {
+          const found = list.find(c => c.id === token || c.email === token);
+          if (found) return found;
+        }
       }
-      if (db.currentUser && (token === db.currentUser.id || token === db.currentUser.email)) {
-        return db.currentUser;
+
+      // Cryptographic Firebase ID Token verification
+      const firebaseUser = await verifyFirebaseIdToken(token);
+      if (firebaseUser) {
+        return firebaseUser;
       }
-      // If token does not match any recognized user or format
+
+      // Reject all untrusted, decoded-only, forged or invalid tokens
       return null;
     }
   }
 
-  // Optional session fallback for existing integration tests in non-strict mode
-  if (allowSessionFallback && (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && db.currentUser) {
+  // Session fallback strictly isolated to test/dev environment
+  if (allowSessionFallback && isTestOrDev && db.currentUser) {
     return db.currentUser;
   }
 

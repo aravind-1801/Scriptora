@@ -65,10 +65,67 @@ export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
   return `/production/storyboard/images/${filename}`;
 }
 
-export async function createSignedImageUrl(storagePath, expiresIn = 3600) {
+const recentGeneratedAssets = new Set();
+
+export function recordGeneratedAsset(scriptId, filename) {
+  if (scriptId && filename) {
+    const base = path.basename(filename);
+    recentGeneratedAssets.add(`${scriptId}/${base}`);
+  }
+}
+
+/**
+ * Validates that storagePath belongs to scriptId and is free of path traversal.
+ */
+export function validateStoragePathOwnership(scriptId, storagePath) {
+  if (!storagePath || typeof storagePath !== 'string') {
+    return { valid: false, status: 400, error: 'Storage path is required' };
+  }
+
+  let decoded = storagePath.trim();
+  try { decoded = decodeURIComponent(decoded); } catch (_) {}
+
+  // 1. Path traversal and illegal character check
+  if (decoded.includes('..') || decoded.includes('\\') || /[\x00-\x1F]/.test(decoded)) {
+    return { valid: false, status: 400, error: 'Path traversal or illegal characters rejected' };
+  }
+
+  // 2. Normalize and check structure
+  const relative = decoded.replace(/^storyboards\//, '').replace(/^\/+/, '');
+  const segments = relative.split('/');
+  if (segments.length < 2) {
+    return { valid: false, status: 400, error: 'Invalid storage path structure: expected storyboards/{scriptId}/{filename}' };
+  }
+
+  const pathScriptId = segments[0];
+  const filename = segments.slice(1).join('/');
+
+  if (!/^[a-zA-Z0-9_.-]+$/.test(filename)) {
+    return { valid: false, status: 400, error: 'Illegal characters in storage filename' };
+  }
+
+  // 3. Script isolation check
+  if (pathScriptId !== scriptId) {
+    return { valid: false, status: 403, error: `Cross-project access forbidden: storage path belongs to '${pathScriptId}', not '${scriptId}'` };
+  }
+
+  return { valid: true, scriptId, filename, cleanPath: relative };
+}
+
+export async function createSignedImageUrl(storagePath, expiresIn = 3600, scriptId = null) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !secretKey || !storagePath) return null;
+
+  if (scriptId) {
+    const val = validateStoragePathOwnership(scriptId, storagePath);
+    if (!val.valid) {
+      console.warn(`[createSignedImageUrl] Blocked storage path for scriptId '${scriptId}':`, val.error);
+      return null;
+    }
+  } else if (storagePath.includes('..') || storagePath.includes('\\') || /[\x00-\x1F]/.test(storagePath)) {
+    return null;
+  }
 
   // Clean storage path to ensure it starts with bucket subpath
   const cleanPath = storagePath.replace(/^storyboards\//, '');
@@ -115,7 +172,8 @@ export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chro
       body: buffer
     });
     if (res.ok) {
-      const signedUrl = await createSignedImageUrl(objectKey, 3600);
+      recordGeneratedAsset(scriptId, filename);
+      const signedUrl = await createSignedImageUrl(objectKey, 3600, scriptId);
       return {
         storagePath,
         signedUrl,
@@ -975,6 +1033,7 @@ export async function generateShotImage(params = {}) {
       // Save to server-side persistent storage on disk
       const persistentUrl = saveImageToPersistentStorage(buf, ext);
       const filename = path.basename(persistentUrl);
+      recordGeneratedAsset(params.scriptId || 'chronicles-of-dust', filename);
       const base64Data = buf.toString("base64");
       const dataUri = `data:${mime};base64,${base64Data}`;
 
