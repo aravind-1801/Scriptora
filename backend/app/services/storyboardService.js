@@ -12,6 +12,33 @@ const DATA_DIR = path.resolve(BASE_PROJECT_DIR, 'backend', 'data');
 const STORAGE_DIR = path.resolve(DATA_DIR, 'storage', 'storyboard');
 const STORYBOARDS_FILE = path.resolve(DATA_DIR, 'storyboards.json');
 
+// Ensure environment variables are loaded
+const envLocations = [
+  path.resolve(BASE_PROJECT_DIR, 'backend', '.env'),
+  path.resolve(BASE_PROJECT_DIR, '.env')
+];
+for (const envFile of envLocations) {
+  if (fs.existsSync(envFile)) {
+    try {
+      const raw = fs.readFileSync(envFile, 'utf8');
+      raw.split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+          const idx = trimmed.indexOf('=');
+          const k = trimmed.slice(0, idx).trim();
+          let v = trimmed.slice(idx + 1).trim();
+          if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+            v = v.slice(1, -1);
+          }
+          if (k && !process.env[k]) {
+            process.env[k] = v;
+          }
+        }
+      });
+    } catch (_) {}
+  }
+}
+
 // Ensure persistent storage directories exist
 try {
   fs.mkdirSync(STORAGE_DIR, { recursive: true });
@@ -906,12 +933,17 @@ export async function generateShotImage(params = {}) {
 
       // Save to server-side persistent storage on disk
       const persistentUrl = saveImageToPersistentStorage(buf, ext);
+      const filename = path.basename(persistentUrl);
       const base64Data = buf.toString("base64");
       const dataUri = `data:${mime};base64,${base64Data}`;
 
+      const supabaseUrl = await uploadToSupabaseStorage(buf, filename, params.scriptId || 'chronicles-of-dust');
+
       return {
-        imageUrl: persistentUrl,
+        imageUrl: supabaseUrl || persistentUrl,
         persistentUrl,
+        cloudStorageUrl: supabaseUrl || null,
+        filename,
         sourceUrl: url,
         cdnUrl: url,
         dataUri,
@@ -1322,6 +1354,7 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
     let imgData = null;
     try {
       const generated = await generateShotImage({
+        scriptId,
         provider,
         prompt: b.prompt,
         title: b.title,

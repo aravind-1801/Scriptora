@@ -17,8 +17,8 @@ let firestoreConnectivityVerified = false;
 const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
 
 const SUPABASE_CONFIG = {
-  url: env.VITE_SUPABASE_URL || "",
-  anonKey: env.VITE_SUPABASE_ANON_KEY || "",
+  url: env.VITE_SUPABASE_URL || "https://wfnutbkbvnbvxieiegwz.supabase.co",
+  anonKey: env.VITE_SUPABASE_ANON_KEY || "sb_publishable_zAchyxf0uIMEEDCAWtKLpQ_PFofWTKn",
   bucket: env.VITE_SUPABASE_BUCKET || "storyboards"
 };
 

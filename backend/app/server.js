@@ -966,7 +966,7 @@ export const server = http.createServer(async (req, res) => {
       const scriptId = prodSbGenShotMatch[1];
       const body = await readBody(req);
       try {
-        const result = await storyboardService.generateShotImage(body);
+        const result = await storyboardService.generateShotImage({ ...body, scriptId });
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message, provider: body.provider });
