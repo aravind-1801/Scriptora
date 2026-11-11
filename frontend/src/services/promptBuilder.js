@@ -1,12 +1,20 @@
 /**
  * SCRIPTORA Storyboard Generation Prompt Builder
  *
- * Centralized, deterministic translation of all SCRIPTORA visual settings
- * (Visual Style, Aspect Ratio, Shot Size, Camera Angle, Lens, Lighting)
- * into precise, structured prompt instructions for Pollinations FLUX.1.
+ * Centralized, deterministic translation of all SCRIPTORA visual settings:
+ * - Visual Art Style (17 styles + custom)
+ * - Aspect Ratio & Dimensions (2.39:1, 16:9, 4:3, 9:16)
+ * - Shot Size (5 framing options)
+ * - Camera Angle (6 perspective options)
+ * - Lens / Focal Length (4 optical options)
+ * - Lighting (6 atmospheric options)
+ * - Shot Type (Section A: 6 filmmaking intent options)
+ * - Camera Movement (Section C: 5 kinetic options)
+ * - Screen Direction (Section C: 3 continuity options)
+ * - Image Quality (Standard Draft vs High Definition Production)
+ * - Shot Title (Section A) & Director Notes (Section C)
  *
- * Guarantees that selected controls directly determine output framing, optics,
- * lighting, and medium, overriding conflicting free-text prompt keywords.
+ * Enforces 5-level precedence and negative medium constraints.
  */
 
 export const APPLICATION_DEFAULTS = Object.freeze({
@@ -16,6 +24,10 @@ export const APPLICATION_DEFAULTS = Object.freeze({
   cameraAngle: "Eye Level",
   lens: "50mm",
   lighting: "Auto / Scene-based",
+  quality: "Standard Draft",
+  cameraMovement: "Static",
+  screenDirection: "Static",
+  shotType: "",
   experienceLevel: "Intermediate"
 });
 
@@ -190,10 +202,38 @@ export const LIGHTING_DEFINITIONS = Object.freeze({
   "Backlit": "Strong backlight illumination, primary light source positioned directly behind the subject, pronounced rim lighting along silhouettes, radiant halo edges and atmospheric depth"
 });
 
+export const SHOT_TYPE_DEFINITIONS = Object.freeze({
+  "Establishing Shot": "Establishing shot establishing environmental layout, geographical scale, and spatial context of the scene",
+  "Action Shot": "Dynamic action shot emphasizing kinetic character motion, physical energy, and immediate tension",
+  "Reaction Shot": "Intimate reaction shot capturing subtle character emotion, facial response, and psychological stakes",
+  "Dialogue Shot": "Dialogue staging emphasizing conversational blocking, conversational eyeline, and relational dynamic",
+  "Insert / Detail Shot": "Narrative insert shot focusing intensely on crucial object detail, tactical telemetry, or hand interaction",
+  "Transition Shot": "Atmospheric transition shot conveying spatial progression, passage of time, or environmental mood"
+});
+
+export const CAMERA_MOVEMENT_DEFINITIONS = Object.freeze({
+  "Static": "Locked-off static camera, stable balanced composition",
+  "Pan": "Horizontal panning camera movement capturing spatial breadth across the environment",
+  "Tilt": "Vertical tilting camera movement emphasizing towering height and scale",
+  "Tracking": "Dynamic tracking camera movement moving parallel alongside the subject's path",
+  "Dolly": "Cinematic dolly camera movement pushing in toward the focal center"
+});
+
+export const SCREEN_DIRECTION_DEFINITIONS = Object.freeze({
+  "Left to Right": "Screen direction: subject positioned or moving toward screen right, maintaining left-to-right axis continuity",
+  "Right to Left": "Screen direction: subject positioned or moving toward screen left, maintaining right-to-left axis continuity",
+  "Static": "Centered neutral screen position"
+});
+
+export const QUALITY_DEFINITIONS = Object.freeze({
+  "High Definition Production": "Quality: Master production finish, pristine visual definition, high fidelity details, sharp focal clarity",
+  "Standard Draft": "Quality: Production storyboard draft, readable concept blocking"
+});
+
 /**
  * Normalizes input key to standard dictionary keys
  */
-export function normalizeKey(val, dictionary, defaultKey) {
+export function normalizeKey(val, dictionary, defaultKey = null) {
   if (!val || typeof val !== 'string') return defaultKey;
   const clean = val.trim();
   if (dictionary[clean]) return clean;
@@ -203,13 +243,11 @@ export function normalizeKey(val, dictionary, defaultKey) {
     if (k.toLowerCase() === lower) return k;
   }
 
-  // Substring / partial matching
   for (const k of Object.keys(dictionary)) {
     const kLower = k.toLowerCase();
     if (lower.includes(kLower) || kLower.includes(lower)) return k;
   }
 
-  // Common aliases
   if (dictionary === SHOT_SIZE_DEFINITIONS) {
     if (lower.includes('extreme wide') || lower.includes('ews')) return "Extreme Wide";
     if (lower.includes('extreme close') || lower.includes('ecu') || lower.includes('macro')) return "Extreme Close-up";
@@ -241,6 +279,34 @@ export function normalizeKey(val, dictionary, defaultKey) {
     if (lower.includes('low') || lower.includes('moody') || lower.includes('chiaroscuro')) return "Low-key";
     if (lower.includes('back') || lower.includes('rim') || lower.includes('silhouette')) return "Backlit";
     if (lower.includes('auto') || lower.includes('scene')) return "Auto / Scene-based";
+  }
+
+  if (dictionary === SHOT_TYPE_DEFINITIONS) {
+    if (lower.includes('establishing')) return "Establishing Shot";
+    if (lower.includes('action')) return "Action Shot";
+    if (lower.includes('reaction')) return "Reaction Shot";
+    if (lower.includes('dialogue')) return "Dialogue Shot";
+    if (lower.includes('insert') || lower.includes('detail')) return "Insert / Detail Shot";
+    if (lower.includes('transition')) return "Transition Shot";
+  }
+
+  if (dictionary === CAMERA_MOVEMENT_DEFINITIONS) {
+    if (lower.includes('pan')) return "Pan";
+    if (lower.includes('tilt')) return "Tilt";
+    if (lower.includes('track')) return "Tracking";
+    if (lower.includes('dolly')) return "Dolly";
+    if (lower.includes('static')) return "Static";
+  }
+
+  if (dictionary === SCREEN_DIRECTION_DEFINITIONS) {
+    if (lower.includes('left to right') || lower.includes('ltr')) return "Left to Right";
+    if (lower.includes('right to left') || lower.includes('rtl')) return "Right to Left";
+    if (lower.includes('static') || lower.includes('center')) return "Static";
+  }
+
+  if (dictionary === QUALITY_DEFINITIONS) {
+    if (lower.includes('high') || lower.includes('hd') || lower.includes('production')) return "High Definition Production";
+    if (lower.includes('standard') || lower.includes('draft')) return "Standard Draft";
   }
 
   if (dictionary === ASPECT_RATIO_SPECS) {
@@ -275,11 +341,12 @@ export function normalizeKey(val, dictionary, defaultKey) {
 }
 
 /**
- * Resolves settings according to strict 4-level precedence:
- * 1. Explicit per-shot setting selected for current generation
- * 2. Applicable project / scene level override
- * 3. User's saved Default Storyboard Settings
- * 4. Original application defaults
+ * Resolves settings according to strict 5-level precedence:
+ * 1. Explicit settings selected in current generation screen (e.g. sequence / AI modal)
+ * 2. Explicit per-shot settings (e.g. Add Shot Section A, B, C values)
+ * 3. Applicable project / scene level override
+ * 4. User's saved Default Storyboard Settings
+ * 5. Original application defaults
  */
 export function resolveEffectiveSettings(shotParams = {}, userPreferences = {}, projectOverrides = {}) {
   const p = shotParams || {};
@@ -311,13 +378,39 @@ export function resolveEffectiveSettings(shotParams = {}, userPreferences = {}, 
   const rawLighting = p.lighting || p.lightingMood || proj.lighting || proj.lightingMood || user.lighting || user.defaultLighting || app.lighting;
   const lighting = normalizeKey(rawLighting, LIGHTING_DEFINITIONS, app.lighting);
 
+  // 7. Shot Type (Section A)
+  const rawType = p.shotType || p.type || proj.shotType || user.shotType || app.shotType;
+  const shotType = normalizeKey(rawType, SHOT_TYPE_DEFINITIONS, null);
+
+  // 8. Camera Movement (Section C)
+  const rawMovement = p.cameraMovement || p.movement || proj.cameraMovement || user.cameraMovement || app.cameraMovement;
+  const cameraMovement = normalizeKey(rawMovement, CAMERA_MOVEMENT_DEFINITIONS, "Static");
+
+  // 9. Screen Direction (Section C)
+  const rawDirection = p.screenDirection || p.direction || p.continuity?.screenDirection || proj.screenDirection || user.screenDirection || app.screenDirection;
+  const screenDirection = normalizeKey(rawDirection, SCREEN_DIRECTION_DEFINITIONS, "Static");
+
+  // 10. Image Quality
+  const rawQuality = p.quality || proj.quality || user.quality || app.quality;
+  const quality = normalizeKey(rawQuality, QUALITY_DEFINITIONS, "Standard Draft");
+
+  // 11. Shot Title & Director Notes
+  const shotTitle = (p.title || p.shotTitle || "").trim();
+  const directorNotes = (p.directorNotes || p.notes || "").trim();
+
   return {
     visualStyle,
     aspectRatio,
     shotSize,
     cameraAngle,
     lens,
-    lighting
+    lighting,
+    shotType,
+    cameraMovement,
+    screenDirection,
+    quality,
+    shotTitle,
+    directorNotes
   };
 }
 
@@ -333,16 +426,13 @@ export function sanitizeUserPrompt(rawPrompt = "", effectiveSettings = {}) {
   const isPhotographic = styleDef.mediumCategory === "photography" || styleDef.name === "Photorealistic" || styleDef.name === "Photo / Commercial";
 
   if (isNonPhotographic) {
-    // Strip photography / 3D buzzwords that contaminate sketch/drawing styles
     prompt = prompt.replace(/\b(photorealistic|hyperrealistic|hyper-realistic|ultra-realistic|realistic photo|dslr|35mm photo|8k resolution|octane render|unreal engine|unreal engine 5)\b/gi, "").trim();
   }
 
   if (isPhotographic) {
-    // Strip drawing / sketch words that contaminate photo styles
     prompt = prompt.replace(/\b(pencil sketch|rough sketch|stick figure|flat vector|cartoon drawing|watercolor wash)\b/gi, "").trim();
   }
 
-  // Clean double commas, extra whitespace
   prompt = prompt.replace(/,\s*,/g, ",").replace(/\s{2,}/g, " ").replace(/^,\s*/, "").replace(/,\s*$/, "").trim();
 
   return prompt || (rawPrompt || "").trim() || "Atmospheric scene";
@@ -360,9 +450,18 @@ export function buildStoryboardGenerationPrompt(params = {}, userPreferences = {
   const lensDef = LENS_DEFINITIONS[effective.lens] || LENS_DEFINITIONS["50mm"];
   const lightingDef = LIGHTING_DEFINITIONS[effective.lighting] || LIGHTING_DEFINITIONS["Auto / Scene-based"];
 
+  const shotTypeDef = effective.shotType ? SHOT_TYPE_DEFINITIONS[effective.shotType] : null;
+  const movementDef = effective.cameraMovement && effective.cameraMovement !== "Static" ? CAMERA_MOVEMENT_DEFINITIONS[effective.cameraMovement] : null;
+  const directionDef = effective.screenDirection && effective.screenDirection !== "Static" ? SCREEN_DIRECTION_DEFINITIONS[effective.screenDirection] : null;
+  const qualityDef = effective.quality ? QUALITY_DEFINITIONS[effective.quality] : null;
+
   // Extract core user prompt / scene description
   const userPrompt = params.prompt || params.userDescription || params.description || "";
   const cleanUserPrompt = sanitizeUserPrompt(userPrompt, effective);
+
+  // Clean Shot Title (Section A) - exclude default placeholders like "Shot 1A" or "Shot"
+  const cleanTitle = effective.shotTitle;
+  const isGenericTitle = !cleanTitle || /^shot\s+[0-9]+[a-z]?$/i.test(cleanTitle) || cleanTitle.toLowerCase() === 'shot';
 
   // Build variation instruction if requested
   let variationClause = "";
@@ -381,16 +480,44 @@ export function buildStoryboardGenerationPrompt(params = {}, userPreferences = {
     }
   }
 
-  // Construct structured prompt sections
+  // Construct structured prompt sections with strict priority ordering
   const sections = [
     `Artistic Direction: ${styleDef.direction}.`,
-    `Scene & Subject: ${cleanUserPrompt}.`,
-    `Shot Framing & Scale: ${shotSizeDef}.`,
-    `Camera Perspective: ${cameraAngleDef}.`,
-    `Optics & Lens: ${lensDef}.`,
-    `Lighting & Atmosphere: ${lightingDef}.`,
-    `Aspect & Framing: ${ratioSpec.composition}.`
+    `Scene & Subject: ${cleanUserPrompt}.`
   ];
+
+  if (!isGenericTitle) {
+    sections.push(`Subject Staging: ${cleanTitle}.`);
+  }
+
+  sections.push(`Shot Framing & Scale: ${shotSizeDef}.`);
+
+  if (shotTypeDef) {
+    sections.push(`Filmmaking Intent: ${shotTypeDef}.`);
+  }
+
+  sections.push(`Camera Perspective: ${cameraAngleDef}.`);
+  sections.push(`Optics & Lens: ${lensDef}.`);
+
+  if (movementDef) {
+    sections.push(`Camera Movement: ${movementDef}.`);
+  }
+
+  sections.push(`Lighting & Atmosphere: ${lightingDef}.`);
+
+  if (directionDef) {
+    sections.push(`Continuity: ${directionDef}.`);
+  }
+
+  if (effective.directorNotes) {
+    sections.push(`Director Details: ${effective.directorNotes}.`);
+  }
+
+  sections.push(`Aspect & Framing: ${ratioSpec.composition}.`);
+
+  if (qualityDef) {
+    sections.push(`Rendering Fidelity: ${qualityDef}.`);
+  }
 
   if (variationClause) {
     sections.push(variationClause);
@@ -421,4 +548,3 @@ export function buildStoryboardGenerationPrompt(params = {}, userPreferences = {
     pollinationsUrl
   };
 }
-

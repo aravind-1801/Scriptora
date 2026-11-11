@@ -917,7 +917,7 @@ export async function generateShotImage(params = {}) {
         dataUri,
         provider: "pollinations-flux",
         model: model || "flux",
-        quality: params.quality || "hd",
+        quality: effectiveSettings.quality || params.quality || "Standard Draft",
         costEstimate: "Free (Pollinations AI)",
         prompt: cleanUserPrompt,
         fullPrompt,
@@ -929,6 +929,12 @@ export async function generateShotImage(params = {}) {
         focalLength: effectiveSettings.lens,
         lighting: effectiveSettings.lighting,
         lightingMood: effectiveSettings.lighting,
+        shotType: effectiveSettings.shotType,
+        cameraMovement: effectiveSettings.cameraMovement,
+        screenDirection: effectiveSettings.screenDirection,
+        shotTitle: effectiveSettings.shotTitle,
+        directorNotes: effectiveSettings.directorNotes,
+        effectiveSettings,
         seed,
         width,
         height,
@@ -1016,7 +1022,8 @@ export async function generateShotImage(params = {}) {
                     imageUrl: `data:image/jpeg;base64,${b64}`,
                     provider: "nvidia-nim",
                     model: "black-forest-labs/flux.1-dev",
-                    quality: params.quality || "standard",
+                    shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
                     costEstimate: "Free (NVIDIA Developer Tier)",
                     prompt
                   };
@@ -1039,7 +1046,8 @@ export async function generateShotImage(params = {}) {
             imageUrl: `data:image/jpeg;base64,${b64}`,
             provider: "nvidia-nim",
             model: "black-forest-labs/flux.1-dev",
-            quality: params.quality || "standard",
+            shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
             costEstimate: "Free (NVIDIA Developer Tier)",
             prompt
           };
@@ -1048,7 +1056,8 @@ export async function generateShotImage(params = {}) {
             imageUrl: json.data[0].url,
             provider: "nvidia-nim",
             model: "black-forest-labs/flux.1-dev",
-            quality: params.quality || "standard",
+            shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
             costEstimate: "Free (NVIDIA Developer Tier)",
             prompt
           };
@@ -1092,7 +1101,8 @@ export async function generateShotImage(params = {}) {
         return {
           imageUrl: json.data[0].url,
           provider: "openai-dalle3",
-          quality: params.quality || "standard",
+          shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
           costEstimate: params.quality === "hd" ? "$0.080" : "$0.040",
           prompt
         };
@@ -1126,7 +1136,8 @@ export async function generateShotImage(params = {}) {
         return {
           imageUrl: `data:image/png;base64,${json.predictions[0].bytesBase64Encoded}`,
           provider: "gemini-imagen3",
-          quality: params.quality || "standard",
+          shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
           costEstimate: "$0.030",
           prompt
         };
@@ -1163,7 +1174,8 @@ export async function generateShotImage(params = {}) {
         return {
           imageUrl: `data:image/png;base64,${json.artifacts[0].base64}`,
           provider: "stability-sdxl",
-          quality: params.quality || "standard",
+          shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
           costEstimate: "$0.018",
           prompt
         };
@@ -1312,15 +1324,21 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
       const generated = await generateShotImage({
         provider,
         prompt: b.prompt,
+        title: b.title,
+        shotTitle: b.title,
+        shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
         shotSize: b.shotSize,
         cameraAngle: b.cameraAngle,
+        cameraMovement: b.cameraMovement,
         focalLength: b.focalLength,
+        lens: b.focalLength,
         lightingMood: b.lightingMood,
+        lighting: b.lightingMood,
         aspectRatio: ratio,
         visualStyle: style,
         sceneHeading: scene.heading,
         shotNumber: b.shotNumber,
-        quality: params.quality || "standard"
+        quality: params.quality || "Standard Draft"
       });
       imgData = generated.imageUrl;
     } catch (_) {
@@ -1359,7 +1377,8 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
       imageUrl: imgData,
       imageSource: "ai",
       provider,
-      quality: params.quality || "standard",
+      shotType: i === 0 ? "Establishing Shot" : (i === 1 ? "Dialogue Shot" : (i === 2 ? "Reaction Shot" : "Insert / Detail Shot")),
+      quality: params.quality || "Standard Draft",
       costEstimate: provider === "scriptora-concept" ? "Free (Built-in)" : "$0.040",
       approvalStatus: "proposed",
       approvalNotes: "AI proposed sequence beat. Review and approve to confirm.",

@@ -1110,8 +1110,8 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
 
 
 // Helper: Structured generation prompt construction using centralized prompt builder
-function buildStructuredPrompt(params) {
-  const built = buildStoryboardGenerationPrompt(params);
+function buildStructuredPrompt(params, userPrefs = null, projectOverrides = null) {
+  const built = buildStoryboardGenerationPrompt(params, userPrefs, projectOverrides);
   return built.fullPrompt;
 }
 
@@ -1363,6 +1363,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
   if (shotForm) {
     shotForm.onsubmit = async (e) => {
       e.preventDefault();
+      const shotNumVal = document.getElementById('input-shot-number')?.value.trim() || '1A';
+      const titleVal = document.getElementById('input-shot-title')?.value.trim() || 'Shot';
+      const shotTypeVal = document.getElementById('input-shot-type')?.value || '';
       const descVal = document.getElementById('input-shot-desc')?.value.trim() || '';
       const styleVal = document.getElementById('input-shot-style')?.value || 'Concept Art';
       const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
@@ -1371,11 +1374,16 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
       const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
       const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
-      const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
+      const directionVal = document.getElementById('input-shot-direction')?.value || 'Static';
+      const notesVal = document.getElementById('input-shot-notes')?.value.trim() || '';
       const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
 
       const structuredPrompt = buildStructuredPrompt({
+        prompt: descVal,
         description: descVal,
+        title: titleVal,
+        shotTitle: titleVal,
+        shotType: shotTypeVal,
         visualStyle: styleVal,
         shotSize: sizeVal,
         cameraAngle: angleVal,
@@ -1384,13 +1392,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         lens: lensVal,
         lighting: lightingVal,
         screenDirection: directionVal,
+        directorNotes: notesVal,
         sceneContext
-      });
+      }, cachedPreferences, currentStoryboard);
 
       const updates = {
-        shotNumber: document.getElementById('input-shot-number')?.value.trim() || '1A',
-        title: document.getElementById('input-shot-title')?.value.trim() || 'Shot',
-        shotType: document.getElementById('input-shot-type')?.value || '',
+        shotNumber: shotNumVal,
+        title: titleVal,
+        shotType: shotTypeVal,
         description: descVal,
         shotSize: sizeVal,
         cameraAngle: angleVal,
@@ -1407,7 +1416,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         model: currentModalDraftModel || 'flux',
         generationTimestamp: new Date().toISOString(),
         approvalStatus: document.getElementById('input-shot-approval')?.value || 'draft',
-        directorNotes: document.getElementById('input-shot-notes')?.value.trim() || '',
+        directorNotes: notesVal,
         imageUrl: currentModalDraftImage,
         sourceUrl: currentModalDraftSourceUrl || (currentModalDraftImage && currentModalDraftImage.startsWith('http') ? currentModalDraftImage : null),
         cdnUrl: currentModalDraftSourceUrl || (currentModalDraftImage && currentModalDraftImage.startsWith('http') ? currentModalDraftImage : null),
@@ -1854,33 +1863,25 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         if (progressStatus) progressStatus.textContent = `Rendering with ${selectedProv.name}...`;
 
         const shotNum = document.getElementById('input-shot-number')?.value.trim() || '1A';
+        const shotTitle = document.getElementById('input-shot-title')?.value.trim() || '';
+        const shotType = document.getElementById('input-shot-type')?.value || '';
         const descVal = document.getElementById('input-shot-desc')?.value.trim() || userPrompt;
         const sizeVal = document.getElementById('input-shot-size')?.value || 'Medium';
         const angleVal = document.getElementById('input-shot-angle')?.value || 'Eye Level';
         const movementVal = document.getElementById('input-shot-movement')?.value || 'Static';
         const lensVal = document.getElementById('input-shot-focal')?.value || '50mm';
         const lightingVal = document.getElementById('input-shot-lighting')?.value || 'Auto / Scene-based';
-        const directionVal = document.getElementById('input-shot-direction')?.value || 'Left to Right';
-        const sceneContext = `${currentStoryboard?.sceneHeading || ''} ${currentStoryboard?.sceneSummary || ''}`.trim();
-
-        const structuredPrompt = buildStructuredPrompt({
-          description: descVal,
-          visualStyle: style,
-          shotSize: sizeVal,
-          cameraAngle: angleVal,
-          aspectRatio: ratio,
-          cameraMovement: movementVal,
-          lens: lensVal,
-          lighting: lightingVal,
-          screenDirection: directionVal,
-          sceneContext
-        });
+        const directionVal = document.getElementById('input-shot-direction')?.value || 'Static';
+        const notesVal = document.getElementById('input-shot-notes')?.value.trim() || '';
 
         try {
           const res = await api.generateStoryboardShot(scriptId, {
             provider: pId,
-            prompt: userPrompt ? `${structuredPrompt} ${userPrompt}` : structuredPrompt,
+            prompt: userPrompt || descVal,
             userDescription: descVal,
+            title: shotTitle,
+            shotTitle: shotTitle,
+            shotType: shotType,
             shotSize: sizeVal,
             cameraAngle: angleVal,
             cameraMovement: movementVal,
@@ -1891,6 +1892,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             aspectRatio: ratio,
             visualStyle: style,
             screenDirection: directionVal,
+            directorNotes: notesVal,
             sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
             shotNumber: shotNum,
             quality
@@ -1899,7 +1901,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           if (res?.imageUrl) {
             currentModalDraftImage = res.imageUrl;
             currentModalDraftSourceUrl = res.sourceUrl || res.cdnUrl || (res.imageUrl.startsWith('http') ? res.imageUrl : null);
-            currentModalDraftPrompt = res.prompt || descVal;
+            currentModalDraftPrompt = res.prompt || userPrompt || descVal;
             currentModalDraftFullPrompt = res.fullPrompt || null;
             currentModalDraftSeed = res.seed || null;
             currentModalDraftModel = res.model || 'flux';
@@ -1922,6 +1924,15 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
             const inputLighting = document.getElementById('input-shot-lighting');
             if (inputLighting && (res.lighting || res.lightingMood)) inputLighting.value = res.lighting || res.lightingMood;
+
+            const inputMovement = document.getElementById('input-shot-movement');
+            if (inputMovement && res.cameraMovement) inputMovement.value = res.cameraMovement;
+
+            const inputDirection = document.getElementById('input-shot-direction');
+            if (inputDirection && res.screenDirection) inputDirection.value = res.screenDirection;
+
+            const inputType = document.getElementById('input-shot-type');
+            if (inputType && res.shotType) inputType.value = res.shotType;
 
             updateInspectorImagePreviewUI();
             closeModal(genModal);
@@ -1953,21 +1964,23 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           letter: 'A',
           title: 'Establishing Spatial Geometry',
           description: `Wide environmental establishing view of ${scene.heading.toLowerCase()}. Establishes spatial depth, environmental lighting, and visual geography.`,
-          shotSize: 'Wide Shot',
+          shotSize: 'Extreme Wide',
+          shotType: 'Establishing Shot',
           cameraAngle: 'High Angle',
-          cameraMovement: 'Crane / Jib',
-          focalLength: '24mm Wide',
-          lightingMood: 'High Contrast Daylight',
-          prompt: `Cinematic wide establishing shot of ${scene.heading}: ${scene.snippet || 'Atmospheric perspective'}. 24mm anamorphic lens.`
+          cameraMovement: 'Pan',
+          focalLength: '24mm',
+          lightingMood: 'Daylight',
+          prompt: `Cinematic wide establishing shot of ${scene.heading}: ${scene.snippet || 'Atmospheric perspective'}. 24mm wide angle lens.`
         },
         {
           letter: 'B',
           title: 'Character Blocking & Entry',
           description: `Medium two-shot tracking ${scene.cast?.[0] || 'protagonist'} navigating the environment with rising tension.`,
-          shotSize: 'Medium Two-Shot',
+          shotSize: 'Medium',
+          shotType: 'Dialogue Shot',
           cameraAngle: 'Eye Level',
-          cameraMovement: 'Tracking Dolly',
-          focalLength: '50mm Prime',
+          cameraMovement: 'Tracking',
+          focalLength: '50mm',
           lightingMood: 'Practical Rim Lighting',
           prompt: `Medium two-shot tracking ${scene.cast?.join(' and ') || 'character'} in ${scene.heading}: ${scene.snippet || 'Environmental interaction'}. 50mm shallow depth of field.`
         },
@@ -1975,10 +1988,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           letter: 'C',
           title: 'Critical Dramatic Focal Beat',
           description: `Close-up reaction highlighting dramatic urgency, character resolve, and key narrative stakes.`,
-          shotSize: 'Close-Up',
+          shotSize: 'Close-up',
+          shotType: 'Reaction Shot',
           cameraAngle: 'Dutch Angle',
           cameraMovement: 'Static',
-          focalLength: '85mm Portrait',
+          focalLength: '85mm',
           lightingMood: 'Warm Eye Catchlight',
           prompt: `Dramatic close-up on ${scene.cast?.[0] || 'lead character'} in ${scene.heading}. Intense facial expression, rim lighting, 85mm portrait bokeh.`
         },
@@ -1986,11 +2000,12 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           letter: 'D',
           title: 'Prop & Action Detail Insert',
           description: `Tight macro insert focusing on critical hand movement, equipment interaction, or tactical telemetry.`,
-          shotSize: 'Extreme Close-Up',
+          shotSize: 'Extreme Close-up',
+          shotType: 'Insert / Detail Shot',
           cameraAngle: 'Low Angle',
           cameraMovement: 'Static',
-          focalLength: '35mm Macro',
-          lightingMood: 'Chiaroscuro Beam',
+          focalLength: '35mm',
+          lightingMood: 'Low-key',
           prompt: `Extreme close-up macro insert of crucial prop and tactical hand action in ${scene.heading}. Scratched metal textures, focused lighting.`
         }
       ];
@@ -2002,19 +2017,22 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         order: i + 1,
         title: b.title,
         description: b.description,
+        shotType: b.shotType,
         shotSize: b.shotSize,
         cameraAngle: b.cameraAngle,
         cameraMovement: b.cameraMovement,
         focalLength: b.focalLength,
+        lens: b.focalLength,
         lightingMood: b.lightingMood,
+        lighting: b.lightingMood,
         aspectRatio: ratio,
         visualStyle: style,
+        quality: quality,
         prompt: userPrompt ? `${b.prompt} ${userPrompt}` : b.prompt,
         imageUrl: null,
         imageSource: 'ai',
         provider: pId,
-        quality,
-        costEstimate: pId === 'scriptora-concept' ? 'Free (Built-in)' : '$0.040',
+        costEstimate: pId === 'scriptora-concept' ? 'Free (Built-in)' : 'Free (Pollinations AI)',
         approvalStatus: 'proposed',
         approvalNotes: 'AI proposed sequence beat. Review and approve to confirm.',
         approvedBy: null,
@@ -2024,7 +2042,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         location: scene.heading,
         continuity: {
           characterPosition: i % 2 === 0 ? 'Screen Left' : 'Screen Right',
-          screenDirection: 'Left to Right',
+          screenDirection: i % 2 === 0 ? 'Left to Right' : 'Right to Left',
           eyeline: i % 2 === 0 ? 'Looking Screen Right' : 'Looking Screen Left',
           lightingContinuity: 'Production matching lighting',
           costumeState: 'Production baseline',
@@ -2065,37 +2083,48 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           const res = await api.generateStoryboardShot(scriptId, {
             provider: shot.provider,
             prompt: shot.prompt,
+            title: shot.title,
+            shotTitle: shot.title,
+            shotType: shot.shotType,
             shotSize: shot.shotSize,
             cameraAngle: shot.cameraAngle,
             cameraMovement: shot.cameraMovement,
             focalLength: shot.focalLength,
+            lens: shot.focalLength,
             lightingMood: shot.lightingMood,
+            lighting: shot.lightingMood,
             aspectRatio: shot.aspectRatio,
             visualStyle: shot.visualStyle,
+            quality: shot.quality,
             sceneHeading: currentStoryboard.sceneHeading || scene.heading,
             shotNumber: shot.shotNumber,
             description: shot.description,
             cast: shot.characters,
-            characters: shot.characters,
-            quality: shot.quality
+            characters: shot.characters
           });
 
           if (res?.imageUrl) {
             shot.imageUrl = res.imageUrl;
+            shot.fullPrompt = res.fullPrompt || null;
+            shot.seed = res.seed || null;
+            shot.model = res.model || 'flux';
             shot.isGenerating = false;
             shot.generationError = null;
             if (!shot.history) shot.history = [];
             shot.history.unshift({
               imageUrl: res.imageUrl,
+              fullPrompt: res.fullPrompt,
               prompt: shot.prompt,
               visualStyle: shot.visualStyle,
+              aspectRatio: shot.aspectRatio,
+              quality: shot.quality,
               provider: shot.provider,
               createdAt: new Date().toISOString()
             });
 
             await api.saveStoryboard(scriptId, currentStoryboard);
             renderStoryboardView();
-            showToast(`Shot ${shot.shotNumber} sketch completed!`);
+            showToast(`Shot ${shot.shotNumber} frame completed!`);
           } else {
             throw new Error('Image generation returned empty');
           }
@@ -2208,10 +2237,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       renderStoryboardView();
 
       try {
+        const prevImg = shot.imageUrl;
         const res = await api.generateStoryboardShot(scriptId, {
           provider: pId,
-          prompt: structuredPrompt,
+          prompt: promptVal,
           userDescription: promptVal,
+          title: shot.title,
+          shotTitle: shot.title,
+          shotType: shot.shotType,
           shotSize: shot.shotSize,
           cameraAngle: shot.cameraAngle,
           cameraMovement: shot.cameraMovement,
@@ -2221,24 +2254,46 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           lighting: shot.lightingMood || shot.lighting,
           aspectRatio: shot.aspectRatio,
           visualStyle: styleVal,
+          quality: shot.quality || 'Standard Draft',
           screenDirection: shot.continuity?.screenDirection,
+          directorNotes: shot.directorNotes,
           sceneHeading: currentStoryboard?.sceneHeading || 'SCENE 1',
           shotNumber: shot.shotNumber
         });
 
         if (res?.imageUrl) {
           shot.imageUrl = res.imageUrl;
-          shot.visualStyle = styleVal;
+          shot.visualStyle = res.visualStyle || styleVal;
+          shot.fullPrompt = res.fullPrompt || null;
+          shot.seed = res.seed || null;
           shot.isGenerating = false;
           shot.generationError = null;
 
+          if (!shot.history) shot.history = [];
+          if (prevImg) {
+            shot.history.unshift({
+              id: `h-${Date.now()}`,
+              previousImageUrl: prevImg,
+              imageUrl: prevImg,
+              prompt: shot.prompt || shot.description || 'Original take',
+              fullPrompt: shot.fullPrompt,
+              visualStyle: shot.visualStyle,
+              aspectRatio: shot.aspectRatio,
+              quality: shot.quality,
+              generationType: 'retry',
+              timestamp: new Date().toISOString()
+            });
+          }
+
           await api.updateStoryboardShot(scriptId, currentSceneId, activeRegenShotId, {
             imageUrl: res.imageUrl,
-            prompt: structuredPrompt,
+            prompt: promptVal,
+            fullPrompt: res.fullPrompt || null,
             description: shot.description || promptVal,
-            visualStyle: styleVal,
+            visualStyle: res.visualStyle || styleVal,
             provider: pId,
-            imageSource: 'ai'
+            imageSource: 'ai',
+            seed: res.seed || null
           });
 
           renderStoryboardView();
@@ -2688,28 +2743,36 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const shotCountContainer = document.getElementById('gen-shot-count-container');
     const promptInput = document.getElementById('gen-prompt-input');
     const ratioSelect = document.getElementById('gen-ratio-select');
+    const qualitySelect = document.getElementById('gen-quality-select');
 
     if (modalTitle) modalTitle.textContent = 'AI Generate Shot';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
     if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
     if (sceneSnippetDisp) {
       const shotDesc = document.getElementById('input-shot-desc')?.value.trim();
-      sceneSnippetDisp.textContent = shotDesc || scene.snippet || 'Shot awaiting visual direction.';
+      const shotTitle = document.getElementById('input-shot-title')?.value.trim();
+      sceneSnippetDisp.textContent = shotDesc || shotTitle || scene.snippet || 'Shot awaiting visual direction.';
     }
 
     // Hide shot sequence length selector (since it comes under add one shot)
     if (shotCountContainer) shotCountContainer.classList.add('hidden');
 
-    // Pre-fill creative direction / prompt with shot description
+    // Pre-fill creative direction / prompt with shot description or shot title
     if (promptInput) {
       const shotDesc = document.getElementById('input-shot-desc')?.value.trim() || '';
-      promptInput.value = shotDesc;
+      const shotTitle = document.getElementById('input-shot-title')?.value.trim() || '';
+      promptInput.value = shotDesc || shotTitle;
       promptInput.classList.remove('border-rose-400', 'bg-rose-50/20');
     }
 
-    // Match aspect ratio from shot form
-    const currentRatio = document.getElementById('input-shot-ratio')?.value || currentStoryboard?.aspectRatio || '2.39:1';
+    // Match aspect ratio from shot form Section C, storyboard override, or cached preferences
+    const currentRatio = document.getElementById('input-shot-ratio')?.value || currentStoryboard?.aspectRatio || cachedPreferences?.aspectRatio || '2.39:1';
     if (ratioSelect) ratioSelect.value = currentRatio;
+
+    // Match image quality from cached preferences or default
+    if (qualitySelect) {
+      qualitySelect.value = cachedPreferences?.quality || 'Standard Draft';
+    }
 
     // Default to verified Free Pollinations FLUX.1 Engine
     if (genProviderSelect && Array.from(genProviderSelect.options).some(o => o.value === 'pollinations-flux')) {
@@ -2725,6 +2788,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     updateProviderCostDisclosure();
 
     setupVisualArtStylePopup();
+    // Inherit visual style from Add Shot Section B (or project/preferences default)
     const shotStyle = document.getElementById('input-shot-style')?.value || currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Soft Pencil';
     applySelectedVisualArtStyle(shotStyle, false);
 
@@ -2740,6 +2804,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const sceneSnippetDisp = document.getElementById('gen-scene-snippet-display');
     const modalTitle = document.getElementById('gen-modal-title');
     const shotCountContainer = document.getElementById('gen-shot-count-container');
+    const ratioSelect = document.getElementById('gen-ratio-select');
+    const qualitySelect = document.getElementById('gen-quality-select');
 
     if (modalTitle) modalTitle.textContent = 'Generate Scene Shot Sequence';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
@@ -2764,6 +2830,14 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     setupVisualArtStylePopup();
     const defaultGenStyle = currentStoryboard?.visualStyle || cachedPreferences?.visualStyle || 'Soft Pencil';
     applySelectedVisualArtStyle(defaultGenStyle, false);
+
+    // Sync Aspect Ratio and Image Quality
+    if (ratioSelect) {
+      ratioSelect.value = currentStoryboard?.aspectRatio || cachedPreferences?.aspectRatio || '2.39:1';
+    }
+    if (qualitySelect) {
+      qualitySelect.value = cachedPreferences?.quality || 'Standard Draft';
+    }
 
     const promptInput = document.getElementById('gen-prompt-input');
     if (promptInput) {
@@ -3124,7 +3198,13 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                 lens: shot.lens || shot.focalLength,
                 lightingMood: shot.lightingMood || shot.lighting,
                 lighting: shot.lighting || shot.lightingMood,
-                aspectRatio: shot.aspectRatio
+                aspectRatio: shot.aspectRatio,
+                visualStyle: shot.visualStyle,
+                quality: shot.quality,
+                shotType: shot.shotType,
+                cameraMovement: shot.cameraMovement,
+                screenDirection: shot.continuity?.screenDirection,
+                directorNotes: shot.directorNotes
               },
               timestamp: new Date().toISOString()
             });
@@ -3145,6 +3225,15 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             if (selectedVer.settings.lightingMood) shot.lightingMood = selectedVer.settings.lightingMood;
             if (selectedVer.settings.lighting) shot.lighting = selectedVer.settings.lighting;
             if (selectedVer.settings.aspectRatio) shot.aspectRatio = selectedVer.settings.aspectRatio;
+            if (selectedVer.settings.visualStyle) shot.visualStyle = selectedVer.settings.visualStyle;
+            if (selectedVer.settings.quality) shot.quality = selectedVer.settings.quality;
+            if (selectedVer.settings.shotType) shot.shotType = selectedVer.settings.shotType;
+            if (selectedVer.settings.cameraMovement) shot.cameraMovement = selectedVer.settings.cameraMovement;
+            if (selectedVer.settings.screenDirection) {
+              if (!shot.continuity) shot.continuity = {};
+              shot.continuity.screenDirection = selectedVer.settings.screenDirection;
+            }
+            if (selectedVer.settings.directorNotes) shot.directorNotes = selectedVer.settings.directorNotes;
           }
 
           try {
@@ -3823,19 +3912,26 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       const res = await api.generateStoryboardShot(scriptId, {
         provider: shot.provider || 'pollinations-flux',
         prompt: variationPrompt,
+        title: shot.title,
+        shotTitle: shot.title,
+        shotType: shot.shotType,
         shotSize: shot.shotSize,
         cameraAngle: shot.cameraAngle,
         cameraMovement: shot.cameraMovement,
         focalLength: shot.focalLength,
+        lens: shot.focalLength,
         lightingMood: shot.lightingMood,
+        lighting: shot.lightingMood,
         aspectRatio: shot.aspectRatio,
         visualStyle: shot.visualStyle || currentStoryboard?.visualStyle || 'Soft Pencil',
+        quality: shot.quality || 'Standard Draft',
+        screenDirection: shot.continuity?.screenDirection,
+        directorNotes: shot.directorNotes,
         sceneHeading: currentStoryboard?.sceneHeading || scene.heading || 'SCENE 1',
         shotNumber: shot.shotNumber,
         description: shot.description,
         cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
         characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
-        quality: shot.quality || 'standard',
         isVariation: true,
         variationType: variationType
       });
@@ -3850,6 +3946,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             imageUrl: prevResolved,
             previousImageUrl: prevResolved,
             prompt: shot.prompt || shot.description || 'Original take',
+            fullPrompt: shot.fullPrompt,
             generationType: 'variation',
             variationType: variationType,
             visualStyle: shot.visualStyle || 'Storyboard Sketch',
@@ -3858,7 +3955,13 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
               cameraAngle: shot.cameraAngle,
               focalLength: shot.focalLength,
               lightingMood: shot.lightingMood,
-              aspectRatio: shot.aspectRatio
+              aspectRatio: shot.aspectRatio,
+              visualStyle: shot.visualStyle,
+              quality: shot.quality,
+              shotType: shot.shotType,
+              cameraMovement: shot.cameraMovement,
+              screenDirection: shot.continuity?.screenDirection,
+              directorNotes: shot.directorNotes
             },
             sourceVersion: currentStoryboard?.sourceVersion || 'Draft 4.2',
             timestamp: new Date().toISOString()
