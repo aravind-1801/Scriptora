@@ -3559,12 +3559,23 @@ export async function getStoryboardSignedUrl(scriptId, storagePath) {
 }
 
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
+  // Read local cache first to compare timestamps / shot counts
+  const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`) : null;
+  let cachedSb = null;
+  if (cachedRaw) {
+    try { cachedSb = sanitizeStoryboard(JSON.parse(cachedRaw)); } catch (_) {}
+  }
+
   // 1. Try Cloud Database (Firestore) if configured
   try {
     const cloudSb = await fetchStoryboardFromFirestore(scriptId, sceneId);
     if (cloudSb) {
-      safeSetStoredStoryboard(scriptId, sceneId, cloudSb);
-      return sanitizeStoryboard(cloudSb);
+      const cloudShots = Array.isArray(cloudSb.shots) ? cloudSb.shots : [];
+      const localShots = Array.isArray(cachedSb?.shots) ? cachedSb.shots : [];
+      if (cloudShots.length >= localShots.length || localShots.length === 0) {
+        safeSetStoredStoryboard(scriptId, sceneId, cloudSb);
+        return sanitizeStoryboard(cloudSb);
+      }
     }
   } catch (_) {}
 
@@ -3572,15 +3583,21 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
   try {
     const data = await request(`/production/${scriptId}/storyboard?sceneId=${sceneId}`);
     if (data?.storyboard) {
-      safeSetStoredStoryboard(scriptId, sceneId, data.storyboard);
-      return sanitizeStoryboard(data.storyboard);
+      const serverShots = Array.isArray(data.storyboard.shots) ? data.storyboard.shots : [];
+      const localShots = Array.isArray(cachedSb?.shots) ? cachedSb.shots : [];
+      if (serverShots.length >= localShots.length || localShots.length === 0) {
+        safeSetStoredStoryboard(scriptId, sceneId, data.storyboard);
+        return sanitizeStoryboard(data.storyboard);
+      } else {
+        data.storyboard.shots = localShots;
+        return sanitizeStoryboard(data.storyboard);
+      }
     }
   } catch (e) {}
 
   // 3. Fall back to local browser storage
-  const cached = localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`);
-  if (cached) {
-    try { return sanitizeStoryboard(JSON.parse(cached)); } catch (_) {}
+  if (cachedSb) {
+    return cachedSb;
   }
 
   // Fallback defaults for Scene 1 and Scene 10 if offline
@@ -3756,15 +3773,17 @@ export async function addStoryboardShot(scriptId, sceneId, shotData) {
     if (res?.shot) {
       if (res.storyboard) {
         safeSetStoredStoryboard(scriptId, sceneId, res.storyboard);
+        syncStoryboardToFirestore(scriptId, sceneId, res.storyboard).catch(() => {});
       }
       return res;
     }
   } catch (e) {}
 
   const sb = await getStoryboard(scriptId, sceneId);
+  if (!Array.isArray(sb.shots)) sb.shots = [];
   const nextOrder = sb.shots.length + 1;
   const shotLetter = String.fromCharCode(65 + ((nextOrder - 1) % 26));
-  const shotNumber = shotData.shotNumber || `${sb.sceneNumber}${shotLetter}`;
+  const shotNumber = shotData.shotNumber || `${sb.sceneNumber || 1}${shotLetter}`;
 
   const newShot = {
     id: `shot-${Date.now()}`,

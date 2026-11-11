@@ -1342,51 +1342,54 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
   const ratio = params.aspectRatio || sb.aspectRatio || "2.39:1";
   const provider = params.provider || "scriptora-concept";
 
+  const userPrompt = params.prompt || params.userPrompt || '';
+  const visualFocus = userPrompt || (scene.heading ? `Scene at ${scene.heading}` : 'Cinematic sequence');
+
   // Synthesize a coherent 4-shot progression grounded in the actual scene action beats
   const beats = [
     {
       shotNumber: `${sceneNum}A`,
       title: "Establishing Spatial Geometry",
-      description: `Wide environmental establishing view of ${scene.heading.toLowerCase()}. Establishes spatial depth, environmental lighting (${scene.dayNight.toLowerCase()}), and visual geography.`,
+      description: `Wide environmental establishing view: ${visualFocus}. Establishes spatial depth, environmental lighting (${scene.dayNight.toLowerCase()}), and visual geography.`,
       shotSize: "Wide Shot",
       cameraAngle: "High Angle",
       cameraMovement: "Crane / Jib",
       focalLength: "24mm Wide",
       lightingMood: scene.dayNight === 'NIGHT' ? "Low-Key Shadow" : "High Contrast Daylight",
-      prompt: `Cinematic wide establishing shot of ${scene.heading}: ${scene.snippet}. Atmospheric perspective, 24mm anamorphic lens.`
+      prompt: `Cinematic wide establishing shot of ${visualFocus}. Atmospheric perspective, 24mm anamorphic lens, high production value.`
     },
     {
       shotNumber: `${sceneNum}B`,
       title: "Character Blocking & Entry",
-      description: `Medium two-shot tracking ${scene.cast?.[0] || 'protagonist'} navigating the environment with rising tension.`,
+      description: `Medium shot capturing key action and subjects: ${visualFocus}.`,
       shotSize: "Medium Two-Shot",
       cameraAngle: "Eye Level",
       cameraMovement: "Tracking Dolly",
       focalLength: "50mm Prime",
       lightingMood: "Practical Rim Lighting",
-      prompt: `Medium two-shot tracking ${scene.cast?.join(' and ') || 'character'} in ${scene.heading}: ${scene.snippet}. 50mm shallow depth of field.`
+      prompt: `Cinematic medium shot of ${visualFocus}. 50mm lens, shallow depth of field, focused subject blocking.`
     },
     {
       shotNumber: `${sceneNum}C`,
       title: "Critical Dramatic Focal Beat",
-      description: `Close-up reaction highlighting dramatic urgency, character resolve, and key narrative stakes.`,
+      description: `Dramatic close-up reaction highlighting emotional stakes and character resolve: ${visualFocus}.`,
       shotSize: "Close-Up",
       cameraAngle: "Dutch Angle",
       cameraMovement: "Static",
       focalLength: "85mm Portrait",
       lightingMood: scene.dayNight === 'NIGHT' ? "Cyan Strobe" : "Warm Eye Catchlight",
-      prompt: `Dramatic close-up on ${scene.cast?.[0] || 'lead character'} in ${scene.heading}. Intense facial expression, rim lighting, 85mm portrait bokeh.`
+      prompt: `Dramatic close-up on ${visualFocus}. Intense facial expression, rim lighting, 85mm portrait bokeh.`
     },
     {
       shotNumber: `${sceneNum}D`,
       title: "Prop & Action Detail Insert",
-      description: `Tight macro insert focusing on critical hand movement, equipment interaction, or diagnostic telemetry.`,
+      description: `Tight macro insert focusing on critical tactile detail or action element: ${visualFocus}.`,
       shotSize: "Extreme Close-Up",
       cameraAngle: "Low Angle",
       cameraMovement: "Static",
       focalLength: "35mm Macro",
       lightingMood: "Chiaroscuro Beam",
-      prompt: `Extreme close-up macro insert of crucial prop and tactical hand action in ${scene.heading}. Scratched metal textures, focused lighting.`
+      prompt: `Extreme close-up macro insert shot: key physical detail of ${visualFocus}. Scratched metal textures, focused cinematic lighting.`
     }
   ];
 

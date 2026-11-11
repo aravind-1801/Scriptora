@@ -1427,16 +1427,51 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       };
 
       try {
+        let result;
         if (activeEditingShotId) {
-          await api.updateStoryboardShot(scriptId, currentSceneId, activeEditingShotId, updates);
+          result = await api.updateStoryboardShot(scriptId, currentSceneId, activeEditingShotId, updates);
           showToast('Updated shot details');
         } else {
-          await api.addStoryboardShot(scriptId, currentSceneId, updates);
+          result = await api.addStoryboardShot(scriptId, currentSceneId, updates);
           showToast('Added new shot to scene');
         }
+
+        // Always guarantee currentStoryboard is initialized
+        if (!currentStoryboard) {
+          currentStoryboard = { scriptId, sceneId: currentSceneId, sceneNumber: 1, shots: [] };
+        }
+        if (!Array.isArray(currentStoryboard.shots)) {
+          currentStoryboard.shots = [];
+        }
+
+        const savedShot = result?.shot || {
+          ...updates,
+          id: activeEditingShotId || `shot-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          order: currentStoryboard.shots.length + 1
+        };
+
+        if (activeEditingShotId) {
+          const idx = currentStoryboard.shots.findIndex(s => s.id === activeEditingShotId);
+          if (idx >= 0) currentStoryboard.shots[idx] = savedShot;
+          else currentStoryboard.shots.push(savedShot);
+        } else {
+          const alreadyExists = currentStoryboard.shots.some(s => s.id === savedShot.id);
+          if (!alreadyExists) {
+            currentStoryboard.shots.push(savedShot);
+          }
+        }
+
+        // If backend returned a fuller storyboard with shots, merge it
+        if (result?.storyboard && Array.isArray(result.storyboard.shots) && result.storyboard.shots.length >= currentStoryboard.shots.length) {
+          currentStoryboard = result.storyboard;
+        }
+
+        api.safeSetStoredStoryboard(scriptId, currentSceneId, currentStoryboard);
+        api.syncStoryboardToFirestore(scriptId, currentSceneId, currentStoryboard).catch(() => {});
+        renderStoryboardView();
         closeModal(inspectorModal);
-        loadStoryboardData();
       } catch (err) {
+        console.error('Failed to save shot:', err);
         showToast('Failed to save shot');
       }
     };
@@ -1959,54 +1994,56 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         cast: ['KEVIN', 'MEERA']
       };
 
+      const visualDirection = userPrompt || (scene.heading ? `Scene at ${scene.heading}` : 'Cinematic scene');
+
       const baseBeats = [
         {
           letter: 'A',
           title: 'Establishing Spatial Geometry',
-          description: `Wide environmental establishing view of ${scene.heading.toLowerCase()}. Establishes spatial depth, environmental lighting, and visual geography.`,
+          description: `Wide environmental establishing view: ${visualDirection}. Establishes spatial depth, environmental lighting, and visual geography.`,
           shotSize: 'Extreme Wide',
           shotType: 'Establishing Shot',
           cameraAngle: 'High Angle',
           cameraMovement: 'Pan',
           focalLength: '24mm',
           lightingMood: 'Daylight',
-          prompt: `Cinematic wide establishing shot of ${scene.heading}: ${scene.snippet || 'Atmospheric perspective'}. 24mm wide angle lens.`
+          prompt: `Cinematic wide establishing shot of ${visualDirection}. 24mm wide angle lens, expansive spatial perspective, detailed background environment.`
         },
         {
           letter: 'B',
           title: 'Character Blocking & Entry',
-          description: `Medium two-shot tracking ${scene.cast?.[0] || 'protagonist'} navigating the environment with rising tension.`,
+          description: `Medium shot capturing key action and subjects: ${visualDirection}.`,
           shotSize: 'Medium',
-          shotType: 'Dialogue Shot',
+          shotType: 'Action Shot',
           cameraAngle: 'Eye Level',
           cameraMovement: 'Tracking',
           focalLength: '50mm',
           lightingMood: 'Practical Rim Lighting',
-          prompt: `Medium two-shot tracking ${scene.cast?.join(' and ') || 'character'} in ${scene.heading}: ${scene.snippet || 'Environmental interaction'}. 50mm shallow depth of field.`
+          prompt: `Cinematic medium shot of ${visualDirection}. 50mm shallow depth of field, focused subject blocking and character movement.`
         },
         {
           letter: 'C',
           title: 'Critical Dramatic Focal Beat',
-          description: `Close-up reaction highlighting dramatic urgency, character resolve, and key narrative stakes.`,
+          description: `Dramatic close-up reaction highlighting emotional stakes and character resolve: ${visualDirection}.`,
           shotSize: 'Close-up',
           shotType: 'Reaction Shot',
-          cameraAngle: 'Dutch Angle',
+          cameraAngle: 'Eye Level',
           cameraMovement: 'Static',
           focalLength: '85mm',
-          lightingMood: 'Warm Eye Catchlight',
-          prompt: `Dramatic close-up on ${scene.cast?.[0] || 'lead character'} in ${scene.heading}. Intense facial expression, rim lighting, 85mm portrait bokeh.`
+          lightingMood: 'Dramatic Key Light',
+          prompt: `Dramatic close-up shot of ${visualDirection}. 85mm portrait bokeh, intense facial expression, cinematic rim lighting.`
         },
         {
           letter: 'D',
           title: 'Prop & Action Detail Insert',
-          description: `Tight macro insert focusing on critical hand movement, equipment interaction, or tactical telemetry.`,
+          description: `Tight macro insert focusing on critical tactile detail or action element: ${visualDirection}.`,
           shotSize: 'Extreme Close-up',
           shotType: 'Insert / Detail Shot',
           cameraAngle: 'Low Angle',
           cameraMovement: 'Static',
           focalLength: '35mm',
-          lightingMood: 'Low-key',
-          prompt: `Extreme close-up macro insert of crucial prop and tactical hand action in ${scene.heading}. Scratched metal textures, focused lighting.`
+          lightingMood: 'Low-key Accent Light',
+          prompt: `Extreme close-up macro insert shot: key physical detail of ${visualDirection}. Sharp tactile texture, focused cinematic lighting.`
         }
       ];
 
@@ -2028,7 +2065,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         aspectRatio: ratio,
         visualStyle: style,
         quality: quality,
-        prompt: userPrompt ? `${b.prompt} ${userPrompt}` : b.prompt,
+        prompt: b.prompt,
         imageUrl: null,
         imageSource: 'ai',
         provider: pId,
@@ -2069,6 +2106,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
       // Close modal immediately and display cards on the storyboard in real time!
       closeModal(genModal);
+      api.safeSetStoredStoryboard(scriptId, currentSceneId, currentStoryboard);
+      api.syncStoryboardToFirestore(scriptId, currentSceneId, currentStoryboard).catch(() => {});
       renderStoryboardView();
       showToast(`Generating ${count} storyboard shots in real-time...`);
 
@@ -2122,6 +2161,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
               createdAt: new Date().toISOString()
             });
 
+            api.safeSetStoredStoryboard(scriptId, currentSceneId, currentStoryboard);
+            api.syncStoryboardToFirestore(scriptId, currentSceneId, currentStoryboard).catch(() => {});
             await api.saveStoryboard(scriptId, currentStoryboard);
             renderStoryboardView();
             showToast(`Shot ${shot.shotNumber} frame completed!`);
@@ -2131,6 +2172,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         } catch (err) {
           shot.isGenerating = false;
           shot.generationError = err.message || 'Generation failed';
+          api.safeSetStoredStoryboard(scriptId, currentSceneId, currentStoryboard);
           renderStoryboardView();
           showToast(`Shot ${shot.shotNumber} failed to generate`);
         }
@@ -2810,7 +2852,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (modalTitle) modalTitle.textContent = 'Generate Scene Shot Sequence';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
     if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
-    if (sceneSnippetDisp) sceneSnippetDisp.textContent = scene.snippet || 'Scene awaiting visual direction.';
+    if (sceneSnippetDisp) sceneSnippetDisp.textContent = 'Enter your visual creative direction below to generate sequential storyboard frames.';
 
     // Show shot sequence length selector for sequence generation
     if (shotCountContainer) shotCountContainer.classList.remove('hidden');
@@ -2841,9 +2883,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     const promptInput = document.getElementById('gen-prompt-input');
     if (promptInput) {
-      if (!promptInput.value.trim() && scene.snippet) {
-        promptInput.value = scene.snippet;
-      }
+      promptInput.value = '';
+      promptInput.placeholder = 'Describe scene visual action, atmosphere, and key moments (e.g. Neo dodges bullets on rooftop in rain)...';
       promptInput.classList.remove('border-rose-400', 'bg-rose-50/20');
     }
 
