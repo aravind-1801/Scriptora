@@ -1,241 +1,99 @@
-# SCRIPTORA — Screenplay Studio & Narrative Intelligence Engine
+# SCRIPTORA
 
-[![Live Demo](https://img.shields.io/badge/Demo-GitHub%20Pages-blue?style=flat-square)](https://aravind-1801.github.io/Scriptora)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square)](https://nodejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-purple?style=flat-square)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38bdf8?style=flat-square)](https://tailwindcss.com/)
+**Screenplay Writing & Production Management Platform**
 
-**SCRIPTORA** is an end-to-end cinematic screenplay writing workspace, professional script editor, pre-production planning studio, and narrative intelligence platform built for screenwriters, showrunners, directors, and production crews.
+SCRIPTORA is an all-in-one cinematic workspace that unifies industry-standard screenplay writing, narrative intelligence, AI creative assistance, pre-production planning, storyboarding, and secure team collaboration into a single web platform.
 
----
-
-## 🌟 Key Modules & Workflows
-
-### 🎬 Professional Screenplay Studio & Editor
-- **Industry-Standard Formatting**: Write and format screenplay elements with precision — Scene Headings (`INT./EXT.`), Action (`Act`), Characters (`Char`), Dialogue (`Dia`), Parentheticals (`()`), Transitions (`Trans`), Shots, Script Notes, Outline Beats, Act Breaks, Sequences, Dual Dialogue, and Musical Lyrics.
-- **Authentic A4 Continuous Layout**: Authentic A4 page canvas (`800px × 1130px`, matching the 210mm × 297mm international paper ratio) with Courier Prime typography, live page-break indicators, and page counter telemetry.
-- **Parallel Title Page View**: Dedicated Title Page document sheet with clean metadata editing (Title, Author, Contact, Email, Revision/Draft info) and one-click `X` tab close and reopen controls.
-- **Rich Text Formatting Toolbar**: Single-symbol controls (`B` Bold, `I` Italic, `U` Underline, `S` Strikethrough) right of the Draft version button using standard app Material Symbols, active selection formatting, solid blue active-state indicators, and keyboard shortcuts (`Ctrl+B`, `Ctrl+I`, `Ctrl+U`).
-- **Cursor-Targeted Storyboard Images**: Upload and embed storyboard images directly at the active cursor/block position with captions and deletion management.
-- **Smart Formatting Automation**:
-  - Sentence auto-capitalization for Action lines and Dialogue (at start of line and after periods).
-  - Dynamic Character Name memory and suggestion dropdown.
-  - **WriterDuet-Inspired Continuous Multi-Page Selection**: Unified document editing surface across all A4 pages, allowing users to select text continuously across multiple lines, screenplay elements (Scene, Action, Character, Dialogue, Parenthetical, Transition), and consecutive pages using a single drag gesture on mobile and desktop. Features smooth automatic edge-scrolling near viewport boundaries, unified "Select All" spanning the entire multi-page document, formatted multi-block clipboard copy/cut, and non-destructive deletion that preserves screenplay semantic integrity.
-  - **Smart Character Extensions Autocomplete**: Type `(` after a character cue (e.g. `ARUN(`) to trigger an immediate, keyboard-navigable dropdown with standard industry extensions (`V.O.` Voice Over, `O.S.` Off Screen, `O.C.` Off Camera, and `CONT'D` Continued). Automatically formats the cue (e.g. `ARUN (V.O.)`), auto-pairs closing parentheses, inserts a new Dialogue block, and positions the cursor seamlessly without breaking writer flow. Features scene-aware character cue memory to prioritize `CONT'D` when the character previously spoke.
-  - **Parenthetical Autocomplete & Auto-Pairing**: Contextual emotional notes and acting directions (`(sadly)`, `(angrily)`, `(whispering)`, `(smiling)`, `(crying)`, `(softly)`) triggered instantly upon typing `(` inside dialogue, with overtyping protection and auto-positioning.
-  - Scene Heading autocomplete for time/lighting (`- DAY`, `- NIGHT`, `- CONTINUOUS`, etc.).
-  - Automatic parenthetical cursor placement directly inside `()`.
-  - **Complete Tab Navigation Cycle**: Full, predictable industry screenplay cycle using Tab (`Scene Heading → Character → Dialogue → Transition → Scene Heading`) and Shift+Tab (reverse cycle), preserving existing Action-to-Character flow, block contents, and cursor positioning across both empty and populated blocks.
-  - **Automatic Transition Suggestions**: Compact, scrollable autocomplete panel appearing instantly when focusing or entering an empty Transition line with 18 standard screenplay transitions (`CUT TO:`, `FADE IN:`, `FADE OUT.`, `DISSOLVE TO:`, `MATCH CUT TO:`, `SMASH CUT TO:`, `SLAM TO:`, etc.), case-insensitive letter filtering with exact-prefix ranking, keyboard navigation, and mobile virtual-keyboard collision avoidance.
-  - **Context-Aware Space Key Navigation (Mobile)**: Sequential rapid format cycling on empty lines (`Empty Action + Space → Character → Transition → Action`) with mobile virtual-keyboard (`beforeinput` / Gboard) debouncing, zero-width space normalization, and undo/redo integration without affecting regular text editing.
-- **Page Management & Navigation**:
-  - Add Page at End, Insert Page Before, and Insert Page Break.
-  - Scene Jump dropdown and Go to Page jump dialog.
-  - Find & Replace compact floating popup overlay.
-  - Focus Mode for distraction-free writing (smooth full-screen transition with floating exit control).
-  - Bilingual English / Tamil (`EN / தமிழ்`) language toggle.
-- **Authentic PDF 1.4 Vector Export**: Export authentic, industry-standard A4 PDF files (built with pure vector PDF 1.4 syntax, standard Courier/Courier-Bold typography, headers, and margins) that open without error in Adobe Acrobat, Apple Books, and Chrome. Also supports Final Draft (`FDX`), Fountain, and Plain Text (`TXT`) with custom page range options (`All`, `Current`, or custom ranges e.g. `1-3, 5`).
-- **Unified Save & Auto-Save**: Single-pill unified save control with real-time auto-save toggle and Draft version history snapshots.
+**Live Application:** [https://aravind-1801.github.io/Scriptora/](https://aravind-1801.github.io/Scriptora/)
 
 ---
 
-### 🎥 Dedicated Pre-Production Workspaces & Production Workflows
-Every core production tool opens as a **dedicated workspace** with stable screenplay context tracking (`Chronicles of Dust • Draft 4.2 Pinned`), role-based permissions, and end-to-end local/cloud persistence:
+## Key Features
 
-1. **Category-Aware Script Breakdown Workspace (`/production/breakdown`)**:
-   - **9 Distinct Production Categories**: Tailored data models and dedicated visual presentation for Cast & Characters, Locations, Props, Costumes & Wardrobe, Practical FX, Stunts & Action, Vehicles & Equipment, Sound, and Hair & Makeup.
-   - **Sleek Mobile Category Filter Bar**: Equal-height category filter pill boxes with clean two-line text wrapping (`text-[9px]`), centered icons, and responsive horizontal scroll designed to never overflow or misalign on mobile viewports.
-   - **Screenplay Characters vs. Cast Members**: Strict separation between the screenplay-linked character entity and assigned real-world talent. Supports uncast open roles without forcing fake actor assignments, casting lifecycle statuses (`Confirmed Cast`, `Offer Out`, `Auditioning`, `Uncast / Open`), and actor availability schedules.
-   - **Full User Editability**: Every displayed field is editable by authorized users via dedicated inline expandable card editors — edit names, descriptions, categories, multi-scene associations, statuses, quantities, readiness, sourcing, safety planning, and continuity notes with real-time Save & Cancel persistence.
-   - **AI Suggestions vs. Production Decisions**: Immutable screenplay evidence quotations (`sourceSnippet`), original AI extraction tracking (`originalAiSuggestion`), and separate user correction audit logging (`userCorrection`) without altering source evidence.
-   - **Dynamic Modal & Multi-Scene Linking**: Add production elements manually with dynamic category-specific input fields and link items to single or multiple scenes simultaneously.
-   - **Direct Vector PDF Export**: Single-click high-fidelity PDF export of the complete breakdown catalogue.
-
-2. **Master Shooting Schedule & Calendar Matrix (`/production/schedule`)**:
-   - **Streamlined 7-Day Calendar Stripboard**: Interactive 7-day master calendar with Day/Night indicators, Interior/Exterior color badges, estimated shooting page counts, and scene listings.
-   - **Integrated Scene Logistics**: Direct inline progressive expansion for scenes within each shoot day, surfacing cast lists, props, locations, and director notes in context without needing a disconnected scene hub.
-   - **Interactive Shoot Day Details Modal**:
-     - Edit shoot day titles, call times, location notes, and weather/crew advisories.
-     - Interactive date picker to reschedule shoot dates with live validation.
-     - Day locking toggles to prevent accidental modifications during active production.
-     - Real shoot day element deletion with safety confirmation modal.
-     - Contextual 3-dot kebab menu with leak-free, idempotent event wiring and viewport-relative positioning.
-   - **Authentic Schedule PDF Export**: Export publication-ready shooting schedules formatted for call-time distribution and callboard posting.
-
-3. **Daily Call Sheets Workspace (`/production/call-sheets`)**:
-   - **Dual Creation Paths**: Direct schedule-linked generation from confirmed shooting days or standalone manual creation.
-   - **Comprehensive Production Details**: General crew call time, individual talent call schedule, scene-by-scene shooting blocks, hospital/emergency contacts, weather advisories, parking instructions, and Director/Producer signatures.
-   - **Approval & Distribution**: Owner publication approval workflow with immutable snapshot versioning and vector PDF export.
-
-4. **Dialogue Sheets & Actor Sides (`/production/dialogue-sides`)**:
-   - **Dual-Mode Document Layout**:
-     - **Character Dialogue Sheets**: Full dialogue streams arranged in screenplay sequence for rehearsals and table reads.
-     - **Actor Sides**: Filtered sides by character and scene, formatted in authentic physical paper sides style.
-   - **Draft Tracking & Navigation**: Pinned source draft metadata stamps, dedicated subnav heading with robust multi-stage back navigation, and instantaneous vector PDF export.
-
-5. **Storyboard Studio Workspace (`/production/storyboard`)**:
-   - **Dual Complementary Views**:
-     - **Contact Sheet**: Visually organized grid of image cards where the generated frame is the primary visual element. Features camera telemetry overlays, shot numbers, approval badges, quick approval toggles, direct regeneration, photo replacement, version history, card-level shot deletion, and single-click full-screen cinematic lightbox.
-     - **Sequence Editor**: Chronological screenplay-ordered timeline with multi-select checkboxes for batch operations (Approve All, Approve Selected, Reject Selected, Delete), up/down reordering without distracting helper text, and technical specification chips.
-   - **Centralized Generation Prompt Builder & Visual Setting Controls**:
-     - **Precise Visual Settings Influence**: Every visual control directly influences the generated Pollinations FLUX.1 frame rather than acting as metadata only:
-       - **17 Visual Art Styles**: Comic, Cinematic, Soft Pencil, Animation, 3D, Watercolor Paint, Photo / Commercial, Charcoal Sketch, Dark Anime, Flat / Vector, Noir, Stick Figure, Graphic Novel, Concept Art, Cinematic Realism, Storyboard Sketch, Photorealistic. Distinct mediums are strictly separated (e.g. Soft Pencil vs Charcoal vs Storyboard Sketch vs Flat Vector vs Stick Figure vs Photorealistic) with negative medium constraints.
-       - **4 Aspect Ratios & Native Dimensions**: 2.39:1 (1024×428 anamorphic scope), 16:9 (1024×576 landscape), 4:3 (1024×768 Academy ratio), 9:16 (720×1280 mobile vertical). Drives API generation dimensions and prompt composition framing.
-       - **5 Shot Sizes**: Extreme Wide, Wide, Medium, Close-up, Extreme Close-up.
-       - **6 Camera Angles**: Eye Level, Low Angle, High Angle, Bird's Eye View, Over-the-Shoulder, Dutch Angle.
-       - **4 Lenses**: 24mm (expansive field of view), 35mm (natural environmental context), 50mm (distortion-free human eye), 85mm (portrait telephoto compression and subject isolation).
-       - **6 Lighting Options**: Auto / Scene-based, Daylight, Night, Golden Hour, Low-key, Backlit.
-     - **4-Level Settings Precedence**: 1) Explicit per-shot setting $\to$ 2) Project/scene override $\to$ 3) Saved Default Storyboard Settings $\to$ 4) Original app defaults. Selected SCRIPTORA controls take precedence over conflicting free-text prompt keywords.
-     - **Reset Defaults Persistence**: Resets preferences to factory defaults and persists immediately without deleting scripts, storyboards, or generated images.
-     - **Reopening & Variation Retention**: Reopening a shot populates its visual controls, Retry preserves exact take settings, Variation preserves visual direction with fresh seeds, and version restoration restores both image and generation settings.
-   - **Genuine 12 Visual Style Reference System**: Authentic visual reference stills across all 12 supported artistic styles demonstrating a consistent cinematic desert checkpoint scene (*Mojave Outpost Gate 4*):
-     - Cinematic Concept Art, Storyboard Ink, Pencil Sketch, Photorealistic / Live Action, 3D Animation, Anime / Illustration, Cyberpunk, Film Noir, Watercolor, Graphic Novel / Comic, Soft Pastel, and Monochrome Charcoal.
-   - **Two Distinct Generation Workflows**:
-     - **Individual Shot Creation Panel**: Complete shot metadata authoring with two clear image options (Generate Image or Import Photo) plus manual creation without images. Renders the generated frame directly inside the panel with review actions (Full-Size Preview, Regenerate, Approve, Reject, Save Shot) without auto-closing on generation.
-     - **Generate Scene Sequence (1–4 Shots)**: Sequence length selector positioned at the top controlling the exact number of proposed frames (1, 2, 3, or 4 shots max), real-time generation progress ("Preparing scene context...", "Generating shot 1 of N..."), and an interactive sequence review contact sheet to inspect, tweak, and approve frames before saving to the storyboard.
-   - **Functional Retry & Variation Engine**:
-     - **Retry Generation**: Re-executes the exact shot prompt, camera parameters, and creative context with visual progress and output updates.
-     - **Shot Variation**: Generates alternative interpretations and compositions while tracking version history.
-   - **Shot-Level Soft Deletion & Storyboard Recycle Bin**:
-     - Direct shot deletion button on each shot card in Contact Sheet and Sequence views.
-     - Centralized Storyboard Recycle Bin with multi-tab filtering (All Items, Shots, Scenes) and one-click recovery or permanent emptying.
-   - **Individual Frame Regeneration**: Regenerate only a single frame (e.g., Shot 2 of 4) while preserving all other frames, their approval statuses, and their sequence orders. Automatically archives the previous image and prompt in the shot's history.
-   - **Shot History & Version Safety**: Persistent generation history for every shot recording timestamp, prompt, provider, quality, and draft version, with one-click "Restore This Version" capabilities and source screenplay draft staleness warnings.
-   - **Full-Screen Cinematic Lightbox**: Full-bleed high-res preview modal with anamorphic/letterbox framing, camera telemetry overlay (`REC`, shot number, aspect ratio, lens, shot size, camera angle), scene heading, description, previous/next shot keyboard navigation, and quick approval toggles.
-   - **Transparent Provider & Cloud Storage Architecture**:
-     - **Pollinations FLUX.1 Engine (Free / Zero-Cost)**: High-resolution photorealistic concept art and cinematic storyboard synthesis powered by FLUX.1. Completely free, requires no API key, no billing activation, and no credit card.
-     - **Cloud Metadata Database (Firebase Firestore Spark Tier)**: Genuine cross-device metadata sync integrating Cloud Firestore (1 GB free database, 50k reads/day, 20k writes/day) for storyboard shot trees, version history, and recycle bins with 0 credit card required.
-     - **Zero-Credit-Card Cloud Object Storage (Supabase Storage / Cloudinary)**: Modular architecture supporting verified zero-credit-card cloud object storage (such as Supabase Storage with 1GB hard-capped free quota or Cloudinary with 25 free credits) without automatic overage charges. Firebase Cloud Storage is intentionally disabled to prevent mandatory Blaze pay-as-you-go billing requirements introduced by Google in February 2026.
-     - **Self-Healing Backend Storage**: Persistent file-backed storage on server disk with automatic on-demand CDN recovery (`recoverMissingImage`) ensuring images survive container redeployments and disk wipes.
-     - **SCRIPTORA Concept Engine (Free / Built-in Offline Fallback)**: Procedural vector canvas accurately reflecting camera setup, aspect ratio, lens, lighting mood, and 12 visual style presets.
-   - **Android-First Ergonomics & Compact Modal Architecture**:
-     - Zero horizontal page overflow, balanced modals with natural content wrapping (`height: auto`, eliminating artificial vertical blank space), mobile-friendly touch targets, and responsive shooting-day assignment select controls.
+- **Screenplay Editor**: Continuous A4 multi-page canvas with industry-standard formatting, smart writing shortcuts (parentheticals, character extensions, transitions), draft versioning, autosave, and vector PDF/FDX exports.
+- **Narrative Intelligence**: Deep script analysis evaluating narrative pacing, emotional resonance, character arc trajectories, dialogue density, and three-act story structure.
+- **Production Management**: Category-aware script breakdown (cast, props, locations, stunts), interactive 7-day shooting schedule stripboard, daily call sheets, and actor sides.
+- **Storyboard Studio**: AI-assisted cinematic shot generation via Pollinations FLUX.1 with full camera controls (size, angle, lens, lighting), aspect ratios, visual styles, sequence timeline, approval tracking, and private storage with signed URLs.
+- **AI Assistant**: Context-aware production and narrative assistant for scene analysis, logistics planning, and screenplay inquiries with zero-knowledge encryption consent protection.
+- **Collaboration & Security**: Real-time project sharing with granular role-based access control (Owner, Editor, Viewer), join-code access request approvals, client-side end-to-end encryption (AES-256-GCM), and audit logging.
 
 ---
 
-### 🌐 Persistent Global Shell & Ergonomic Navigation
-- **Global Application Shell**: Single reusable application shell (`#scriptora-app-shell`) encapsulating `#scriptora-global-header`, dynamic content area `#scriptora-global-content`, and `#scriptora-global-nav`.
-- **Persistent Global Header**: Available across all application routes, maintaining consistent branding, section subtitles, notification bell with live unread indicator, and user profile avatar.
-- **Refined Floating Center AI Chat Button**:
-  - Centered at the exact horizontal midpoint (3rd destination in 5-column grid).
-  - Raised visibly above the bottom navigation bar (`-translate-y-3.5`) with a protective cutout halo ring (`ring-4 ring-surface/95`).
-  - Formed in SCRIPTORA's signature light-blue, white, and royal blue palette.
-  - Inactive: Crisp white surface, subtle blue border, soft blue elevation, and primary blue chat icon.
-  - Active: Rich royal blue (`bg-blue-600 text-white`) with soft blue ring.
-  - Symbol-only presentation with full accessibility (`aria-label="AI Chat"` and tooltip discoverability hint).
-- **Persistent 5-Destination Bottom Navigation**:
-  1. Workspace
-  2. Intelligence
-  3. AI Chat *(floating raised center button)*
-  4. Production
-  5. Profile
-- **Multi-Stage Back Navigation Stack**:
-  - Global router interceptor (`window.scriptoraRouter.back()`) with prioritized dismissal:
-    1. First closes registered sub-views (edit modes, inline forms).
-    2. Closes open modal dialogs (both portaled and in-page).
-    3. Dismisses open popups, contextual dropdowns, and kebab menus.
-    4. Navigates back along the user's authentic history stack with sensible route fallbacks.
-- **Global Viewport-Relative Modal & Popup Portal Engine (`popupPosition.js`)**:
-  - Reparents modals and dropdowns to `#scriptora-modal-portal` on `document.body` to eliminate container clipping and z-index stacking context traps.
-  - Non-destructive body scroll locking that preserves scroll position and prevents background page scrolling on mobile and desktop.
-  - Smart viewport bounding and overflow avoidance.
+## Technology Stack
+
+- **Frontend**: Vanilla JavaScript (ES modules), Vite 5.4, Tailwind CSS, PDF-Lib (vector PDF export)
+- **Backend**: Node.js (native HTTP REST service), JWT session authentication
+- **Database & Auth**: Firebase Authentication, Cloud Firestore & Realtime Database (metadata sync with local cache fallback)
+- **Cloud Storage**: Supabase Storage (private object storage with time-limited signed URLs)
+- **AI & Image Generation**: Pollinations AI (FLUX.1 model, zero-cost / no API key required), SCRIPTORA Procedural Concept Canvas (offline fallback)
+- **Deployment**: GitHub Pages (frontend via GitHub Actions), Render (backend web service via `render.yaml`)
 
 ---
 
-### 🧠 Narrative Intelligence Engine
-- **Script Selector & Context Setup**: Canonical multi-step narrative intelligence flow (`/intelligence` → `/intelligence/context` → `/intelligence/dashboard`) with persistent selected script tracking and mobile-optimized clearance above the global navigation bar.
-- **Script Analysis Dashboard**: Deep narrative breakdown including Pacing Analysis, Character Arc Trajectories, Dialogue Density, Scene Transitions, Emotional Resonance, and Structure Progression.
-- **Individual Deep-Dive Analysis**: Dedicated views for Pacing, Emotion, Character, Structure, and Dialogue with direct links to open corresponding scenes in the editor.
+## Project Structure
 
----
-
-### 👥 Collaboration, Access Control & End-to-End Encryption
-- **Consistent Blue Role Selectors**: All collaborator role badges (`Editor`, `Viewer`, `Script Doctor`, `Producer`) use SCRIPTORA's primary blue design system (`bg-blue-50 text-blue-700 border-blue-200`) with mobile viewport-clamped dropdown menus and granular backend permission enforcement.
-- **Robust Invitation Lifecycle & Static/Offline Resilience**: Resilient invitation management supporting email invitations with 7-day tokens, duplicate prevention, resend capabilities, and revocation workflows. Features automatic local fallback to eliminate HTTP 405 errors on static deployments (e.g. GitHub Pages) and offline environments.
-- **Join Code Access Requests**: Cryptographic join code generation with owner approval gates (join codes submit access requests; they do not bypass owner permission approval).
-- **Owner Request Management**: Dedicated pending requests panel allowing screenplay owners to review, assign roles, approve, or reject applicants.
-- **End-to-End Encryption (E2EE)**: Standards-compliant zero-knowledge client encryption powered by Web Crypto API (`AES-256-GCM` with 96-bit random IVs and ECDH `P-256` key agreement for collaborator wrapping). Screenplay keys are rotated automatically upon collaborator removal. Features a viewport-centered modal architecture portaled to document body to ensure clean mobile presentation without clipping.
-- **AI Privacy Boundary**: Explicit consent disclosures required before submitting decrypted text to AI narrative analysis.
-- **Security Activity Audit Log**: Real-time event log tracking permission modifications, join code rotations, key rotations, and access revocations.
-- **Draft & Version Management**: Snapshot screenplay drafts, restore previous iterations, and compare screenplay diffs side-by-side.
-- **Profile & Preferences**: Local profile photo upload and preview with persistent avatar sync, global editor typography controls, line spacing (`1.0`, `1.5`, `2.0`), scene number display toggles, and notification feeds.
-- **Authentication & Security**: Email/password authentication with session persistence, Google OAuth 2.0 readiness, and Firebase integration support.
-
----
-
-## 🏗️ Project Architecture
-
-```
+```text
 SCRIPTORA/
-├── frontend/                     # UI Client (Vite, SPA Router, Tailwind Design Tokens)
-│   ├── public/assets/            # Canonical SCRIPTORA brand logo & assets
-│   ├── src/
-│   │   ├── components/           # Universal Header, BottomNav, Toasts
-│   │   ├── screens/              # Top-level screen components
-│   │   │   ├── production/       # Dedicated Pre-Production workspaces
-│   │   │   │   ├── prodNav.js    # Shared contextual subnav (script, draft, role)
-│   │   │   │   ├── breakdown.js  # Script Breakdown workspace
-│   │   │   │   ├── schedule.js   # Shooting Schedule, Stripboard & Scene Logistics
-│   │   │   │   ├── callSheets.js # Call Sheets creation & publishing
-│   │   │   │   ├── dialogueSides.js # Dialogue Sheets & Actor Sides
-│   │   │   │   └── storyboard.js # Storyboard Studio discovery staging
-│   │   │   ├── workspace.js      # Main Scriptora screenplay workspace
-│   │   │   ├── editor.js         # Continuous A4 Screenplay Editor
-│   │   │   ├── aiChat.js         # Universal AI Chat Assistant
-│   │   │   ├── intelligence*.js  # Narrative Intelligence suite
-│   │   │   ├── notifications.js  # Activity stream
-│   │   │   ├── profile.js        # User account & local photo upload
-│   │   │   ├── collaborators.js  # Team access & Join Code invitations
-│   │   │   ├── auth.js           # Authentication & sign-in screens
-│   │   │   └── production.js     # Production Tools hub
-│   │   ├── services/             # API client, PDF generation & local storage cache
-│   │   ├── state/                # Reactive store & navigation history stack
-│   │   ├── utils/                # Brand tokens, popup positioning, character sanitizer
-│   │   │   └── popupPosition.js  # Global modal/popup portal & scroll-lock engine
-│   │   ├── router.js             # SPA Router with Persistent Global Shell & Back Interceptor
-│   │   └── main.js               # Application bootstrap
-│   ├── index.html
-│   ├── package.json
-│   ├── vercel.json               # Vercel deployment configuration
-│   └── vite.config.js            # Vite bundler configuration
-│
-├── backend/                      # API Service (Node.js REST Engine)
+├── .github/workflows/    # CI/CD deployment workflow for GitHub Pages
+├── backend/              # Node.js REST API service
 │   ├── app/
-│   │   ├── auth/                 # Session, password & OTP authentication
-│   │   ├── services/             # Production, Screenplay, Intelligence services
-│   │   ├── models/               # Datastore models (scenes, breakdown, schedule...)
-│   │   ├── middleware/           # CORS & security headers
-│   │   └── server.js             # Express REST API routes
-│   ├── tests/                    # Integration test suite
-│   └── package.json
-│
-├── package.json                  # Root workspace runner scripts & gh-pages deployment
-├── .env.example                  # Environment configuration reference
-└── README.md                     # Project documentation
+│   │   ├── auth/         # Token verification and RBAC authorization
+│   │   ├── middleware/   # Production CORS and security headers
+│   │   ├── models/       # In-memory data models & disk persistence
+│   │   ├── services/     # Screenplay, storyboard, and collaboration logic
+│   │   └── server.js     # HTTP server and REST API route handlers
+│   ├── tests/            # Backend integration and security test suite
+│   └── package.json      # Backend scripts and dependencies
+├── frontend/             # Single-Page Application client
+│   ├── public/assets/    # Static assets, branding, and icons
+│   ├── src/
+│   │   ├── components/   # Global shell, navigation, modals, and toasts
+│   │   ├── screens/      # Application screens (Editor, Production, Storyboard, AI)
+│   │   ├── services/     # API client, Firebase sync, and PDF generators
+│   │   ├── state/        # Reactive client store
+│   │   ├── utils/        # E2EE crypto, prompt builder, and DOM helpers
+│   │   └── main.js       # Frontend entry point
+│   ├── index.html        # Main HTML document
+│   ├── package.json      # Frontend dependencies and Vite scripts
+│   └── vite.config.js    # Vite build and proxy configuration
+├── tests/                # Cross-device, RBAC, and storyboard verification suites
+├── render.yaml           # Render Web Service deployment specification
+├── package.json          # Root workspace orchestration scripts
+└── README.md             # Project documentation
 ```
 
 ---
 
-## 🚀 Quick Setup & Local Development
+## Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) v18.0.0 or higher
-- `npm` v9.0.0 or higher
 
-### 1. Install Dependencies
+- **Node.js**: v18.0.0+ (v20 LTS recommended)
+- **npm**: v9.0.0+
+
+### 1. Clone the Repository
+
 ```bash
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
-
-# Install backend dependencies
-cd backend
-npm install
-cd ..
+git clone https://github.com/aravind-1801/Scriptora.git
+cd Scriptora
 ```
 
-### 2. Configure Environment Variables
+### 2. Install Dependencies
+
+Install dependencies for both frontend and backend:
+
+```bash
+# Frontend dependencies
+npm --prefix frontend install
+
+# Backend dependencies
+npm --prefix backend install
+```
+
+### 3. Environment Configuration
+
+Create local environment files from the provided templates:
+
 ```bash
 # Frontend environment
 cp frontend/.env.example frontend/.env
@@ -244,42 +102,61 @@ cp frontend/.env.example frontend/.env
 cp backend/.env.example backend/.env
 ```
 
-### 3. Start Backend Service
+**Frontend (`frontend/.env`):**
+- `VITE_API_URL`: Backend API URL (`http://localhost:8000/api` for local development).
+- `VITE_FIREBASE_*`: Firebase public configuration for optional cloud sync (Spark free plan).
+- `VITE_SUPABASE_*`: Supabase URL and anon key for cloud image storage (optional).
+
+**Backend (`backend/.env`):**
+- `PORT`: Local port (defaults to `8000`).
+- `NODE_ENV`: Set to `development`.
+- `FRONTEND_URL` / `CORS_ORIGINS`: Allowed client origins (`http://localhost:3000,http://localhost:5173`).
+- `JWT_SECRET`: Secret string for signing session tokens (private).
+- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for generating private signed URLs (private).
+
+*Note: AI image generation via Pollinations FLUX.1 requires no API key or billing configuration.*
+
+---
+
+## Running SCRIPTORA Locally
+
+For full functionality (screenplay storage, AI generation, and collaboration), run both the backend and frontend services:
+
+**Terminal 1 — Backend Service:**
 ```bash
 npm run dev:backend
-# Backend server runs on http://localhost:8000
+# Server runs on http://localhost:8000 (binds to 0.0.0.0)
 ```
 
-### 4. Start Frontend Client
-In a separate terminal:
+**Terminal 2 — Frontend Application:**
 ```bash
 npm run dev:frontend
-# Vite development server runs on http://localhost:3000 (or available port)
+# Vite development server runs on http://localhost:3000
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 📦 Build & Deployment
+## Deployment
 
-### Build Frontend
-```bash
-npm run build:frontend
-```
-This compiles Vite assets into `frontend/dist/` and synchronizes root deployment assets (`index.html`, `404.html`, and `assets/`).
+### Frontend (GitHub Pages)
 
-### Deploy to GitHub Pages
-```bash
-npm run deploy
-```
-Publishes the compiled production build directly to the `gh-pages` branch via official GitHub Actions workflows.
+- **Workflow**: Automated deployment via `.github/workflows/deploy.yml` on every push to `main`.
+- **API Connection**: Configure the repository variable `VITE_API_URL` under **Settings > Secrets and variables > Actions > Variables** pointing to your live backend (e.g. `https://<service-name>.onrender.com/api`).
 
-### Deploy to Vercel / Cloud Providers
-- **Frontend**: Deploy `/frontend` to [Vercel](https://vercel.com/) with build command `npm run build` and output directory `dist`. Set `VITE_API_URL` to your production backend.
-- **Backend**: Deploy `/backend` to [Render](https://render.com/), [Railway](https://railway.app/), or [Fly.io](https://fly.io/). Set `PORT=8000` and `FRONTEND_URL` to your frontend production domain.
+### Backend (Render Web Service)
+
+- **Blueprint**: Deployed as a web service via `render.yaml`.
+- **Root Directory**: `backend`
+- **Build Command**: `npm install`
+- **Start Command**: `npm start`
+- **Port**: Binds to `0.0.0.0` using the platform-assigned `process.env.PORT`.
+- **Health Check**: `/api/health` returns HTTP 200.
+- **Environment Variables**: Set `NODE_ENV=production`, `FRONTEND_URL=https://aravind-1801.github.io`, `CORS_ORIGINS`, `SUPABASE_*`, and `JWT_SECRET` in the Render dashboard.
 
 ---
 
-## 📄 License
+## License
+
 Private & Proprietary — SCRIPTORA. All rights reserved.
