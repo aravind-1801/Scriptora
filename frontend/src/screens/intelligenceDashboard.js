@@ -6,28 +6,42 @@ import { showToast } from '../components/toast.js';
 import { openModal, closeModal } from '../utils/popupPosition.js';
 
 export function renderIntelligenceDashboardScreen() {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
-    id: 'chronicles-of-dust',
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    pages: 96,
-    format: 'Feature',
-    industry: 'International / Hollywood'
-  };
+  const scripts = store.state.scripts || [];
+  const scriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === scriptId) || null;
+
+  if (!script) {
+    return `
+      ${renderHeader('Intelligence', 'Overview')}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">insights</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplays Yet</h2>
+          <p class="text-xs text-slate-500 mb-6">Create or import a screenplay in your workspace to view health index and analysis.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('intelligence')}
+    `;
+  }
 
   const scores = script.analysisScores || {
-    overall: 86,
-    pacing: 82,
-    dialogue: 89,
-    emotion: 91,
-    characterArc: 84,
-    continuity: 78,
-    storyStructure: 87,
-    theme: 90,
-    cinema: 85,
-    formatting: 94,
-    production: 80
+    overall: 0,
+    pacing: 0,
+    dialogue: 0,
+    emotion: 0,
+    characterArc: 0,
+    continuity: 0,
+    storyStructure: 0,
+    theme: 0,
+    cinema: 0,
+    formatting: 0,
+    production: 0
   };
 
   return `
@@ -59,13 +73,13 @@ export function renderIntelligenceDashboardScreen() {
             <span class="px-2 py-0.5 rounded text-[10px] font-bold tracking-wide uppercase bg-blue-100/80 text-blue-700 font-heading">ACTIVE PROJECT</span>
             <button class="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800 transition-colors" id="script-selector-trigger" type="button">
               <span class="material-symbols-outlined text-[15px]">schedule</span>
-              <span>Updated 12m ago</span>
+              <span>${script.updated || 'Recently updated'}</span>
               <span class="material-symbols-outlined text-[15px] text-slate-400">unfold_more</span>
             </button>
           </div>
           <div class="mt-2">
             <h2 class="text-lg font-bold text-slate-900 font-heading">${script.title}</h2>
-            <p class="text-xs text-slate-500 mt-0.5">${script.draft || 'Draft 4.2'} · ${script.format || 'Feature'} · ${script.pages} pages</p>
+            <p class="text-xs text-slate-500 mt-0.5">${script.draft || 'Draft 1.0'} · ${script.format || 'Feature'} · ${script.pages || 0} pages</p>
           </div>
         </div>
 
@@ -98,7 +112,7 @@ export function renderIntelligenceDashboardScreen() {
               <div class="flex items-center gap-2 min-w-0">
                 <span class="material-symbols-outlined text-[17px] text-blue-600 shrink-0">auto_awesome</span>
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-700 font-heading truncate" id="ai-generated-title">Generated Logline</span>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 shrink-0">${script.title} · ${script.draft || 'D4.2'}</span>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 shrink-0">${script.title} · ${script.draft || 'Draft 1.0'}</span>
               </div>
               <div class="flex items-center gap-2 shrink-0">
                 <button class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 py-0.5 px-2 rounded-lg bg-blue-50 border border-blue-100" id="ai-copy-btn" type="button">
@@ -126,7 +140,7 @@ export function renderIntelligenceDashboardScreen() {
             <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
               <svg class="w-full h-full -rotate-90" viewBox="0 0 72 72">
                 <circle class="text-slate-200" cx="36" cy="36" fill="none" r="30" stroke="currentColor" stroke-width="6"></circle>
-                <circle class="text-blue-600" cx="36" cy="36" fill="none" r="30" stroke="currentColor" stroke-dasharray="188.5" stroke-dashoffset="26.4" stroke-linecap="round" stroke-width="6"></circle>
+                <circle class="text-blue-600" cx="36" cy="36" fill="none" r="30" stroke="currentColor" stroke-dasharray="188.5" stroke-dashoffset="${(188.5 - (188.5 * Math.min(100, Math.max(0, Number(scores.overall) || 0))) / 100).toFixed(1)}" stroke-linecap="round" stroke-width="6"></circle>
               </svg>
               <div class="absolute flex flex-col items-center justify-center">
                 <span class="text-2xl font-bold text-slate-900 leading-none tracking-tight font-heading">${scores.overall}</span>
@@ -139,7 +153,9 @@ export function renderIntelligenceDashboardScreen() {
                 <span class="material-symbols-outlined text-blue-600 text-[17px]">workspace_premium</span>
               </div>
               <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                Strong emotional coherence & dialogue rhythm. Structural tension peaks with intent at Act II midpoint.
+                ${scores.overall > 0
+                  ? (script.intelligenceSummary || 'Narrative strength and pacing telemetry calculated from active screenplay.')
+                  : 'Author or expand screenplay scenes in the Editor to compute narrative intelligence telemetry.'}
               </p>
             </div>
           </div>
@@ -175,7 +191,7 @@ export function renderIntelligenceDashboardScreen() {
           <a href="/intelligence/analysis" class="pt-2 pb-1 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 hover:text-slate-900 transition-colors no-underline">
             <div class="flex items-center gap-1.5">
               <span class="material-symbols-outlined text-[16px] text-amber-500">info</span>
-              <span class="font-medium">3 areas have important findings</span>
+              <span class="font-medium">${scores.overall > 0 ? 'Inspect individual vectors for detailed findings' : 'Evaluate individual narrative vectors'}</span>
             </div>
             <span class="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
           </a>
@@ -226,8 +242,9 @@ export function renderIntelligenceDashboardScreen() {
 }
 
 export function attachIntelligenceDashboardEvents(navigate) {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.scripts[0];
+  const scripts = store.state.scripts || [];
+  const scriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === scriptId) || scripts[0] || null;
 
   const loglineBtn = document.getElementById('btn-gen-logline');
   const synopsisBtn = document.getElementById('btn-gen-synopsis');
@@ -248,8 +265,8 @@ export function attachIntelligenceDashboardEvents(navigate) {
     
     setTimeout(() => {
       aiBody.textContent = type === 'logline'
-        ? (script?.logline || "When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.")
-        : (script?.synopsis || "In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves.");
+        ? (script?.logline || "No logline generated yet. Add your screenplay scenes or use the generator to draft an AI summary.")
+        : (script?.synopsis || "No synopsis available yet. Enter a premise or draft scenes in the Editor to generate comprehensive narrative telemetry.");
     }, 400);
   }
 

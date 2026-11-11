@@ -3,31 +3,33 @@ import { db } from '../models/db.js';
 // Pre-Production Service: Foundational Data Architecture & Operations
 // Supports standalone screenplay production workspaces as well as multi-screenplay projects.
 
-export function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
+export function getProductionWorkspace(scriptId = null) {
+  if (!scriptId) return null;
   let ws = db.productionWorkspaces.find(w => w.scriptId === scriptId);
   if (!ws) {
-    const script = db.scripts.find(s => s.id === scriptId) || db.scripts[0];
+    const script = db.scripts.find(s => s.id === scriptId);
+    if (!script) return null;
     ws = {
       id: `prod-ws-${scriptId}`,
-      projectId: "proj-1",
-      projectName: "Badlands Anthology",
+      projectId: script.projectId || `proj-${scriptId}`,
+      projectName: script.title,
       scriptId: scriptId,
-      screenplayTitle: script?.title || "Chronicles of Dust",
-      pinnedSourceVersion: script?.draft || "Draft 4.2",
-      pinnedSourceVersionHash: "v4.2-snap-88f2",
-      pinnedTimestamp: "12m ago",
-      currentScriptDraft: script?.draft || "Draft 4.2",
+      screenplayTitle: script.title,
+      pinnedSourceVersion: script.draft || "Draft 1.0",
+      pinnedSourceVersionHash: `v1.0-${scriptId}`,
+      pinnedTimestamp: "Just now",
+      currentScriptDraft: script.draft || "Draft 1.0",
       isStale: false,
       mode: "simple",
       userRole: "Owner", // Current user role for this workspace
       roles: ["Owner", "Director", "Assistant Director", "Production", "Department Member", "Viewer"],
       stats: {
-        totalScenes: 10,
-        breakdownElements: 78,
-        callSheetsCount: 2,
-        shootingDays: 7,
-        pendingProposals: 2,
-        completedApprovals: 6
+        totalScenes: 0,
+        breakdownElements: 0,
+        callSheetsCount: 0,
+        shootingDays: 0,
+        pendingProposals: 0,
+        completedApprovals: 0
       },
       updatedAt: new Date().toISOString()
     };
@@ -47,6 +49,7 @@ export function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
 
 export function updateProductionWorkspace(scriptId, updates) {
   const ws = getProductionWorkspace(scriptId);
+  if (!ws) throw new Error("Production workspace not found for script");
   Object.assign(ws, updates);
   ws.updatedAt = new Date().toISOString();
   
@@ -63,6 +66,7 @@ export function updateProductionWorkspace(scriptId, updates) {
 
 export function pinSourceVersion(scriptId, newVersion) {
   const ws = getProductionWorkspace(scriptId);
+  if (!ws) throw new Error("Production workspace not found for script");
   const oldVersion = ws.pinnedSourceVersion;
   ws.pinnedSourceVersion = newVersion;
   ws.pinnedTimestamp = "Just now";
@@ -79,7 +83,8 @@ export function pinSourceVersion(scriptId, newVersion) {
   return ws;
 }
 
-export function getProductionResources(scriptId = 'chronicles-of-dust', category = null) {
+export function getProductionResources(scriptId = null, category = null) {
+  if (!scriptId) return [];
   let list = db.productionResources.filter(r => r.scriptId === scriptId);
   if (category && category !== 'all') {
     list = list.filter(r => r.category.toLowerCase() === category.toLowerCase());
@@ -87,11 +92,13 @@ export function getProductionResources(scriptId = 'chronicles-of-dust', category
   return list;
 }
 
-export function getProductionDocuments(scriptId = 'chronicles-of-dust') {
+export function getProductionDocuments(scriptId = null) {
+  if (!scriptId) return [];
   return db.productionDocuments.filter(d => d.scriptId === scriptId);
 }
 
-export function getProductionProposals(scriptId = 'chronicles-of-dust') {
+export function getProductionProposals(scriptId = null) {
+  if (!scriptId) return [];
   return db.productionProposals.filter(p => p.scriptId === scriptId);
 }
 
@@ -100,14 +107,14 @@ export function createProductionProposal(scriptId, proposalData) {
   const newProposal = {
     id: `prop-${Date.now()}`,
     scriptId,
-    sourceVersion: ws.pinnedSourceVersion,
+    sourceVersion: ws?.pinnedSourceVersion || "Draft 1.0",
     title: proposalData.title || "Production Schedule Adjustment",
     description: proposalData.description || "",
     category: proposalData.category || "Schedule",
-    submittedBy: proposalData.submittedBy || "Elena Rostova",
+    submittedBy: proposalData.submittedBy || "Collaborator",
     submitterRole: proposalData.submitterRole || "Director",
     status: "Awaiting review", // Draft, Proposed change, Awaiting review, Accepted, Rejected, Conflict, Confirmed
-    impact: proposalData.impact || "Modifies shoot days for Scene 9 & 10",
+    impact: proposalData.impact || "Schedule adjustment",
     createdAt: new Date().toISOString(),
     resolvedAt: null,
     resolutionNotes: null
@@ -119,7 +126,7 @@ export function createProductionProposal(scriptId, proposalData) {
     action: "SUBMIT_PROPOSAL",
     category: "CHANGE_MANAGEMENT",
     details: `Proposal "${newProposal.title}" submitted by ${newProposal.submittedBy}`,
-    sourceVersion: ws.pinnedSourceVersion
+    sourceVersion: ws?.pinnedSourceVersion || "Draft 1.0"
   });
 
   return newProposal;
@@ -141,7 +148,7 @@ export function reviewProductionProposal(scriptId, proposalId, action, reviewNot
       action: "ACCEPT_PROPOSAL",
       category: "APPROVAL",
       details: `Proposal "${proposal.title}" approved and confirmed by Owner`,
-      sourceVersion: ws.pinnedSourceVersion
+      sourceVersion: ws?.pinnedSourceVersion || "Draft 1.0"
     });
   } else if (action === 'reject') {
     proposal.status = "Rejected";
@@ -152,7 +159,7 @@ export function reviewProductionProposal(scriptId, proposalId, action, reviewNot
       action: "REJECT_PROPOSAL",
       category: "APPROVAL",
       details: `Proposal "${proposal.title}" rejected by Owner: ${reviewNotes}`,
-      sourceVersion: ws.pinnedSourceVersion
+      sourceVersion: ws?.pinnedSourceVersion || "Draft 1.0"
     });
   } else if (action === 'conflict') {
     proposal.status = "Conflict";
@@ -161,15 +168,16 @@ export function reviewProductionProposal(scriptId, proposalId, action, reviewNot
     logProductionAudit(scriptId, {
       action: "FLAG_CONFLICT",
       category: "VERSION_INTEGRITY",
-      details: `Conflict flagged on proposal "${proposal.title}" against source ${ws.pinnedSourceVersion}`,
-      sourceVersion: ws.pinnedSourceVersion
+      details: `Conflict flagged on proposal "${proposal.title}" against source ${ws?.pinnedSourceVersion || "Draft 1.0"}`,
+      sourceVersion: ws?.pinnedSourceVersion || "Draft 1.0"
     });
   }
 
   return proposal;
 }
 
-export function getProductionAuditTrail(scriptId = 'chronicles-of-dust') {
+export function getProductionAuditTrail(scriptId = null) {
+  if (!scriptId) return [];
   return db.productionAudit.filter(a => a.scriptId === scriptId);
 }
 
@@ -180,8 +188,8 @@ export function logProductionAudit(scriptId, event) {
     action: event.action,
     category: event.category || "GENERAL",
     details: event.details,
-    sourceVersion: event.sourceVersion || "Draft 4.2",
-    actor: event.actor || db.currentUser.name,
+    sourceVersion: event.sourceVersion || "Draft 1.0",
+    actor: event.actor || db.currentUser?.name || "User",
     timestamp: "Just now",
     createdAt: new Date().toISOString()
   };
@@ -190,41 +198,37 @@ export function logProductionAudit(scriptId, event) {
 }
 
 // 1. SCENE HUB WORKFLOWS
-export function getProductionScenes(scriptId = 'chronicles-of-dust') {
-  let scenes = db.productionScenes.filter(s => s.scriptId === scriptId);
-  if (!scenes.length) {
-    scenes = db.productionScenes.filter(s => s.scriptId === 'chronicles-of-dust');
-  }
-  return scenes;
+export function getProductionScenes(scriptId = null) {
+  if (!scriptId) return [];
+  return db.productionScenes.filter(s => s.scriptId === scriptId);
 }
 
 export function getProductionScene(scriptId, sceneId) {
-  let scene = db.productionScenes.find(s => (s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust') && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  if (!scriptId || !sceneId) return null;
+  let scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
   if (!scene) return null;
   // Link elements and sides
-  const elements = db.productionBreakdown.filter(b => (b.scriptId === scriptId || b.scriptId === 'chronicles-of-dust') && (b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber))));
+  const elements = db.productionBreakdown.filter(b => b.scriptId === scriptId && (b.sceneId === scene.id || b.sceneNumber === scene.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(scene.sceneNumber))));
   return { ...scene, elements };
 }
 
 export function updateProductionScene(scriptId, sceneId, updates) {
-  const scene = db.productionScenes.find(s => (s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust') && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
+  const scene = db.productionScenes.find(s => s.scriptId === scriptId && (s.id === sceneId || s.sceneNumber === Number(sceneId)));
   if (!scene) throw new Error("Scene not found");
   Object.assign(scene, updates);
   logProductionAudit(scriptId, {
     action: "UPDATE_SCENE_RECORD",
     category: "SCENE_HUB",
     details: `Updated production logistics for Scene ${scene.sceneNumber}`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: updates.sourceVersion || "Draft 1.0"
   });
   return scene;
 }
 
 // 2. SCRIPT BREAKDOWN WORKFLOWS
-export function getProductionBreakdown(scriptId = 'chronicles-of-dust', category = null, sceneId = null) {
+export function getProductionBreakdown(scriptId = null, category = null, sceneId = null) {
+  if (!scriptId) return [];
   let list = db.productionBreakdown.filter(b => b.scriptId === scriptId);
-  if (!list.length) {
-    list = db.productionBreakdown.filter(b => b.scriptId === 'chronicles-of-dust');
-  }
   if (category && category !== 'all') {
     list = list.filter(b => b.category.toLowerCase() === category.toLowerCase());
   }
@@ -244,7 +248,7 @@ export function updateBreakdownItem(scriptId, itemId, updates) {
     item.userCorrection = {
       previousName: item.name,
       previousDesc: item.description,
-      correctedBy: db.currentUser.name + " (Owner)",
+      correctedBy: (db.currentUser?.name || "Production Owner") + " (Owner)",
       correctedAt: new Date().toISOString()
     };
   }
@@ -252,7 +256,7 @@ export function updateBreakdownItem(scriptId, itemId, updates) {
   Object.assign(item, updates);
   if (updates.status === 'Confirmed') {
     item.isHumanConfirmed = true;
-    item.confirmedBy = db.currentUser.name + " (Owner)";
+    item.confirmedBy = (db.currentUser?.name || "Production Owner") + " (Owner)";
     item.confirmedAt = new Date().toISOString();
   } else if (updates.status === 'Needs Review') {
     item.isHumanConfirmed = false;
@@ -261,7 +265,7 @@ export function updateBreakdownItem(scriptId, itemId, updates) {
     action: "UPDATE_BREAKDOWN_ITEM",
     category: "BREAKDOWN",
     details: `Updated "${item.name}" (${item.category}) in Scene ${item.sceneNumber} [${item.status}]`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return item;
 }
@@ -274,7 +278,7 @@ export function deleteBreakdownItem(scriptId, itemId) {
     action: "DELETE_BREAKDOWN_ITEM",
     category: "BREAKDOWN",
     details: `Removed "${removed.name}" (${removed.category}) from Scene ${removed.sceneNumber}`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return { success: true, removedId: itemId };
 }
@@ -295,7 +299,7 @@ export function createBreakdownItem(scriptId, itemData) {
     status: itemData.status || "Confirmed",
     isHumanConfirmed: true,
     confidence: 1.0,
-    confirmedBy: db.currentUser.name + " (Owner)",
+    confirmedBy: (db.currentUser?.name || "Production Owner") + " (Owner)",
     confirmedAt: new Date().toISOString(),
     notes: itemData.notes || "",
     // Category-specific attributes
@@ -329,17 +333,19 @@ export function createBreakdownItem(scriptId, itemData) {
     action: "ADD_MANUAL_BREAKDOWN_ITEM",
     category: "BREAKDOWN",
     details: `Manually added "${newItem.name}" (${newItem.category}) to Scene ${newItem.sceneNumber}`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return newItem;
 }
 
 // 3. CALL SHEETS WORKFLOWS
-export function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
+export function getProductionCallSheets(scriptId = null) {
+  if (!scriptId) return [];
   return db.productionCallSheets.filter(cs => cs.scriptId === scriptId);
 }
 
 export function getProductionCallSheet(scriptId, callSheetId) {
+  if (!scriptId || !callSheetId) return null;
   return db.productionCallSheets.find(cs => cs.scriptId === scriptId && cs.id === callSheetId);
 }
 
@@ -347,9 +353,9 @@ export function createProductionCallSheet(scriptId, data) {
   const newCs = {
     id: `cs-${Date.now()}`,
     scriptId,
-    callSheetNumber: String(db.productionCallSheets.length + 1).padStart(2, '0'),
-    shootDay: data.shootDay || "Day 3 of 7",
-    shootDate: data.shootDate || "Monday, Oct 26, 2026",
+    callSheetNumber: String(db.productionCallSheets.filter(cs => cs.scriptId === scriptId).length + 1).padStart(2, '0'),
+    shootDay: data.shootDay || "Day 1",
+    shootDate: data.shootDate || new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' }),
     generalCrewCall: data.generalCrewCall || "06:00 AM",
     shootingCall: data.shootingCall || "06:30 AM",
     breakfastTime: data.breakfastTime || "05:15 AM",
@@ -360,13 +366,10 @@ export function createProductionCallSheet(scriptId, data) {
     locationName: data.locationName || "Location TBD",
     locationAddress: data.locationAddress || "TBD",
     parkingNotes: data.parkingNotes || "Crew parking guidelines to be verified.",
-    nearestHospital: data.nearestHospital || "Desert Care Network Regional, 1150 N Indian Canyon Dr, Palm Springs, CA",
-    weatherSummary: data.weatherSummary || "Clear skies, mild temperature forecast.",
-    scenes: data.scenes || [{ sceneNumber: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", pages: "5 0/8", cast: ["KEVIN", "MEERA"], desc: "Perimeter fence patrol." }],
-    castCalls: data.castCalls || [
-      { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Draft" },
-      { character: "MEERA", actor: "Priya Sharma", pickup: "05:15 AM", hmuCall: "05:45 AM", onSet: "06:30 AM", status: "Draft" }
-    ],
+    nearestHospital: data.nearestHospital || "Hospital TBD",
+    weatherSummary: data.weatherSummary || "Clear forecast.",
+    scenes: data.scenes || [],
+    castCalls: data.castCalls || [],
     specialInstructions: data.specialInstructions || "Standard safety and PPE required.",
     approvedBy: null,
     publishedAt: null
@@ -376,7 +379,7 @@ export function createProductionCallSheet(scriptId, data) {
     action: "CREATE_CALL_SHEET_DRAFT",
     category: "CALL_SHEET",
     details: `Created Draft Call Sheet #${newCs.callSheetNumber} (${newCs.shootDay})`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return newCs;
 }
@@ -399,7 +402,7 @@ export function updateProductionCallSheet(scriptId, callSheetId, updates) {
     action: "UPDATE_CALL_SHEET",
     category: "CALL_SHEET",
     details: `Updated details for Call Sheet #${cs.callSheetNumber} (${cs.version || 'Draft'})`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: updates.sourceVersion || "Draft 1.0"
   });
   return cs;
 }
@@ -410,7 +413,7 @@ export function publishProductionCallSheet(scriptId, callSheetId) {
   cs.status = "Confirmed";
   cs.isPublished = true;
   cs.version = "v1.0 (Snapshot)";
-  cs.approvedBy = db.currentUser.name + " (Owner)";
+  cs.approvedBy = (db.currentUser?.name || "Production Owner") + " (Owner)";
   cs.publishedAt = new Date().toISOString();
 
   // Create immutable document entry as snapshot
@@ -419,7 +422,7 @@ export function publishProductionCallSheet(scriptId, callSheetId) {
     scriptId,
     type: "Call Sheet",
     title: `Call Sheet #${cs.callSheetNumber} — ${cs.locationName}`,
-    sourceVersion: "Draft 4.2",
+    sourceVersion: "Draft 1.0",
     shootDay: cs.shootDay,
     date: cs.shootDate,
     callTime: cs.shootingCall,
@@ -434,45 +437,47 @@ export function publishProductionCallSheet(scriptId, callSheetId) {
     action: "PUBLISH_CALL_SHEET_SNAPSHOT",
     category: "APPROVAL",
     details: `Call Sheet #${cs.callSheetNumber} officially approved and published by Owner`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return cs;
 }
 
 // 4. SHOOTING SCHEDULE WORKFLOWS
-export function getProductionSchedule(scriptId = 'chronicles-of-dust') {
-  return db.productionSchedule;
+export function getProductionSchedule(scriptId = null) {
+  if (!scriptId) return [];
+  return db.productionSchedule.filter(d => d.scriptId === scriptId);
 }
 
 export function updateProductionScheduleDay(scriptId, dayNumber, updates) {
-  const day = db.productionSchedule.find(d => d.dayNumber === Number(dayNumber));
+  const day = db.productionSchedule.find(d => d.scriptId === scriptId && d.dayNumber === Number(dayNumber));
   if (!day) throw new Error("Shoot day not found");
   Object.assign(day, updates);
   logProductionAudit(scriptId, {
     action: "UPDATE_STRIPBOARD_DAY",
     category: "SCHEDULE",
     details: `Updated Day ${day.dayNumber} stripboard order and scene assignments`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: updates.sourceVersion || "Draft 1.0"
   });
   return day;
 }
 
 export function confirmProductionSchedule(scriptId) {
-  db.productionSchedule.forEach(day => {
+  db.productionSchedule.filter(d => d.scriptId === scriptId).forEach(day => {
     day.status = "Confirmed";
     day.isLocked = true;
   });
   logProductionAudit(scriptId, {
     action: "CONFIRM_MASTER_SCHEDULE",
     category: "APPROVAL",
-    details: "Owner locked and confirmed 7-day master stripboard schedule",
-    sourceVersion: "Draft 4.2"
+    details: "Owner locked and confirmed master stripboard schedule",
+    sourceVersion: "Draft 1.0"
   });
-  return db.productionSchedule;
+  return getProductionSchedule(scriptId);
 }
 
 // 5. READINESS CHECKS
-export function getProductionReadiness(scriptId = 'chronicles-of-dust') {
+export function getProductionReadiness(scriptId = null) {
+  if (!scriptId) return [];
   return db.productionReadiness.filter(r => r.scriptId === scriptId);
 }
 
@@ -488,6 +493,7 @@ export function resolveProductionReadiness(scriptId, readinessId) {
 // 6. RESTORE SNAPSHOT
 export function restoreProductionSnapshot(scriptId, versionTag) {
   const ws = getProductionWorkspace(scriptId);
+  if (!ws) throw new Error("Production workspace not found for script");
   const oldVer = ws.pinnedSourceVersion;
   ws.pinnedSourceVersion = versionTag;
   ws.pinnedTimestamp = "Just now (Restored)";
@@ -512,19 +518,21 @@ export function deleteProductionCallSheet(scriptId, callSheetId) {
     action: "DELETE_CALL_SHEET",
     category: "CALL_SHEET",
     details: `Removed Call Sheet #${cs.callSheetNumber} (${cs.shootDay})`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return { success: true, removedId: callSheetId };
 }
 
 // 8. SCHEDULE DAYS CRUD
 export function addProductionScheduleDay(scriptId, dayData) {
-  const nextNum = db.productionSchedule.length > 0 
-    ? Math.max(...db.productionSchedule.map(d => d.dayNumber)) + 1 
+  const scriptDays = db.productionSchedule.filter(d => d.scriptId === scriptId);
+  const nextNum = scriptDays.length > 0 
+    ? Math.max(...scriptDays.map(d => d.dayNumber)) + 1 
     : 1;
   const newDay = {
+    scriptId,
     dayNumber: dayData.dayNumber || nextNum,
-    date: dayData.date || `Nov ${String(nextNum).padStart(2, '0')}, 2026`,
+    date: dayData.date || `Shoot Day ${nextNum}`,
     title: dayData.title || `Shoot Day ${nextNum}`,
     location: dayData.location || "Location TBD",
     sceneNumbers: dayData.sceneNumbers || [],
@@ -539,21 +547,21 @@ export function addProductionScheduleDay(scriptId, dayData) {
     action: "ADD_SHOOT_DAY",
     category: "SCHEDULE",
     details: `Added Day ${newDay.dayNumber} (${newDay.title}) to master schedule`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return newDay;
 }
 
 export function deleteProductionScheduleDay(scriptId, dayNumber) {
   const num = Number(dayNumber);
-  const idx = db.productionSchedule.findIndex(d => d.dayNumber === num);
+  const idx = db.productionSchedule.findIndex(d => d.scriptId === scriptId && d.dayNumber === num);
   if (idx === -1) throw new Error("Shoot day not found");
   const removed = db.productionSchedule.splice(idx, 1)[0];
   logProductionAudit(scriptId, {
     action: "DELETE_SHOOT_DAY",
     category: "SCHEDULE",
     details: `Deleted Day ${removed.dayNumber} (${removed.title}) from master schedule`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return { success: true, removedDayNumber: num };
 }
@@ -578,7 +586,7 @@ export function createProductionResource(scriptId, resData) {
     action: "ADD_RESOURCE",
     category: "DIRECTORY",
     details: `Added ${newRes.name} (${newRes.category} • ${newRes.role}) to production directory`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return newRes;
 }
@@ -591,7 +599,7 @@ export function updateProductionResource(scriptId, resId, updates) {
     action: "UPDATE_RESOURCE",
     category: "DIRECTORY",
     details: `Updated ${res.name} (${res.category}) details`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return res;
 }
@@ -604,7 +612,7 @@ export function deleteProductionResource(scriptId, resId) {
     action: "DELETE_RESOURCE",
     category: "DIRECTORY",
     details: `Removed ${removed.name} (${removed.category}) from directory`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return { success: true, removedId: resId };
 }
@@ -616,7 +624,7 @@ export function createProductionDocument(scriptId, docData) {
     scriptId,
     type: docData.type || "Production Report",
     title: docData.title || "New Production Document",
-    sourceVersion: docData.sourceVersion || "Draft 4.2",
+    sourceVersion: docData.sourceVersion || "Draft 1.0",
     shootDay: docData.shootDay || "General",
     date: docData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     location: docData.location || "Production Basecamp",
@@ -630,7 +638,7 @@ export function createProductionDocument(scriptId, docData) {
     action: "CREATE_DOCUMENT",
     category: "DOCUMENTS",
     details: `Created new document "${newDoc.title}" (${newDoc.type})`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return newDoc;
 }
@@ -643,7 +651,7 @@ export function deleteProductionDocument(scriptId, docId) {
     action: "DELETE_DOCUMENT",
     category: "DOCUMENTS",
     details: `Removed document "${removed.title}"`,
-    sourceVersion: "Draft 4.2"
+    sourceVersion: "Draft 1.0"
   });
   return { success: true, removedId: docId };
 }

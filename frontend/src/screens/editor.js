@@ -526,7 +526,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
             <!-- Centered Screenplay Title & Author Block (Horizontally centered relative to actual page) -->
             <div class="flex flex-col items-center text-center my-auto w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
-              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="tp-field w-full text-center uppercase outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text font-bold" data-placeholder="CHRONICLES OF DUST" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
+              <div id="tp-doc-title" contenteditable="true" spellcheck="false" class="tp-field w-full text-center uppercase outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text font-bold" data-placeholder="SCREENPLAY TITLE" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
               
               <div class="my-6 w-full text-center">
                 <div id="tp-doc-by" contenteditable="true" spellcheck="false" class="tp-field w-full text-center outline-none focus:bg-blue-50/40 rounded px-2 py-0.5 transition-colors cursor-text select-text" data-placeholder="Written by" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;">Written by</div>
@@ -537,8 +537,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
 
             <!-- Bottom Left Contact Block (Positioned at 1.5 in left margin line) -->
             <div class="flex flex-col items-start text-left mt-auto pt-20 w-full" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4;">
-              <div id="tp-doc-phone" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Phone: 8680812008" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
-              <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="E-mail: aravind.s0618@gmail.com" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
+              <div id="tp-doc-phone" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Phone" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
+              <div id="tp-doc-email" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="E-mail" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
               <div id="tp-doc-address" contenteditable="true" spellcheck="false" class="tp-field min-w-[220px] max-w-full text-left outline-none focus:bg-blue-50/40 rounded px-1 py-0.5 transition-colors cursor-text select-text" data-placeholder="Address" style="font-family: 'Courier Prime', 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.4; color: #0f172a;"></div>
             </div>
           </div>
@@ -854,7 +854,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </div>
               <div>
                 <h3 class="font-heading font-bold text-base text-slate-900 leading-tight">Export Screenplay</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">${script.title} · ${script.draft || 'Draft 4.2'}</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${script.title} · ${script.draft || 'Draft 1.0'}</p>
               </div>
             </div>
             <button id="closeExportModal" aria-label="Close export dialog" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
@@ -1004,7 +1004,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
           <div class="p-4 flex flex-col gap-3">
             <div class="flex flex-col gap-1">
               <label class="text-[11px] font-semibold text-slate-700">Version Label</label>
-              <input type="text" id="newVersionNameInput" value="Draft 5.0 (Locked)" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
+              <input type="text" id="newVersionNameInput" value="Draft 2.0" class="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-blue-600">
             </div>
             <div class="flex flex-col gap-1">
               <label class="text-[11px] font-semibold text-slate-700">Snapshot Notes</label>
@@ -1030,7 +1030,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
               </div>
               <div>
                 <h3 class="font-bold text-base text-slate-900 leading-tight">Semantic Script Diff</h3>
-                <p class="text-[11px] text-slate-500 mt-0.5">Comparing: Draft 3.0 vs. Draft 4.2 (Current)</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">${script.title} · ${script.draft || 'Current Draft'}</p>
               </div>
             </div>
             <button id="closeCompareModal" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100">
@@ -1038,29 +1038,8 @@ export function renderEditorScreen(scriptId, targetScene = null) {
             </button>
           </div>
 
-          <div class="px-4 py-2 bg-slate-50 flex items-center justify-between text-xs border-b border-slate-100">
-            <div class="flex items-center gap-3">
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="font-medium text-slate-800">1 Addition</span></span>
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span><span class="font-medium text-slate-800">1 Deletion</span></span>
-              <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span><span class="font-medium text-slate-800">1 Modified Dialogue</span></span>
-            </div>
-            <span class="font-mono text-[11px] text-slate-500">Scene 18</span>
-          </div>
-
-          <div class="p-4 sm:p-6 overflow-y-auto flex flex-col gap-4 font-courier text-xs sm:text-sm leading-relaxed max-h-[460px]">
-            <div class="border-l-4 border-blue-500 pl-3 py-1 bg-blue-50/40 rounded-r-lg">
-              <div class="text-[11px] font-sans font-semibold text-blue-700 uppercase tracking-wide mb-1">Modified Dialogue · MEERA (O.S.)</div>
-              <div class="text-red-700 line-through bg-red-50 px-2 py-0.5 rounded mb-1">- Then don't let them break. Reroute the secondary conduit.</div>
-              <div class="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">+ Then don't let them break. Reroute the secondary relay through the floodgate breaker.</div>
-            </div>
-            <div class="border-l-4 border-emerald-500 pl-3 py-1 bg-emerald-50/40 rounded-r-lg">
-              <div class="text-[11px] font-sans font-semibold text-emerald-700 uppercase tracking-wide mb-1">Added Action · SCENE 19</div>
-              <div class="text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded font-medium">+ Sirens pulse through the red fog. Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below.</div>
-            </div>
-            <div class="border-l-4 border-red-400 pl-3 py-1 bg-red-50/40 rounded-r-lg">
-              <div class="text-[11px] font-sans font-semibold text-red-600 uppercase tracking-wide mb-1">Removed Transition</div>
-              <div class="text-red-700 line-through bg-red-50 px-2 py-0.5 rounded">- FADE TO BLACK.</div>
-            </div>
+          <div class="p-6 text-center text-xs text-slate-500">
+            Save at least two version snapshots to inspect line-by-line additions, deletions, and dialogue revisions.
           </div>
 
           <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
@@ -1194,8 +1173,8 @@ export async function attachEditorEvents(scriptId, navigate) {
     });
   }
 
-  // Safeguard: Ensure non-canonical screenplay has no random/placeholder content
-  if (scriptId !== 'chronicles-of-dust' && currentScreenplay) {
+  // Safeguard: Ensure screenplay has no random/placeholder content
+  if (currentScreenplay) {
     const hasRandom = (currentScreenplay.scenes || []).some(sc => {
       const s = (sc.slugline || '').toUpperCase();
       if (s.includes("WRITER'S ROOM") || s.includes("STUDIO - DAY") || s.includes("NEW SCENE - DAY")) return true;
@@ -6183,9 +6162,13 @@ function setupToolbarAndMenu(scriptId, navigate) {
   const prodBtn = document.getElementById('btn-open-production');
   const menuProdBtn = document.getElementById('menu-btn-production');
   const openProductionFromEditor = () => {
-    const targetScriptId = scriptId || store.state.selectedScriptId || 'chronicles-of-dust';
-    sessionStorage.setItem('scriptora_prod_return', `/editor/${targetScriptId}`);
-    navigate(`/production?from=editor&scriptId=${encodeURIComponent(targetScriptId)}`);
+    const targetScriptId = scriptId || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+    if (targetScriptId) {
+      sessionStorage.setItem('scriptora_prod_return', `/editor/${targetScriptId}`);
+      navigate(`/production?from=editor&scriptId=${encodeURIComponent(targetScriptId)}`);
+    } else {
+      navigate('/production?from=editor');
+    }
   };
   if (prodBtn) prodBtn.onclick = openProductionFromEditor;
   if (menuProdBtn) {

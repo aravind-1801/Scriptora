@@ -8,10 +8,10 @@ import { exportDialogueSheetPdf, exportActorSidesPdf } from '../../services/pdfE
 
 export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
   const from = fromParam || urlParams.get('from');
-  const mainProductionUrl = from || `/production?scriptId=${scriptId}`;
+  const mainProductionUrl = from || (scriptId ? `/production?scriptId=${scriptId}` : '/production');
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -59,9 +59,9 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
 
 export async function attachDialogueSidesEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   let activeMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
-  let selectedChar = 'KEVIN';
+  let selectedChar = '';
   let selectedScene = urlParams.get('scene') || '1';
 
   const tabDialogue = document.getElementById('tab-mode-dialogue');
@@ -69,81 +69,50 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   const filterArea = document.getElementById('filter-controls');
   const contentArea = document.getElementById('dialogue-sides-content');
 
-  // Dialogue Repository for Chronicles of Dust (Draft 4.2)
-  const scriptDialogue = [
-    {
-      sceneNum: 1,
-      heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-      character: "KEVIN",
-      parenthetical: "(adjusting filter)",
-      dialogue: "Wind gauge is spiking past forty knots, Marcus. Did you check the terminal pressure at the intake valve?",
-      action: "Kevin wipes gritty red dust from the gauge glass with his thumb."
-    },
-    {
-      sceneNum: 1,
-      heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-      character: "MARCUS",
-      parenthetical: "(shrugging)",
-      dialogue: "Telemetry's been on the fritz since dawn. Central syndicate says it's thermal fluctuation.",
-      action: "Marcus gestures with a cigarette toward the desert horizon."
-    },
-    {
-      sceneNum: 2,
-      heading: "INT. OUTPOST CUSTOMS SHED - DAY",
-      character: "MEERA",
-      parenthetical: "(eyes on monitor)",
-      dialogue: "That's no fluctuation. Look at line three. Someone bypassed the telemetry loop eighty miles upriver.",
-      action: "Meera brings up a wireframe map showing a hidden subterranean siphon branch."
-    },
-    {
-      sceneNum: 2,
-      heading: "INT. OUTPOST CUSTOMS SHED - DAY",
-      character: "KEVIN",
-      parenthetical: "(tense)",
-      dialogue: "They're siphoning straight out of the municipal reservoir into private holding tanks.",
-      action: "Kevin taps the terminal screen, freezing the anomaly coordinates."
-    },
-    {
-      sceneNum: 7,
-      heading: "INT. SYNDICATE PUMPING CONTROL - DAY",
-      character: "COMMANDER VANCE",
-      parenthetical: "(smooth, unhurried)",
-      dialogue: "Water belongs to those who possess the energy to lift it from the rock, Kevin. The frontier was built on that premise.",
-      action: "Vance sips cold tea, watching the massive hydraulic pump pistons rise and plunge."
-    },
-    {
-      sceneNum: 7,
-      heading: "INT. SYNDICATE PUMPING CONTROL - DAY",
-      character: "KEVIN",
-      parenthetical: "(stepping forward)",
-      dialogue: "You signed the 2041 Treaty. If the southern aquifer collapses, ten thousand families wake up to dry taps.",
-      action: "Kevin places the legal registry deed onto Vance's polished mahogany desk."
-    },
-    {
-      sceneNum: 18,
-      heading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-      character: "KEVIN",
-      parenthetical: "(shouting over the roar)",
-      dialogue: "Hold the pylon, Meera! If the high-pressure valve seals now, the back-surge will fracture the entire chamber!",
-      action: "Brine water sprays across Kevin's visor as he locks the hydraulic bypass manifold."
-    },
-    {
-      sceneNum: 18,
-      heading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-      character: "MEERA",
-      parenthetical: "(straining on cable)",
-      dialogue: "Then don't let them break! Reroute the secondary relay through the floodgate breaker!",
-      action: "Meera kicks off the iron catwalk, swinging across the chasm to secure the emergency lock."
-    },
-    {
-      sceneNum: 18,
-      heading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-      character: "KEVIN",
-      parenthetical: "(levering the valve bar)",
-      dialogue: "Bypass locked! Bleed the line! Three... two... one!",
-      action: "The pressure needles drop from red to blue as the municipal pipeline fills with fresh current."
-    }
-  ];
+  // Dialogue Repository (extracted dynamically from the user's screenplay)
+  const scriptDialogue = [];
+
+  async function loadScriptDialogue() {
+    if (!scriptId) return;
+    try {
+      let sp = store.state.screenplay && store.state.screenplay.id === scriptId ? store.state.screenplay : null;
+      if (!sp) {
+        sp = await api.getScreenplay(scriptId);
+      }
+      const scenes = Array.isArray(sp?.scenes) ? sp.scenes : [];
+      scenes.forEach((sc, idx) => {
+        const sceneNum = sc.number || (idx + 1);
+        const heading = sc.slugline || sc.heading || `SCENE ${sceneNum}`;
+        const blocks = Array.isArray(sc.blocks) ? sc.blocks : [];
+        let lastAction = '';
+        let activeChar = '';
+        let activeParen = '';
+        blocks.forEach((b) => {
+          const text = (b.content || '').trim();
+          if (!text) return;
+          if (b.type === 'action') {
+            lastAction = text;
+          } else if (b.type === 'character') {
+            activeChar = text.replace(/\s*\(.*?\)\s*$/, '').trim().toUpperCase();
+            activeParen = '';
+          } else if (b.type === 'parenthetical') {
+            activeParen = text;
+          } else if (b.type === 'dialogue' && activeChar) {
+            scriptDialogue.push({
+              sceneNum,
+              heading,
+              character: activeChar,
+              parenthetical: activeParen,
+              dialogue: text,
+              action: lastAction
+            });
+            lastAction = '';
+            activeParen = '';
+          }
+        });
+      });
+    } catch (_) {}
+  }
 
   function getFormattedDate() {
     const today = new Date();
@@ -154,14 +123,17 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
   function renderFilters() {
     if (!filterArea) return;
     if (activeMode === 'dialogue') {
+      const chars = Array.from(new Set(scriptDialogue.map(d => d.character).filter(Boolean)));
+      if (chars.length === 0) {
+        filterArea.innerHTML = `<span class="text-xs text-slate-400">No character dialogue extracted for this screenplay yet.</span>`;
+        return;
+      }
+      if (!chars.includes(selectedChar)) selectedChar = chars[0];
       filterArea.innerHTML = `
         <span class="text-xs font-semibold text-slate-500 shrink-0">Character:</span>
         <div class="relative inline-flex items-center flex-1 max-w-xs">
           <select id="char-select" class="w-full text-xs font-semibold bg-white border border-slate-200/90 rounded-2xl pl-3 pr-8 py-2 text-slate-900 appearance-none focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer">
-            <option value="KEVIN" ${selectedChar === 'KEVIN' ? 'selected' : ''}>KEVIN (Lead)</option>
-            <option value="MEERA" ${selectedChar === 'MEERA' ? 'selected' : ''}>MEERA (Lead)</option>
-            <option value="COMMANDER VANCE" ${selectedChar === 'COMMANDER VANCE' ? 'selected' : ''}>COMMANDER VANCE</option>
-            <option value="MARCUS" ${selectedChar === 'MARCUS' ? 'selected' : ''}>MARCUS</option>
+            ${chars.map(c => `<option value="${c}" ${selectedChar === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined text-[18px] text-slate-400 absolute right-2.5 pointer-events-none">expand_more</span>
         </div>
@@ -174,14 +146,17 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
         };
       }
     } else {
+      const sceneNums = Array.from(new Set(scriptDialogue.map(d => String(d.sceneNum)).filter(Boolean)));
+      if (sceneNums.length === 0) {
+        filterArea.innerHTML = `<span class="text-xs text-slate-400">No scene sides extracted for this screenplay yet.</span>`;
+        return;
+      }
+      if (!sceneNums.includes(String(selectedScene))) selectedScene = sceneNums[0];
       filterArea.innerHTML = `
         <span class="text-xs font-semibold text-slate-500 shrink-0">Scene Extract:</span>
         <div class="relative inline-flex items-center flex-1 max-w-xs">
           <select id="scene-select" class="w-full text-xs font-semibold bg-white border border-slate-200/90 rounded-2xl pl-3 pr-8 py-2 text-slate-900 appearance-none focus:outline-none focus:border-blue-500 shadow-2xs cursor-pointer">
-            <option value="1" ${selectedScene === '1' ? 'selected' : ''}>Scene 1 — Outpost Gate 4</option>
-            <option value="2" ${selectedScene === '2' ? 'selected' : ''}>Scene 2 — Customs Shed</option>
-            <option value="7" ${selectedScene === '7' ? 'selected' : ''}>Scene 7 — Syndicate Control</option>
-            <option value="18" ${selectedScene === '18' ? 'selected' : ''}>Scene 18 — Chamber B Climax</option>
+            ${sceneNums.map(n => `<option value="${n}" ${String(selectedScene) === n ? 'selected' : ''}>Scene ${n}</option>`).join('')}
           </select>
           <span class="material-symbols-outlined text-[18px] text-slate-400 absolute right-2.5 pointer-events-none">expand_more</span>
         </div>
@@ -206,6 +181,27 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
       // -----------------------------------------------------------------------
       const charLines = scriptDialogue.filter(d => d.character === selectedChar);
 
+      if (!scriptId || scriptDialogue.length === 0 || charLines.length === 0) {
+        contentArea.innerHTML = `
+          <div class="font-sans py-10 px-4 text-center flex flex-col items-center justify-center gap-2.5">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-2xl">theater_comedy</span>
+            </div>
+            <h3 class="font-heading font-bold text-sm text-slate-900">No Dialogue Sheets Yet</h3>
+            <p class="text-xs text-slate-500 max-w-sm leading-relaxed">
+              ${scriptId
+                ? 'Write character dialogue scenes in the Screenplay Editor to generate printable character dialogue sheets.'
+                : 'Create or select a screenplay in your Workspace to view character dialogue sheets.'}
+            </p>
+            <a href="${scriptId ? `/editor/${scriptId}` : '/workspace'}" class="mt-1 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors no-underline">
+              <span class="material-symbols-outlined text-[16px]">edit_document</span>
+              <span>${scriptId ? 'Open Screenplay Editor' : 'Go to Workspace'}</span>
+            </a>
+          </div>
+        `;
+        return;
+      }
+
       contentArea.innerHTML = `
         <!-- Watermark Header -->
         <div class="font-sans flex flex-col gap-1">
@@ -213,7 +209,7 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
           <h2 class="font-heading font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight leading-snug">
             CHARACTER DIALOGUE SHEET<br />— ${selectedChar}
           </h2>
-          <div class="text-[12px] text-slate-600 font-medium mt-0.5">Screenplay: Chronicles of Dust · Pinned Version: Draft 4.2</div>
+          <div class="text-[12px] text-slate-600 font-medium mt-0.5">Screenplay: ${store.state.activeScript?.title || 'Screenplay'}</div>
           <div class="text-[12px] text-slate-500">Lines: ${charLines.length} Cues</div>
           <div class="text-[12px] text-slate-500">Date: ${formattedDate}</div>
           <div class="w-full h-0.5 bg-slate-900 mt-2 mb-4"></div>
@@ -242,7 +238,7 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
         </div>
 
         <div class="border-t border-slate-200 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 font-sans text-[11px] text-slate-400">
-          <span>Generated from Draft 4.2 pinned baseline.</span>
+          <span>Generated from active script baseline.</span>
           <button id="btn-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs">
             <span class="material-symbols-outlined text-[15px]">print</span>
             <span>Export Genuine PDF</span>
@@ -254,6 +250,26 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
       // MODE 2: ACTOR SIDES (Scene-wise with surrounding action cues)
       // -----------------------------------------------------------------------
       const sceneLines = scriptDialogue.filter(d => String(d.sceneNum) === String(selectedScene));
+      if (!scriptId || scriptDialogue.length === 0 || sceneLines.length === 0) {
+        contentArea.innerHTML = `
+          <div class="font-sans py-10 px-4 text-center flex flex-col items-center justify-center gap-2.5">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-2xl">description</span>
+            </div>
+            <h3 class="font-heading font-bold text-sm text-slate-900">No Actor Sides Available</h3>
+            <p class="text-xs text-slate-500 max-w-sm leading-relaxed">
+              ${scriptId
+                ? 'Add scenes with dialogue in the Screenplay Editor to extract rehearsal and on-set actor sides.'
+                : 'Create or select a screenplay in your Workspace to generate actor sides.'}
+            </p>
+            <a href="${scriptId ? `/editor/${scriptId}` : '/workspace'}" class="mt-1 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors no-underline">
+              <span class="material-symbols-outlined text-[16px]">edit_document</span>
+              <span>${scriptId ? 'Open Screenplay Editor' : 'Go to Workspace'}</span>
+            </a>
+          </div>
+        `;
+        return;
+      }
       const firstLine = sceneLines[0] || { heading: `SCENE ${selectedScene}` };
 
       contentArea.innerHTML = `
@@ -263,7 +279,7 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
           <h2 class="font-heading font-extrabold text-lg sm:text-xl text-slate-900 tracking-tight leading-snug">
             ACTOR SIDES<br />— SCENE ${selectedScene}
           </h2>
-          <div class="text-[12px] text-slate-600 font-medium mt-0.5">${firstLine.heading} · Draft 4.2</div>
+          <div class="text-[12px] text-slate-600 font-medium mt-0.5">${firstLine.heading}</div>
           <div class="text-[12px] text-slate-500">Rehearsal & On-Set Copy</div>
           <div class="text-[12px] text-slate-500">Date: ${formattedDate}</div>
           <div class="w-full h-0.5 bg-slate-900 mt-2 mb-4"></div>
@@ -298,7 +314,7 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
         </div>
 
         <div class="border-t border-slate-200 pt-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-2.5 font-sans text-[11px] text-slate-400">
-          <span>END OF SCENE ${selectedScene} SIDES · STAMPED APPROVED DRAFT 4.2</span>
+          <span>END OF SCENE ${selectedScene} SIDES</span>
           <button id="btn-export-pdf" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors cursor-pointer shadow-2xs">
             <span class="material-symbols-outlined text-[15px]">print</span>
             <span>Export Genuine PDF</span>
@@ -318,8 +334,8 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
           if (activeMode === 'dialogue') {
             const charLines = scriptDialogue.filter(d => d.character === selectedChar);
             exportDialogueSheetPdf(selectedChar, charLines, {
-              title: 'Chronicles of Dust',
-              draft: 'Draft 4.2'
+              title: store.state.activeScript?.title || 'Screenplay',
+              draft: store.state.activeScript?.draft || 'Draft 1.0'
             });
             showToast(`Exported ${selectedChar} Dialogue Sheet PDF`);
           } else {
@@ -330,8 +346,8 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
               heading: firstLine.heading,
               pages: '2 1/8'
             }, {
-              title: 'Chronicles of Dust',
-              draft: 'Draft 4.2'
+              title: store.state.activeScript?.title || 'Screenplay',
+              draft: store.state.activeScript?.draft || 'Draft 1.0'
             });
             showToast(`Exported Scene ${selectedScene} Actor Sides PDF`);
           }
@@ -362,6 +378,7 @@ export async function attachDialogueSidesEvents(navigate, fromParam = null, scri
     };
   }
 
+  await loadScriptDialogue();
   renderFilters();
   renderContent();
 }

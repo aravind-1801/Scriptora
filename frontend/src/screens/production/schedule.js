@@ -24,7 +24,7 @@ const CATEGORY_ICONS = {
 
 export function renderScheduleScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const from = fromParam || urlParams.get('from');
 
   return `
@@ -51,23 +51,23 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
           <div class="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
             <div class="p-2 sm:px-3 first:pl-1">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Shoot Window</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">7 Days</div>
-              <span class="text-[11px] text-slate-400">Oct 24 – Oct 30</span>
+              <div id="metric-shoot-days" class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">--</div>
+              <span id="metric-shoot-window" class="text-[11px] text-slate-400">No shoot dates yet</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Scenes Scheduled</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">10 of 10 Scenes</div>
-              <span class="text-[11px] text-emerald-600 font-medium">100% Allocated</span>
+              <div id="metric-scenes-scheduled" class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">--</div>
+              <span id="metric-scenes-pct" class="text-[11px] text-slate-400 font-medium">0% Allocated</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Script Pages</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">52.0 Pages</div>
-              <span class="text-[11px] text-slate-400">Avg 7.4 pgs / day</span>
+              <div id="metric-script-pages" class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">--</div>
+              <span id="metric-avg-pages" class="text-[11px] text-slate-400">0.0 pgs / day</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Primary Locations</span>
-              <div class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">3 Areas</div>
-              <span class="text-[11px] text-slate-400">Mojave & Spillway</span>
+              <div id="metric-locations-count" class="font-heading font-bold text-base sm:text-lg text-slate-900 mt-0.5">--</div>
+              <span id="metric-locations-sub" class="text-[11px] text-slate-400">No locations assigned</span>
             </div>
           </div>
         </div>
@@ -86,12 +86,12 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
                 <div id="modal-day-badge" class="w-8 h-8 rounded-lg bg-slate-900 text-white font-heading font-bold text-xs flex items-center justify-center shrink-0">D1</div>
                 <div class="min-w-0">
                   <div class="flex items-center gap-1.5">
-                    <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Day 1 • Oct 24</h3>
+                    <h3 id="modal-day-title" class="font-heading font-bold text-sm text-slate-900 truncate">Shoot Day</h3>
                     <button id="modal-day-edit-btn" class="p-0.5 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer" title="Edit Shoot Day Info">
                       <span class="material-symbols-outlined text-[15px]">edit</span>
                     </button>
                   </div>
-                  <p id="modal-day-sub" class="text-[11px] text-slate-500 truncate cursor-pointer hover:text-blue-600 transition-colors" title="Click to edit location & hours">Mojave Gate 4 • 7 5/8 pgs</p>
+                  <p id="modal-day-sub" class="text-[11px] text-slate-500 truncate cursor-pointer hover:text-blue-600 transition-colors" title="Click to edit location & hours">Location • 0 pgs</p>
                 </div>
               </div>
               <div class="flex items-center gap-1 shrink-0">
@@ -161,18 +161,18 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
                 </div>
                 <div class="flex flex-col gap-1">
                   <label class="text-[11px] font-semibold text-slate-600">Calendar Date</label>
-                  <input type="text" id="input-add-day-date" placeholder="e.g. Oct 31, 2026" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+                  <input type="text" id="input-add-day-date" placeholder="e.g. Nov 15, 2026" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
                 </div>
               </div>
 
               <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold text-slate-600">Shoot Day Title / Focus</label>
-                <input type="text" id="input-add-day-title" placeholder="e.g. Day 8 — Second Unit & Pickups" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+                <input type="text" id="input-add-day-title" placeholder="e.g. Day 1 — Principal Photography" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
               </div>
 
               <div class="flex flex-col gap-1">
                 <label class="text-[11px] font-semibold text-slate-600">Location / Stage</label>
-                <input type="text" id="input-add-day-location" placeholder="e.g. Mojave Desert Facility — Sector 4" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
+                <input type="text" id="input-add-day-location" placeholder="e.g. Stage 2 or Interior Set" class="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:border-blue-600" required>
               </div>
 
               <div class="grid grid-cols-2 gap-2.5">
@@ -203,7 +203,7 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
 
 export async function attachScheduleEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
 
   const calendarContainer = document.getElementById('schedule-calendar-container');
   const dayModal = document.getElementById('day-detail-modal');
@@ -223,7 +223,56 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
   // ---------------------------------------------------------------------------
   // CALENDAR VIEW RENDERER (Clean, readable chronological matrix)
   // ---------------------------------------------------------------------------
+  function updateScheduleMetrics() {
+    const daysCountEl = document.getElementById('metric-shoot-days');
+    const windowEl = document.getElementById('metric-shoot-window');
+    const scenesEl = document.getElementById('metric-scenes-scheduled');
+    const pctEl = document.getElementById('metric-scenes-pct');
+    const pagesEl = document.getElementById('metric-script-pages');
+    const avgEl = document.getElementById('metric-avg-pages');
+    const locCountEl = document.getElementById('metric-locations-count');
+    const locSubEl = document.getElementById('metric-locations-sub');
+
+    const totalDays = days.length;
+    const assignedNums = new Set();
+    const locations = new Set();
+    let totalEighths = 0;
+
+    days.forEach(d => {
+      (d.sceneNumbers || []).forEach(n => assignedNums.add(n));
+      if (d.location) locations.add(d.location);
+      const m = String(d.totalPages || '').match(/(\d+)\s*(\d+)\/8/);
+      if (m) totalEighths += parseInt(m[1], 10) * 8 + parseInt(m[2], 10);
+      else {
+        const p = parseFloat(d.totalPages);
+        if (!isNaN(p)) totalEighths += Math.round(p * 8);
+      }
+    });
+
+    const totalPagesNum = totalEighths / 8;
+    const totalScenes = scenes.length;
+    const pct = totalScenes > 0 ? Math.round((assignedNums.size / totalScenes) * 100) : 0;
+
+    if (daysCountEl) daysCountEl.textContent = `${totalDays} Day${totalDays === 1 ? '' : 's'}`;
+    if (windowEl) {
+      windowEl.textContent = totalDays > 0
+        ? (totalDays === 1 ? (days[0].date || '1 Shoot Day') : `${days[0].date || 'Start'} – ${days[days.length - 1].date || 'End'}`)
+        : 'No shoot dates yet';
+    }
+    if (scenesEl) scenesEl.textContent = `${assignedNums.size} of ${totalScenes} Scenes`;
+    if (pctEl) pctEl.textContent = `${pct}% Allocated`;
+    if (pagesEl) pagesEl.textContent = `${totalPagesNum.toFixed(1)} Pages`;
+    if (avgEl) avgEl.textContent = totalDays > 0 ? `Avg ${(totalPagesNum / totalDays).toFixed(1)} pgs / day` : '0.0 pgs / day';
+    if (locCountEl) locCountEl.textContent = `${locations.size} Area${locations.size === 1 ? '' : 's'}`;
+    if (locSubEl) locSubEl.textContent = locations.size > 0 ? Array.from(locations).slice(0, 2).join(' & ') : 'No locations assigned';
+  }
+
   function renderCalendar() {
+    updateScheduleMetrics();
+    const rangeLabel = days.length > 0
+      ? (days.length === 1 ? (days[0].date || 'Day 1') : `${days[0].date || 'Day 1'} – ${days[days.length - 1].date || `Day ${days.length}`}`)
+      : 'No shoot dates scheduled';
+
     calendarContainer.innerHTML = `
       <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs flex flex-col gap-3">
         <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
@@ -231,9 +280,22 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             <span class="material-symbols-outlined text-blue-600 text-lg">calendar_month</span>
             <h3 class="font-heading font-semibold text-sm text-slate-900">Shooting Calendar Matrix</h3>
           </div>
-          <span class="text-xs text-slate-500 font-medium">October 24 – October 30, 2026</span>
+          <span class="text-xs text-slate-500 font-medium">${rangeLabel}</span>
         </div>
 
+        ${days.length === 0 ? `
+          <div class="py-10 px-4 text-center flex flex-col items-center justify-center gap-2.5">
+            <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-2xl">calendar_month</span>
+            </div>
+            <h4 class="font-heading font-bold text-sm text-slate-900">No Shoot Days Scheduled Yet</h4>
+            <p class="text-xs text-slate-500 max-w-sm">
+              ${scriptId
+                ? 'Click Add Date above to add shoot days and assign screenplay scenes to your calendar.'
+                : 'Select or create a screenplay in your Workspace to build a master shooting schedule.'}
+            </p>
+          </div>
+        ` : `
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-1">
           ${days.map(d => {
             const dayScenes = (d.sceneNumbers || [])
@@ -248,7 +310,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                       <span class="font-heading font-bold text-xs text-slate-900">Day ${d.dayNumber}</span>
                       ${d.isLocked ? `<span class="material-symbols-outlined text-slate-400 text-[13px]" title="Day locked">lock</span>` : ''}
                     </div>
-                    <span class="text-[11px] font-mono text-slate-500 font-medium">${d.date.split(',')[0]}</span>
+                    <span class="text-[11px] font-mono text-slate-500 font-medium">${(d.date || '').split(',')[0]}</span>
                   </div>
                   <div class="text-[11px] text-slate-700 font-medium mt-1 truncate">${d.location}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">${d.totalPages} pgs • ${d.estHours} hrs</div>
@@ -269,6 +331,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             `;
           }).join('')}
         </div>
+        `}
       </div>
     `;
 
@@ -467,7 +530,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
               </div>
               <div class="sm:col-span-2">
                 <label class="block text-slate-600 font-medium mb-1">Primary Location / Focus</label>
-                <input type="text" id="input-edit-day-loc" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.location || ''}" placeholder="e.g. Chamber B Dry Tank" />
+                <input type="text" id="input-edit-day-loc" class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500" value="${day.location || ''}" placeholder="e.g. Stage 2 or Interior Location" />
               </div>
             </div>
             <div class="flex items-center justify-end gap-2 pt-1 border-t border-blue-200/60">
@@ -608,7 +671,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                     <div>
                       <h4 class="font-heading font-bold text-xs text-slate-900 leading-snug">#${s.sceneNumber} ${s.heading}</h4>
                       <p class="text-[11px] text-slate-500 mt-0.5">
-                        Shoot Day ${day.dayNumber} • Chronicles of Dust • Draft 4.2 (Pinned)
+                        Shoot Day ${day.dayNumber} • ${store.state.activeScript?.title || 'Screenplay'} • ${s.sourceVersion || 'Draft 1.0'}
                       </p>
                     </div>
 
@@ -1200,8 +1263,8 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
           const scElements = breakdown.filter(b => b.sceneId === sc.id || b.sceneNumber === sc.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(sc.sceneNumber)));
           try {
             exportBreakdownPdf(scElements, {
-              title: `Chronicles of Dust — Scene ${sc.sceneNumber}`,
-              draft: 'Draft 4.2'
+              title: `${(store.state.scripts?.find(item => item.id === scriptId) || store.state.activeScript)?.title || 'Screenplay'} — Scene ${sc.sceneNumber}`,
+              draft: (store.state.scripts?.find(item => item.id === scriptId) || store.state.activeScript)?.draft || 'Draft 1.0'
             });
             showToast(`Exported Scene ${sc.sceneNumber} Logistics PDF`);
           } catch (err) {
@@ -1316,8 +1379,8 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     exportPdfBtn.onclick = () => {
       try {
         exportSchedulePdf(days, scenes, {
-          title: 'Chronicles of Dust',
-          draft: 'Draft 4.2'
+          title: (store.state.scripts?.find(item => item.id === scriptId) || store.state.activeScript)?.title || 'Screenplay',
+          draft: (store.state.scripts?.find(item => item.id === scriptId) || store.state.activeScript)?.draft || 'Draft 1.0'
         });
         showToast('Exported Master Shooting Schedule PDF');
       } catch (err) {
@@ -1348,12 +1411,13 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
 
     if (inputNum) inputNum.value = nextDayNum;
     if (inputDate) {
-      const baseDate = new Date(2026, 9, 23 + nextDayNum);
+      const baseDate = new Date();
+      baseDate.setDate(baseDate.getDate() + nextDayNum - 1);
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       inputDate.value = `${months[baseDate.getMonth()]} ${baseDate.getDate()}, ${baseDate.getFullYear()}`;
     }
-    if (inputTitle) inputTitle.value = `Day ${nextDayNum} — Second Unit & Pickups`;
-    if (inputLocation) inputLocation.value = 'Mojave Soundstage 2';
+    if (inputTitle) inputTitle.value = `Day ${nextDayNum}`;
+    if (inputLocation) inputLocation.value = '';
     if (inputHours) inputHours.value = '10';
     if (inputPages) inputPages.value = '0.0';
 

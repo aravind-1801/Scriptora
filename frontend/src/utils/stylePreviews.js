@@ -627,9 +627,18 @@ export const VISUAL_STYLE_PREVIEWS = [
 
 export { BASE };
 
+export const NEUTRAL_STORYBOARD_FALLBACK_SVG = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+    <rect width="800" height="450" fill="#0f172a"/>
+    <rect x="24" y="24" width="752" height="402" rx="12" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="8 6"/>
+    <text x="400" y="218" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="18" font-weight="600">Storyboard Frame</text>
+    <text x="400" y="246" text-anchor="middle" fill="#64748b" font-family="system-ui, sans-serif" font-size="13">Preview unavailable</text>
+  </svg>`
+)}`;
+
 export function resolveAssetUrl(url, fallbackNum = '') {
   if (!url || typeof url !== 'string') {
-    return `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`;
+    return NEUTRAL_STORYBOARD_FALLBACK_SVG;
   }
 
   // 1. If it's an SVG data URI wrapping a storyboard asset or file
@@ -643,25 +652,9 @@ export function resolveAssetUrl(url, fallbackNum = '') {
     } catch (_) {}
   }
 
-  // 2. If it's a legacy procedural SVG or dark silhouette SVG
-  if (url.startsWith('data:image/svg+xml') && (url.includes('<rect') || url.includes('<svg') || url.includes('fill=')) && !url.includes('<image')) {
-    const check = `${url} ${fallbackNum}`.toUpperCase();
-    if (check.includes('1B') || check.includes('TWO-SHOT') || check.includes('TWO SHOT')) {
-      return `${BASE}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
-    }
-    if (check.includes('1C') || check.includes('CLOSE-UP') || check.includes('CLOSE UP')) {
-      return `${BASE}assets/storyboard/shot_1c_closeup_reaction.jpg`;
-    }
-    if (check.includes('1D') || check.includes('MACRO') || check.includes('INSERT')) {
-      return `${BASE}assets/storyboard/shot_1d_macro_insert.jpg`;
-    }
-    if (check.includes('10A') || check.includes('VALVE')) {
-      return `${BASE}assets/storyboard/shot_10a_valve_breach.jpg`;
-    }
-    if (check.includes('10B') || check.includes('PUMPING') || check.includes('HALL')) {
-      return `${BASE}assets/storyboard/shot_10b_pumping_hall.jpg`;
-    }
-    return `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`;
+  // 2. Preserve inline SVG data URIs directly
+  if (url.startsWith('data:image/svg+xml')) {
+    return url;
   }
 
   // 3. If it's an external URL (http / https) or base64 data URL

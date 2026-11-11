@@ -6,6 +6,6 @@
   "scripts": {
     "start": "node app/server.js",
     "dev": "node --watch app/server.js",
-    "test": "node tests/test.js && node tests/test-two-account-isolation.js"
+    "test": "node tests/test.js && node tests/test-two-account-isolation.js && node tests/test-clean-slate-fresh-user.js"
   }
 }

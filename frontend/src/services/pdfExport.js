@@ -259,9 +259,9 @@ export function compilePdfDocument(pages, options = {}) {
 // 1. CALL SHEET PDF EXPORT
 // =============================================================================
 export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
-  const title = scriptInfo.title || 'Chronicles of Dust';
+  const title = scriptInfo.title || 'Screenplay';
   const company = scriptInfo.company || 'SCRIPTORA PRODUCTION STUDIO';
-  const draft = scriptInfo.draft || 'Draft 4.2 (Pinned)';
+  const draft = scriptInfo.draft || 'Draft 1.0 (Pinned)';
   const dayNum = String(cs.callSheetNumber || '01').padStart(2, '0');
   const shootDayStr = cs.shootDay || `Day ${parseInt(dayNum, 10) || 1} of 14`;
   const isConfirmed = cs.status === 'Confirmed' || cs.isPublished;
@@ -396,7 +396,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
   // Column 1: Date & Day
   currentTexts.push({ text: 'DATE & DAY', x: MARGIN_LEFT + 10, y: colYTop, font: 'F2', size: 7.5, color: [0.42, 0.47, 0.55] });
   currentTexts.push({
-    text: truncatePdfText(cs.shootDate || 'Saturday, Oct 24, 2026', 118, 9.5, 'F2'),
+    text: truncatePdfText(cs.shootDate || 'Date TBD', 118, 9.5, 'F2'),
     x: MARGIN_LEFT + 10,
     y: colYMid,
     font: 'F2',
@@ -509,7 +509,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
     color: [0.25, 0.30, 0.38]
   });
   currentTexts.push({
-    text: truncatePdfText(cs.locationName || 'Mojave Outpost Gate 4', 280, 8.5, 'F2'),
+    text: truncatePdfText(cs.locationName || 'Location TBD', 280, 8.5, 'F2'),
     x: locX,
     y: curY - 25,
     font: 'F2',
@@ -517,7 +517,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
     color: [0.10, 0.12, 0.16]
   });
   currentTexts.push({
-    text: truncatePdfText(cs.locationAddress || 'Perimeter Road 9, Cantil, CA', 280, 7.5, 'F1'),
+    text: truncatePdfText(cs.locationAddress || 'Address TBD', 280, 7.5, 'F1'),
     x: locX,
     y: curY - 37,
     font: 'F1',
@@ -525,7 +525,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
     color: [0.35, 0.40, 0.48]
   });
   currentTexts.push({
-    text: truncatePdfText(`Parking: ${cs.parkingNotes || 'Basecamp Lot B. Crew shuttle runs every 10 mins.'}`, 280, 7, 'F1'),
+    text: truncatePdfText(`Parking: ${cs.parkingNotes || 'Parking details TBD'}`, 280, 7, 'F1'),
     x: locX,
     y: curY - 49,
     font: 'F1',
@@ -590,10 +590,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
   // ---------------------------------------------------------------------------
   // 4. SECTION 1: DAILY SCENE SCHEDULE TABLE
   // ---------------------------------------------------------------------------
-  const scenes = (cs.scenes && cs.scenes.length > 0) ? cs.scenes : [
-    { sceneNumber: 1, heading: 'EXT. MOJAVE OUTPOST GATE 4 - DAY', pages: '4 1/8', cast: ['KEVIN', 'MARCUS'], desc: 'Kevin arrives at border gate, inspection with Marcus.' },
-    { sceneNumber: 2, heading: 'INT. OUTPOST CUSTOMS SHED - DAY', pages: '3 4/8', cast: ['KEVIN', 'MEERA'], desc: 'Kevin discovers pressure loss on telemetry terminal.' }
-  ];
+  const scenes = (cs.scenes && cs.scenes.length > 0) ? cs.scenes : [];
 
   function drawScenesTableHeader() {
     currentVectors.push({
@@ -721,11 +718,7 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
   // ---------------------------------------------------------------------------
   // 5. SECTION 2: CAST & TALENT CALL TABLE
   // ---------------------------------------------------------------------------
-  const castCalls = (cs.castCalls && cs.castCalls.length > 0) ? cs.castCalls : [
-    { character: 'KEVIN', actor: 'Dev Patel', pickup: '05:00 AM', hmuCall: '05:30 AM', onSet: '06:30 AM', status: 'Confirmed' },
-    { character: 'MARCUS', actor: 'David Chen', pickup: '05:15 AM', hmuCall: '05:45 AM', onSet: '06:30 AM', status: 'Confirmed' },
-    { character: 'MEERA', actor: 'Zoe Saldana', pickup: '08:30 AM', hmuCall: '09:00 AM', onSet: '10:30 AM', status: 'Confirmed' }
-  ];
+  const castCalls = (cs.castCalls && cs.castCalls.length > 0) ? cs.castCalls : [];
 
   function drawCastTableHeader() {
     currentVectors.push({
@@ -1041,8 +1034,8 @@ export function exportCallSheetPdf(cs = {}, scriptInfo = {}) {
 // 2. DIALOGUE SHEET PDF EXPORT (Character-focused Screenplay Monospaced)
 // =============================================================================
 export function exportDialogueSheetPdf(characterName = 'CHARACTER', dialogueLines = [], scriptInfo = {}) {
-  const title = scriptInfo.title || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || 'Draft 4.2';
+  const title = scriptInfo.title || 'Screenplay';
+  const draft = scriptInfo.draft || 'Draft 1.0';
   const pages = [];
   const linesPerPage = 38;
 
@@ -1121,7 +1114,7 @@ export function exportDialogueSheetPdf(characterName = 'CHARACTER', dialogueLine
 
     // Screenplay Footer
     pVectors.push({ type: 'line', x1: 54, y1: 50, x2: 558, y2: 50, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
-    pTexts.push({ text: `SCRIPTORA SCREENPLAY ARCHITECTURE -- ${characterName.toUpperCase()} -- DRAFT 4.2`, x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
+    pTexts.push({ text: `SCRIPTORA SCREENPLAY ARCHITECTURE -- ${characterName.toUpperCase()} -- ${draft.toUpperCase()}`, x: 54, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
     pTexts.push({ text: `Page ${pageIdx + 1} of ${chunks.length}`, x: 495, y: 38, font: 'F3', size: 8, color: [0.5, 0.5, 0.5] });
 
     pages.push({ vectors: pVectors, texts: pTexts });
@@ -1141,8 +1134,8 @@ export function exportActorSidesPdf(sceneNumber = 1, sceneLines = [], sceneInfo 
   if (sceneInfo && sceneInfo.title && !scriptInfo.title) {
     scriptInfo = sceneInfo;
   }
-  const title = scriptInfo.title || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || 'Draft 4.2';
+  const title = scriptInfo.title || 'Screenplay';
+  const draft = scriptInfo.draft || 'Draft 1.0';
   const heading = sceneInfo.heading || (sceneLines[0]?.heading) || `SCENE ${sceneNumber} - DAY`;
   const pages = [];
 
@@ -1200,7 +1193,7 @@ export function exportActorSidesPdf(sceneNumber = 1, sceneLines = [], sceneInfo 
 
   // End of Scene Stamp
   pVectors.push({ type: 'rect', x: 180, y: curY - 15, w: 252, h: 20, fill: [0.95, 0.95, 0.95], stroke: [0.7, 0.7, 0.7], lineWidth: 0.8 });
-  pTexts.push({ text: `END OF SCENE ${sceneNumber} SIDES -- STAMPED DRAFT 4.2`, x: 195, y: curY - 3, font: 'F4', size: 7.5, color: [0.3, 0.3, 0.3] });
+  pTexts.push({ text: `END OF SCENE ${sceneNumber} SIDES -- STAMPED ${draft.toUpperCase()}`, x: 195, y: curY - 3, font: 'F4', size: 7.5, color: [0.3, 0.3, 0.3] });
 
   // Footer
   pVectors.push({ type: 'line', x1: 54, y1: 50, x2: 558, y2: 50, stroke: [0.8, 0.8, 0.8], lineWidth: 0.8 });
@@ -1218,8 +1211,8 @@ export function exportActorSidesPdf(sceneNumber = 1, sceneLines = [], sceneInfo 
 // 4. SCRIPT BREAKDOWN REPORT PDF EXPORT
 // =============================================================================
 export function exportBreakdownPdf(breakdownItems = [], scriptInfo = {}) {
-  const title = scriptInfo.title || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || 'Draft 4.2';
+  const title = scriptInfo.title || 'Screenplay';
+  const draft = scriptInfo.draft || 'Draft 1.0';
   const pages = [];
   const itemsPerPage = 18;
 
@@ -1278,8 +1271,8 @@ export function exportBreakdownPdf(breakdownItems = [], scriptInfo = {}) {
 // 5. SHOOTING SCHEDULE MASTER PDF EXPORT
 // =============================================================================
 export function exportSchedulePdf(scheduleDays = [], scenes = [], scriptInfo = {}) {
-  const title = scriptInfo.title || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || 'Draft 4.2';
+  const title = scriptInfo.title || 'Screenplay';
+  const draft = scriptInfo.draft || 'Draft 1.0';
   const pages = [];
 
   const pVectors = [];
@@ -1339,51 +1332,12 @@ export function exportStoryboardPdf(storyboardOrFrames = [], scriptInfo = {}) {
   const storyboard = isStoryboardObj ? storyboardOrFrames : null;
   const rawShots = isStoryboardObj ? (storyboard.shots || []) : (Array.isArray(storyboardOrFrames) ? storyboardOrFrames : []);
 
-  const title = scriptInfo.title || (storyboard?.screenplayTitle) || 'Chronicles of Dust';
-  const draft = scriptInfo.draft || scriptInfo.sourceVersion || (storyboard?.sourceVersion) || 'Draft 4.2';
-  const sceneHeading = scriptInfo.heading || (storyboard?.sceneHeading) || (rawShots[0]?.sceneHeading) || 'SCENE 1 - EXT. MOJAVE OUTPOST GATE 4 - DAY';
+  const title = scriptInfo.title || (storyboard?.screenplayTitle) || 'Screenplay';
+  const draft = scriptInfo.draft || scriptInfo.sourceVersion || (storyboard?.sourceVersion) || 'Draft 1.0';
+  const sceneHeading = scriptInfo.heading || (storyboard?.sceneHeading) || (rawShots[0]?.sceneHeading) || 'SCENE 1';
   const sceneNum = storyboard?.sceneNumber || rawShots[0]?.sceneNumber || rawShots[0]?.sceneNum || 1;
 
-  const defaultShots = [
-    {
-      shotNumber: '1A',
-      title: 'Perimeter Outpost Gate',
-      shotSize: 'Wide Shot',
-      cameraAngle: 'High Angle',
-      focalLength: '24mm Wide',
-      aspectRatio: '2.39:1',
-      lightingMood: 'Daylight Dust',
-      description: "High altitude drone descending across dust devils toward Kevin's arrival at the arid customs gate.",
-      approvalStatus: 'approved',
-      directorNotes: "Capture sunrise glint off the guard gate perimeter wires."
-    },
-    {
-      shotNumber: '1B',
-      title: 'Gate Scanner Clearance Standoff',
-      shotSize: 'Medium Two-Shot',
-      cameraAngle: 'Eye Level',
-      focalLength: '50mm Prime',
-      aspectRatio: '2.39:1',
-      lightingMood: 'Harsh Fluorescent Rim',
-      description: 'Kevin presents his ID badge to Marcus over the buzzing clearance terminal.',
-      approvalStatus: 'approved',
-      directorNotes: "Focus pull from scanner terminal to Kevin's tense expression."
-    },
-    {
-      shotNumber: '1C',
-      title: 'Terminal Diagnostic Anomaly',
-      shotSize: 'Close-Up',
-      cameraAngle: 'Low Angle',
-      focalLength: '85mm Portrait',
-      aspectRatio: '2.39:1',
-      lightingMood: 'Cyan Strobe',
-      description: 'Close-up insert of the flickering scanner console displaying pressure alert warning in red neon.',
-      approvalStatus: 'proposed',
-      directorNotes: 'Practical screen insert with pulsing alarm strobe.'
-    }
-  ];
-
-  const actualShots = (rawShots && rawShots.length > 0) ? rawShots : defaultShots;
+  const actualShots = (rawShots && rawShots.length > 0) ? rawShots : [];
   const shotsPerPage = 3;
   const totalPages = Math.ceil(actualShots.length / shotsPerPage) || 1;
   const pages = [];

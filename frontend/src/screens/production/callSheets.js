@@ -8,7 +8,7 @@ import { exportCallSheetPdf } from '../../services/pdfExport.js';
 
 export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
   const isEdit = urlParams.get('action') === 'edit';
@@ -54,7 +54,7 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
 
 export async function attachCallSheetsEvents(navigate, fromParam = null, scriptParam = null, csIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
   const isEdit = urlParams.get('action') === 'edit';
@@ -88,7 +88,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
                 ${isPublished ? 'Branch New Revision Draft' : 'Editing Draft'}
               </span>
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">${cs.shootDay} · Baseline: Draft 4.2 (Pinned)</p>
+            <p class="text-xs text-slate-500 mt-0.5">${cs.shootDay} · Baseline: ${cs.version || 'Draft 1.0'} (Pinned)</p>
           </div>
           <div class="text-[11px] text-slate-400 font-mono">
             Source: Shooting Schedule Day ${cs.shootDay.replace(/[^0-9]/g, '').slice(0, 2) || '1'}
@@ -241,62 +241,65 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
             <h2 class="font-heading font-bold text-base text-slate-900">Create Production Call Sheet</h2>
             <p class="text-xs text-slate-500 mt-0.5">Select a confirmed shooting day or configure a standalone manual draft.</p>
           </div>
-          <span class="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold">Draft 4.2</span>
+          <span class="px-2.5 py-1 rounded-xl bg-blue-50 text-blue-700 text-xs font-bold">${store.state.activeScript?.draft || 'Draft 1.0'}</span>
         </div>
 
         <!-- Creation Mode Tabs -->
         <div class="flex items-center gap-2 p-1 bg-slate-100 rounded-xl max-w-sm">
-          <button id="tab-linked" class="flex-1 py-1 text-xs font-semibold rounded-lg bg-white text-blue-700 shadow-2xs">
+          <button type="button" id="tab-linked" class="flex-1 py-1 text-xs font-semibold rounded-lg ${schedule.length > 0 ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}">
             Schedule-Linked
           </button>
-          <button id="tab-manual" class="flex-1 py-1 text-xs font-medium rounded-lg text-slate-600 hover:text-slate-900">
+          <button type="button" id="tab-manual" class="flex-1 py-1 text-xs font-medium rounded-lg ${schedule.length === 0 ? 'bg-white text-blue-700 shadow-2xs font-semibold' : 'text-slate-600 hover:text-slate-900'}">
             Standalone Manual
           </button>
         </div>
 
         <form id="form-create-callsheet" class="flex flex-col gap-3 text-xs">
           <!-- Linked Shoot Day Picker -->
-          <div id="section-linked-day">
+          <div id="section-linked-day" class="${schedule.length === 0 ? 'hidden' : ''}">
             <label class="font-semibold text-slate-700 block mb-1">Select Confirmed Shoot Day</label>
             <select id="new-cs-day" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-medium focus:outline-none cursor-pointer">
-              ${schedule.map(d => `
-                <option value="${d.dayNumber}" data-title="${d.title}" data-loc="${d.location}" data-date="${d.date}">
-                  Day ${d.dayNumber} of 14 · ${d.date} — ${d.title} (${d.location})
-                </option>
-              `).join('')}
+              ${schedule.length > 0
+                ? schedule.map(d => `
+                  <option value="${d.dayNumber}" data-title="${d.title}" data-loc="${d.location}" data-date="${d.date}">
+                    Day ${d.dayNumber} · ${d.date} — ${d.title} (${d.location})
+                  </option>
+                `).join('')
+                : '<option value="1">No shoot days scheduled yet</option>'
+              }
             </select>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="font-semibold text-slate-700 block mb-1">Shooting Date</label>
-              <input type="text" id="new-cs-date" value="Monday, Oct 26, 2026" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
+              <input type="text" id="new-cs-date" value="${schedule[0]?.date || ''}" placeholder="e.g. Monday, Nov 16, 2026" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
             </div>
             <div>
               <label class="font-semibold text-slate-700 block mb-1">General Crew Call Time</label>
-              <input type="text" id="new-cs-crewcall" value="06:00 AM" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
+              <input type="text" id="new-cs-crewcall" value="06:00 AM" placeholder="06:00 AM" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="font-semibold text-slate-700 block mb-1">Location Name & Facility</label>
-              <input type="text" id="new-cs-locname" value="Perimeter Sector 9" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
+              <input type="text" id="new-cs-locname" value="${schedule[0]?.location || ''}" placeholder="Primary shooting location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
             </div>
             <div>
               <label class="font-semibold text-slate-700 block mb-1">Physical Address / Map GPS</label>
-              <input type="text" id="new-cs-address" value="Cantil Desert Facility, Cantil, CA" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
+              <input type="text" id="new-cs-address" value="" placeholder="Street address or GPS coordinates" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
             </div>
           </div>
 
           <div>
             <label class="font-semibold text-slate-700 block mb-1">Emergency Hospital & Contact</label>
-            <input type="text" id="new-cs-hospital" value="Kern Valley Healthcare District, 6412 Laurel Ave, Lake Isabella, CA (Ph: 760-379-2681)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
+            <input type="text" id="new-cs-hospital" value="" placeholder="Nearest hospital name, address, and phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none">
           </div>
 
           <div>
             <label class="font-semibold text-slate-700 block mb-1">Parking & Basecamp Instructions</label>
-            <textarea id="new-cs-parking" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none resize-none">Basecamp Lot 3. Security badge inspection at gate.</textarea>
+            <textarea id="new-cs-parking" rows="2" placeholder="Crew parking, shuttle, and basecamp access instructions..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none resize-none"></textarea>
           </div>
 
           <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
@@ -331,7 +334,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
     if (form) {
       form.onsubmit = async (e) => {
         e.preventDefault();
-        const shootDayNum = document.getElementById('new-cs-day')?.value || '3';
+        const shootDayNum = document.getElementById('new-cs-day')?.value || '1';
         const date = document.getElementById('new-cs-date')?.value;
         const crewCall = document.getElementById('new-cs-crewcall')?.value;
         const locName = document.getElementById('new-cs-locname')?.value;
@@ -340,7 +343,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         const parking = document.getElementById('new-cs-parking')?.value;
 
         const newSheet = await api.createProductionCallSheet(scriptId, {
-          shootDay: `Day ${shootDayNum} of 14`,
+          shootDay: `Day ${shootDayNum}`,
           shootDate: date,
           generalCrewCall: crewCall,
           shootingCall: "06:30 AM",
@@ -412,8 +415,8 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         <div class="border-b-2 border-slate-900 pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <span class="text-[10px] font-mono tracking-widest uppercase text-slate-400 font-bold">SCRIPTORA OFFICIAL CALL SHEET</span>
-            <h1 class="font-heading font-extrabold text-xl text-slate-900 leading-tight">CHRONICLES OF DUST</h1>
-            <p class="text-xs text-slate-600 font-medium">Production Company: Badlands Anthology LLC · Baseline: Draft 4.2</p>
+            <h1 class="font-heading font-extrabold text-xl text-slate-900 leading-tight">${store.state.activeScript?.title || 'SCREENPLAY'}</h1>
+            <p class="text-xs text-slate-600 font-medium">Production Call Sheet · Baseline: ${cs.version || 'v1.0'}</p>
           </div>
           <div class="text-left sm:text-right">
             <div class="font-mono text-sm font-bold text-slate-900">${cs.shootDay.toUpperCase()}</div>
@@ -524,9 +527,9 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         try {
           const active = store.state.activeScript || (store.state.scripts || []).find(s => s.id === scriptId);
           exportCallSheetPdf(cs, {
-            title: active?.title || 'Chronicles of Dust',
-            company: active?.company || 'Badlands Anthology LLC',
-            draft: active?.draft || 'Draft 4.2'
+            title: active?.title || 'Screenplay',
+            company: active?.company || 'Production Studio',
+            draft: active?.draft || 'Draft 1.0'
           });
           showToast(`Exported Call Sheet #${cs.callSheetNumber} PDF`);
         } catch (err) {
@@ -576,6 +579,32 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         </h2>
       </div>
 
+      ${sheets.length === 0 ? `
+        <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center flex flex-col items-center justify-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span class="material-symbols-outlined text-2xl">assignment</span>
+          </div>
+          <div class="max-w-sm">
+            <h3 class="font-heading font-bold text-sm text-slate-900">No Call Sheets Created Yet</h3>
+            <p class="text-xs text-slate-500 mt-1">
+              ${scriptId
+                ? 'Create your first daily call sheet to coordinate crew call times, set locations, and emergency logistics.'
+                : 'Create or select a screenplay in your Workspace to manage daily call sheets.'}
+            </p>
+          </div>
+          ${scriptId ? `
+            <a href="/production/call-sheets?scriptId=${scriptId}&action=new" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all no-underline">
+              <span class="material-symbols-outlined text-[16px]">add</span>
+              <span>Create First Call Sheet</span>
+            </a>
+          ` : `
+            <a href="/workspace" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-all no-underline">
+              <span class="material-symbols-outlined text-[16px]">folder_open</span>
+              <span>Go to Workspace</span>
+            </a>
+          `}
+        </div>
+      ` : `
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         ${sheets.map(cs => {
           const isPub = cs.status === 'Confirmed' || cs.isPublished;
@@ -629,6 +658,7 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
           `;
         }).join('')}
       </div>
+      `}
     `;
 
     container.querySelectorAll('.cs-card').forEach(card => {
@@ -646,9 +676,9 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
         if (sheet) {
           const active = store.state.activeScript || (store.state.scripts || []).find(s => s.id === scriptId);
           exportCallSheetPdf(sheet, {
-            title: active?.title || 'Chronicles of Dust',
-            company: active?.company || 'Badlands Anthology LLC',
-            draft: active?.draft || 'Draft 4.2'
+            title: active?.title || 'Screenplay',
+            company: active?.company || 'Production Studio',
+            draft: active?.draft || 'Draft 1.0'
           });
           showToast(`Exported Call Sheet #${sheet.callSheetNumber} PDF`);
         }

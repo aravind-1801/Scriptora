@@ -8,9 +8,9 @@ import { openModal, closeModal } from '../utils/popupPosition.js';
 export function renderProfileScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const isFromEditor = from === 'editor';
-  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
+  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || (scriptId ? `/editor/${scriptId}` : '/workspace')) : '/workspace';
   const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.scripts?.[0] || {};
 
   const user = store.state.currentUser || (() => {
@@ -19,12 +19,12 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       if (saved) return JSON.parse(saved);
     } catch (_) {}
     return {
-      name: "Arun Kumar",
+      name: "Screenwriter",
       headline: "Screenwriter & Narrative Director",
-      email: "arun.kumar@scriptora.studio",
+      email: "",
       badge: "Member Pro",
-      initials: "AK",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+      initials: "SW",
+      stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
     };
   })();
 
@@ -788,9 +788,9 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
 export function attachProfileEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || store.state.scripts[0]?.id || null;
   const isFromEditor = from === 'editor';
-  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
+  const returnUrl = isFromEditor && scriptId ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/workspace';
 
   const user = store.state.currentUser || (() => {
     try {
@@ -798,13 +798,13 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       if (saved) return JSON.parse(saved);
     } catch (_) {}
     return {
-      name: "Arun Kumar",
+      name: "Screenwriter",
       headline: "Screenwriter & Narrative Director",
-      email: "arun.kumar@scriptora.studio",
+      email: "",
       badge: "Member Pro",
-      initials: "AK",
+      initials: "SW",
       avatarColor: "bg-blue-600",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+      stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
     };
   })();
 

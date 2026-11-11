@@ -4,8 +4,8 @@ import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
 export function renderIntelligenceSelectorScreen() {
   const scripts = store.state.scripts || [];
-  const selectedId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const active = scripts.find(s => s.id === selectedId) || scripts[0] || { title: 'Chronicles of Dust', id: 'chronicles-of-dust' };
+  const selectedId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const active = scripts.find(s => s.id === selectedId) || scripts[0] || null;
 
   return `
     ${renderHeader('Intelligence', 'Script Selector')}
@@ -46,7 +46,14 @@ export function renderIntelligenceSelectorScreen() {
 
           <!-- Screenplays Selection Radio Cards -->
           <div class="flex flex-col gap-2" role="radiogroup" id="selector-script-cards">
-            ${scripts.map(s => {
+            ${scripts.length === 0 ? `
+              <div class="p-8 text-center bg-white rounded-xl border border-slate-200">
+                <p class="text-xs text-slate-500 mb-3">No screenplays available yet.</p>
+                <a href="/workspace" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium no-underline">
+                  <span class="material-symbols-outlined text-[16px]">add</span> Create Screenplay
+                </a>
+              </div>
+            ` : scripts.map(s => {
               const isSelected = s.id === selectedId;
               return `
                 <div data-script-id="${s.id}" data-script-title="${s.title}" class="script-select-card relative p-3.5 rounded-xl border ${isSelected ? 'border-blue-600 bg-blue-50/70' : 'border-slate-200/80 bg-white hover:bg-slate-50'} transition-all cursor-pointer flex items-center justify-between group shadow-xs">
@@ -59,7 +66,7 @@ export function renderIntelligenceSelectorScreen() {
                         <span class="text-xs font-semibold text-slate-900 truncate uppercase">${s.title}</span>
                         <span class="text-[10px] font-medium px-1.5 py-0.5 rounded ${isSelected ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'} shrink-0">${s.draft || 'Draft 1.0'}</span>
                       </div>
-                      <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.format || 'Screenplay'} · ${s.pages} pages · Updated ${s.updated || 'recently'}</span>
+                      <span class="text-[11px] text-slate-500 truncate mt-0.5">${s.format || 'Screenplay'} · ${s.pages || 1} pages · Updated ${s.updated || 'recently'}</span>
                     </div>
                   </div>
                   <div class="script-select-indicator w-6 h-6 rounded-full ${isSelected ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-400'} flex items-center justify-center shrink-0">
@@ -96,7 +103,7 @@ export function renderIntelligenceSelectorScreen() {
 }
 
 export function attachIntelligenceSelectorEvents(navigate) {
-  let selectedId = store.state.selectedScriptId || 'chronicles-of-dust';
+  let selectedId = store.state.selectedScriptId || (store.state.scripts && store.state.scripts[0]?.id) || null;
 
   document.querySelectorAll('.script-select-card').forEach(card => {
     card.onclick = () => {

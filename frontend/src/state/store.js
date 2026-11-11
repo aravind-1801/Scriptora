@@ -10,9 +10,9 @@ class Store {
     this.state = {
       currentUser: null,
       selectedScriptId: localStorage.getItem('scriptora_selected_script') || null,
-      selectedVersionId: 'Draft 4.2',
-      currentSceneId: 18,
-      unreadNotifications: 3,
+      selectedVersionId: null,
+      currentSceneId: null,
+      unreadNotifications: 0,
       scripts: [],
       activeScript: null,
       screenplay: null,
@@ -80,6 +80,9 @@ class Store {
   }
 
   resetUserSession() {
+    try {
+      localStorage.removeItem('scriptora_selected_script');
+    } catch (_) {}
     this.setState({
       currentUser: null,
       scripts: [],
@@ -87,6 +90,8 @@ class Store {
       screenplay: null,
       historyStack: [],
       selectedScriptId: null,
+      selectedVersionId: null,
+      currentSceneId: null,
       unreadNotifications: 0
     });
     this.clearHistory();

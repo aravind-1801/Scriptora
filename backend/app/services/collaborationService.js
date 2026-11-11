@@ -135,9 +135,9 @@ function normalizeRole(role) {
 export function getScriptOwner(scriptId) {
   const script = db.scripts.find(s => s.id === scriptId);
   return {
-    id: script?.ownerId || 'user-1',
-    name: script?.ownerName || 'Arun Kumar',
-    email: script?.ownerEmail || 'arun.kumar@scriptora.studio'
+    id: script?.ownerId || null,
+    name: script?.ownerName || (script?.ownerEmail ? script.ownerEmail.split('@')[0] : 'Screenplay Owner'),
+    email: script?.ownerEmail || null
   };
 }
 
@@ -207,9 +207,9 @@ function logSecurityEvent(scriptId, { type, title, actor, target, details, outco
 
 // 1. COLLABORATORS LIST
 export function getCollaborators(scriptId) {
-  const targetId = scriptId || db.scripts[0]?.id || 'chronicles-of-dust';
-  if (!db.collaborators[targetId]) db.collaborators[targetId] = [];
-  return db.collaborators[targetId];
+  if (!scriptId) return [];
+  if (!db.collaborators[scriptId]) db.collaborators[scriptId] = [];
+  return db.collaborators[scriptId];
 }
 
 // 2. INVITATIONS

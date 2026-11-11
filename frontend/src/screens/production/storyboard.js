@@ -1,4 +1,4 @@
-import { VISUAL_STYLE_PREVIEWS, getStylePreview, resolveAssetUrl, BASE } from '../../utils/stylePreviews.js';
+import { VISUAL_STYLE_PREVIEWS, getStylePreview, resolveAssetUrl, NEUTRAL_STORYBOARD_FALLBACK_SVG, BASE } from '../../utils/stylePreviews.js';
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
 import { renderProdSubNav } from './prodNav.js';
@@ -92,7 +92,7 @@ const QUALITY_OPTIONS = ["Standard Draft", "High Definition Production"];
 
 export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const from = fromParam || urlParams.get('from');
 
   return `
@@ -134,15 +134,15 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <select id="storyboard-scene-select" class="font-heading font-bold text-sm text-slate-900 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-blue-600 focus:outline-none cursor-pointer truncate py-0.5 max-w-full">
-                    <option value="scene-1">Loading screenplay scenes...</option>
+                    <option value="">No scenes loaded</option>
                   </select>
                 </div>
                 <div id="scene-context-badges" class="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 flex-wrap">
-                  <span id="badge-int-ext" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">INT</span>
-                  <span id="badge-day-night" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">DAY</span>
-                  <span id="badge-pages" class="text-slate-400">4 1/8 pgs</span>
+                  <span id="badge-int-ext" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">--</span>
+                  <span id="badge-day-night" class="px-1.5 py-0.5 rounded-md bg-slate-100 font-mono text-slate-700 font-semibold text-[10px]">--</span>
+                  <span id="badge-pages" class="text-slate-400">0 pgs</span>
                   <span class="text-slate-300">·</span>
-                  <span id="badge-shoot-day" class="text-slate-600 font-medium">Day 1 of 7</span>
+                  <span id="badge-shoot-day" class="text-slate-600 font-medium">Unscheduled</span>
                 </div>
               </div>
             </div>
@@ -183,7 +183,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-amber-600 text-[18px] shrink-0">warning</span>
             <span class="text-xs text-amber-900 leading-relaxed">
-              <strong>Source Screenplay Changed:</strong> Storyboard is pinned to <span id="stale-pinned-ver" class="font-semibold">Draft 4.2</span>, but active script is <span id="stale-active-ver" class="font-semibold">Draft 4.3</span>.
+              <strong>Source Screenplay Changed:</strong> Storyboard is pinned to <span id="stale-pinned-ver" class="font-semibold">Draft 1.0</span>, but active script is <span id="stale-active-ver" class="font-semibold">Latest Draft</span>.
             </span>
           </div>
           <button id="btn-repin-storyboard" class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold shrink-0 cursor-pointer">
@@ -474,7 +474,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
           <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 text-xs text-blue-900 flex flex-col gap-1">
             <div class="flex items-center justify-between font-semibold">
               <span id="gen-scene-heading-display">SCENE 1</span>
-              <span id="gen-scene-cast-display" class="text-blue-700 font-mono text-[11px]">Cast: KEVIN, MARCUS</span>
+              <span id="gen-scene-cast-display" class="text-blue-700 font-mono text-[11px]">Cast: None</span>
             </div>
             <p id="gen-scene-snippet-display" class="italic text-slate-600 text-[11px] line-clamp-2">Loading scene context...</p>
           </div>
@@ -1132,7 +1132,7 @@ function buildStructuredPrompt(params, userPrefs = null, projectOverrides = null
 
 export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   let currentSceneId = urlParams.get('sceneId') || 'scene-1';
   let currentView = 'contact'; // 'contact' | 'sequence'
   let activeEditingShotId = null;
@@ -1265,13 +1265,13 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       try {
         const scene = allScenes.find(s => s.id === currentSceneId) || {};
         const script = store.state.scripts?.find(s => s.id === scriptId) || {
-          title: 'Chronicles of Dust',
-          draft: 'Draft 4.2'
+          title: 'Screenplay',
+          draft: 'Draft 1.0'
         };
 
         exportStoryboardPdf(currentStoryboard, {
           title: script.title,
-          draft: script.draft || currentStoryboard?.sourceVersion || 'Draft 4.2',
+          draft: script.draft || currentStoryboard?.sourceVersion || 'Draft 1.0',
           heading: scene.heading || currentStoryboard?.sceneHeading || 'SCENE 1'
         });
         showToast('Exported Storyboard Studio PDF');
@@ -1287,7 +1287,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     btnRepin.onclick = async (e) => {
       e.preventDefault();
       if (currentStoryboard) {
-        currentStoryboard.sourceVersion = currentStoryboard.currentScriptDraft || 'Draft 4.2';
+        currentStoryboard.sourceVersion = currentStoryboard.currentScriptDraft || 'Draft 1.0';
         currentStoryboard.isVersionStale = false;
         try {
           await api.saveStoryboard(scriptId, currentStoryboard);
@@ -2048,8 +2048,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       const sceneNum = Number(String(currentSceneId).replace('scene-', '')) || currentStoryboard?.sceneNumber || 1;
       const scene = allScenes.find(s => s.id === currentSceneId || s.sceneNumber === sceneNum) || {
         heading: currentStoryboard?.sceneHeading || `SCENE ${sceneNum}`,
-        snippet: 'Characters in scene confrontation.',
-        cast: ['KEVIN', 'MEERA']
+        snippet: '',
+        cast: []
       };
 
       const visualDirection = userPrompt || (scene.heading ? `Scene at ${scene.heading}` : 'Cinematic scene');
@@ -2133,7 +2133,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         approvedBy: null,
         approvedAt: null,
         directorNotes: `Maintain consistent eyeline and framing across ${sceneNum}${b.letter}.`,
-        characters: scene.cast || ['KEVIN'],
+        characters: scene.cast || [],
         location: scene.heading,
         continuity: {
           characterPosition: i % 2 === 0 ? 'Screen Left' : 'Screen Right',
@@ -2854,7 +2854,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (currentModalDraftImage) {
       if (imgEl) {
         imgEl.src = resolveAssetUrl(currentModalDraftImage, activeEditingShotId);
-        imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+        imgEl.onerror = () => { imgEl.src = NEUTRAL_STORYBOARD_FALLBACK_SVG; };
         imgEl.classList.remove('hidden');
       }
       if (placeholderEl) placeholderEl.classList.add('hidden');
@@ -2917,7 +2917,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (modalTitle) modalTitle.textContent = 'AI Generate Shot';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
-    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
+    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast && scene.cast.length > 0) ? scene.cast.join(', ') : 'None'}`;
     if (sceneSnippetDisp) {
       const shotDesc = document.getElementById('input-shot-desc')?.value.trim();
       const shotTitle = document.getElementById('input-shot-title')?.value.trim();
@@ -2979,7 +2979,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (modalTitle) modalTitle.textContent = 'Generate Scene Shot Sequence';
     if (sceneHeadingDisp) sceneHeadingDisp.textContent = scene.heading || 'SCENE 1';
-    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast || ['KEVIN', 'MARCUS']).join(', ')}`;
+    if (sceneCastDisp) sceneCastDisp.textContent = `Cast: ${(scene.cast && scene.cast.length > 0) ? scene.cast.join(', ') : 'None'}`;
     if (sceneSnippetDisp) sceneSnippetDisp.textContent = 'Enter your visual creative direction below to generate sequential storyboard frames.';
 
     // Show shot sequence length selector for sequence generation
@@ -3352,7 +3352,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
             <div class="flex items-center gap-3">
               <div class="w-20 h-14 bg-slate-950 rounded-lg overflow-hidden border border-slate-800 shrink-0 flex items-center justify-center cursor-pointer group relative">
                 ${imgUrl ? `
-                  <img src="${imgUrl}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="Historical version" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                  <img src="${imgUrl}" onerror="this.onerror=null; this.src='${NEUTRAL_STORYBOARD_FALLBACK_SVG}';" alt="Historical version" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 ` : `
                   <span class="material-symbols-outlined text-slate-600 text-base">image</span>
                 `}
@@ -3497,7 +3497,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (imgEl) {
       imgEl.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
-      imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+      imgEl.onerror = () => { imgEl.src = NEUTRAL_STORYBOARD_FALLBACK_SVG; };
     }
     if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
     if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize || 'Medium'}`;
@@ -3537,7 +3537,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
 
     if (imgEl) {
       imgEl.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
-      imgEl.onerror = () => { imgEl.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+      imgEl.onerror = () => { imgEl.src = NEUTRAL_STORYBOARD_FALLBACK_SVG; };
     }
     if (numEl) numEl.textContent = `REC · ${shot.shotNumber}`;
     if (specsEl) specsEl.textContent = `${shot.aspectRatio || '2.39:1'} · ${shot.focalLength || '50mm'} · ${shot.shotSize || 'Medium'}`;
@@ -3577,11 +3577,11 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     const shootDayEl = document.getElementById('badge-shoot-day');
     const snippetEl = document.getElementById('scene-snippet-text');
 
-    if (intExtEl) intExtEl.textContent = scene.intExt || 'INT';
-    if (dayNightEl) dayNightEl.textContent = scene.dayNight || 'DAY';
-    if (pagesEl) pagesEl.textContent = `${scene.pages || '1.0'} pgs`;
-    if (shootDayEl) shootDayEl.textContent = scene.shootDay || 'Day 1 of 7';
-    if (snippetEl) snippetEl.textContent = scene.snippet || 'Scene awaiting visual direction.';
+    if (intExtEl) intExtEl.textContent = scene.intExt || (allScenes.length ? 'INT' : '--');
+    if (dayNightEl) dayNightEl.textContent = scene.dayNight || (allScenes.length ? 'DAY' : '--');
+    if (pagesEl) pagesEl.textContent = `${scene.pages || (allScenes.length ? '1.0' : '0')} pgs`;
+    if (shootDayEl) shootDayEl.textContent = scene.shootDay || 'Unscheduled';
+    if (snippetEl) snippetEl.textContent = scene.snippet || (allScenes.length ? 'Scene awaiting visual direction.' : 'Create scenes in the Screenplay Editor to storyboard your screenplay.');
 
     if (btnScheduleLink) {
       const dayNum = String(scene.shootDay || '1').match(/\d+/)?.[0] || '1';
@@ -3593,8 +3593,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         staleBanner.classList.remove('hidden');
         const pinVer = document.getElementById('stale-pinned-ver');
         const actVer = document.getElementById('stale-active-ver');
-        if (pinVer) pinVer.textContent = currentStoryboard.sourceVersion || 'Draft 4.2';
-        if (actVer) actVer.textContent = currentStoryboard.currentScriptDraft || 'Draft 4.3';
+        if (pinVer) pinVer.textContent = currentStoryboard.sourceVersion || 'Draft 1.0';
+        if (actVer) actVer.textContent = currentStoryboard.currentScriptDraft || 'Latest Draft';
       } else {
         staleBanner.classList.add('hidden');
       }
@@ -3767,7 +3767,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                       </button>
                     </div>
                   ` : (s.imageUrl ? `
-                    <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
+                    <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${NEUTRAL_STORYBOARD_FALLBACK_SVG}';" alt="${s.title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102" />
                     <!-- Badges overlay -->
                     <div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-black/75 text-white font-mono text-[9px] backdrop-blur-xs">
                       ${s.aspectRatio || '2.39:1'} · ${s.focalLength || '50mm'}
@@ -3794,7 +3794,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                     <span class="font-bold text-slate-900 tracking-tight">Scene: ${currentStoryboard?.sceneNumber || 1} | Shot: ${s.shotNumber}</span>
                     <span class="text-[10px] text-slate-400 font-mono">${s.shotSize || 'Wide'}</span>
                   </div>
-                  <p class="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">${formatStoryboardDescription(s.description || s.title || '', s.characters || ['Kevin', 'Marcus', 'Meera'])}</p>
+                  <p class="text-[11px] text-slate-600 line-clamp-3 leading-relaxed">${formatStoryboardDescription(s.description || s.title || '', s.characters || [])}</p>
                 </div>
               </div>
 
@@ -3925,7 +3925,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
                         <span class="material-symbols-outlined text-base">refresh</span>
                       </button>
                     ` : (s.imageUrl ? `
-                      <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${BASE}assets/storyboard/shot_1a_wide_outpost.jpg';" alt="${s.title}" class="w-full h-full object-cover" />
+                      <img src="${resolveAssetUrl(s.imageUrl, s.shotNumber)}" onerror="this.onerror=null; this.src='${NEUTRAL_STORYBOARD_FALLBACK_SVG}';" alt="${s.title}" class="w-full h-full object-cover" />
                     ` : `
                       <span class="material-symbols-outlined text-slate-600 text-base sm:text-lg">image</span>
                     `))}
@@ -4083,7 +4083,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (shot.imageUrl) {
       if (thumb) {
         thumb.src = resolveAssetUrl(shot.imageUrl, shot.shotNumber);
-        thumb.onerror = () => { thumb.src = `${BASE}assets/storyboard/shot_1a_wide_outpost.jpg`; };
+        thumb.onerror = () => { thumb.src = NEUTRAL_STORYBOARD_FALLBACK_SVG; };
         thumb.classList.remove('hidden');
       }
       if (thumbPlaceholder) thumbPlaceholder.classList.add('hidden');
@@ -4153,8 +4153,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         sceneHeading: currentStoryboard?.sceneHeading || scene.heading || 'SCENE 1',
         shotNumber: shot.shotNumber,
         description: shot.description,
-        cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
-        characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
+        cast: shot.characters || scene.cast || [],
+        characters: shot.characters || scene.cast || [],
         isVariation: true,
         variationType: variationType
       });
@@ -4186,7 +4186,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
               screenDirection: shot.continuity?.screenDirection,
               directorNotes: shot.directorNotes
             },
-            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 4.2',
+            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 1.0',
             timestamp: new Date().toISOString()
           });
         }
@@ -4271,8 +4271,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         sceneHeading: currentStoryboard?.sceneHeading || scene.heading || 'SCENE 1',
         shotNumber: shot.shotNumber,
         description: shot.description,
-        cast: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
-        characters: shot.characters || scene.cast || ['KEVIN', 'MARCUS'],
+        cast: shot.characters || scene.cast || [],
+        characters: shot.characters || scene.cast || [],
         quality: shot.quality || 'standard',
         generationType: 'retry'
       });
@@ -4296,7 +4296,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
               lightingMood: shot.lightingMood,
               aspectRatio: shot.aspectRatio
             },
-            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 4.2',
+            sourceVersion: currentStoryboard?.sourceVersion || 'Draft 1.0',
             timestamp: new Date().toISOString()
           });
         }
@@ -4557,6 +4557,8 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         sequenceSelectedShotIds.clear();
         loadStoryboardData();
       };
+    } else if (sceneSelect) {
+      sceneSelect.innerHTML = `<option value="">${scriptId ? 'No screenplay scenes yet' : 'No screenplay selected'}</option>`;
     }
 
     // Load initial storyboard shots

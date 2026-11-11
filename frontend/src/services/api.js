@@ -82,189 +82,8 @@ async function request(endpoint, options = {}) {
 }
 
 // 1. AUTH API
-// Canonical default scripts portfolio
-export const DEFAULT_SCRIPTS = [
-  {
-    id: "chronicles-of-dust",
-    title: "Chronicles of Dust",
-    draft: "Draft 4.2",
-    genre: "Drama",
-    format: "Feature",
-    industry: "International / Hollywood",
-    pages: 96,
-    updated: "12m ago",
-    currentScene: "Scene 18",
-    isCurrentDraft: true,
-    archived: false,
-    joinCode: "A7K9-XP42",
-    logline: "When an arid border outpost discovers an illegal reservoir diversion, an outcast hydro-engineer must prevent a corporate war before the region's remaining aquifers run dry.",
-    synopsis: "In the desert badlands of the 2040s, Kevin, a discredited water regulator, is stationed at an isolated customs depot. A sudden drop in terminal pressure reveals a covert tap in the municipal pipeline. Kevin and field operative Meera trace the tap to a private syndicate, forcing a high-stakes standoff across dry lakebeds and floodgate valves.",
-    context: {
-      format: "Feature",
-      industry: "International / Hollywood",
-      hours: 1,
-      minutes: 36,
-      seconds: 0,
-      plannedDuration: "01:36:00"
-    },
-    analysisScores: {
-      overall: 86,
-      pacing: 82,
-      dialogue: 89,
-      emotion: 91,
-      characterArc: 84,
-      continuity: 78,
-      storyStructure: 87,
-      theme: 90,
-      cinema: 85,
-      formatting: 94,
-      production: 80
-    }
-  },
-  {
-    id: "the-neon-horizon",
-    title: "The Neon Horizon",
-    draft: "Draft 2.1",
-    genre: "Sci-Fi",
-    format: "Pilot",
-    industry: "Streaming Television",
-    pages: 62,
-    updated: "2h ago",
-    currentScene: "Scene 4",
-    isCurrentDraft: false,
-    archived: false,
-    joinCode: "N3ON-H0RZ",
-    context: {
-      format: "Pilot",
-      industry: "Streaming Television",
-      hours: 0,
-      minutes: 52,
-      seconds: 0,
-      plannedDuration: "00:52:00"
-    },
-    analysisScores: {
-      overall: 79,
-      pacing: 75,
-      dialogue: 84,
-      emotion: 80,
-      characterArc: 78,
-      continuity: 82,
-      storyStructure: 76,
-      theme: 88,
-      cinema: 83,
-      formatting: 90,
-      production: 72
-    }
-  },
-  {
-    id: "velvet-shadows",
-    title: "Velvet Shadows",
-    draft: "Draft 1.0",
-    genre: "Noir",
-    format: "Feature",
-    industry: "Independent / Festival",
-    pages: 114,
-    updated: "Yesterday",
-    currentScene: "Scene 1",
-    isCurrentDraft: false,
-    archived: false,
-    joinCode: "V3LV-SHDW",
-    analysisScores: {
-      overall: 81,
-      pacing: 80,
-      dialogue: 86,
-      emotion: 79,
-      characterArc: 85,
-      continuity: 80,
-      storyStructure: 82,
-      theme: 84,
-      cinema: 88,
-      formatting: 92,
-      production: 76
-    }
-  },
-  {
-    id: "silent-echoes",
-    title: "Silent Echoes",
-    draft: "Draft 3.0",
-    genre: "Psychological Thriller",
-    format: "Feature",
-    industry: "International / Hollywood",
-    pages: 104,
-    updated: "3d ago",
-    currentScene: "Scene 22",
-    isCurrentDraft: false,
-    archived: false,
-    joinCode: "SLNT-ECH0",
-    analysisScores: {
-      overall: 84,
-      pacing: 86,
-      dialogue: 81,
-      emotion: 88,
-      characterArc: 83,
-      continuity: 85,
-      storyStructure: 89,
-      theme: 82,
-      cinema: 84,
-      formatting: 91,
-      production: 78
-    }
-  },
-  {
-    id: "glass-kingdoms",
-    title: "Glass Kingdoms",
-    draft: "Draft 1.4",
-    genre: "Fantasy",
-    format: "Pilot",
-    industry: "Streaming Television",
-    pages: 58,
-    updated: "1w ago",
-    currentScene: "Scene 8",
-    isCurrentDraft: false,
-    archived: false,
-    joinCode: "GLSS-KNGD",
-    analysisScores: {
-      overall: 78,
-      pacing: 74,
-      dialogue: 80,
-      emotion: 76,
-      characterArc: 82,
-      continuity: 75,
-      storyStructure: 80,
-      theme: 86,
-      cinema: 82,
-      formatting: 88,
-      production: 70
-    }
-  },
-  {
-    id: "red-shift",
-    title: "Red Shift",
-    draft: "Draft 2.0",
-    genre: "Action",
-    format: "Short",
-    industry: "Independent / Festival",
-    pages: 28,
-    updated: "2w ago",
-    currentScene: "Scene 5",
-    isCurrentDraft: false,
-    archived: false,
-    joinCode: "RED2-SHFT",
-    analysisScores: {
-      overall: 83,
-      pacing: 90,
-      dialogue: 78,
-      emotion: 75,
-      characterArc: 80,
-      continuity: 88,
-      storyStructure: 84,
-      theme: 80,
-      cinema: 89,
-      formatting: 95,
-      production: 82
-    }
-  }
-];
+// Clean slate: zero default or seeded scripts
+export const DEFAULT_SCRIPTS = [];
 
 export async function getCurrentUser() {
   try {
@@ -480,7 +299,7 @@ export async function getScript(id) {
   } catch {}
 
   const scripts = await getScripts();
-  return scripts.find(s => s.id === id) || DEFAULT_SCRIPTS.find(s => s.id === id) || scripts[0] || null;
+  return scripts.find(s => s.id === id) || null;
 }
 
 export async function createScript(scriptData) {
@@ -674,111 +493,6 @@ export async function archiveScript(id) {
   return { success: true };
 }
 
-// Canonical Screenplay Portfolio
-export const CANONICAL_SCREENPLAY_CHRONICLES = {
-  id: "chronicles-of-dust",
-  title: "Chronicles of Dust",
-  draft: "Draft 4.2",
-  pageCount: 5,
-  wordCount: 14280,
-  titlePage: {
-    title: "CHRONICLES OF DUST",
-    author: "Arun Kumar",
-    contact: "Scriptora Studio · arun.kumar@scriptora.studio · +1 (555) 019-2834",
-    notes: "An original screenplay. Draft 4.2 Production Cut."
-  },
-  settings: {
-    sceneNumbers: true,
-    sceneNumberSide: "left",
-    smartFormatting: true,
-    fontSize: "12pt",
-    lineSpacing: "1.5",
-    language: "English"
-  },
-  acts: [
-    { id: "act-1", name: "ACT I - The Broken Siphon" },
-    { id: "act-2", name: "ACT II - The Pressure Surge" },
-    { id: "act-3", name: "ACT III - The Floodgate Standoff" }
-  ],
-  characters: [
-    "KEVIN",
-    "MEERA",
-    "HARI",
-    "AKASH"
-  ],
-  locations: [
-    "INT. HOME",
-    "INT. PORT AUDIT ROOM",
-    "INT. CUSTOMS OFFICE",
-    "EXT. FLOODGATE GANTRY"
-  ],
-  times: [
-    "DAY",
-    "NIGHT",
-    "CONTINUOUS",
-    "DAWN",
-    "DUSK",
-    "LATER",
-    "MORNING",
-    "EVENING"
-  ],
-  transitions: [
-    "CUT TO:",
-    "FADE IN:",
-    "FADE OUT.",
-    "DISSOLVE TO:",
-    "SMASH CUT TO:",
-    "MATCH CUT TO:",
-    "JUMP CUT TO:"
-  ],
-  scenes: [
-    {
-      id: "scene-1",
-      number: 1,
-      actId: "act-1",
-      slugline: "INT. HOME - EVENING",
-      blocks: [
-        { id: "b-1-1", type: "scene", content: "INT. HOME - EVENING" },
-        { id: "b-1-2", type: "action", content: "There stands a woman." },
-        { id: "b-1-3", type: "character", content: "HARI" },
-        { id: "b-1-4", type: "dialogue", content: "Who is that?" },
-        { id: "b-1-5", type: "character", content: "AKASH" },
-        { id: "b-1-6", type: "dialogue", content: "How do I know?" },
-        { id: "b-1-7", type: "action", content: "Both leaves the place." }
-      ]
-    },
-    {
-      id: "scene-4",
-      number: 4,
-      actId: "act-1",
-      slugline: "INT. PORT AUDIT ROOM - DAY",
-      blocks: [
-        { id: "b-4-1", type: "scene", content: "INT. PORT AUDIT ROOM - DAY" },
-        { id: "b-4-2", type: "action", content: "Kevin stamps irregular cargo manifests to keep peace with union superiors." },
-        { id: "b-4-3", type: "character", content: "KEVIN" },
-        { id: "b-4-4", type: "dialogue", content: "The manifests are sealed." }
-      ]
-    },
-    {
-      id: "scene-18",
-      number: 18,
-      actId: "act-2",
-      slugline: "INT. CUSTOMS OFFICE - NIGHT",
-      blocks: [
-        { id: "b-18-1", type: "scene", content: "INT. CUSTOMS OFFICE - NIGHT" },
-        { id: "b-18-2", type: "action", content: "Kevin kneels over the cracked hydro-sensor junction box. Static hiss whispers through the damp comm-link. A lone flicker illuminates the tarnished brass seal." },
-        { id: "b-18-3", type: "action", content: "Water droplets bead along the corroded circuit wires. He slides a copper probe between the connectors." },
-        { id: "b-18-4", type: "character", content: "KEVIN" },
-        { id: "b-18-5", type: "parenthetical", content: "(whispering into comm)" },
-        { id: "b-18-6", type: "dialogue", content: "If the seals break before dawn, the sector won't hold the surge." },
-        { id: "b-18-7", type: "character", content: "MEERA (O.S.)" },
-        { id: "b-18-8", type: "dialogue", content: "Then don't let them break. Reroute the secondary relay through the floodgate breaker." },
-        { id: "b-18-9", type: "transition", content: "CUT TO:" }
-      ]
-    }
-  ]
-};
-
 // 3. SCREENPLAY API
 export async function getScreenplay(scriptId) {
   let screenplay = null;
@@ -819,19 +533,7 @@ export async function getScreenplay(scriptId) {
     }
   }
 
-  // Canonical sample screenplay ONLY for chronicles-of-dust
-  const isChronicles = scriptId === 'chronicles-of-dust';
-  if (isChronicles) {
-    if (!screenplay || !screenplay.scenes || screenplay.scenes.length === 0) {
-      const template = JSON.parse(JSON.stringify(CANONICAL_SCREENPLAY_CHRONICLES));
-      template.id = scriptId;
-      localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(template));
-      return template;
-    }
-    return screenplay;
-  }
-
-  // Sanitizer: Ensure NO placeholder/random content exists for any non-chronicles script
+  // Sanitizer: Ensure NO placeholder/random content exists
   const hasRandomPlaceholder = (sp) => {
     if (!sp || !Array.isArray(sp.scenes)) return false;
     return sp.scenes.some(sc => {
@@ -913,38 +615,7 @@ export async function getVersions(scriptId) {
     const data = await request(`/versions/${scriptId}`);
     return data.versions;
   } catch {
-    return [
-      {
-        id: "v-4.2",
-        name: "Draft 4.2",
-        tag: "Current Active",
-        timestamp: "Just now",
-        author: "JD",
-        stats: "96 pages · 14,280 words",
-        notes: "Refined Meera O.S. dialogue and hydro-sensor action line.",
-        isCurrent: true
-      },
-      {
-        id: "v-3.0",
-        name: "Draft 3.0",
-        tag: "Production Polish",
-        timestamp: "Yesterday, 4:15 PM",
-        author: "JD",
-        stats: "94 pages · 13,950 words",
-        notes: "Incorporated director notes on floodgate transition pacing.",
-        isCurrent: false
-      },
-      {
-        id: "v-2.0",
-        name: "Draft 2.0",
-        tag: "First Table Read",
-        timestamp: "Oct 12, 2024",
-        author: "JD",
-        stats: "90 pages · 13,200 words",
-        notes: "Table read revision for Acts I & II character arcs.",
-        isCurrent: false
-      }
-    ];
+    return [];
   }
 }
 
@@ -970,40 +641,10 @@ export async function createVersion(scriptId, versionData) {
 }
 
 // 5. COLLABORATION API
-const DEFAULT_COLLABORATORS = [
-  {
-    id: "c-1",
-    name: "Heamanth S.",
-    email: "heamanth@studio.com",
-    initials: "HS",
-    role: "Editor",
-    avatarBg: "bg-blue-100 text-blue-700",
-    status: "Active",
-    added: "2d ago"
-  },
-  {
-    id: "c-2",
-    name: "Elena Rostova",
-    email: "elena@cineworks.io",
-    initials: "ER",
-    role: "Script Doctor",
-    avatarBg: "bg-amber-100 text-amber-700",
-    status: "Active",
-    added: "1w ago"
-  },
-  {
-    id: "c-3",
-    name: "Marcus Vance",
-    email: "vance.prod@paramount.com",
-    initials: "MV",
-    role: "Producer",
-    avatarBg: "bg-purple-100 text-purple-700",
-    status: "Active",
-    added: "2w ago"
-  }
-];
+const DEFAULT_COLLABORATORS = [];
 
 export async function getCollaborators(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/collaborators/${scriptId}`);
     if (data.collaborators && Array.isArray(data.collaborators)) {
@@ -1022,9 +663,7 @@ export async function getCollaborators(scriptId) {
     } catch {}
   }
 
-  const seeded = [...DEFAULT_COLLABORATORS];
-  localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(seeded));
-  return seeded;
+  return [];
 }
 
 export async function getUserPermissions(scriptId) {
@@ -1460,50 +1099,8 @@ export async function getNotifications() {
     return data;
   } catch {
     return {
-      notifications: [
-        {
-          id: 1,
-          sender: "HS",
-          senderName: "Heamanth",
-          type: "collaboration_invite",
-          title: "Heamanth invited you to collaborate",
-          body: 'Added you as an Editor on "Chronicles of Dust" (Draft 4.2).',
-          time: "12m ago",
-          group: "today",
-          unread: true,
-          tags: ["Draft 4.2", "Role: Editor"],
-          actionLabel: "Review Access →",
-          actionRoute: "/profile/collaborators"
-        },
-        {
-          id: 2,
-          sender: "icon:description",
-          type: "export_ready",
-          title: "Your export is ready",
-          body: '"Chronicles of Dust (Draft 4.2)" exported as standard Industry PDF.',
-          time: "45m ago",
-          group: "today",
-          unread: true,
-          tags: ["PDF", "96 Pages"],
-          actionLabel: "Open Screenplay →",
-          actionRoute: "/editor/chronicles-of-dust"
-        },
-        {
-          id: 3,
-          sender: "AK",
-          senderName: "Arun K.",
-          type: "join_code_request",
-          title: "Join-code access request",
-          body: 'Requested Editor access to "Anbin Mozhi" via join-code A7K9-XP42.',
-          time: "2h ago",
-          group: "today",
-          unread: true,
-          tags: ["Code: A7K9-XP42"],
-          actionLabel: "Manage Collaborators →",
-          actionRoute: "/profile/collaborators"
-        }
-      ],
-      unreadCount: 3
+      notifications: [],
+      unreadCount: 0
     };
   }
 }
@@ -1652,22 +1249,22 @@ export async function getIntelligenceAnalysis(scriptId) {
     return {
       script: {
         id: script?.id || scriptId,
-        title: script?.title || "Chronicles of Dust",
-        draft: script?.draft || "Draft 4.2",
-        pages: script?.pages || 96
+        title: script?.title || "Untitled Screenplay",
+        draft: script?.draft || "Draft 1.0",
+        pages: script?.pages || 0
       },
       scores: script?.analysisScores || {
-        overall: 86,
-        pacing: 82,
-        dialogue: 89,
-        emotion: 91,
-        characterArc: 84,
-        continuity: 78,
-        storyStructure: 87,
-        theme: 90,
-        cinema: 85,
-        formatting: 94,
-        production: 80
+        overall: 0,
+        pacing: 0,
+        dialogue: 0,
+        emotion: 0,
+        characterArc: 0,
+        continuity: 0,
+        storyStructure: 0,
+        theme: 0,
+        cinema: 0,
+        formatting: 0,
+        production: 0
       }
     };
   }
@@ -1689,7 +1286,8 @@ export async function queryIntelligence(query, scriptId) {
 // 8. PRE-PRODUCTION FOUNDATIONAL DATA ARCHITECTURE & OPERATIONS
 // =========================================================================
 
-export async function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
+export async function getProductionWorkspace(scriptId) {
+  if (!scriptId) return null;
   try {
     const data = await request(`/production/${scriptId}`);
     if (data?.workspace) {
@@ -1706,27 +1304,28 @@ export async function getProductionWorkspace(scriptId = 'chronicles-of-dust') {
   }
 
   const script = await getScript(scriptId);
+  if (!script) return null;
   const defaultWs = {
     id: `prod-ws-${scriptId}`,
-    projectId: "proj-1",
-    projectName: "Badlands Anthology",
+    projectId: script.projectId || `proj-${scriptId}`,
+    projectName: script.title,
     scriptId: scriptId,
-    screenplayTitle: script?.title || "Chronicles of Dust",
-    pinnedSourceVersion: script?.draft || "Draft 4.2",
-    pinnedSourceVersionHash: "v4.2-snap-88f2",
-    pinnedTimestamp: "12m ago",
-    currentScriptDraft: script?.draft || "Draft 4.2",
+    screenplayTitle: script.title,
+    pinnedSourceVersion: script.draft || "Draft 1.0",
+    pinnedSourceVersionHash: `v1.0-${scriptId}`,
+    pinnedTimestamp: "Just now",
+    currentScriptDraft: script.draft || "Draft 1.0",
     isStale: false,
     mode: localStorage.getItem('scriptora_prod_mode') || 'simple',
     userRole: localStorage.getItem('scriptora_prod_role') || 'Owner',
     roles: ["Owner", "Director", "Assistant Director", "Production", "Department Member", "Viewer"],
     stats: {
-      totalScenes: 18,
-      breakdownElements: 78,
-      callSheetsCount: 2,
-      shootingDays: 14,
-      pendingProposals: 2,
-      completedApprovals: 6
+      totalScenes: 0,
+      breakdownElements: 0,
+      callSheetsCount: 0,
+      shootingDays: 0,
+      pendingProposals: 0,
+      completedApprovals: 0
     },
     updatedAt: new Date().toISOString()
   };
@@ -1747,6 +1346,7 @@ export async function updateProductionWorkspace(scriptId, updates) {
   } catch (e) {}
 
   const current = await getProductionWorkspace(scriptId);
+  if (!current) return updates;
   const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
   localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(updated));
   return updated;
@@ -1765,6 +1365,7 @@ export async function pinProductionSourceVersion(scriptId, newVersion) {
   } catch (e) {}
 
   const current = await getProductionWorkspace(scriptId);
+  if (!current) return null;
   current.pinnedSourceVersion = newVersion;
   current.pinnedTimestamp = "Just now";
   current.isStale = false;
@@ -1772,7 +1373,8 @@ export async function pinProductionSourceVersion(scriptId, newVersion) {
   return current;
 }
 
-export async function getProductionResources(scriptId = 'chronicles-of-dust', category = null) {
+export async function getProductionResources(scriptId, category = null) {
+  if (!scriptId) return [];
   try {
     const url = `/production/${scriptId}/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`;
     const data = await request(url);
@@ -1793,87 +1395,11 @@ export async function getProductionResources(scriptId = 'chronicles-of-dust', ca
     } catch (_) {}
   }
 
-  // Seed default resources
-  const defaults = [
-    {
-      id: "res-1",
-      scriptId,
-      category: "Cast",
-      name: "Kevin (Lead)",
-      role: "Hydro-engineer",
-      scenes: ["Scene 1", "Scene 3", "Scene 18"],
-      department: "Casting",
-      status: "Confirmed",
-      contactRestricted: true,
-      contact: "agent@talentagency.com",
-      notes: "Requires desert dust protective gear and waterproof boots."
-    },
-    {
-      id: "res-2",
-      scriptId,
-      category: "Cast",
-      name: "Meera (Lead)",
-      role: "Field Operative",
-      scenes: ["Scene 2", "Scene 4", "Scene 18"],
-      department: "Casting",
-      status: "Confirmed",
-      contactRestricted: true,
-      contact: "management@creativeartists.com",
-      notes: "Tactical harness fitted for scene 18 valve climb."
-    },
-    {
-      id: "res-3",
-      scriptId,
-      category: "Location",
-      name: "Arid Outpost Gate 4",
-      scenes: ["Scene 1", "Scene 2"],
-      department: "Locations",
-      status: "Confirmed",
-      contactRestricted: false,
-      contact: "Mojave Perimeter Permit Office",
-      notes: "Day exterior only. High wind advisory after 16:00."
-    },
-    {
-      id: "res-4",
-      scriptId,
-      category: "Location",
-      name: "Pumping Station Chamber B",
-      scenes: ["Scene 10"],
-      department: "Locations",
-      status: "Confirmed",
-      contactRestricted: false,
-      contact: "Aqueduct District Coordinator",
-      notes: "Heavy echo; sound dampening blankets required."
-    },
-    {
-      id: "res-5",
-      scriptId,
-      category: "Props",
-      name: "Hydraulic Bypass Valve Kit",
-      scenes: ["Scene 10"],
-      department: "Props",
-      status: "Confirmed",
-      notes: "Hero prop with functional LED pressure gauge."
-    },
-    {
-      id: "res-6",
-      scriptId,
-      category: "Vehicles",
-      name: "Solar Patrol Rover (Modified)",
-      scenes: ["Scene 1", "Scene 4"],
-      department: "Picture Vehicles",
-      status: "Awaiting review",
-      notes: "Secondary dust filter installed on engine intake."
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(defaults));
-  if (category && category !== 'all') {
-    return defaults.filter(r => r.category.toLowerCase() === category.toLowerCase());
-  }
-  return defaults;
+  return [];
 }
 
-export async function getProductionDocuments(scriptId = 'chronicles-of-dust') {
+export async function getProductionDocuments(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/documents`);
     if (data?.documents) {
@@ -1887,77 +1413,11 @@ export async function getProductionDocuments(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    {
-      id: "doc-cs-1",
-      scriptId,
-      type: "Call Sheet",
-      title: "Call Sheet #01 — Gate 4 Day Exterior",
-      sourceVersion: "Draft 4.2",
-      shootDay: "Day 1 of 7",
-      date: "Oct 24, 2026",
-      callTime: "06:30 AM",
-      location: "Mojave Outpost Gate 4",
-      scenes: ["Scene 1", "Scene 2"],
-      status: "Confirmed",
-      published: true,
-      version: "v1.0"
-    },
-    {
-      id: "doc-cs-2",
-      scriptId,
-      type: "Call Sheet",
-      title: "Call Sheet #02 — Pumping Station Chamber",
-      sourceVersion: "Draft 4.2",
-      shootDay: "Day 2 of 7",
-      date: "Oct 25, 2026",
-      callTime: "07:00 AM",
-      location: "Chamber B Dry Tank",
-      scenes: ["Scene 10"],
-      status: "Draft",
-      published: false,
-      version: "v0.9"
-    },
-    {
-      id: "doc-ds-1",
-      scriptId,
-      type: "Dialogue Sheet",
-      title: "Actor Sides — Kevin & Meera (Scene 18)",
-      sourceVersion: "Draft 4.2",
-      scenes: ["Scene 18"],
-      characters: ["KEVIN", "MEERA"],
-      status: "Confirmed",
-      published: true,
-      version: "v1.2"
-    },
-    {
-      id: "doc-ss-1",
-      scriptId,
-      type: "Shooting Schedule",
-      title: "Master 14-Day Stripboard Schedule",
-      sourceVersion: "Draft 4.2",
-      status: "Confirmed",
-      published: true,
-      version: "v2.1",
-      daysCount: 14
-    },
-    {
-      id: "doc-sb-1",
-      scriptId,
-      type: "Script Breakdown",
-      title: "Full Production Breakdown Sheet",
-      sourceVersion: "Draft 4.2",
-      status: "Confirmed",
-      published: true,
-      version: "v1.4",
-      elementsCount: 78
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
-export async function getProductionProposals(scriptId = 'chronicles-of-dust') {
+export async function getProductionProposals(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/proposals`);
     if (data?.proposals) {
@@ -1971,36 +1431,7 @@ export async function getProductionProposals(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    {
-      id: "prop-1",
-      scriptId,
-      sourceVersion: "Draft 4.2",
-      title: "Add Water Truck Standby for Chamber B Scene 18",
-      description: "SFX coordinator requested a dedicated pressurized water truck for high-velocity valve release practical effect in Scene 18.",
-      category: "SFX / Logistics",
-      submittedBy: "Elena Rostova",
-      submitterRole: "Director",
-      status: "Awaiting review",
-      impact: "Requires 1 additional standby driver and $1,200 equipment allocation.",
-      createdAt: "2026-10-14T08:30:00Z"
-    },
-    {
-      id: "prop-2",
-      scriptId,
-      sourceVersion: "Draft 4.2",
-      title: "Swap Shoot Order for Day 3 and Day 4",
-      description: "Shift exterior lakebed shoot earlier by 24 hours due to predicted desert sand squall.",
-      category: "Schedule",
-      submittedBy: "Marcus Vance",
-      submitterRole: "Assistant Director",
-      status: "Awaiting review",
-      impact: "Affects talent travel call times for Kevin and background extras.",
-      createdAt: "2026-10-13T16:45:00Z"
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
 export async function submitProductionProposal(scriptId, proposal) {
@@ -2021,7 +1452,7 @@ export async function submitProductionProposal(scriptId, proposal) {
   const newProp = {
     id: `prop-${Date.now()}`,
     scriptId,
-    sourceVersion: proposal.sourceVersion || "Draft 4.2",
+    sourceVersion: proposal.sourceVersion || "Draft 1.0",
     title: proposal.title || "Production Schedule Change",
     description: proposal.description || "",
     category: proposal.category || "General",
@@ -2062,7 +1493,8 @@ export async function reviewProductionProposal(scriptId, proposalId, action, rev
   return prop;
 }
 
-export async function getProductionAuditTrail(scriptId = 'chronicles-of-dust') {
+export async function getProductionAuditTrail(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/audit`);
     if (data?.auditTrail) {
@@ -2076,57 +1508,15 @@ export async function getProductionAuditTrail(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    {
-      id: "audit-1",
-      scriptId,
-      action: "PIN_SOURCE_VERSION",
-      category: "VERSION_INTEGRITY",
-      details: "Pinned production source baseline to screenplay draft 'Draft 4.2' (Hash: 88f2)",
-      sourceVersion: "Draft 4.2",
-      actor: "Arun Kumar (Owner)",
-      timestamp: "12m ago"
-    },
-    {
-      id: "audit-2",
-      scriptId,
-      action: "CONFIRM_DOCUMENT",
-      category: "APPROVAL",
-      details: "Confirmed Call Sheet #01 for official release by Owner",
-      sourceVersion: "Draft 4.2",
-      actor: "Arun Kumar (Owner)",
-      timestamp: "2h ago"
-    },
-    {
-      id: "audit-3",
-      scriptId,
-      action: "SUBMIT_PROPOSAL",
-      category: "CHANGE_MANAGEMENT",
-      details: "Proposal 'Add Water Truck Standby for Chamber B' submitted by Director Elena Rostova",
-      sourceVersion: "Draft 4.2",
-      actor: "Elena Rostova",
-      timestamp: "3h ago"
-    },
-    {
-      id: "audit-4",
-      scriptId,
-      action: "EXTRACT_BREAKDOWN",
-      category: "PRODUCTION_TOOL",
-      details: "Automated element breakdown synchronized across 18 scenes from Draft 4.2",
-      sourceVersion: "Draft 4.2",
-      actor: "System Intelligence",
-      timestamp: "Yesterday"
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_audit_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
 // =========================================================================
 // 9. CORE PRE-PRODUCTION WORKFLOWS API CLIENT METHODS
 // =========================================================================
 
-export async function getProductionScenes(scriptId = 'chronicles-of-dust') {
+export async function getProductionScenes(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/scenes`);
     if (data?.scenes) {
@@ -2140,42 +1530,7 @@ export async function getProductionScenes(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  // Fallback defaults for 10 scenes across 7 shoot days
-  const scenes = [];
-  const sceneHeadings = [
-    { num: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", intExt: "EXT", dayNight: "DAY", p: "4 1/8", comp: "Moderate", day: "Day 1 of 7", cast: ["KEVIN", "MARCUS"], desc: "Wind whips dust across perimeter chain link. Kevin arrives at customs gate." },
-    { num: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", intExt: "INT", dayNight: "DAY", p: "3 4/8", comp: "Simple", day: "Day 1 of 7", cast: ["KEVIN", "MEERA"], desc: "Meera analyzes telemetry console indicating illegal pressure drop." },
-    { num: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", intExt: "EXT", dayNight: "DUSK", p: "7 2/8", comp: "Complex", day: "Day 2 of 7", cast: ["KEVIN"], desc: "Concrete conduit pipeline across cracked alkali flats during sunset." },
-    { num: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", intExt: "EXT", dayNight: "NIGHT", p: "5 0/8", comp: "Complex", day: "Day 3 of 7", cast: ["KEVIN", "MEERA"], desc: "Perimeter night patrol with solar rover and surveillance drones." },
-    { num: 5, heading: "INT. HYDRAULIC VALVE TUNNEL - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "5 4/8", comp: "Moderate", day: "Day 3 of 7", cast: ["KEVIN"], desc: "Rusty underground valves with echoing industrial turbine vibration." },
-    { num: 6, heading: "EXT. DESERT SERVICE ROAD - DAY", intExt: "EXT", dayNight: "DAY", p: "5 2/8", comp: "Simple", day: "Day 4 of 7", cast: ["KEVIN"], desc: "Kevin tracks tanker tire treads along decommissioned asphalt." },
-    { num: 7, heading: "INT. SYNDICATE PUMPING CONTROL - DAY", intExt: "INT", dayNight: "DAY", p: "6 3/8", comp: "Moderate", day: "Day 5 of 7", cast: ["COMMANDER VANCE", "KEVIN"], desc: "Vance oversees regional water diversion bank from glass observatory." },
-    { num: 8, heading: "EXT. RESERVOIR INTAKE BASIN - DAY", intExt: "EXT", dayNight: "DAY", p: "5 5/8", comp: "Complex", day: "Day 6 of 7", cast: ["MEERA"], desc: "Rappelling 60-foot descent down drained concrete spillway." },
-    { num: 9, heading: "INT. DRAINAGE VAULT - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "4 1/8", comp: "Moderate", day: "Day 7 of 7", cast: ["KEVIN", "MEERA"], desc: "Subterranean acoustic surveillance using directional hydrophones." },
-    { num: 10, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", intExt: "INT", dayNight: "NIGHT", p: "2 6/8", comp: "Complex", day: "Day 2 of 7", cast: ["KEVIN", "MEERA"], desc: "Kevin anchors hydraulic bypass valve kit as high pressure brine seals." }
-  ];
-
-  for (const s of sceneHeadings) {
-    scenes.push({
-      id: `scene-${s.num}`,
-      sceneNumber: s.num,
-      scriptId,
-      heading: s.heading,
-      intExt: s.intExt,
-      dayNight: s.dayNight,
-      pages: s.p,
-      complexity: s.comp,
-      shootDay: s.day,
-      status: s.num === 4 ? "Needs Review" : "Scheduled",
-      snippet: s.desc,
-      directorNotes: `Director visual notes for ${s.heading}. Maintain high contrast lighting.`,
-      continuityNotes: `Continuity reference logged against Draft 4.2.`,
-      cast: s.cast,
-      sidesReady: true
-    });
-  }
-  localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(scenes));
-  return scenes;
+  return [];
 }
 
 export async function getProductionScene(scriptId, sceneId) {
@@ -2211,7 +1566,8 @@ export async function updateProductionScene(scriptId, sceneId, updates) {
   return updates;
 }
 
-export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', category = null, scene = null) {
+export async function getProductionBreakdown(scriptId, category = null, scene = null) {
+  if (!scriptId) return [];
   try {
     const query = new URLSearchParams();
     if (category) query.set('category', category);
@@ -2228,300 +1584,6 @@ export async function getProductionBreakdown(scriptId = 'chronicles-of-dust', ca
   let list = [];
   if (cached) {
     try { list = JSON.parse(cached); } catch (_) {}
-  }
-
-  if (!list.length) {
-    list = [
-      {
-        id: "elem-1",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [1, 2, 4, 18],
-        category: "Cast",
-        name: "KEVIN",
-        characterRole: "Discredited hydro-engineer, 30s. Hero protagonist.",
-        description: "Discredited hydro-engineer, 30s. Hero protagonist.",
-        assignedActor: "Dev Patel",
-        castingStatus: "Confirmed Cast",
-        actorAvailability: "Available Shoot Days 1-14",
-        appearancesCount: 4,
-        sourceSnippet: "Kevin kneels over cracked hydro-sensor junction box, static hissing from the diagnostic speaker.",
-        originalAiSuggestion: "KEVIN — Discredited hydro-engineer, 30s. Hero protagonist.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Requires desert dust protective gear and waterproof boots."
-      },
-      {
-        id: "elem-2",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [4, 16, 18],
-        category: "Cast",
-        name: "MEERA",
-        characterRole: "Field operative with tactical harness.",
-        description: "Field operative with tactical harness.",
-        assignedActor: "Zoe Saldana",
-        castingStatus: "Confirmed Cast",
-        actorAvailability: "Available Shoot Days 4-18",
-        appearancesCount: 3,
-        sourceSnippet: "Meera anchors her cable to the iron pylon, visor reflecting the rising floodwaters below.",
-        originalAiSuggestion: "MEERA — Field operative with tactical harness.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Tactical harness fitted for scene 18 valve climb."
-      },
-      {
-        id: "elem-3",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [18],
-        category: "Props",
-        name: "Hydraulic Bypass Valve Kit",
-        description: "Custom machined valve kit with functional digital LED pressure display.",
-        sourcingType: "Hero Prop Built",
-        quantity: "1 Hero + 2 Stunt Duplicates",
-        readinessStatus: "Ready in Art Dept",
-        continuityNotes: "Clean in Sc 1, weathered with grease in Sc 18",
-        sourceSnippet: "Kevin clicks the bypass manifold into place. The gauge needles spike red.",
-        originalAiSuggestion: "Hydraulic Bypass Valve Kit — machined valve kit with LED display.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 0.95,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Hero prop constructed by art department; 2 stunt duplicates on standby."
-      },
-      {
-        id: "elem-4",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [18],
-        category: "Practical FX",
-        name: "High-Pressure Water Spray",
-        description: "Controlled water burst simulating cracked pipe joint failure.",
-        requiredResources: "Dedicated 4000L Water Tanker, 120 PSI Pump Rig",
-        technicalRequirements: "Safe water containment basins, electrical shut-off triggers",
-        safetyNotes: "Non-slip decking mandatory; waterproof protective ponchos for camera crew",
-        prepStatus: "Rig Test Scheduled",
-        sourceSnippet: "A burst of pressurized brine shoots from the seam, blinding the chamber.",
-        originalAiSuggestion: "High-Pressure Water Spray — Controlled water burst simulating cracked pipe failure.",
-        status: "Needs Review",
-        isHumanConfirmed: false,
-        confidence: 0.88,
-        confirmedBy: null,
-        confirmedAt: null,
-        notes: "SFX coordinator requested dedicated water truck standby via Proposal #prop-1."
-      },
-      {
-        id: "elem-5",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [18],
-        category: "Stunts",
-        name: "Valve Pylon Cable Rappel",
-        description: "Meera swings 18 feet across open valve chasm to catch emergency release lever.",
-        coordinationRequirements: "18ft wire pendulum rig, decelerator line, safety crash matting",
-        qualifiedPersonnel: "Stunt Double: Tara Sen / Stunt Coordinator: Roy Hall",
-        safetyPlanningStatus: "Awaiting Coordinator Review",
-        sourceSnippet: "Meera kicks off the catwalk, swinging into the spray as the iron cable groans.",
-        originalAiSuggestion: "Valve Pylon Cable Rappel — 18ft swing across chasm to catch lever.",
-        status: "Needs Review",
-        isHumanConfirmed: false,
-        confidence: 0.92,
-        confirmedBy: null,
-        confirmedAt: null,
-        notes: "Awaiting Stunt Coordinator risk assessment and harness certification."
-      },
-      {
-        id: "elem-13",
-        scriptId,
-        sceneId: "scene-18",
-        sceneNumber: 18,
-        scenes: [18],
-        category: "Locations",
-        name: "Sub-Level Hydro-Chamber B",
-        description: "Industrial concrete pumping cavern with rusty iron catwalks.",
-        context: "INT.",
-        lighting: "NIGHT",
-        locationStatus: "Secured & Permitted",
-        accessDetails: "Permit #WTR-994, Access via Gate 4 Service Tunnel",
-        sourceSnippet: "INT. HYDRO-CHAMBER B - NIGHT. Rust-eaten steel catwalks suspend over deep abyss.",
-        originalAiSuggestion: "Sub-Level Hydro-Chamber B — Concrete pumping cavern with catwalks.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Acoustic echo requires directional shotgun mics; non-slip floor treatment applied."
-      },
-      {
-        id: "elem-6",
-        scriptId,
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        scenes: [1],
-        category: "Costumes",
-        name: "Kevin — Weathered Dust Coat & Respirator",
-        character: "KEVIN",
-        description: "Heavy canvas duster coat, solar respirator around neck.",
-        wardrobeRequirements: "Duster coat with distressed seam stitching, respirator with worn elastic straps",
-        continuityChanges: "Costume Stage 1 (Desert Dust / Dry)",
-        prepStatus: "Fitted & Approved",
-        sourceSnippet: "KEVIN (30s), sun-scoured and weary, adjusts his solar filter.",
-        originalAiSuggestion: "Kevin — Duster coat, respirator around neck.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Costume fitting complete with wardrobe dept."
-      },
-      {
-        id: "elem-7",
-        scriptId,
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        scenes: [1],
-        category: "Cast",
-        name: "MARCUS",
-        characterRole: "Border outpost security guard.",
-        description: "Border outpost security guard.",
-        assignedActor: "Unassigned (Auditioning)",
-        castingStatus: "Auditioning",
-        actorAvailability: "Day 1 Shoot Only",
-        appearancesCount: 1,
-        sourceSnippet: "MARCUS leans against the chain link, tapping an unlit cigarette against his wrist.",
-        originalAiSuggestion: "MARCUS — Border outpost security guard.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 0.98,
-        confirmedBy: "Elena Rostova",
-        confirmedAt: "2026-10-13T16:00:00Z",
-        notes: "Supporting role. Day 1 shoot only."
-      },
-      {
-        id: "elem-8",
-        scriptId,
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        scenes: [1],
-        category: "Props",
-        name: "Solar Filter Dust Goggles",
-        description: "Tinted goggles with worn leather straps.",
-        sourcingType: "Hero Wardrobe Prop",
-        quantity: "2 Pairs (A & B Camera)",
-        readinessStatus: "Ready in Art Dept",
-        continuityNotes: "Worn over eyes during wind gusts, rest on forehead indoors",
-        sourceSnippet: "Kevin pulls the goggles over his eyes as a gust hits.",
-        originalAiSuggestion: "Solar Filter Dust Goggles — Tinted goggles with worn leather straps.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Hero wardrobe prop."
-      },
-      {
-        id: "elem-9",
-        scriptId,
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        scenes: [1],
-        category: "Vehicles",
-        name: "Solar Patrol Rover (Modified)",
-        description: "Lightweight dune rover fitted with dual photovoltaic roof panels.",
-        availability: "On Set Shoot Days 1 & 2",
-        operationalRequirements: "Charging station in Base Camp, Art Dept weathering wrap",
-        prepStatus: "Checked In & Inspected",
-        sourceSnippet: "The rover sits idling beside Gate 4, suspension coated in red grit.",
-        originalAiSuggestion: "Solar Patrol Rover (Modified) — Dune rover with dual photovoltaic roof panels.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 0.96,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Picture vehicle running on electric battery. Backup battery pack required."
-      },
-      {
-        id: "elem-10",
-        scriptId,
-        sceneId: "scene-4",
-        sceneNumber: 4,
-        scenes: [4],
-        category: "Props",
-        name: "Night-Vision Monocular Scope",
-        description: "Military grade digital thermal optics.",
-        sourcingType: "Rented",
-        quantity: "1 Unit",
-        readinessStatus: "Sourcing",
-        continuityNotes: "Handheld by Meera on perimeter wall",
-        sourceSnippet: "Meera scans the wire with her thermal monocle. Three glowing silhouettes freeze.",
-        originalAiSuggestion: "Night-Vision Monocular Scope — Military grade digital thermal optics.",
-        status: "Needs Review",
-        isHumanConfirmed: false,
-        confidence: 0.85,
-        confirmedBy: null,
-        confirmedAt: null,
-        notes: "Rental request pending vendor confirmation."
-      },
-      {
-        id: "elem-11",
-        scriptId,
-        sceneId: "scene-7",
-        sceneNumber: 7,
-        scenes: [7],
-        category: "Cast",
-        name: "COMMANDER VANCE",
-        characterRole: "Antagonist, regional water syndicate director.",
-        description: "Antagonist, regional water syndicate director.",
-        assignedActor: "Michael Shannon",
-        castingStatus: "Offer Out",
-        actorAvailability: "Hold Oct 20-24",
-        appearancesCount: 2,
-        sourceSnippet: "COMMANDER VANCE (50s), tailored gray linen, stands over the telemetry terminal.",
-        originalAiSuggestion: "COMMANDER VANCE — Antagonist, regional water syndicate director.",
-        status: "Confirmed",
-        isHumanConfirmed: true,
-        confidence: 1.0,
-        confirmedBy: "Arun Kumar (Owner)",
-        confirmedAt: "2026-10-14T08:00:00Z",
-        notes: "Cast confirmed. Costume fitting scheduled Oct 20."
-      },
-      {
-        id: "elem-12",
-        scriptId,
-        sceneId: "scene-16",
-        sceneNumber: 16,
-        scenes: [16],
-        category: "Practical FX",
-        name: "Catwalk Rain Towers",
-        description: "Simulated industrial torrential flood conditions on exterior catwalk.",
-        requiredResources: "3 Overhead Rain Spars, 2 Fire Hydrant Ties",
-        technicalRequirements: "Runoff water deflection channeling away from electrical stage lines",
-        safetyNotes: "Safety harnesses mandatory on exterior catwalk scaffolding",
-        prepStatus: "Pending Proposal Approval",
-        sourceSnippet: "Water cascades down the spillway faces like Niagara.",
-        originalAiSuggestion: "Catwalk Rain Towers — Simulated flood conditions on exterior catwalk.",
-        status: "Needs Review",
-        isHumanConfirmed: false,
-        confidence: 0.9,
-        confirmedBy: null,
-        confirmedAt: null,
-        notes: "Requires environmental containment permits."
-      }
-    ];
-    localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
   }
 
   if (category && category !== 'all') {
@@ -2554,18 +1616,19 @@ export async function updateBreakdownItem(scriptId, itemId, updates) {
   const list = await getProductionBreakdown(scriptId);
   const item = list.find(b => b.id === itemId);
   if (item) {
+    const ownerLabel = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
     if ((updates.name && updates.name !== item.name) || (updates.description && updates.description !== item.description)) {
       item.userCorrection = {
         previousName: item.name,
         previousDesc: item.description,
-        correctedBy: "Arun Kumar (Owner)",
+        correctedBy: ownerLabel,
         correctedAt: new Date().toISOString()
       };
     }
     Object.assign(item, updates);
     if (updates.status === 'Confirmed') {
       item.isHumanConfirmed = true;
-      item.confirmedBy = "Arun Kumar (Owner)";
+      item.confirmedBy = ownerLabel;
       item.confirmedAt = new Date().toISOString();
     } else if (updates.status === 'Needs Review') {
       item.isHumanConfirmed = false;
@@ -2610,7 +1673,8 @@ export async function createBreakdownItem(scriptId, itemData) {
   } catch (e) {}
 
   const list = await getProductionBreakdown(scriptId);
-  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 18));
+  const ownerLabel = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
+  const sceneNum = Number(itemData.sceneNumber || (itemData.sceneId ? String(itemData.sceneId).replace('scene-', '') : 1));
   const newItem = {
     id: `elem-${Date.now()}`,
     scriptId,
@@ -2625,7 +1689,7 @@ export async function createBreakdownItem(scriptId, itemData) {
     status: itemData.status || "Confirmed",
     isHumanConfirmed: true,
     confidence: 1.0,
-    confirmedBy: "Arun Kumar (Owner)",
+    confirmedBy: ownerLabel,
     confirmedAt: new Date().toISOString(),
     notes: itemData.notes || "",
     assignedActor: itemData.assignedActor || "",
@@ -2658,7 +1722,8 @@ export async function createBreakdownItem(scriptId, itemData) {
   return newItem;
 }
 
-export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
+export async function getProductionCallSheets(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/call-sheets`);
     if (data?.callSheets) {
@@ -2672,71 +1737,7 @@ export async function getProductionCallSheets(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    {
-      id: "cs-1",
-      scriptId,
-      callSheetNumber: "01",
-      shootDay: "Day 1 of 7",
-      shootDate: "Saturday, Oct 24, 2026",
-      generalCrewCall: "06:00 AM",
-      shootingCall: "06:30 AM",
-      breakfastTime: "05:15 AM",
-      estimatedWrap: "06:30 PM",
-      status: "Confirmed",
-      isPublished: true,
-      version: "v1.0",
-      locationName: "Mojave Outpost Gate 4",
-      locationAddress: "Perimeter Road 9, Cantil, CA 93519",
-      parkingNotes: "Crew parking at Basecamp Lot B (1/4 mile west of gate). Shuttle runs every 10 mins.",
-      nearestHospital: "Kern Valley Healthcare District, 6412 Laurel Ave, Lake Isabella, CA (Ph: 760-379-2681)",
-      weatherSummary: "Sunny, 74°F high, 48°F low. Winds WNW 10-15 mph. Dust advisory after 4:00 PM.",
-      scenes: [
-        { sceneNumber: 1, heading: "EXT. MOJAVE OUTPOST GATE 4 - DAY", pages: "4 1/8", cast: ["KEVIN", "MARCUS"], desc: "Kevin arrives at border gate, inspection with Marcus." },
-        { sceneNumber: 2, heading: "INT. OUTPOST CUSTOMS SHED - DAY", pages: "3 4/8", cast: ["KEVIN", "MEERA"], desc: "Kevin discovers pressure loss on telemetry terminal." }
-      ],
-      castCalls: [
-        { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Confirmed" },
-        { character: "MARCUS", actor: "David Chen", pickup: "05:15 AM", hmuCall: "05:45 AM", onSet: "06:30 AM", status: "Confirmed" },
-        { character: "MEERA", actor: "Priya Sharma", pickup: "08:30 AM", hmuCall: "09:00 AM", onSet: "10:30 AM", status: "Confirmed" }
-      ],
-      specialInstructions: "Eye protection mandatory for all crew on exterior perimeter due to afternoon dust squall.",
-      approvedBy: "Arun Kumar (Owner)",
-      publishedAt: "2026-10-14T08:00:00Z"
-    },
-    {
-      id: "cs-2",
-      scriptId,
-      callSheetNumber: "02",
-      shootDay: "Day 2 of 7",
-      shootDate: "Sunday, Oct 25, 2026",
-      generalCrewCall: "06:30 AM",
-      shootingCall: "07:00 AM",
-      breakfastTime: "05:45 AM",
-      estimatedWrap: "07:00 PM",
-      status: "Draft",
-      isPublished: false,
-      version: "v0.9",
-      locationName: "Pumping Station Chamber B",
-      locationAddress: "Aqueduct District Facility 4, Mojave, CA 93501",
-      parkingNotes: "Basecamp parking inside Gate 2 secure compound. Security clearance badge required.",
-      nearestHospital: "Antelope Valley Medical Center, 1600 W Ave J, Lancaster, CA (Ph: 661-949-5000)",
-      weatherSummary: "Interior stage / sheltered facility. Ambient temp 68°F. Hearing protection mandatory.",
-      scenes: [
-        { sceneNumber: 3, heading: "EXT. DRY LAKEBED CONDUIT - DUSK", pages: "7 2/8", cast: ["KEVIN"], desc: "Kevin examines exterior tap line." },
-        { sceneNumber: 10, heading: "INT. PUMPING STATION CHAMBER B - NIGHT", pages: "2 6/8", cast: ["KEVIN", "MEERA"], desc: "High water pressure valve breach and cable clamp." }
-      ],
-      castCalls: [
-        { character: "KEVIN", actor: "Arun Kumar", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" },
-        { character: "MEERA", actor: "Priya Sharma", pickup: "05:30 AM", hmuCall: "06:00 AM", onSet: "07:00 AM", status: "Draft" }
-      ],
-      specialInstructions: "Wet set protocols in effect for Scene 10. Waterproof camera housing and electrical GFI circuits required.",
-      approvedBy: null,
-      publishedAt: null
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
 export async function getProductionCallSheet(scriptId, callSheetId) {
@@ -2763,8 +1764,8 @@ export async function createProductionCallSheet(scriptId, data) {
     id: `cs-${Date.now()}`,
     scriptId,
     callSheetNumber: String(sheets.length + 1).padStart(2, '0'),
-    shootDay: data.shootDay || `Day ${sheets.length + 1} of 14`,
-    shootDate: data.shootDate || "Monday, Oct 26, 2026",
+    shootDay: data.shootDay || `Day ${sheets.length + 1}`,
+    shootDate: data.shootDate || "TBD",
     generalCrewCall: data.generalCrewCall || "06:00 AM",
     shootingCall: data.shootingCall || "06:30 AM",
     breakfastTime: data.breakfastTime || "05:15 AM",
@@ -2775,12 +1776,10 @@ export async function createProductionCallSheet(scriptId, data) {
     locationName: data.locationName || "Location TBD",
     locationAddress: data.locationAddress || "TBD",
     parkingNotes: data.parkingNotes || "Crew parking guidelines.",
-    nearestHospital: data.nearestHospital || "Desert Care Network Regional, Palm Springs, CA",
+    nearestHospital: data.nearestHospital || "TBD",
     weatherSummary: data.weatherSummary || "Forecast pending.",
-    scenes: data.scenes || [{ sceneNumber: 4, heading: "EXT. NORTHERN PERIMETER FENCE - NIGHT", pages: "5 0/8", cast: ["KEVIN", "MEERA"], desc: "Perimeter fence inspection." }],
-    castCalls: data.castCalls || [
-      { character: "KEVIN", actor: "Arun Kumar", pickup: "05:00 AM", hmuCall: "05:30 AM", onSet: "06:30 AM", status: "Draft" }
-    ],
+    scenes: data.scenes || [],
+    castCalls: data.castCalls || [],
     specialInstructions: data.specialInstructions || "Standard safety directives.",
     approvedBy: null,
     publishedAt: null
@@ -2823,7 +1822,7 @@ export async function publishProductionCallSheet(scriptId, callSheetId) {
     cs.status = "Confirmed";
     cs.isPublished = true;
     cs.version = "v1.0 (Snapshot)";
-    cs.approvedBy = "Arun Kumar (Owner)";
+    cs.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
     cs.publishedAt = new Date().toISOString();
     localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
     return cs;
@@ -2831,7 +1830,8 @@ export async function publishProductionCallSheet(scriptId, callSheetId) {
   return null;
 }
 
-export async function getProductionSchedule(scriptId = 'chronicles-of-dust') {
+export async function getProductionSchedule(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/schedule`);
     if (data?.schedule) {
@@ -2845,17 +1845,7 @@ export async function getProductionSchedule(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    { dayNumber: 1, date: "Oct 24, 2026", title: "Outpost Perimeter & Shed", location: "Mojave Gate 4", sceneNumbers: [1, 2], totalPages: "7 5/8", estHours: 10.5, companyMoves: 0, isLocked: true, status: "Confirmed" },
-    { dayNumber: 2, date: "Oct 25, 2026", title: "Lakebed Conduit & Chamber B", location: "Chamber B Dry Tank", sceneNumbers: [3, 10], totalPages: "10 0/8", estHours: 11.0, companyMoves: 1, isLocked: false, status: "Draft" },
-    { dayNumber: 3, date: "Oct 26, 2026", title: "Perimeter Fence & Valve Tunnel", location: "Perimeter Sector 9", sceneNumbers: [4, 5], totalPages: "10 4/8", estHours: 11.5, companyMoves: 1, isLocked: false, status: "Draft" },
-    { dayNumber: 4, date: "Oct 27, 2026", title: "Service Road Pursuit", location: "Route 66 Cutoff", sceneNumbers: [6], totalPages: "5 2/8", estHours: 8.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 5, date: "Oct 28, 2026", title: "Syndicate Regional Control", location: "Syndicate Regional HQ", sceneNumbers: [7], totalPages: "6 3/8", estHours: 9.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 6, date: "Oct 29, 2026", title: "Reservoir Intake Rappel", location: "Lake Mead Dry Spillway", sceneNumbers: [8], totalPages: "5 5/8", estHours: 10.0, companyMoves: 0, isLocked: false, status: "Draft" },
-    { dayNumber: 7, date: "Oct 30, 2026", title: "Drainage Sub-vaults & Wrap", location: "Vault Sub-structure 3", sceneNumbers: [9], totalPages: "4 1/8", estHours: 8.5, companyMoves: 0, isLocked: false, status: "Draft" }
-  ];
-  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
 export async function updateProductionScheduleDay(scriptId, dayNumber, updates) {
@@ -2914,7 +1904,8 @@ export async function reorderSceneWithinDay(scriptId, dayNumber, newSceneNumbers
   return await updateProductionScheduleDay(scriptId, dayNumber, { sceneNumbers: newSceneNumbers });
 }
 
-export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
+export async function getProductionReadiness(scriptId) {
+  if (!scriptId) return [];
   try {
     const data = await request(`/production/${scriptId}/readiness`);
     if (data?.readiness) {
@@ -2928,76 +1919,7 @@ export async function getProductionReadiness(scriptId = 'chronicles-of-dust') {
     try { return JSON.parse(cached); } catch (_) {}
   }
 
-  const defaults = [
-    {
-      id: "ready-1",
-      scriptId,
-      title: "Confirm Water Truck Safety Crew for Scene 10",
-      category: "Safety / SFX",
-      severity: "critical",
-      status: "action_needed",
-      description: "High-pressure brine valve burst in Scene 10 requires Stunt Coordinator sign-off and standby water tanker.",
-      targetRoute: "/production/changes",
-      targetEntity: "prop-1"
-    },
-    {
-      id: "ready-2",
-      scriptId,
-      title: "Review 3 Unconfirmed Breakdown Items",
-      category: "Breakdown",
-      severity: "warning",
-      status: "action_needed",
-      description: "Scene 4 Night-Vision optics and Scene 10 cable rappel are currently in Needs Review status.",
-      targetRoute: "/production/breakdown",
-      targetEntity: "scene-10"
-    },
-    {
-      id: "ready-3",
-      scriptId,
-      title: "Owner Approval Required for Call Sheet #02",
-      category: "Call Sheets",
-      severity: "critical",
-      status: "action_needed",
-      description: "Call Sheet #02 (Day 2 of 7) is currently in Draft status. Must be approved and published before crew distribution.",
-      targetRoute: "/production/call-sheets",
-      targetEntity: "cs-2"
-    },
-    {
-      id: "ready-4",
-      scriptId,
-      title: "All 10 Scenes Stripboard Scheduled",
-      category: "Schedule",
-      severity: "ready",
-      status: "resolved",
-      description: "Every scene from Draft 4.2 has been allocated across the 7-day master shooting calendar.",
-      targetRoute: "/production/schedule",
-      targetEntity: null
-    },
-    {
-      id: "ready-5",
-      scriptId,
-      title: "Call Sheet #01 Published & Locked",
-      category: "Call Sheets",
-      severity: "ready",
-      status: "resolved",
-      description: "Call Sheet #01 confirmed by Owner with emergency medical routes and parking directives.",
-      targetRoute: "/production/call-sheets",
-      targetEntity: "cs-1"
-    },
-    {
-      id: "ready-6",
-      scriptId,
-      title: "Lead Talent Wardrobe Fittings Verified",
-      category: "Cast",
-      severity: "ready",
-      status: "resolved",
-      description: "Costume specs and protective goggles fitted for Kevin, Meera, and Commander Vance.",
-      targetRoute: "/production/directory",
-      targetEntity: "res-1"
-    }
-  ];
-  localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(defaults));
-  return defaults;
+  return [];
 }
 
 export async function resolveProductionReadiness(scriptId, readinessId) {
@@ -3205,7 +2127,7 @@ export async function createProductionDocument(scriptId, docData) {
     scriptId,
     type: docData.type || "Production Report",
     title: docData.title || "New Production Document",
-    sourceVersion: docData.sourceVersion || "Draft 4.2",
+    sourceVersion: docData.sourceVersion || "Draft 1.0",
     shootDay: docData.shootDay || "General",
     date: docData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
     location: docData.location || "Production Basecamp",
@@ -3365,7 +2287,8 @@ export async function getAiImageProviders() {
   ];
 }
 
-export async function getStoryboards(scriptId = 'chronicles-of-dust') {
+export async function getStoryboards(scriptId) {
+  if (!scriptId) return [];
   const storageKey = getUserStorageKey(`storyboards_${scriptId}`);
   try {
     const data = await request(`/production/${scriptId}/storyboards`);
@@ -3390,9 +2313,18 @@ export async function getStoryboards(scriptId = 'chronicles-of-dust') {
 // Prevents QuotaExceededError by eliminating giant base64 payloads from localStorage
 // =========================================================================
 
+const NEUTRAL_STORYBOARD_FALLBACK = `data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+    <rect width="800" height="450" fill="#0f172a"/>
+    <rect x="24" y="24" width="752" height="402" rx="12" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="8 6"/>
+    <text x="400" y="218" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="18" font-weight="600">Storyboard Frame</text>
+    <text x="400" y="246" text-anchor="middle" fill="#64748b" font-family="system-ui, sans-serif" font-size="13">Preview unavailable</text>
+  </svg>`
+)}`;
+
 export function resolveStoryboardAssetUrl(url, shotNumber = '') {
   if (!url || typeof url !== 'string') {
-    return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
+    return NEUTRAL_STORYBOARD_FALLBACK;
   }
 
   // 1. If it's an SVG data URI wrapping a storyboard asset
@@ -3406,21 +2338,9 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
     } catch (_) {}
   }
 
-  // 2. If it's a real raster image data URI (JPEG, PNG, WebP) from AI generation or user upload
-  if (url.startsWith('data:image/jpeg') || url.startsWith('data:image/png') || url.startsWith('data:image/webp')) {
+  // 2. If it's a real raster image data URI (JPEG, PNG, WebP) or inline SVG from AI generation or user upload
+  if (url.startsWith('data:image/jpeg') || url.startsWith('data:image/png') || url.startsWith('data:image/webp') || url.startsWith('data:image/svg')) {
     return url;
-  }
-
-  // 3. If it's a legacy procedural dark silhouette SVG
-  if (url.startsWith('data:image/svg') && !url.includes('<image')) {
-    const num = (shotNumber || '').toUpperCase();
-    if (num.includes('1A')) return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
-    if (num.includes('1B')) return `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`;
-    if (num.includes('1C')) return `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`;
-    if (num.includes('1D')) return `${BASE_ASSET_URL}assets/storyboard/shot_1d_macro_insert.jpg`;
-    if (num.includes('10A')) return `${BASE_ASSET_URL}assets/storyboard/shot_10a_valve_breach.jpg`;
-    if (num.includes('10B')) return `${BASE_ASSET_URL}assets/storyboard/shot_10b_pumping_hall.jpg`;
-    return `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`;
   }
 
   // 4. If it starts with http / https or any other data URI
@@ -3571,7 +2491,7 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
     sceneNumber = 1,
     shotNumber = '1A',
     shotTitle = '',
-    scriptId = 'chronicles-of-dust',
+    scriptId = null,
     storagePath = null
   } = options;
 
@@ -3692,7 +2612,8 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
   return { success: true, filename, size: blob.size, mime: blob.type };
 }
 
-export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
+export async function getStoryboard(scriptId, sceneId = 'scene-1') {
+  if (!scriptId) return null;
   // Read user-scoped local cache first to compare timestamps / shot counts
   const storageKey = getUserStorageKey(`storyboard_${scriptId}_${sceneId}`);
   const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
@@ -3735,127 +2656,15 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
     return cachedSb;
   }
 
-  // Fallback defaults for Scene 1 and Scene 10 if offline
   const scenes = await getProductionScenes(scriptId);
   const sceneNum = Number(String(sceneId).replace('scene-', '')) || 1;
-  const scene = scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum) || {
+  const scene = (scenes && scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum)) || {
     id: `scene-${sceneNum}`,
     sceneNumber: sceneNum,
     heading: `SCENE ${sceneNum} - UNTITLED`,
     intExt: 'INT',
     dayNight: 'DAY'
   };
-
-  const defaultShots = sceneNum === 1 ? [
-    {
-      id: "shot-1-1A",
-      shotNumber: "1A",
-      order: 1,
-      title: "Perimeter Outpost Gate",
-      description: "High altitude drone descending across dust devils toward Kevin's arrival at the arid customs gate.",
-      shotSize: "Wide Shot",
-      cameraAngle: "High Angle",
-      cameraMovement: "Crane / Jib",
-      focalLength: "24mm Wide",
-      lightingMood: "Daylight Dust",
-      aspectRatio: "2.39:1",
-      visualStyle: "Cinematic Concept Art",
-      prompt: "Cinematic wide shot, arid desert outpost gate, dust devils whirling, 2.39:1 anamorphic",
-      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1a_wide_outpost.jpg`,
-      imageSource: "ai",
-      provider: "scriptora-concept",
-      quality: "hd",
-      costEstimate: "Free (Built-in)",
-      approvalStatus: "approved",
-      approvalNotes: "Great atmosphere and sense of scale. Approved for primary camera team.",
-      approvedBy: "Arun Kumar (Owner)",
-      approvedAt: "2026-10-18T10:30:00Z",
-      directorNotes: "Capture sunrise glint off the guard gate perimeter wires.",
-      characters: ["KEVIN", "MARCUS"],
-      location: "Arid Outpost Gate 4",
-      continuity: {
-        characterPosition: "Kevin approaching from camera-left",
-        screenDirection: "Left to Right",
-        eyeline: "Looking toward Outpost Gate",
-        lightingContinuity: "High-contrast morning sun from east",
-        costumeState: "Dust coat level 2, canteen left side",
-        propPlacement: "Gate clearance scanner in right hand"
-      },
-      history: []
-    },
-    {
-      id: "shot-1-1B",
-      shotNumber: "1B",
-      order: 2,
-      title: "Gate Scanner Clearance Standoff",
-      description: "Medium two-shot of Kevin presenting his ID badge to Marcus over the buzzing clearance terminal.",
-      shotSize: "Medium Two-Shot",
-      cameraAngle: "Eye Level",
-      cameraMovement: "Static",
-      focalLength: "50mm Prime",
-      lightingMood: "Harsh Fluorescent Rim",
-      aspectRatio: "2.39:1",
-      visualStyle: "Cinematic Concept Art",
-      prompt: "Medium two-shot, dusty outpost booth, weary hydro-engineer confronting guard, 50mm",
-      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1b_two_shot_standoff.jpg`,
-      imageSource: "ai",
-      provider: "scriptora-concept",
-      quality: "hd",
-      costEstimate: "Free (Built-in)",
-      approvalStatus: "approved",
-      approvalNotes: "Good eyeline match with Shot 1A.",
-      approvedBy: "Arun Kumar (Owner)",
-      approvedAt: "2026-10-18T10:35:00Z",
-      directorNotes: "Focus pull from scanner terminal to Kevin's tense expression.",
-      characters: ["KEVIN", "MARCUS"],
-      location: "Arid Outpost Gate 4",
-      continuity: {
-        characterPosition: "Kevin screen-left, Marcus screen-right",
-        screenDirection: "Left to Right",
-        eyeline: "Eye-level direct confrontation",
-        lightingContinuity: "Terminal backlight rimming Kevin's face",
-        costumeState: "Kevin wearing goggles around neck",
-        propPlacement: "ID card inserted into reader"
-      },
-      history: []
-    },
-    {
-      id: "shot-1-1C",
-      shotNumber: "1C",
-      order: 3,
-      title: "Terminal Diagnostic Anomaly",
-      description: "Close-up insert of the flickering scanner console displaying pressure alert warning in red neon.",
-      shotSize: "Close-Up",
-      cameraAngle: "Low Angle",
-      cameraMovement: "Static",
-      focalLength: "85mm Portrait",
-      lightingMood: "Cyan Strobe",
-      aspectRatio: "2.39:1",
-      visualStyle: "Cinematic Concept Art",
-      prompt: "Extreme close-up on rugged military diagnostic screen, red warning glyphs, 85mm",
-      imageUrl: `${BASE_ASSET_URL}assets/storyboard/shot_1c_closeup_reaction.jpg`,
-      imageSource: "ai",
-      provider: "scriptora-concept",
-      quality: "hd",
-      costEstimate: "Free (Built-in)",
-      approvalStatus: "proposed",
-      approvalNotes: "Review telemetry readout typography for accuracy.",
-      approvedBy: null,
-      approvedAt: null,
-      directorNotes: "Practical screen insert; needs strobe flash on alert pulse.",
-      characters: ["KEVIN"],
-      location: "Arid Outpost Gate 4",
-      continuity: {
-        characterPosition: "Centered insert",
-        screenDirection: "Neutral",
-        eyeline: "Downwards onto screen",
-        lightingContinuity: "Red alert flashing 1Hz",
-        costumeState: "Kevin's gloved thumb on lower bezel",
-        propPlacement: "Scanner unit firmly latched"
-      },
-      history: []
-    }
-  ] : [];
 
   const sb = {
     id: `sb-${scriptId}-${scene.id}`,
@@ -3865,11 +2674,11 @@ export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = '
     sceneHeading: scene.heading,
     intExt: scene.intExt || 'INT',
     dayNight: scene.dayNight || 'DAY',
-    sourceVersion: "Draft 4.2",
+    sourceVersion: "Draft 1.0",
     isVersionStale: false,
     aspectRatio: "2.39:1",
     visualStyle: "Cinematic Concept Art",
-    shots: defaultShots,
+    shots: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   };
@@ -4074,7 +2883,7 @@ export async function approveStoryboardShot(scriptId, sceneId, shotId, status = 
   if (shot) {
     shot.approvalStatus = status;
     shot.approvalNotes = notes || shot.approvalNotes || "";
-    shot.approvedBy = "Arun Kumar (Owner)";
+    shot.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
     shot.approvedAt = new Date().toISOString();
     shot.updatedAt = new Date().toISOString();
     sb.updatedAt = new Date().toISOString();
@@ -4103,7 +2912,7 @@ export async function batchApproveStoryboardShots(scriptId, sceneId, shotIds = [
     if (shotIds.includes(s.id)) {
       s.approvalStatus = status;
       if (notes) s.approvalNotes = notes;
-      s.approvedBy = "Arun Kumar (Owner)";
+      s.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
       s.approvedAt = new Date().toISOString();
       s.updatedAt = new Date().toISOString();
       count++;
@@ -4142,21 +2951,14 @@ export async function generateStoryboardShot(scriptId, params = {}, onProgress =
       }
     } catch (_) {}
 
-    // Built-in concept sketch fallback for offline vector mode
-    const sizeLower = (params.shotSize || "").toLowerCase();
-    const headingUpper = (params.sceneHeading || "").toUpperCase();
-    const fullText = `${params.sceneHeading || ''} ${params.prompt || ''} ${params.description || ""}`.toLowerCase();
-    const shotNum = (params.shotNumber || "1A").toUpperCase();
-    let sketchFile = "shot_1a_wide_outpost.jpg";
-    if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
-      sketchFile = (fullText.includes("valve") || headingUpper.includes("10")) ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
-    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot")) {
-      sketchFile = "shot_1b_two_shot_standoff.jpg";
-    } else if (shotNum.includes("B")) {
-      sketchFile = "shot_1b_two_shot_standoff.jpg";
-    }
+    // Built-in procedural concept sketch fallback for offline vector mode
+    const esc = (s = '') => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const shotLabel = esc(`${params.shotNumber || '1A'} · ${params.shotSize || 'Medium Shot'}`);
+    const headingLabel = esc((params.sceneHeading || 'STORYBOARD CONCEPT').slice(0, 48));
+    const promptSnippet = esc((params.prompt || params.description || 'Procedural storyboard frame').slice(0, 72));
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675"><rect width="1200" height="675" fill="#111827"/><rect x="40" y="40" width="1120" height="595" fill="none" stroke="#374151" stroke-width="2" stroke-dasharray="10 8"/><line x1="400" y1="40" x2="400" y2="635" stroke="#1f2937" stroke-width="1.5"/><line x1="800" y1="40" x2="800" y2="635" stroke="#1f2937" stroke-width="1.5"/><line x1="40" y1="238" x2="1160" y2="238" stroke="#1f2937" stroke-width="1.5"/><line x1="40" y1="437" x2="1160" y2="437" stroke="#1f2937" stroke-width="1.5"/><circle cx="600" cy="310" r="88" fill="none" stroke="#4b5563" stroke-width="2.5"/><text x="600" y="190" text-anchor="middle" fill="#60a5fa" font-family="monospace" font-size="22" font-weight="700">${shotLabel}</text><text x="600" y="318" text-anchor="middle" fill="#e5e7eb" font-family="system-ui, sans-serif" font-size="24" font-weight="600">${headingLabel}</text><text x="600" y="490" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="18">${promptSnippet}</text></svg>`;
     return {
-      imageUrl: `${BASE_ASSET_URL}assets/storyboard/${sketchFile}`,
+      imageUrl: `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
       provider: "scriptora-concept",
       quality: params.quality || "hd",
       costEstimate: "Free (Built-in)",
@@ -4332,7 +3134,7 @@ export async function generateStoryboardSequence(scriptId, sceneId, params = {})
   const scene = scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum) || {
     heading: `SCENE ${sceneNum} - UNTITLED`,
     dayNight: "DAY",
-    snippet: "Protagonist navigates industrial perimeter."
+    snippet: ""
   };
 
   const beats = [
@@ -4368,8 +3170,8 @@ export async function generateStoryboardSequence(scriptId, sceneId, params = {})
     approvalNotes: "AI proposed sequence beat. Review and approve to confirm.",
     approvedBy: null,
     approvedAt: null,
-    directorNotes: "Calibrate lens catchlights for consistency across cuts.",
-    characters: scene.cast || ["KEVIN"],
+    directorNotes: "",
+    characters: scene.cast || [],
     location: scene.heading,
     continuity: {
       characterPosition: i % 2 === 0 ? "Screen Left" : "Screen Right",
@@ -4516,9 +3318,9 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
       provider: shot.provider || "scriptora-concept",
       quality: shot.quality || "hd",
       approvalStatus: shot.approvalStatus || "draft",
-      sourceVersion: sb.sourceVersion || "Draft 4.2",
+      sourceVersion: sb.sourceVersion || "Draft 1.0",
       timestamp: new Date().toISOString(),
-      updatedBy: "Arun Kumar (Owner)"
+      updatedBy: (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)"
     });
     shot.imageUrl = target.previousImageUrl;
     if (target.previousPrompt) shot.prompt = target.previousPrompt;
@@ -4573,7 +3375,8 @@ export async function saveStoryboardPreferences(prefs = {}) {
   return updated;
 }
 
-export async function getStoryboardRecycleBin(scriptId = 'chronicles-of-dust') {
+export async function getStoryboardRecycleBin(scriptId) {
+  if (!scriptId) return [];
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin`);
     if (res?.items) {

@@ -5,19 +5,35 @@ import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
 
 export function renderIntelligenceContextScreen() {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    format: 'Feature',
-    industry: 'International / Hollywood'
-  };
+  const scripts = store.state.scripts || [];
+  const scriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === scriptId) || null;
+
+  if (!script) {
+    return `
+      ${renderHeader('Intelligence', 'Context Calibration')}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">tune</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplays Yet</h2>
+          <p class="text-xs text-slate-500 mb-6">Create a screenplay in your workspace to calibrate formatting and market runtime standards.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('intelligence')}
+    `;
+  }
 
   const context = script.context || {
     format: script.format || 'Feature',
     industry: script.industry || 'International / Hollywood',
-    hours: 1,
-    minutes: 36,
+    hours: 2,
+    minutes: 0,
     seconds: 0
   };
 
@@ -150,8 +166,9 @@ export function renderIntelligenceContextScreen() {
 }
 
 export function attachIntelligenceContextEvents(navigate) {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {};
+  const scripts = store.state.scripts || [];
+  const scriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === scriptId) || {};
   const context = script.context || {};
   let selectedFormat = context.format || script.format || 'Feature';
   let hours = context.hours !== undefined ? context.hours : 1;

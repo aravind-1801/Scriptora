@@ -1,5 +1,5 @@
 // Shared Pre-Production Navigation Bar for all Dedicated Tool Screens
-// Preserves context: selected screenplay, pinned source version (Draft 4.2), and user role.
+// Preserves context: selected screenplay, pinned source version, and user role.
 
 export function getBackLabelFromUrl(url) {
   if (!url) return 'Studio';
@@ -22,7 +22,7 @@ export function renderProdSubNav(title, icon = 'tune', backUrl = null, extraActi
   const urlParams = new URLSearchParams(window.location.search || '');
   const fromParam = urlParams.get('from');
   const resolvedBackUrl = backUrl || fromParam || '/production';
-  const resolvedSubtitle = subtitle || 'Chronicles of Dust';
+  const resolvedSubtitle = subtitle || 'Pre-Production Studio';
 
   return `
     <div class="flex items-center justify-between gap-3 py-1 border-b border-slate-200/70 pb-3 mb-2">

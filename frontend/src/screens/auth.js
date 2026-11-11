@@ -61,7 +61,7 @@ export function renderAuthScreen() {
                 <label class="text-[11px] font-semibold text-slate-600">Studio Email</label>
                 <div class="relative flex items-center">
                   <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px]">alternate_email</span>
-                  <input id="signin-email" class="w-full h-10 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-900" placeholder="name@studio.com" value="arun.kumar@scriptora.studio" required type="email">
+                  <input id="signin-email" class="w-full h-10 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-900" placeholder="name@studio.com" value="" required type="email">
                 </div>
               </div>
 
@@ -72,7 +72,7 @@ export function renderAuthScreen() {
                 </div>
                 <div class="relative flex items-center">
                   <span class="material-symbols-outlined absolute left-3 text-slate-400 text-[18px]">lock</span>
-                  <input id="signin-password" class="w-full h-10 pl-9 pr-10 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-900" placeholder="••••••••••••" value="scriptora2026" required type="password">
+                  <input id="signin-password" class="w-full h-10 pl-9 pr-10 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-600 text-slate-900" placeholder="••••••••••••" value="" required type="password">
                   <button type="button" id="toggle-pw-signin" class="absolute right-3 text-slate-400 hover:text-slate-600">
                     <span class="material-symbols-outlined text-[18px]">visibility</span>
                   </button>
@@ -324,12 +324,7 @@ export function attachAuthEvents(navigate) {
           window.google.accounts.id.prompt((notification) => {
             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
               console.log('GIS prompt not displayed:', notification.getNotDisplayedReason());
-              handleGoogleAuthSuccess({
-                email: "arun.kumar@scriptora.studio",
-                name: "Arun Kumar",
-                displayName: "Arun Kumar",
-                provider: "google"
-              });
+              showToast('Google Sign-In prompt unavailable. Please use email & password.');
             }
           });
           return;
@@ -338,13 +333,7 @@ export function attachAuthEvents(navigate) {
         }
       }
 
-      // Offline / Developer Fallback
-      await handleGoogleAuthSuccess({
-        email: "arun.kumar@scriptora.studio",
-        name: "Arun Kumar",
-        displayName: "Arun Kumar",
-        provider: "google"
-      });
+      showToast('Google Sign-In is initializing. Please use email & password or try again.');
     };
   }
 

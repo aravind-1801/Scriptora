@@ -8,10 +8,11 @@ import { promptAIConsentForEncryptedScript } from '../services/crypto.js';
 // Full-screen conversational interaction anchored immediately above bottom navigation
 
 export function renderAiChatScreen() {
-  const activeScriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts?.find(s => s.id === activeScriptId) || {
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2'
+  const scripts = store.state.scripts || [];
+  const activeScriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === activeScriptId) || {
+    title: 'Workspace Assistant',
+    draft: 'Draft 1.0'
   };
 
   return `
@@ -50,7 +51,7 @@ export function renderAiChatScreen() {
                 <span class="text-slate-400 font-normal text-[10px]">Now</span>
               </div>
               <p>
-                Hello Arun. I am your universal natural-language assistant across <strong>Screenplay Writing</strong>, <strong>Narrative Intelligence</strong>, and <strong>Pre-Production Planning</strong>.
+                Hello${store.state.currentUser?.name ? ` ${store.state.currentUser.name}` : ''}. I am your universal natural-language assistant across <strong>Screenplay Writing</strong>, <strong>Narrative Intelligence</strong>, and <strong>Pre-Production Planning</strong>.
               </p>
               <p class="text-slate-500 text-[11px]">
                 Ask me to review scenes, develop story beats, extract practical production elements, outline call sheets, or check screenplay formatting standards.
@@ -65,16 +66,16 @@ export function renderAiChatScreen() {
           
           <!-- Quick Prompt Chips -->
           <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="chat-prompt-chips">
-            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Review Scene 18 pacing and dramatic tension.">
-              Review Scene 18 Pacing
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Review the pacing and dramatic tension of my screenplay.">
+              Review Pacing
             </button>
-            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="What are the essential practical elements required for Day 1 shoot?">
-              Day 1 Elements
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="What are the essential practical production elements to track?">
+              Production Elements
             </button>
-            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Prepare a Call Sheet draft for Gate 4 exterior shoot.">
-              Call Sheet Draft
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Outline a Call Sheet checklist for an exterior shoot day.">
+              Call Sheet Checklist
             </button>
-            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Suggest visual storyboard camera setups for the dry lakebed standoff.">
+            <button class="chat-chip px-2.5 py-1 rounded-full bg-white border border-slate-200/90 text-slate-600 hover:border-blue-300 hover:text-blue-700 active:scale-95 text-[11px] font-medium shrink-0 shadow-2xs transition-all whitespace-nowrap" data-prompt="Suggest visual storyboard camera setups for a dramatic confrontation scene.">
               Storyboard Ideas
             </button>
           </div>
@@ -113,7 +114,8 @@ export function attachAiChatEvents(navigate) {
   const clearBtn = document.getElementById('btn-clear-chat');
   const chatBackBtn = document.getElementById('chat-back-btn');
   const chips = document.querySelectorAll('.chat-chip');
-  const activeScriptId = store.state.selectedScriptId || 'chronicles-of-dust';
+  const scripts = store.state.scripts || [];
+  const activeScriptId = store.state.selectedScriptId || scripts[0]?.id || null;
 
   if (chatBackBtn) {
     chatBackBtn.onclick = () => {
@@ -210,19 +212,10 @@ export function attachAiChatEvents(navigate) {
       const response = await api.queryIntelligence(q, activeScriptId);
       thinkingEl.remove();
 
-      let answer = response;
-      if (q.toLowerCase().includes('call sheet')) {
-        answer = `📋 **Call Sheet Preparation (Draft 4.2)**\nFor Day 1 (Scenes 1 & 2 at Gate 4 Exterior):\n• General Call: 06:30 AM (Sunrise lighting window)\n• Key Talent: Kevin (Ready by 07:15 AM)\n• Picture Vehicle: Solar Patrol Rover standby at staging area\n• Nearest Emergency Medical Facility: Ridgecrest Regional Hospital (22 mins)`;
-      } else if (q.toLowerCase().includes('practical') || q.toLowerCase().includes('element')) {
-        answer = `🎬 **Practical Elements Breakdown (Scene 18)**\n• Location: Pumping Station Chamber B (Interior / Echo Dampened)\n• Special Prop: Hydraulic Bypass Valve Kit (LED pressure indicator)\n• SFX Note: Pressurized vapor release standby\n• Cast Involved: Kevin, Meera`;
-      } else if (q.toLowerCase().includes('storyboard') || q.toLowerCase().includes('camera')) {
-        answer = `🎨 **Visual Storyboard Concept (Lakebed Standoff)**\n• Shot 1: Ultra-wide 2.39:1 anamorphic establishing shot across cracked earth.\n• Shot 2: Low-angle tracking shot on Kevin as dust storm gathers.\n• Shot 3: Dutch angle close-up on the pressure gauge as manifold fails.\n*(Detailed shot canvas will be available in Storyboard Studio Prompt 3)*`;
-      }
-
-      appendMessage('assistant', answer, true);
+      appendMessage('assistant', response || 'Select or create a screenplay in your Workspace so I can analyze your scenes and production plans.', true);
     } catch (err) {
       thinkingEl.remove();
-      appendMessage('assistant', `I analyzed your request against the active screenplay context. Pacing and scene logistics align with Draft 4.2 standards.`, true);
+      appendMessage('assistant', `I couldn't reach the intelligence service right now. Please select an active screenplay in your Workspace and try again.`, true);
     }
   }
 

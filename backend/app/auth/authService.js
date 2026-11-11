@@ -4,23 +4,21 @@ import { db } from '../models/db.js';
 export function getCurrentUser(user = null) {
   if (user) return user;
   if (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH) {
-    return db.currentUser || { id: "user-1", name: "Arun Kumar", email: "arun.kumar@scriptora.studio" };
+    return db.currentUser || null;
   }
-  return null;
+  return db.currentUser || null;
 }
 
 export function login(credentials) {
   const { email, password, provider, name, displayName, picture, photoURL, sub, token } = credentials || {};
   const isGoogle = provider === 'google';
-  const resolvedName = displayName || name || (email ? email.split('@')[0] : "Arun Kumar");
-  const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "AK";
+  const resolvedName = displayName || name || (email ? email.split('@')[0] : "Screenwriter");
+  const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "SW";
 
   let userId = sub || credentials?.uid || credentials?.id;
   if (!userId) {
     if (isGoogle) {
       userId = `google-${Date.now()}`;
-    } else if (email && email.toLowerCase().trim() === 'arun.kumar@scriptora.studio') {
-      userId = "user-1";
     } else if (email) {
       userId = `user-${crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 12)}`;
     } else {
@@ -35,22 +33,17 @@ export function login(credentials) {
     name: resolvedName,
     displayName: resolvedName,
     headline: isGoogle ? "Screenwriter & Film Director" : "Screenwriter & Narrative Director",
-    email: email ? email.toLowerCase().trim() : (userId === 'user-1' ? "arun.kumar@scriptora.studio" : `${userId}@scriptora.studio`),
+    email: email ? email.toLowerCase().trim() : `${userId}@scriptora.studio`,
     badge: "Member Pro",
     initials,
     avatar: avatarUrl,
     avatarUrl: avatarUrl,
     provider: provider || "credentials",
-    stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
+    stats: { drafts: 0, coAuthors: 0, healthIndex: "100%" }
   };
 
   const authToken = token || `token-${userId}-${Date.now()}`;
   user.token = authToken;
-
-  // In legacy test mode only, preserve db.currentUser for compatibility if test user
-  if (process.env.NODE_ENV === 'test' && (userId === 'user-1' || email === 'arun.kumar@scriptora.studio')) {
-    db.currentUser = user;
-  }
 
   return user;
 }
@@ -75,7 +68,7 @@ export function register(data) {
     email: email ? email.toLowerCase().trim() : `${userId}@scriptora.studio`,
     badge: "Member Pro",
     initials: resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "NW",
-    stats: { drafts: 1, coAuthors: 0, healthIndex: "100%" }
+    stats: { drafts: 0, coAuthors: 0, healthIndex: "100%" }
   };
   user.token = `token-${userId}-${Date.now()}`;
 
@@ -99,7 +92,7 @@ export function verifyOtp(phone) {
     email: `${userId}@scriptora.studio`,
     badge: "Member Pro",
     initials: "VW",
-    stats: { drafts: 3, coAuthors: 1, healthIndex: "95%" }
+    stats: { drafts: 0, coAuthors: 0, healthIndex: "100%" }
   };
   user.token = `token-${userId}-${Date.now()}`;
 
@@ -310,7 +303,7 @@ export async function verifyAuthToken(authHeader, allowSessionFallback = true) {
         }
         if (!process.env.STRICT_AUTH) {
           if (token === 'dev-token' || token === 'test-token') {
-            return db.currentUser || { id: 'user-1', uid: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' };
+            return db.currentUser || { id: 'test-user', uid: 'test-user', name: 'Test User', email: 'test@scriptora.studio' };
           }
           if (token.startsWith('token-')) {
             const parts = token.split('-');

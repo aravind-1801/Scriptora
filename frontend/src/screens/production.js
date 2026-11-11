@@ -7,10 +7,11 @@ import { showToast } from '../components/toast.js';
 export function renderProductionScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scripts = store.state.scripts || [];
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || scripts[0]?.id || null;
   const isFromEditor = from === 'editor' || (from && from.startsWith('/editor'));
   const returnUrl = isFromEditor
-    ? (sessionStorage.getItem('scriptora_prod_return') || (from && from.startsWith('/editor') ? from : `/editor/${scriptId}`))
+    ? (sessionStorage.getItem('scriptora_prod_return') || (from && from.startsWith('/editor') ? from : (scriptId ? `/editor/${scriptId}` : '/workspace')))
     : (from && from.startsWith('/') ? from : '/workspace');
   let dynamicLabel = null;
   if (window.scriptoraRouter) {
@@ -21,12 +22,27 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
     ? 'Editor'
     : (dynamicLabel || (from?.includes('/intelligence') ? 'Intelligence' : 'Workspace'));
 
-  const script = store.state.scripts?.find(s => s.id === scriptId) || store.state.scripts?.[0] || {
-    id: 'chronicles-of-dust',
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    pages: 96
-  };
+  const script = scripts.find(s => s.id === scriptId) || scripts[0] || null;
+
+  if (!script) {
+    return `
+      ${renderHeader('Pre-Production', 'Production Tools')}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">movie_creation</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplay Selected</h2>
+          <p class="text-xs text-slate-500 mb-6">Create or select a screenplay first to manage production breakdown, scene hub, stripboards, and call sheets.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('production')}
+    `;
+  }
 
   return `
     <!-- Standard App Header -->
@@ -59,7 +75,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
                 `}
               </select>
               <!-- Pinned source version tracking preserved for underlying system state -->
-              <span id="pinned-version-label" class="sr-only">${script.draft || 'Draft 4.2'} (Pinned)</span>
+              <span id="pinned-version-label" class="sr-only">${script.draft || 'Draft 1.0'} (Pinned)</span>
             </div>
           </div>
         </section>
@@ -69,7 +85,7 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
           <div class="flex items-start gap-2">
             <span class="material-symbols-outlined text-[18px] text-amber-600 shrink-0 mt-0.5">warning</span>
             <div class="text-xs text-amber-900 leading-relaxed">
-              <span class="font-semibold">Source Version Out of Sync:</span> Screenplay draft updated. Production records remain pinned to <span class="font-semibold underline" id="alert-pinned-ver">Draft 4.2</span>.
+              <span class="font-semibold">Source Version Out of Sync:</span> Screenplay draft updated. Production records remain pinned to <span class="font-semibold underline" id="alert-pinned-ver">${script.draft || 'Draft 1.0'}</span>.
             </div>
           </div>
           <div class="flex items-center gap-1.5 shrink-0">
@@ -174,7 +190,8 @@ export function renderProductionScreen(fromParam = null, scriptParam = null) {
 
 export async function attachProductionEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scripts = store.state.scripts || [];
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || scripts[0]?.id || null;
 
   // Back Button
   const backBtn = document.getElementById('production-back-btn');
@@ -215,7 +232,7 @@ export async function attachProductionEvents(navigate, fromParam = null, scriptP
   if (dismissStalenessBtn) {
     dismissStalenessBtn.onclick = () => {
       document.getElementById('source-version-alert')?.classList.add('hidden');
-      showToast('Retained Draft 4.2 pinned baseline');
+      showToast('Retained pinned baseline');
     };
   }
 

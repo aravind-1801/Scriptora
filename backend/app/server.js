@@ -127,7 +127,7 @@ export const server = http.createServer(async (req, res) => {
       const user = await getAuthUser(req, false);
       if (!user) {
         if (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH) {
-          const testUser = { id: 'user-1', uid: 'user-1', email: 'arun.kumar@scriptora.studio' };
+          const testUser = { id: 'test-user', uid: 'test-user', email: 'test@scriptora.studio' };
           return sendJson(res, 200, { scripts: scriptService.getScriptsForUser(testUser) });
         }
         return sendJson(res, 401, { error: 'Authentication required to access screenplays' });
@@ -136,7 +136,7 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, { scripts: userScripts });
     }
     if (pathname === '/scripts' && method === 'POST') {
-      const user = await getAuthUser(req, false) || (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH && { id: 'user-1', uid: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' });
+      const user = await getAuthUser(req, false) || (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH && { id: 'test-user', uid: 'test-user', name: 'Test User', email: 'test@scriptora.studio' });
       if (!user) {
         return sendJson(res, 401, { error: 'Authentication required to create a screenplay' });
       }
@@ -267,8 +267,8 @@ export const server = http.createServer(async (req, res) => {
           name: body.name || `Draft ${db.versions[id].length + 1}.0`,
           tag: "Milestone Snapshot",
           timestamp: "Just now",
-          author: db.currentUser?.initials || "AK",
-          stats: `${body.pageCount || 96} pages · ${body.wordCount || 14200} words`,
+          author: db.currentUser?.initials || "SW",
+          stats: `${body.pageCount || 0} pages · ${body.wordCount || 0} words`,
           notes: body.notes || "Point-in-time snapshot.",
           isCurrent: true
         };
@@ -1085,7 +1085,7 @@ export const server = http.createServer(async (req, res) => {
     // Storyboard Asynchronous Generation Jobs API
     const prodSbJobCreateMatch = pathname.match(/^\/(?:api\/v1|production\/([a-zA-Z0-9_-]+))\/storyboard\/jobs\/generate$/);
     if (prodSbJobCreateMatch && method === 'POST') {
-      const scriptId = prodSbJobCreateMatch[1] || 'chronicles-of-dust';
+      const scriptId = prodSbJobCreateMatch[1] || 'default';
       const body = await readBody(req);
       try {
         const job = storyboardService.createGenerationJob(scriptId, body);

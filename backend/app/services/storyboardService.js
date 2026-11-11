@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { db } from '../models/db.js';
 import { buildStoryboardGenerationPrompt } from './promptBuilder.js';
@@ -11,6 +12,13 @@ const BASE_PROJECT_DIR = process.cwd().endsWith('backend') ? path.resolve(proces
 const DATA_DIR = path.resolve(BASE_PROJECT_DIR, 'backend', 'data');
 const STORAGE_DIR = path.resolve(DATA_DIR, 'storage', 'storyboard');
 const STORYBOARDS_FILE = path.resolve(DATA_DIR, 'storyboards.json');
+
+function getStoryboardsFilePath() {
+  if (process.env.NODE_ENV === 'test') {
+    return path.resolve(os.tmpdir(), `scriptora-test-storyboards-${process.pid}.json`);
+  }
+  return STORYBOARDS_FILE;
+}
 
 // Ensure environment variables are loaded
 const envLocations = [
@@ -152,10 +160,10 @@ export async function createSignedImageUrl(storagePath, expiresIn = 3600, script
   return null;
 }
 
-export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chronicles-of-dust') {
+export async function uploadToSupabaseStorage(buffer, filename, scriptId = null) {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!supabaseUrl || !secretKey) return null;
+  if (!supabaseUrl || !secretKey || !scriptId) return null;
 
   const objectKey = `${scriptId}/${filename}`;
   const storagePath = `storyboards/${scriptId}/${filename}`;
@@ -186,7 +194,7 @@ export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chro
   return null;
 }
 
-export async function uploadShotImage(buffer, extension = 'jpg', scriptId = 'chronicles-of-dust') {
+export async function uploadShotImage(buffer, extension = 'jpg', scriptId = null) {
   if (!buffer || buffer.length < 10) {
     throw new Error("Invalid or empty image buffer");
   }
@@ -197,7 +205,7 @@ export async function uploadShotImage(buffer, extension = 'jpg', scriptId = 'chr
   const persistentUrl = saveImageToPersistentStorage(buffer, ext);
   const filename = path.basename(persistentUrl);
 
-  const supabaseResult = await uploadToSupabaseStorage(buffer, filename, scriptId);
+  const supabaseResult = scriptId ? await uploadToSupabaseStorage(buffer, filename, scriptId) : null;
   const storagePath = supabaseResult?.storagePath || null;
   const signedUrl = supabaseResult?.signedUrl || null;
 
@@ -215,7 +223,7 @@ export async function uploadShotImage(buffer, extension = 'jpg', scriptId = 'chr
 
 export async function recoverMissingImage(filename) {
   try {
-    ensureStoryboardsInitialized('chronicles-of-dust');
+    loadPersistedStoryboards();
     let targetSourceUrl = null;
 
     // Scan all storyboards and shot revision histories for matching filename
@@ -277,8 +285,10 @@ export async function recoverMissingImage(filename) {
 
 export function persistStoryboardDb() {
   try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    fs.writeFileSync(STORYBOARDS_FILE, JSON.stringify(db.storyboards || [], null, 2), 'utf8');
+    const filePath = getStoryboardsFilePath();
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(db.storyboards || [], null, 2), 'utf8');
   } catch (err) {
     console.warn('[Storyboard Storage] Failed to persist storyboards to disk:', err.message);
   }
@@ -288,8 +298,9 @@ let storyboardsLoadedFromDisk = false;
 export function loadPersistedStoryboards(force = false) {
   if (storyboardsLoadedFromDisk && !force) return;
   try {
-    if (fs.existsSync(STORYBOARDS_FILE)) {
-      const raw = fs.readFileSync(STORYBOARDS_FILE, 'utf8');
+    const filePath = getStoryboardsFilePath();
+    if (fs.existsSync(filePath)) {
+      const raw = fs.readFileSync(filePath, 'utf8');
       const loaded = JSON.parse(raw);
       if (Array.isArray(loaded) && loaded.length > 0) {
         if (!db.storyboards || force) db.storyboards = [];
@@ -310,24 +321,45 @@ export function loadPersistedStoryboards(force = false) {
 }
 
 
-function getSketchImageSvg(filename, width = 1200, height = 675) {
-  const assetUrl = `/assets/storyboard/${filename}`;
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'><image href='${assetUrl}' width='${width}' height='${height}' preserveAspectRatio='xMidYMid slice'/></svg>`;
+function buildProceduralConceptSvg(params = {}, width = 1200, height = 675) {
+  const esc = (s = '') => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const shotSize = esc(params.shotSize || "Medium Shot");
+  const cameraAngle = esc(params.cameraAngle || "Eye Level");
+  const sceneHeading = esc((params.sceneHeading || "SCENE 1").slice(0, 54));
+  const promptText = esc((params.prompt || params.description || "Storyboard Concept Frame").slice(0, 84));
+  const shotNumber = esc(params.shotNumber || "1A");
+  const aspectRatio = esc(params.aspectRatio || "2.39:1");
+  const focalLength = esc(params.focalLength || "35mm");
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${width} ${height}' width='${width}' height='${height}'>` +
+    `<rect width='${width}' height='${height}' fill='#0f172a'/>` +
+    `<rect x='40' y='40' width='${width - 80}' height='${height - 80}' fill='none' stroke='#334155' stroke-width='2' stroke-dasharray='10 8'/>` +
+    `<line x1='${width / 3}' y1='40' x2='${width / 3}' y2='${height - 40}' stroke='#1e293b' stroke-width='1.5'/>` +
+    `<line x1='${(width * 2) / 3}' y1='40' x2='${(width * 2) / 3}' y2='${height - 40}' stroke='#1e293b' stroke-width='1.5'/>` +
+    `<line x1='40' y1='${height / 3}' x2='${width - 40}' y2='${height / 3}' stroke='#1e293b' stroke-width='1.5'/>` +
+    `<line x1='40' y1='${(height * 2) / 3}' x2='${width - 40}' y2='${(height * 2) / 3}' stroke='#1e293b' stroke-width='1.5'/>` +
+    `<rect x='340' y='190' width='520' height='260' rx='10' fill='#1e293b' stroke='#475569' stroke-width='2'/>` +
+    `<text x='600' y='150' text-anchor='middle' fill='#60a5fa' font-family='monospace' font-size='22' font-weight='700'>SHOT ${shotNumber} · ${shotSize.toUpperCase()} · ${cameraAngle.toUpperCase()}</text>` +
+    `<text x='600' y='305' text-anchor='middle' fill='#f8fafc' font-family='system-ui, sans-serif' font-size='26' font-weight='600'>${sceneHeading}</text>` +
+    `<text x='600' y='352' text-anchor='middle' fill='#94a3b8' font-family='monospace' font-size='18'>${aspectRatio} · ${focalLength}</text>` +
+    `<text x='600' y='525' text-anchor='middle' fill='#cbd5e1' font-family='system-ui, sans-serif' font-size='19'>${promptText}</text>` +
+    `</svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-export function getStoryboards(scriptId = 'chronicles-of-dust') {
+export function getStoryboards(scriptId) {
+  if (!scriptId) return [];
   ensureStoryboardsInitialized(scriptId);
   return db.storyboards.filter(sb => sb.scriptId === scriptId);
 }
 
-export function getStoryboardByScene(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
+export function getStoryboardByScene(scriptId, sceneId = 'scene-1') {
+  if (!scriptId) return null;
   ensureStoryboardsInitialized(scriptId);
   let sb = db.storyboards.find(s => s.scriptId === scriptId && (s.sceneId === sceneId || String(s.sceneNumber) === String(sceneId).replace('scene-', '')));
   
   if (!sb) {
     // Find matching scene from productionScenes or db.scripts
-    const scenes = db.productionScenes.filter(s => s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust');
+    const scenes = db.productionScenes.filter(s => s.scriptId === scriptId);
     const sceneNum = Number(String(sceneId).replace('scene-', '')) || 1;
     const scene = scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum) || {
       id: `scene-${sceneNum}`,
@@ -338,7 +370,7 @@ export function getStoryboardByScene(scriptId = 'chronicles-of-dust', sceneId = 
       snippet: 'Scene awaiting visual storyboard planning.'
     };
 
-    const script = db.scripts.find(s => s.id === scriptId) || db.scripts[0];
+    const script = db.scripts.find(s => s.id === scriptId);
 
     sb = {
       id: `sb-${scriptId}-${scene.id}`,
@@ -348,7 +380,7 @@ export function getStoryboardByScene(scriptId = 'chronicles-of-dust', sceneId = 
       sceneHeading: scene.heading,
       intExt: scene.intExt || 'INT',
       dayNight: scene.dayNight || 'DAY',
-      sourceVersion: script?.draft || "Draft 4.2",
+      sourceVersion: script?.draft || "Draft 1.0",
       isVersionStale: false,
       aspectRatio: "2.39:1",
       visualStyle: "Storyboard Sketch",
@@ -385,7 +417,7 @@ export function saveStoryboard(scriptId, data) {
       sceneId,
       sceneNumber: data.sceneNumber || Number(String(sceneId).replace('scene-', '')) || 1,
       sceneHeading: data.sceneHeading || "SCENE 1",
-      sourceVersion: data.sourceVersion || "Draft 4.2",
+      sourceVersion: data.sourceVersion || "Draft 1.0",
       isVersionStale: false,
       aspectRatio: data.aspectRatio || "2.39:1",
       visualStyle: data.visualStyle || "Cinematic Concept Art",
@@ -477,7 +509,7 @@ export function updateShot(scriptId, sceneId, shotId, updates, user = null) {
       visualStyle: updates.visualStyle || shot.visualStyle || "Storyboard Sketch",
       quality: shot.quality || "hd",
       approvalStatus: shot.approvalStatus || "draft",
-      sourceVersion: sb.sourceVersion || "Draft 4.2",
+      sourceVersion: sb.sourceVersion || "Draft 1.0",
       timestamp: new Date().toISOString(),
       updatedBy: updaterName
     });
@@ -511,7 +543,7 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex, user
     provider: shot.provider || "scriptora-concept",
     quality: shot.quality || "hd",
     approvalStatus: shot.approvalStatus || "draft",
-    sourceVersion: sb.sourceVersion || "Draft 4.2",
+    sourceVersion: sb.sourceVersion || "Draft 1.0",
     timestamp: new Date().toISOString(),
     updatedBy: updaterName
   });
@@ -582,10 +614,11 @@ export function softDeleteScene(scriptId, sceneId) {
   return { success: true, removedId: sceneId, recycleItem };
 }
 
-export function getRecycleBin(scriptId = 'chronicles-of-dust') {
+export function getRecycleBin(scriptId = null) {
   if (!Array.isArray(db.storyboardRecycleBin)) {
     db.storyboardRecycleBin = [];
   }
+  if (!scriptId) return [];
   return db.storyboardRecycleBin.filter(item => item.scriptId === scriptId);
 }
 
@@ -1037,11 +1070,13 @@ export async function generateShotImage(params = {}) {
       // Save to server-side persistent storage on disk
       const persistentUrl = saveImageToPersistentStorage(buf, ext);
       const filename = path.basename(persistentUrl);
-      recordGeneratedAsset(params.scriptId || 'chronicles-of-dust', filename);
+      if (params.scriptId) {
+        recordGeneratedAsset(params.scriptId, filename);
+      }
       const base64Data = buf.toString("base64");
       const dataUri = `data:${mime};base64,${base64Data}`;
 
-      const supabaseResult = await uploadToSupabaseStorage(buf, filename, params.scriptId || 'chronicles-of-dust');
+      const supabaseResult = params.scriptId ? await uploadToSupabaseStorage(buf, filename, params.scriptId) : null;
       const storagePath = supabaseResult?.storagePath || null;
       const signedUrl = supabaseResult?.signedUrl || null;
 
@@ -1333,52 +1368,9 @@ export async function generateShotImage(params = {}) {
 
 export function renderConceptEngineSketch(params = {}) {
   const {
-    shotSize = "Medium Shot",
-    sceneHeading = "SCENE 1",
-    prompt = "",
-    shotNumber = "1A"
+    prompt = ""
   } = params;
-  const sizeLower = (shotSize || "").toLowerCase();
-  const headingUpper = (sceneHeading || "").toUpperCase();
-  const fullText = `${sceneHeading} ${prompt} ${params.description || ""}`.toLowerCase();
-
-  let sketchFile = "shot_1a_wide_outpost.jpg";
-  if (params.isVariation) {
-    const varType = (params.variationType || "").toLowerCase();
-    if (varType === 'angle' || varType === 'framing') {
-      sketchFile = "shot_10a_valve_breach.jpg";
-    } else if (varType === 'lighting') {
-      sketchFile = "shot_10b_pumping_hall.jpg";
-    } else if (varType === 'composition') {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNumber.includes("A") || sizeLower.includes("wide")) {
-      sketchFile = "shot_10b_pumping_hall.jpg";
-    } else if (shotNumber.includes("B") || sizeLower.includes("two")) {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNumber.includes("C") || sizeLower.includes("close")) {
-      sketchFile = "shot_10a_valve_breach.jpg";
-    } else {
-      sketchFile = "shot_1d_macro_insert.jpg";
-    }
-  } else {
-    if (sizeLower.includes("close-up") || sizeLower.includes("close up")) {
-      sketchFile = fullText.includes("valve") || headingUpper.includes("10") ? "shot_10a_valve_breach.jpg" : "shot_1c_closeup_reaction.jpg";
-    } else if (sizeLower.includes("two-shot") || sizeLower.includes("two shot") || (params.cast && params.cast.length >= 2)) {
-      sketchFile = "shot_1b_two_shot_standoff.jpg";
-    } else if (sizeLower.includes("macro") || sizeLower.includes("insert") || sizeLower.includes("extreme close")) {
-      sketchFile = "shot_1d_macro_insert.jpg";
-    } else if (headingUpper.includes("10") || fullText.includes("pumping") || fullText.includes("hall")) {
-      sketchFile = "shot_10b_pumping_hall.jpg";
-    } else if (shotNumber.includes("B")) {
-      sketchFile = "shot_1b_two_shot_standoff.jpg";
-    } else if (shotNumber.includes("C")) {
-      sketchFile = "shot_1c_closeup_reaction.jpg";
-    } else if (shotNumber.includes("D")) {
-      sketchFile = "shot_1d_macro_insert.jpg";
-    }
-  }
-
-  const generatedImage = getSketchImageSvg(sketchFile);
+  const generatedImage = buildProceduralConceptSvg(params);
 
   return {
     imageUrl: generatedImage,
@@ -1391,14 +1383,14 @@ export function renderConceptEngineSketch(params = {}) {
 
 export async function generateSceneSequence(scriptId, sceneId, params = {}) {
   const sb = getStoryboardByScene(scriptId, sceneId);
-  const scenes = db.productionScenes.filter(s => s.scriptId === scriptId || s.scriptId === 'chronicles-of-dust');
-  const sceneNum = Number(String(sceneId).replace('scene-', '')) || sb.sceneNumber || 1;
+  const scenes = db.productionScenes.filter(s => s.scriptId === scriptId);
+  const sceneNum = Number(String(sceneId).replace('scene-', '')) || sb?.sceneNumber || 1;
   const scene = scenes.find(s => s.id === sceneId || s.sceneNumber === sceneNum) || {
-    heading: sb.sceneHeading || `SCENE ${sceneNum}`,
-    intExt: sb.intExt || "INT",
-    dayNight: sb.dayNight || "DAY",
-    snippet: "Kevin and Meera coordinate actions under escalating stakes.",
-    cast: ["KEVIN", "MEERA"]
+    heading: sb?.sceneHeading || `SCENE ${sceneNum}`,
+    intExt: sb?.intExt || "INT",
+    dayNight: sb?.dayNight || "DAY",
+    snippet: "Cinematic sequence progression.",
+    cast: []
   };
 
   const style = params.visualStyle || sb.visualStyle || "Cinematic Concept Art";
@@ -1529,7 +1521,7 @@ export async function generateSceneSequence(scriptId, sceneId, params = {}) {
       approvedBy: null,
       approvedAt: null,
       directorNotes: `Maintain consistent eyeline and color grading palette across ${b.shotNumber}.`,
-      characters: scene.cast || ["KEVIN"],
+      characters: scene.cast || [],
       location: scene.heading,
       continuity: {
         characterPosition: i % 2 === 0 ? "Screen Left" : "Screen Right",
@@ -1564,7 +1556,7 @@ function generateProceduralConceptFrame(opts = {}) {
     shotNumber = "1A",
     prompt = "",
     description = "",
-    cast = ["KEVIN", "MEERA"],
+    cast = [],
     characters = [],
     screenDirection = "Left to Right"
   } = opts;
@@ -1695,7 +1687,7 @@ function generateProceduralConceptFrame(opts = {}) {
   const dutchTransform = isDutch ? `transform='rotate(4 ${width / 2} ${height / 2})'` : "";
 
   // Cast characters
-  const allCast = (cast && cast.length) ? cast : ((characters && characters.length) ? characters : ["KEVIN", "MEERA"]);
+  const allCast = (cast && cast.length) ? cast : ((characters && characters.length) ? characters : []);
   const char1 = allCast[0] || "PROTAGONIST";
   const char2 = allCast[1] || "SUPPORT";
 
@@ -1977,226 +1969,5 @@ function ensureStoryboardsInitialized(scriptId) {
   loadPersistedStoryboards();
   if (!db.storyboards) {
     db.storyboards = [];
-  }
-
-  // Pre-seed default Scene 1 and Scene 10 storyboards for chronicles-of-dust
-  const existing = db.storyboards.filter(s => s.scriptId === scriptId);
-  if (!existing.length && scriptId === 'chronicles-of-dust') {
-    db.storyboards.push(
-      {
-        id: "sb-chronicles-of-dust-scene-1",
-        scriptId: "chronicles-of-dust",
-        sceneId: "scene-1",
-        sceneNumber: 1,
-        sceneHeading: "EXT. MOJAVE OUTPOST GATE 4 - DAY",
-        intExt: "EXT",
-        dayNight: "DAY",
-        sourceVersion: "Draft 4.2",
-        isVersionStale: false,
-        aspectRatio: "2.39:1",
-        visualStyle: "Storyboard Sketch",
-        shots: [
-          {
-            id: "shot-1-1A",
-            shotNumber: "1A",
-            order: 1,
-            title: "Perimeter Outpost Gate",
-            description: "High altitude drone descending across dust devils toward Kevin's arrival at the arid customs gate.",
-            shotSize: "Wide Shot",
-            cameraAngle: "High Angle",
-            cameraMovement: "Crane / Jib",
-            focalLength: "24mm Wide",
-            lightingMood: "Daylight Dust",
-            aspectRatio: "2.39:1",
-            visualStyle: "Storyboard Sketch",
-            prompt: "Cinematic wide shot, arid desert outpost gate, dust devils whirling, worn solar patrol rover in foreground, 2.39:1 anamorphic framing, muted earth tones, warm daylight",
-            imageUrl: getSketchImageSvg("shot_1a_wide_outpost.jpg"),
-            imageSource: "ai",
-            provider: "scriptora-concept",
-            quality: "hd",
-            costEstimate: "Free (Built-in)",
-            approvalStatus: "approved",
-            approvalNotes: "Great atmosphere and sense of scale. Approved for primary camera team.",
-            approvedBy: "Arun Kumar (Owner)",
-            approvedAt: "2026-10-18T10:30:00Z",
-            directorNotes: "Capture sunrise glint off the guard gate perimeter wires.",
-            characters: ["KEVIN", "MARCUS"],
-            location: "Arid Outpost Gate 4",
-            continuity: {
-              characterPosition: "Kevin approaching from camera-left",
-              screenDirection: "Left to Right",
-              eyeline: "Looking toward Outpost Gate",
-              lightingContinuity: "High-contrast morning sun from east",
-              costumeState: "Dust coat level 2, canteen left side",
-              propPlacement: "Gate clearance scanner in right hand"
-            },
-            history: []
-          },
-          {
-            id: "shot-1-1B",
-            shotNumber: "1B",
-            order: 2,
-            title: "Gate Scanner Clearance Standoff",
-            description: "Medium two-shot of Kevin presenting his ID badge to Marcus over the buzzing clearance terminal.",
-            shotSize: "Medium Two-Shot",
-            cameraAngle: "Eye Level",
-            cameraMovement: "Static",
-            focalLength: "50mm Prime",
-            lightingMood: "Harsh Fluorescent Rim",
-            aspectRatio: "2.39:1",
-            visualStyle: "Storyboard Sketch",
-            prompt: "Medium two-shot, dusty outpost booth, weary hydro-engineer confronting guard over illuminated green holographic terminal, 50mm shallow depth of field",
-            imageUrl: getSketchImageSvg("shot_1b_two_shot_standoff.jpg"),
-            imageSource: "ai",
-            provider: "scriptora-concept",
-            quality: "hd",
-            costEstimate: "Free (Built-in)",
-            approvalStatus: "approved",
-            approvalNotes: "Good eyeline match with Shot 1A.",
-            approvedBy: "Arun Kumar (Owner)",
-            approvedAt: "2026-10-18T10:35:00Z",
-            directorNotes: "Focus pull from scanner terminal to Kevin's tense expression.",
-            characters: ["KEVIN", "MARCUS"],
-            location: "Arid Outpost Gate 4",
-            continuity: {
-              characterPosition: "Kevin screen-left, Marcus screen-right",
-              screenDirection: "Left to Right",
-              eyeline: "Eye-level direct confrontation",
-              lightingContinuity: "Terminal backlight rimming Kevin's face",
-              costumeState: "Kevin wearing goggles around neck",
-              propPlacement: "ID card inserted into reader"
-            },
-            history: []
-          },
-          {
-            id: "shot-1-1C",
-            shotNumber: "1C",
-            order: 3,
-            title: "Terminal Diagnostic Anomaly",
-            description: "Close-up insert of the flickering scanner console displaying pressure alert warning in red neon.",
-            shotSize: "Close-Up",
-            cameraAngle: "Low Angle",
-            cameraMovement: "Static",
-            focalLength: "85mm Portrait",
-            lightingMood: "Cyan Strobe",
-            aspectRatio: "2.39:1",
-            visualStyle: "Storyboard Sketch",
-            prompt: "Extreme close-up on rugged military diagnostic screen, red warning glyphs, water pressure anomaly curve, scratched glass surface, macro lens bokeh",
-            imageUrl: getSketchImageSvg("shot_1c_closeup_reaction.jpg"),
-            imageSource: "ai",
-            provider: "scriptora-concept",
-            quality: "hd",
-            costEstimate: "Free (Built-in)",
-            approvalStatus: "proposed",
-            approvalNotes: "Review telemetry readout typography for accuracy.",
-            approvedBy: null,
-            approvedAt: null,
-            directorNotes: "Practical screen insert; needs strobe flash on alert pulse.",
-            characters: ["KEVIN"],
-            location: "Arid Outpost Gate 4",
-            continuity: {
-              characterPosition: "Centered insert",
-              screenDirection: "Neutral",
-              eyeline: "Downwards onto screen",
-              lightingContinuity: "Red alert flashing 1Hz",
-              costumeState: "Kevin's gloved thumb on lower bezel",
-              propPlacement: "Scanner unit firmly latched"
-            },
-            history: []
-          }
-        ],
-        createdAt: "2026-10-18T10:00:00Z",
-        updatedAt: "2026-10-18T10:35:00Z"
-      },
-      {
-        id: "sb-chronicles-of-dust-scene-10",
-        scriptId: "chronicles-of-dust",
-        sceneId: "scene-10",
-        sceneNumber: 10,
-        sceneHeading: "INT. PUMPING STATION CHAMBER B - NIGHT",
-        intExt: "INT",
-        dayNight: "NIGHT",
-        sourceVersion: "Draft 4.2",
-        isVersionStale: false,
-        aspectRatio: "2.39:1",
-        visualStyle: "Storyboard Sketch",
-        shots: [
-          {
-            id: "shot-10-10A",
-            shotNumber: "10A",
-            order: 1,
-            title: "Chamber B Valve Breach",
-            description: "Dutch angle close-up on Kevin as high-speed water mist bokeh bursts from the hydraulic bypass manifold.",
-            shotSize: "Close-Up",
-            cameraAngle: "Dutch Angle",
-            cameraMovement: "Tracking Dolly",
-            focalLength: "85mm Portrait",
-            lightingMood: "Cyan Strobe",
-            aspectRatio: "2.39:1",
-            visualStyle: "Storyboard Sketch",
-            prompt: "Dramatic dutch angle close up, hydro-engineer clamping leaking pressurized valve under red and cyan emergency strobes, 85mm shallow depth of field, water droplets on lens",
-            imageUrl: getSketchImageSvg("shot_10a_valve_breach.jpg"),
-            imageSource: "ai",
-            provider: "scriptora-concept",
-            quality: "hd",
-            costEstimate: "Free (Built-in)",
-            approvalStatus: "approved",
-            approvalNotes: "Approved key dramatic frame for climax sequence.",
-            approvedBy: "Arun Kumar (Owner)",
-            approvedAt: "2026-10-19T14:15:00Z",
-            directorNotes: "High-speed water mist effects on set with practical red beacons.",
-            characters: ["KEVIN"],
-            location: "Pumping Station Chamber B",
-            continuity: {
-              characterPosition: "Kevin center-right crouching",
-              screenDirection: "Right to Left",
-              eyeline: "Looking upward at failing pressure valve",
-              lightingContinuity: "Red alarm pulse alternating with cyan fill",
-              costumeState: "Left sleeve soaked in hydraulic fluid",
-              propPlacement: "Hydraulic Bypass Valve Kit locked onto manifold"
-            },
-            history: []
-          },
-          {
-            id: "shot-10-10B",
-            shotNumber: "10B",
-            order: 2,
-            title: "Cavernous High Pressure Pumping Hall",
-            description: "Wide interior high-angle crane revealing the immense scale of Chamber B as floodwaters start pooling.",
-            shotSize: "Wide Shot",
-            cameraAngle: "High Angle",
-            cameraMovement: "Crane / Jib",
-            focalLength: "24mm Wide",
-            lightingMood: "Low-Key Shadow",
-            aspectRatio: "2.39:1",
-            visualStyle: "Storyboard Sketch",
-            prompt: "Wide high-angle shot of cavernous underground pumping hall, water rushing across metal grating, lone figures in vast industrial labyrinth, 24mm anamorphic",
-            imageUrl: getSketchImageSvg("shot_10b_pumping_hall.jpg"),
-            imageSource: "ai",
-            provider: "scriptora-concept",
-            quality: "hd",
-            costEstimate: "Free (Built-in)",
-            approvalStatus: "approved",
-            approvalNotes: "Approved for VFX and stunt coordination.",
-            approvedBy: "Arun Kumar (Owner)",
-            approvedAt: "2026-10-19T14:20:00Z",
-            directorNotes: "Stunt riggers on gantry catwalks above frame.",
-            characters: ["KEVIN", "MEERA"],
-            location: "Pumping Station Chamber B",
-            continuity: {
-              characterPosition: "Figures in lower third",
-              screenDirection: "Left to Right",
-              eyeline: "Looking up at catwalks",
-              lightingContinuity: "Overhead halogen grid flickering",
-              costumeState: "Meera tactical harness strapped tight",
-              propPlacement: "Cable anchor secured to primary iron pylon"
-            },
-            history: []
-          }
-        ],
-        createdAt: "2026-10-19T14:00:00Z",
-        updatedAt: "2026-10-19T14:20:00Z"
-      }
-    );
   }
 }

@@ -3,13 +3,29 @@ import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
 
 export function renderIndividualAnalysisSelectorScreen() {
-  const scriptId = store.state.selectedScriptId || 'chronicles-of-dust';
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
-    id: 'chronicles-of-dust',
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    pages: 96
-  };
+  const scripts = store.state.scripts || [];
+  const scriptId = store.state.selectedScriptId || scripts[0]?.id || null;
+  const script = scripts.find(s => s.id === scriptId) || null;
+
+  if (!script) {
+    return `
+      ${renderHeader('Intelligence', 'Analyse Individually')}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">psychology</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplays Yet</h2>
+          <p class="text-xs text-slate-500 mb-6">Create a screenplay in your workspace to explore script intelligence and diagnostics.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('intelligence')}
+    `;
+  }
 
   const tiles = [
     { type: 'pacing', title: 'Pacing', desc: 'See where the story moves too fast or too slowly.', icon: 'speed', score: 82, telemetry: `${script.pages || 96} Pages Telemetry` },

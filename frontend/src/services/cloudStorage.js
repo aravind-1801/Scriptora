@@ -143,7 +143,8 @@ async function getFirestore() {
 /**
  * Upload genuine image binary/data URI to genuinely free cloud object storage
  */
-export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-dust', filename = null) {
+export async function uploadImageToCloud(imageInput, scriptId = null, filename = null) {
+  const targetScriptId = scriptId || 'default';
   const finalFilename = filename || `shot_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
 
   // 1. Supabase Storage (Verified 0-cost, 0-credit-card object storage)
@@ -168,7 +169,7 @@ export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-d
       }
 
       if (imageBuffer) {
-        const uploadUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/${SUPABASE_CONFIG.bucket}/storyboards/${scriptId}/${finalFilename}`;
+        const uploadUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/${SUPABASE_CONFIG.bucket}/storyboards/${targetScriptId}/${finalFilename}`;
         const uploadRes = await fetch(uploadUrl, {
           method: 'POST',
           headers: {
@@ -181,13 +182,13 @@ export async function uploadImageToCloud(imageInput, scriptId = 'chronicles-of-d
         });
 
         if (uploadRes.ok) {
-          const publicUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/public/${SUPABASE_CONFIG.bucket}/storyboards/${scriptId}/${finalFilename}`;
+          const publicUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/public/${SUPABASE_CONFIG.bucket}/storyboards/${targetScriptId}/${finalFilename}`;
           return {
             success: true,
             provider: 'supabase-storage',
             imageUrl: publicUrl,
             cloudStorageUrl: publicUrl,
-            storagePath: `storyboards/${scriptId}/${finalFilename}`,
+            storagePath: `storyboards/${targetScriptId}/${finalFilename}`,
             filename: finalFilename
           };
         } else {

@@ -32,18 +32,6 @@ function getDraftSceneSnippet(draft) {
     }
   } catch {}
 
-  if (draft.id === 'chronicles-of-dust') {
-    return `"INT. CUSTOMS OFFICE - NIGHT - Kevin kneels over cracked hydro-sensor junction box, static..."`;
-  }
-  if (draft.id === 'the-neon-horizon') {
-    return `"EXT. SECTOR 4 SKYLINE - DUSK - Rain reflects neon advertisements across towering glass spires..."`;
-  }
-  if (draft.id === 'velvet-shadows') {
-    return `"INT. DETECTIVE OFFICE - RAINY NIGHT - A single desk lamp casts long shadows across unread case files..."`;
-  }
-  if (draft.id === 'silent-echoes') {
-    return `"INT. ARCHIVE CELLAR - DAY - Dust motes dance in the amber light filtering through frosted glass..."`;
-  }
   if (draft.logline) {
     return `"${draft.logline.slice(0, 110)}..."`;
   }

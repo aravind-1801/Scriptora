@@ -17,20 +17,32 @@ import {
 export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptsList = store.state.scripts || [];
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || scriptsList[0]?.id || null;
   const isFromEditor = from === 'editor';
-  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
+  const returnUrl = isFromEditor && scriptId ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
 
-  const scriptsList = (store.state.scripts && store.state.scripts.length > 0)
-    ? store.state.scripts
-    : (api.DEFAULT_SCRIPTS || []);
+  const script = scriptsList.find(s => s.id === scriptId) || scriptsList[0] || null;
 
-  const script = scriptsList.find(s => s.id === scriptId) || scriptsList[0] || {
-    id: 'chronicles-of-dust',
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    joinCode: 'A7K9-XP42'
-  };
+  if (!script) {
+    return `
+      ${renderHeader('Profile', 'Collaborators')}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-24 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">group</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplay Selected</h2>
+          <p class="text-xs text-slate-500 mb-6">Create or select a screenplay first to manage team access, join codes, and role permissions.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('profile')}
+    `;
+  }
 
   return `
     ${renderHeader('Profile', 'Collaborators')}
@@ -56,7 +68,7 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
               <span class="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Active Screenplay</span>
               <div class="flex items-center gap-1.5 mt-0.5">
                 <span class="material-symbols-outlined text-blue-600 text-[18px]">movie_edit</span>
-                <span class="font-heading text-sm font-bold text-slate-900 truncate" id="currentProjectTitle">${script.title} (${script.draft || 'Draft 4.2'})</span>
+                <span class="font-heading text-sm font-bold text-slate-900 truncate" id="currentProjectTitle">${script.title} (${script.draft || 'Draft 1.0'})</span>
               </div>
             </div>
             <div class="flex items-center gap-2 flex-shrink-0">
@@ -261,10 +273,10 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
             <div id="joinCodeResultCard" class="hidden bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <div class="flex flex-col">
-                  <span class="text-xs font-bold text-slate-900 font-heading" id="verifiedScriptTitle">Chronicles of Dust</span>
-                  <span class="text-[10px] text-slate-500" id="verifiedScriptOwner">Owner: Arun Kumar</span>
+                  <span class="text-xs font-bold text-slate-900 font-heading" id="verifiedScriptTitle">Screenplay</span>
+                  <span class="text-[10px] text-slate-500" id="verifiedScriptOwner">Owner</span>
                 </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" id="verifiedScriptFormat">Feature · 96 pages</span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold" id="verifiedScriptFormat">Feature</span>
               </div>
 
               <div class="flex flex-col gap-1.5">
@@ -442,9 +454,10 @@ export function renderCollaboratorsScreen(fromParam = null, scriptParam = null) 
 export function attachCollaboratorsEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptsList = store.state.scripts || [];
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || scriptsList[0]?.id || null;
   const isFromEditor = from === 'editor';
-  const returnUrl = isFromEditor ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
+  const returnUrl = isFromEditor && scriptId ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
 
   // Back button handling
   const backBtn = document.getElementById('collab-back-btn');
@@ -1036,8 +1049,8 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
         if (res.valid) {
           resultCard?.classList.remove('hidden');
           document.getElementById('verifiedScriptTitle').textContent = res.script.title;
-          document.getElementById('verifiedScriptFormat').textContent = `${res.script.format || 'Feature'} · ${res.script.pages || 96} pgs`;
-          document.getElementById('verifiedScriptOwner').textContent = `Owner: ${res.script.ownerName || 'Arun Kumar'}`;
+          document.getElementById('verifiedScriptFormat').textContent = `${res.script.format || 'Feature'} · ${res.script.pages || 1} pgs`;
+          document.getElementById('verifiedScriptOwner').textContent = `Owner: ${res.script.ownerName || res.script.ownerEmail || 'Owner'}`;
           showToast('Valid join code verified');
         } else {
           resultCard?.classList.add('hidden');
@@ -1175,7 +1188,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
         btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Generating AES-256 Key...</span>`;
 
         try {
-          const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
+          const currentUserEmail = store.state.currentUser?.email || (store.state.currentUser?.id ? `${store.state.currentUser.id}@scriptora.studio` : 'writer@scriptora.studio');
           await getOrCreateUserDeviceKeyPair(currentUserEmail);
 
           btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Encrypting Screenplay Content...</span>`;
@@ -1231,7 +1244,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
         rotateBtn.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Rotating Keys...</span>`;
 
         try {
-          const currentUserEmail = store.state.currentUser?.email || 'arun.kumar@scriptora.studio';
+          const currentUserEmail = store.state.currentUser?.email || (store.state.currentUser?.id ? `${store.state.currentUser.id}@scriptora.studio` : 'writer@scriptora.studio');
           const newMasterKey = await generateScreenplayKey();
           const newRawBase64 = await exportRawKeyBase64(newMasterKey);
           const newFingerprint = await computeKeyFingerprint(newRawBase64);

@@ -8,123 +8,91 @@ import { sanitizeCharacterList, cleanCharacterName } from '../utils/characters.j
 export const vectorDetails = {
   pacing: {
     title: 'Pacing Analysis',
-    score: 82,
+    score: 0,
     icon: 'speed',
     desc: 'Scene duration variance, narrative tempo and page-turn velocity.',
     questions: ['Where does the pace drag in Act II?', 'Find scenes over 4 pages', 'Show action-to-dialogue ratios'],
-    findings: [
-      { scene: 'SCENE 14 · Dockside Perimeter · Pg 36', act: 'Act II', title: 'Action beats slow down before major confrontation', desc: 'Extended exposition between dock guards lowers tension prior to container breach.', targetScene: 14 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II Midpoint', title: 'Peak narrative rhythm', desc: 'Fast intercut dialogue creates maximum urgency before floodgate breach.', targetScene: 18 },
-      { scene: 'SCENE 26 · Coastal Highway · Pg 68', act: 'Act III', title: 'High velocity turning point', desc: 'Pursuit cadence maintains optimal beats per page.', targetScene: 26 }
-    ]
+    findings: []
   },
   dialogue: {
     title: 'Dialogue Analysis',
-    score: 89,
+    score: 0,
     icon: 'chat',
     desc: 'Cadence, subtext density, distinctive character voice profiles.',
-    questions: ['Are character voices distinctive?', 'Find on-the-nose exposition lines', 'Analyze dialogue subtext in Scene 18'],
-    findings: [
-      { scene: 'SCENE 08 · Waterfront Diner · Pg 19', act: 'Act I', title: 'Subtext is understated and powerful', desc: 'Kevin avoids speaking about his brother directly, communicating through silence and tea rituals.', targetScene: 8 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Meera O.S. dialogue establishes authority', desc: 'Radio chatter avoids fluff and communicates technical stakes concisely.', targetScene: 18 }
-    ]
+    questions: ['Are character voices distinctive?', 'Find on-the-nose exposition lines', 'Analyze dialogue subtext in a key scene'],
+    findings: []
   },
   emotion: {
     title: 'Emotion Analysis',
-    score: 91,
+    score: 0,
     icon: 'favorite',
     desc: 'Catharsis trajectory, emotional resonance curves, character empathy indices.',
-    questions: ['Where does emotional vulnerability peak?', 'Track empathy trajectory for Kevin', 'Catharsis resolution in Act III'],
-    findings: [
-      { scene: 'SCENE 12 · Father’s Workshop · Pg 28', act: 'Act I', title: 'Emotional anchor established', desc: 'Familial debt and generational sacrifice ground Kevin’s reluctance to blow the whistle.', targetScene: 12 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Desperation under rising water', desc: 'Kevin’s fear of failing Meera is palpable as water rises past junction box.', targetScene: 18 }
-    ]
+    questions: ['Where does emotional vulnerability peak?', 'Track empathy trajectory for protagonist', 'Catharsis resolution in Act III'],
+    findings: []
   },
   'character-arc': {
     title: 'Character Arc Analysis',
-    score: 84,
+    score: 0,
     icon: 'alt_route',
     desc: 'Want vs. Need conflict, psychological transformation, fatal flaw resolution.',
-    questions: ['Does Kevin overcome his passivity?', 'Meera character transformation', 'Antagonist motivation clarity'],
-    findings: [
-      { scene: 'SCENE 04 · Port Audit Room · Pg 09', act: 'Act I', title: 'Fatal Flaw: Silent Compliance', desc: 'Kevin stamps irregular cargo manifests to keep peace with union superiors.', targetScene: 4 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'The Point of No Return', desc: 'Kevin cuts the emergency seal, consciously choosing rebellion over survival.', targetScene: 18 }
-    ]
+    questions: ['Does the protagonist overcome their passivity?', 'Key character transformation', 'Antagonist motivation clarity'],
+    findings: []
   },
   continuity: {
     title: 'Continuity Analysis',
-    score: 78,
+    score: 0,
     icon: 'linear_scale',
     desc: 'Prop tracking, character spatial locations, timeline consistency checks.',
-    questions: ['Check prop handover in Scene 18', 'Is time of day consistent across Act II?', 'Track the brass seal location'],
-    findings: [
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Hydro-sensor probe referenced before retrieval', desc: 'Verify Kevin picked up copper probe in Scene 16 or carries it on belt.', targetScene: 18 },
-      { scene: 'SCENE 22 · Pumping Station · Pg 58', act: 'Act II', title: 'Flashlight state discrepancy', desc: 'Ensure flashlight was retrieved after water surge in Scene 19.', targetScene: 22 }
-    ]
+    questions: ['Check prop handover consistency', 'Is time of day consistent across Act II?', 'Track key props and wardrobe'],
+    findings: []
   },
   'story-structure': {
     title: 'Story Structure Analysis',
-    score: 87,
+    score: 0,
     icon: 'account_tree',
     desc: 'Inciting incident, plot points, midpoint shift, climax architecture.',
-    questions: ['Is midpoint clearly defined?', 'Evaluate climax timing on page 88', 'Are 3-act beats aligned?'],
-    findings: [
-      { scene: 'SCENE 06 · Customs Registry · Pg 14', act: 'Inciting Incident', title: 'Off-manifest container discovered', desc: 'The inciting anomaly sets Kevin on irreversible investigative path.', targetScene: 6 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Midpoint (Pg 48/96)', title: 'Stakes escalate from civil to criminal', desc: 'Kevin realizes his own brother commands the smuggling cartel.', targetScene: 18 }
-    ]
+    questions: ['Is midpoint clearly defined?', 'Evaluate climax timing', 'Are 3-act beats aligned?'],
+    findings: []
   },
   theme: {
     title: 'Theme Analysis',
-    score: 90,
+    score: 0,
     icon: 'lightbulb',
-    desc: 'Primary narrative spine: Complicity vs. Duty and moral accountability.',
+    desc: 'Primary narrative spine and moral accountability.',
     questions: ['What is the central theme?', 'Where is loyalty tested?', 'Show recurring thematic motifs'],
-    findings: [
-      { scene: 'SCENE 09 · Family Kitchen · Pg 22', act: 'Act I', title: 'Familial pressure as thematic catalyst', desc: 'Kevin hides eviction notice, showing economic desperation fueling institutional silence.', targetScene: 9 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Moral test faced directly', desc: 'Kevin must decide whether to save his brother or save the port city from flooding.', targetScene: 18 },
-      { scene: 'SCENE 36 · Rooftop Overlook · Pg 94', act: 'Act III', title: 'Theme delivers its final statement', desc: 'Accountability over self-preservation.', targetScene: 36 }
-    ]
+    findings: []
   },
   cinema: {
     title: 'Cinema & Visual Storytelling',
-    score: 85,
+    score: 0,
     icon: 'videocam',
     desc: 'Visual set-piece density, image systems, lighting and camera intentionality.',
     questions: ['Check visual contrast between acts', 'Highlight cinematic set-pieces', 'Analyze color palette cues in action lines'],
-    findings: [
-      { scene: 'SCENE 01 · Harbor Drone View · Pg 01', act: 'Act I', title: 'Strong establishing visual metaphor', desc: 'Rusted shipping containers stacked like monoliths beneath smog.', targetScene: 1 },
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'High visual tension', desc: 'Red emergency beacons reflected in rising brackish water.', targetScene: 18 }
-    ]
+    findings: []
   },
   scene: {
     title: 'Scene Analysis',
-    score: 86,
+    score: 0,
     icon: 'movie',
-    desc: 'Micro-structure of Scene 18: Objective, obstacle, polarity change.',
+    desc: 'Micro-structure of scene: Objective, obstacle, polarity change.',
     questions: ['What is the scene objective?', 'Where does tension peak?', 'How does polarity shift?'],
-    findings: [
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Objective: Reroute electrical relay before surge', desc: 'Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).', targetScene: 18 }
-    ]
+    findings: []
   },
   formatting: {
     title: 'Formatting & Guild Compliance',
-    score: 94,
+    score: 0,
     icon: 'rule',
     desc: 'Industry standard margin measurements, capitalization, slugline syntax.',
     questions: ['Check standard industry margins', 'Find non-standard scene sluglines', 'Verify dialogue capitalization rules'],
-    findings: [
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Perfect Courier Prime 12pt slugline', desc: 'Margins, dual dialogue spacing, and transition tags meet Writers Guild standards.', targetScene: 18 }
-    ]
+    findings: []
   },
   production: {
     title: 'Production Breakdown',
-    score: 80,
+    score: 0,
     icon: 'movie_creation',
     desc: 'Locations, shooting days, practical elements, cast size breakdown.',
     questions: ['How many practical locations?', 'Show scenes with special props', 'List one-off speaking roles'],
-    findings: [
-      { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Location: Wet Stage / Customs Interior', desc: 'Requires controlled water flooding tank, hydro-sensor prop box, wet comm-link gear.', targetScene: 18 }
-    ]
+    findings: []
   }
 };
 
@@ -142,9 +110,6 @@ export function getScreenplayData(scriptId) {
       if (sp && sp.scenes && sp.scenes.length > 0) return sp;
     } catch (e) {}
   }
-  if (scriptId === 'chronicles-of-dust') {
-    return api.CANONICAL_SCREENPLAY_CHRONICLES;
-  }
   return null;
 }
 
@@ -161,16 +126,6 @@ export function getAvailableScenes(screenplay, scriptId) {
         number: num,
         slugline: slug,
         act: sc.actId === 'act-3' ? 'Act III' : sc.actId === 'act-2' ? 'Act II' : (num > 24 ? 'Act III' : num > 11 ? 'Act II' : 'Act I')
-      });
-    });
-  } else {
-    const can = api.CANONICAL_SCREENPLAY_CHRONICLES;
-    can.scenes.forEach(sc => {
-      scenes.push({
-        id: sc.id,
-        number: sc.number,
-        slugline: sc.slugline || `SCENE ${sc.number}`,
-        act: sc.actId === 'act-2' ? 'Act II' : 'Act I'
       });
     });
   }
@@ -197,15 +152,6 @@ export function getAvailableCharacters(screenplay) {
 
   let cleanedNames = sanitizeCharacterList(candidates);
 
-  // If list is empty after purging noise, fallback to primary story protagonists
-  if (cleanedNames.length === 0) {
-    if (screenplay && (screenplay.id === 'chronicles-of-dust' || screenplay.title?.includes('Dust'))) {
-      cleanedNames = ['SANTHOSH', 'ARAVIND', 'KEVIN', 'MEERA'];
-    } else {
-      cleanedNames = ['SANTHOSH', 'ARAVIND'];
-    }
-  }
-
   // Update screenplay model and persist to purge previous dirty prefixes from storage
   if (screenplay) {
     screenplay.characters = cleanedNames;
@@ -216,16 +162,10 @@ export function getAvailableCharacters(screenplay) {
     }
   }
 
-  return cleanedNames.map(name => {
-    const key = name.toUpperCase();
-    let role = 'Character';
-    if (key === 'SANTHOSH' || key === 'ARAVIND' || key === 'KEVIN') {
-      role = 'Protagonist';
-    } else if (key === 'MEERA') {
-      role = 'Confidante';
-    }
-    return { name, role };
-  });
+  return cleanedNames.map(name => ({
+    name,
+    role: 'Character'
+  }));
 }
 
 export function getSceneDetails(sceneNum, availableScenes = []) {
@@ -240,78 +180,6 @@ export function getSceneDetails(sceneNum, availableScenes = []) {
   const page = Math.max(1, (sc.number - 1) * 3 + 1);
   const estMin = Math.min(4.5, Math.max(1.5, ((sc.number * 7) % 3) + 2.0)).toFixed(1);
 
-  if (Number(sceneNum) === 18) {
-    return {
-      number: 18,
-      heading: 'SCENE 18 · INT. CUSTOMS OFFICE - NIGHT',
-      act: 'Act II Midpoint',
-      page: 48,
-      estMin: '3.5',
-      meta: 'Act II Midpoint · Pg 48 · ~3.5 min est.',
-      purpose: 'Kevin attempts to reroute the electrical relay before the surge floods the basement archives.',
-      conflict: 'Rising water breaches the junction box while automated emergency flood doors trigger lockouts, trapping him inside.',
-      whatChanges: 'Kevin cuts the emergency seal and refuses to sign the false manifest, irreversibly shifting from passive worker to active resistance.',
-      synthesis: 'Polarity shifts from cautious optimism (+1) to catastrophic physical trap and moral awakening (-2), marking the central pivot of the screenplay.',
-      findings: [
-        {
-          scene: 'SCENE 18 · Customs Office · Pg 48',
-          act: 'Act II Midpoint',
-          title: 'Objective: Reroute electrical relay before surge',
-          desc: 'Begins with cautious hope, ends in desperate physical race against rising water (+ to - polarity shift).',
-          targetScene: 18
-        }
-      ]
-    };
-  }
-
-  if (Number(sceneNum) === 1) {
-    return {
-      number: 1,
-      heading: `SCENE 01 · ${cleanSlug || 'INT. HOME - EVENING'}`,
-      act: 'Act I Opening',
-      page: 1,
-      estMin: '2.0',
-      meta: 'Act I Opening · Pg 01 · ~2.0 min est.',
-      purpose: 'Establish opening character presence, environment, and initial psychological stakes.',
-      conflict: 'Tension and unspoken questions between characters as unfamiliar presence breaks routine.',
-      whatChanges: 'Ordinary state broken by unfamiliar arrival, creating the narrative catalyst for the journey.',
-      synthesis: 'Polarity shifts from neutral calm (0) to heightened curiosity and alertness (-1), establishing the dramatic question.',
-      findings: [
-        {
-          scene: `SCENE 01 · ${cleanSlug || 'Opening'} · Pg 01`,
-          act: 'Act I Opening',
-          title: 'Establish protagonist baseline and primary premise',
-          desc: 'Opening visual dynamic introduces character motives before inciting conflict.',
-          targetScene: 1
-        }
-      ]
-    };
-  }
-
-  if (Number(sceneNum) === 4) {
-    return {
-      number: 4,
-      heading: `SCENE 04 · ${cleanSlug || 'INT. PORT AUDIT ROOM - DAY'}`,
-      act: 'Act I',
-      page: 9,
-      estMin: '2.5',
-      meta: 'Act I · Pg 09 · ~2.5 min est.',
-      purpose: 'Kevin audits cargo registry under pressure from superiors to overlook anomalies.',
-      conflict: 'Institutional compliance vs early ethical hesitation as signatures are demanded.',
-      whatChanges: 'Kevin stamps the manifest with reluctance, confirming his fatal flaw of institutional compliance.',
-      synthesis: 'Polarity shifts from hesitation (0) to moral compromise (-1), establishing the internal flaw to overcome.',
-      findings: [
-        {
-          scene: `SCENE 04 · Port Audit · Pg 09`,
-          act: 'Act I',
-          title: 'Fatal Flaw Demonstrated: Silent Compliance',
-          desc: 'Compliant stamp creates complicity guilt that fuels later revolt.',
-          targetScene: 4
-        }
-      ]
-    };
-  }
-
   return {
     number: sceneNum,
     heading: `SCENE ${String(sceneNum).padStart(2, '0')} · ${cleanSlug || `INT. LOCATION ${sceneNum} - DAY`}`,
@@ -322,7 +190,7 @@ export function getSceneDetails(sceneNum, availableScenes = []) {
     purpose: `Execute narrative beat for ${cleanSlug || `Scene ${sceneNum}`} and advance sequence trajectory.`,
     conflict: `Characters encounter rising resistance while navigating immediate beat obstacles.`,
     whatChanges: `Beats shift character leverage, altering interpersonal dynamic and scene outcome.`,
-    synthesis: `Polarity turns decisively across the beat, transitioning the dramatic tension into the next sequence.`,
+    synthesis: `Polarity turns across the beat, transitioning the dramatic tension into the next sequence.`,
     findings: [
       {
         scene: `SCENE ${String(sceneNum).padStart(2, '0')} · Pg ${page}`,
@@ -336,7 +204,7 @@ export function getSceneDetails(sceneNum, availableScenes = []) {
 }
 
 export function getCharacterDetails(charName, screenplay) {
-  const norm = cleanCharacterName(charName || 'SANTHOSH');
+  const norm = cleanCharacterName(charName || 'Protagonist');
   const key = norm.toUpperCase();
 
   let dynamicCount = 0;
@@ -348,107 +216,7 @@ export function getCharacterDetails(charName, screenplay) {
     });
   }
 
-  if (key === 'SANTHOSH') {
-    return {
-      name: 'SANTHOSH',
-      role: 'Protagonist',
-      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '36 scenes tracked',
-      step1Title: 'Silent Conviction & Initial Resistance',
-      step1Tag: 'Fatal Flaw',
-      step1Range: 'Beginning Beats',
-      step1Desc: 'Santhosh begins navigating intense internal conviction, wrestling with external constraints and uncovering initial stakes.',
-      step2Title: 'The Turning Point & Strategic Pivot',
-      step2Tag: 'Turning Point',
-      step2Range: 'Middle Beats (Midpoint)',
-      step2Desc: 'Santhosh breaks away from passive compromises, taking active control of the narrative direction under peak conflict.',
-      step3Title: 'Decisive Transformation & Resolution',
-      step3Tag: 'Resolution',
-      step3Range: 'Climactic Beats',
-      step3Desc: 'Santhosh embraces complete accountability and purpose, achieving an irreversible transformation through the climax.',
-      synthesis: 'Santhosh drives the core thematic arc of the story, transforming from cautious survival into an active, principled catalyst of change.',
-      findings: [
-        { scene: 'SCENE 01 · Narrative Baseline · Pg 01', act: 'Act I', title: 'Fatal Flaw: Internal Hesitation', desc: 'Santhosh operates with guarded vigilance before escalating pressures force decisive action.', targetScene: 1 },
-        { scene: 'SCENE 02 · The Turning Point · Pg 05', act: 'Act II', title: 'The Point of No Return', desc: 'Santhosh takes a defining stance that permanently pivots interpersonal relationships and story stakes.', targetScene: 2 }
-      ]
-    };
-  }
-
-  if (key === 'ARAVIND') {
-    return {
-      name: 'ARAVIND',
-      role: 'Protagonist',
-      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '32 scenes tracked',
-      step1Title: 'Guarded Precision & Calculated Loyalty',
-      step1Tag: 'Origin Stance',
-      step1Range: 'Beginning Beats',
-      step1Desc: 'Aravind maintains tactical focus and sharp perception, questioning surrounding motives and testing early alliances.',
-      step2Title: 'High-Stakes Partnership & Crucial Stand',
-      step2Tag: 'Midpoint Shift',
-      step2Range: 'Middle Beats (Midpoint)',
-      step2Desc: 'Aravind unites forces during the turning point, applying razor-sharp resolve to counter mounting narrative obstacles.',
-      step3Title: 'Decisive Breakthrough & Ultimate Climax',
-      step3Tag: 'Resolution',
-      step3Range: 'Climactic Beats',
-      step3Desc: 'Aravind executes the final breakthrough, sealing the resolution through steadfast commitment to the mission.',
-      synthesis: 'Aravind provides essential tactical momentum and intellectual force, elevating the stakes and cementing the dramatic payoff.',
-      findings: [
-        { scene: 'SCENE 01 · Tactical Introduction · Pg 01', act: 'Act I', title: 'Strategic Presence & Foresight', desc: 'Aravind introduces critical context and tactical perspective into the unfolding scenario.', targetScene: 1 },
-        { scene: 'SCENE 02 · Midpoint Crucible · Pg 06', act: 'Act II', title: 'Decisive Strategic Realignment', desc: 'Aravind commits to the high-stakes confrontation that defines the story trajectory.', targetScene: 2 }
-      ]
-    };
-  }
-
-  if (key === 'KEVIN') {
-    return {
-      name: 'Kevin',
-      role: 'Protagonist',
-      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '48 scenes tracked',
-      step1Title: 'Silent Compliance & Institutional Fear',
-      step1Tag: 'Fatal Flaw',
-      step1Range: 'Beginning · Scene 01–11',
-      step1Desc: 'Hesitant and guarded, Kevin stamps irregular manifests to keep peace with superiors and protect familial debt.',
-      step2Title: 'The Point of No Return',
-      step2Tag: 'Turning Point',
-      step2Range: 'Middle · Scene 18 (Midpoint)',
-      step2Desc: 'Cuts the emergency floodgate seal, actively defying union directives to prevent port catastrophe.',
-      step3Title: 'Selfless Moral Accountability',
-      step3Tag: 'Resolution',
-      step3Range: 'Ending · Scene 36–38',
-      step3Desc: 'Hands over the ledger to the public audit without demanding personal immunity, completing moral transformation.',
-      synthesis: 'The protagonist completes a verified 3-stage transformation: overcoming passivity at the midpoint and prioritizing moral duty over self-preservation in the climax.',
-      findings: [
-        { scene: 'SCENE 04 · Port Audit Room · Pg 09', act: 'Act I', title: 'Fatal Flaw: Silent Compliance', desc: 'Kevin stamps irregular cargo manifests to keep peace with union superiors.', targetScene: 4 },
-        { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'The Point of No Return', desc: 'Kevin cuts the emergency seal, consciously choosing rebellion over survival.', targetScene: 18 }
-      ]
-    };
-  }
-
-  if (key === 'MEERA') {
-    return {
-      name: 'Meera',
-      role: 'Confidante',
-      scenesCount: dynamicCount > 0 ? `${dynamicCount} scenes tracked` : '22 scenes tracked',
-      step1Title: 'Vigilant Skepticism & Tactical Isolation',
-      step1Tag: 'Origin Stance',
-      step1Range: 'Beginning · Scene 01–12',
-      step1Desc: 'Operates independently along pipeline perimeters, skeptical of municipal regulators and trusting only raw field telemetry.',
-      step2Title: 'Calculated Alliance Under Pressure',
-      step2Tag: 'Partnership Beat',
-      step2Range: 'Middle · Scene 18 (Midpoint)',
-      step2Desc: 'Guides Kevin via comm-link to the breaker box, choosing to rely on his technical precision despite active security alarms.',
-      step3Title: 'Vindicated Shared Resistance',
-      step3Tag: 'Resolution',
-      step3Range: 'Ending · Scene 36–38',
-      step3Desc: 'Secures and broadcasts the telemetry leak to the public frequency, cementing alliance and exposing corporate monopoly.',
-      synthesis: 'The confidante evolves from protective cynicism to trusted partnership, providing the strategic resolve that enables the protagonist to act.',
-      findings: [
-        { scene: 'SCENE 08 · Waterfront Diner · Pg 19', act: 'Act I', title: 'Tactical Caution & Guarded Insight', desc: 'Meera warns Kevin of private security patrols monitoring pipeline telemetry.', targetScene: 8 },
-        { scene: 'SCENE 18 · Customs Office · Pg 48', act: 'Act II', title: 'Emergency Comm Guidance', desc: 'Meera coordinates the junction box bypass before automated floodgates lock.', targetScene: 18 }
-      ]
-    };
-  }
-
-  const role = (key === 'KEVIN' || key === 'SANTHOSH' || key === 'ARAVIND') ? 'Protagonist' : 'Character';
+  const role = 'Character';
   const scenesCountStr = dynamicCount > 0 ? `${dynamicCount} scenes tracked` : 'Screenplay Character';
 
   return {
@@ -478,7 +246,7 @@ export function getCharacterDetails(charName, screenplay) {
  * Generates the dedicated MAIN ANALYSIS VISUAL / CONTENT for each vector
  */
 function renderMainVisualContent(type, script, screenplayContext = {}) {
-  const pageCount = script.pages || 96;
+  const pageCount = script?.pages || 1;
   const { availableScenes = [], currentSceneData = {}, availableChars = [], currentCharData = {} } = screenplayContext;
 
   switch (type) {
@@ -1236,10 +1004,10 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
                   <span class="material-symbols-outlined text-[14px] text-slate-500 absolute right-1.5 pointer-events-none">expand_more</span>
                 </div>
               </div>
-              <span id="target-scene-meta" class="text-[11px] font-medium text-slate-500 truncate">${currentSceneData.meta || 'Act II Midpoint · Pg 48 · ~3.5 min est.'}</span>
+              <span id="target-scene-meta" class="text-[11px] font-medium text-slate-500 truncate">${currentSceneData.meta || 'Act I · Pg 1'}</span>
             </div>
             <h2 id="target-scene-heading" class="font-heading font-bold text-base text-slate-900 tracking-tight">
-              ${currentSceneData.heading || 'SCENE 18 · INT. CUSTOMS OFFICE - NIGHT'}
+              ${currentSceneData.heading || 'SCENE 01'}
             </h2>
           </div>
 
@@ -1253,7 +1021,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
               <div class="flex flex-col min-w-0">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">PURPOSE</span>
                 <p id="target-scene-purpose" class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
-                  ${currentSceneData.purpose || 'Kevin attempts to reroute the electrical relay before the surge floods the basement archives.'}
+                  ${currentSceneData.purpose || 'Write scenes in your screenplay to analyze scene objectives and dramatic purpose.'}
                 </p>
               </div>
             </div>
@@ -1266,7 +1034,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
               <div class="flex flex-col min-w-0">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">CONFLICT</span>
                 <p id="target-scene-conflict" class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
-                  ${currentSceneData.conflict || 'Rising water breaches the junction box while automated emergency flood doors trigger lockouts, trapping him inside.'}
+                  ${currentSceneData.conflict || 'No scene conflict detected yet.'}
                 </p>
               </div>
             </div>
@@ -1279,7 +1047,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
               <div class="flex flex-col min-w-0">
                 <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">WHAT CHANGES</span>
                 <p id="target-scene-what-changes" class="text-xs text-slate-800 font-medium leading-relaxed mt-0.5">
-                  ${currentSceneData.whatChanges || 'Kevin cuts the emergency seal and refuses to sign the false manifest, irreversibly shifting from passive worker to active resistance.'}
+                  ${currentSceneData.whatChanges || 'No polarity shift tracked yet.'}
                 </p>
               </div>
             </div>
@@ -1289,7 +1057,7 @@ function renderMainVisualContent(type, script, screenplayContext = {}) {
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-2.5">
             <span class="material-symbols-outlined text-blue-600 text-[18px] shrink-0 mt-0.5">movie</span>
             <p id="target-scene-synthesis" class="text-xs text-slate-700 leading-relaxed">
-              ${currentSceneData.synthesis || 'Polarity shifts from cautious optimism (+1) to catastrophic physical trap and moral awakening (-2), marking the central pivot of the screenplay.'}
+              ${currentSceneData.synthesis || 'Select or author scenes in the Screenplay Editor to view live scene synthesis.'}
             </p>
           </div>
         </section>
@@ -1313,23 +1081,43 @@ export function renderIndividualAnalysisScreen(type = 'pacing', from = null, ret
     urlParams = new URLSearchParams();
   }
   const isFromEditor = from === 'editor' || urlParams.get('from') === 'editor' || Boolean(storedReturn);
-  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || 'chronicles-of-dust';
-  const editorReturnUrl = `/editor/${targetScriptId}`;
+  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || store.state.scripts[0]?.id || null;
+  const editorReturnUrl = targetScriptId ? `/editor/${targetScriptId}` : '/workspace';
 
   const scriptId = targetScriptId;
-  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || {
+  const script = store.state.scripts.find(s => s.id === scriptId) || store.state.activeScript || (scriptId ? {
     id: scriptId,
-    title: 'Chronicles of Dust',
-    draft: 'Draft 4.2',
-    pages: 96
-  };
+    title: 'Untitled Screenplay',
+    draft: 'Draft 1.0',
+    pages: 1
+  } : null);
+
+  if (!script) {
+    return `
+      ${renderHeader('Intelligence', detail.title)}
+      <main class="flex-1 flex flex-col relative w-full pt-16 pb-20 bg-surface">
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-16">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">${detail.icon}</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplay Selected</h2>
+          <p class="text-xs text-slate-500 mb-6">Create or select a screenplay in your workspace to run ${detail.title.toLowerCase()}.</p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+      ${renderBottomNav('intelligence')}
+    `;
+  }
 
   const screenplay = getScreenplayData(scriptId);
   const availableScenes = getAvailableScenes(screenplay, scriptId);
   const availableChars = getAvailableCharacters(screenplay);
 
-  const selectedSceneNum = Number(store.state.currentSceneId || (availableScenes.find(s => s.number === 18) ? 18 : availableScenes[0]?.number || 1));
-  const selectedCharName = availableChars[0]?.name || 'Kevin';
+  const selectedSceneNum = Number(store.state.currentSceneId || availableScenes[0]?.number || 1);
+  const selectedCharName = availableChars[0]?.name || 'Protagonist';
 
   const currentSceneData = getSceneDetails(selectedSceneNum, availableScenes);
   const currentCharData = getCharacterDetails(selectedCharName, screenplay);
@@ -1468,9 +1256,10 @@ export function attachIndividualAnalysisEvents(type, navigate, from = null, retu
     urlParams = new URLSearchParams();
   }
   const isFromEditor = from === 'editor' || urlParams.get('from') === 'editor' || Boolean(storedReturn);
-  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || 'chronicles-of-dust';
-  const editorReturnUrl = `/editor/${targetScriptId}`;
+  const targetScriptId = returnScriptId || urlParams.get('scriptId') || (storedReturn ? storedReturn.replace('/editor/', '') : null) || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const editorReturnUrl = targetScriptId ? `/editor/${targetScriptId}` : '/workspace';
   const scriptId = targetScriptId;
+  const fallbackBackUrl = isFromEditor ? editorReturnUrl : (from === 'dashboard' ? '/intelligence/dashboard' : '/intelligence/analysis');
 
   const screenplay = getScreenplayData(scriptId);
   const availableScenes = getAvailableScenes(screenplay, scriptId);
@@ -1483,10 +1272,11 @@ export function attachIndividualAnalysisEvents(type, navigate, from = null, retu
       if (isFromEditor) {
         sessionStorage.removeItem('scriptora_prod_return');
       }
+      const targetBack = backBtn.getAttribute('data-back-fallback') || fallbackBackUrl;
       if (window.scriptoraRouter) {
-        window.scriptoraRouter.back(backUrl);
+        window.scriptoraRouter.back(targetBack);
       } else {
-        navigate(backUrl);
+        navigate(targetBack);
       }
     };
   }
@@ -1494,6 +1284,10 @@ export function attachIndividualAnalysisEvents(type, navigate, from = null, retu
   function bindEditorButtons() {
     document.querySelectorAll('.btn-open-editor-scene').forEach(btn => {
       btn.onclick = () => {
+        if (!scriptId) {
+          navigate('/workspace');
+          return;
+        }
         const sceneNum = btn.getAttribute('data-scene');
         store.setState({ currentSceneId: Number(sceneNum) });
         showToast(`Jumping to Scene ${sceneNum} in Editor`);
@@ -1613,6 +1407,10 @@ export function attachIndividualAnalysisEvents(type, navigate, from = null, retu
   // Scene click targets from graphs/curves
   document.querySelectorAll('[data-jump-scene]').forEach(el => {
     el.onclick = () => {
+      if (!scriptId) {
+        navigate('/workspace');
+        return;
+      }
       const sc = el.getAttribute('data-jump-scene');
       store.setState({ currentSceneId: Number(sc) });
       showToast(`Jumping to Scene ${sc} in Editor`);

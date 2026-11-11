@@ -454,7 +454,11 @@ class Router {
     }
 
     if (path === '/editor') {
-      const activeId = store.state.selectedScriptId || 'chronicles-of-dust';
+      const activeId = store.state.selectedScriptId || store.state.scripts?.[0]?.id;
+      if (!activeId) {
+        this.navigate('/workspace', true);
+        return;
+      }
       const sceneParam = query.get('scene');
       this.navigate(`/editor/${activeId}${sceneParam ? `?scene=${sceneParam}` : ''}`, true);
       return;
@@ -581,9 +585,11 @@ class Router {
     const sceneMatch = path.match(/^\/production\/scenes(?:\/([a-zA-Z0-9_-]+))?$/);
     if (sceneMatch) {
       const fromParam = query.get('from');
-      const scriptParam = query.get('scriptId') || 'chronicles-of-dust';
+      const scriptParam = query.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || '';
       const sceneId = sceneMatch[1] || query.get('sceneId');
-      const dest = `/production/schedule?scriptId=${scriptParam}${sceneId ? `&sceneId=${sceneId}` : ''}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`;
+      const dest = scriptParam
+        ? `/production/schedule?scriptId=${scriptParam}${sceneId ? `&sceneId=${sceneId}` : ''}${fromParam ? `&from=${encodeURIComponent(fromParam)}` : ''}`
+        : `/production/schedule${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`;
       this.navigate(dest, true);
       return;
     }

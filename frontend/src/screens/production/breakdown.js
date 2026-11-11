@@ -22,7 +22,7 @@ const CATEGORY_CONFIG = {
 
 export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
   const from = fromParam || urlParams.get('from');
 
   return `
@@ -49,7 +49,7 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
             <div class="p-2 sm:px-3 first:pl-1">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Total Elements</span>
               <div class="font-heading font-bold text-lg text-slate-900 mt-0.5" id="kpi-total">--</div>
-              <span class="text-[11px] text-slate-400">Across 10 Scenes</span>
+              <span class="text-[11px] text-slate-400" id="kpi-scenes-sub">Across active scenes</span>
             </div>
             <div class="p-2 sm:px-3">
               <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Confirmed</span>
@@ -76,17 +76,7 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
             <div class="flex items-center gap-2">
               <span class="text-xs font-semibold text-slate-500 shrink-0">Filter Scene:</span>
               <select id="breakdown-scene-select" class="text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none cursor-pointer">
-                <option value="all">All Scenes (10 Scenes)</option>
-                <option value="scene-1">Scene 1 — Gate 4 Day</option>
-                <option value="scene-2">Scene 2 — Customs Shed</option>
-                <option value="scene-3">Scene 3 — Conduit Dusk</option>
-                <option value="scene-4">Scene 4 — Perimeter Fence</option>
-                <option value="scene-5">Scene 5 — Valve Tunnel</option>
-                <option value="scene-6">Scene 6 — Service Road</option>
-                <option value="scene-7">Scene 7 — Syndicate Control</option>
-                <option value="scene-8">Scene 8 — Reservoir Basin</option>
-                <option value="scene-9">Scene 9 — Drainage Vault</option>
-                <option value="scene-10">Scene 10 — Chamber B Night</option>
+                <option value="all">All Scenes</option>
               </select>
             </div>
 
@@ -180,7 +170,7 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label class="font-semibold text-slate-700 block mb-1">Associated Scenes (comma-separated)</label>
-                <input type="text" id="elem-scenes" value="18" placeholder="e.g. 18 or 1, 4, 18" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
+                <input type="text" id="elem-scenes" value="1" placeholder="e.g. 1 or 1, 4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-600">
                 <span class="text-[10px] text-slate-400 mt-0.5 block">Can link to multiple scenes simultaneously</span>
               </div>
               <div>
@@ -254,17 +244,30 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
 
 export async function attachBreakdownEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || 'chronicles-of-dust';
+  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
 
   let currentCategory = urlParams.get('category') || 'all';
   let currentScene = urlParams.get('scene') || 'all';
   let currentSearch = urlParams.get('character') || urlParams.get('search') || '';
   let activeEditingItemId = null;
 
-  // Initialize scene select value from URL if provided
+  // Initialize scene select dropdown dynamically from active script scenes
   const sceneSelectInit = document.getElementById('breakdown-scene-select');
-  if (sceneSelectInit && currentScene !== 'all') {
-    sceneSelectInit.value = currentScene.startsWith('scene-') ? currentScene : `scene-${currentScene}`;
+  if (sceneSelectInit) {
+    if (scriptId) {
+      api.getProductionScenes(scriptId).then(scList => {
+        const scenes = Array.isArray(scList) ? scList : [];
+        const subEl = document.getElementById('kpi-scenes-sub');
+        if (subEl) subEl.textContent = scenes.length > 0 ? `Across ${scenes.length} Scene${scenes.length === 1 ? '' : 's'}` : 'Across active scenes';
+        sceneSelectInit.innerHTML = `<option value="all">All Scenes${scenes.length > 0 ? ` (${scenes.length})` : ''}</option>` +
+          scenes.map(sc => `<option value="${sc.id}">Scene ${sc.sceneNumber} — ${sc.heading || 'Scene'}</option>`).join('');
+        if (currentScene !== 'all') {
+          sceneSelectInit.value = currentScene.startsWith('scene-') ? currentScene : `scene-${currentScene}`;
+        }
+      }).catch(() => {});
+    } else if (currentScene !== 'all') {
+      sceneSelectInit.value = currentScene.startsWith('scene-') ? currentScene : `scene-${currentScene}`;
+    }
   }
 
   // Initialize category buttons if provided in URL
@@ -509,7 +512,7 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-2.5 bg-indigo-50/50 rounded-xl border border-indigo-100">
               <div>
                 <label class="font-semibold text-indigo-900 block mb-1">Assigned Actor</label>
-                <input type="text" name="assignedActor" value="${item.assignedActor || ''}" placeholder="e.g. Dev Patel (or leave blank for Open)" class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500">
+                <input type="text" name="assignedActor" value="${item.assignedActor || ''}" placeholder="Actor name (or leave blank for Open)" class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500">
               </div>
               <div>
                 <label class="font-semibold text-indigo-900 block mb-1">Casting Status</label>
@@ -562,7 +565,7 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-2.5 bg-purple-50/50 rounded-xl border border-purple-100">
               <div>
                 <label class="font-semibold text-purple-900 block mb-1">Required Resources</label>
-                <input type="text" name="requiredResources" value="${item.requiredResources || ''}" placeholder="CO2, Brine Reservoir..." class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500">
+                <input type="text" name="requiredResources" value="${item.requiredResources || ''}" placeholder="Atmospheric FX, rigs, tanks..." class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:outline-none focus:border-blue-500">
               </div>
               <div>
                 <label class="font-semibold text-purple-900 block mb-1">Technical Specs</label>
@@ -663,8 +666,18 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
 
     if (filtered.length === 0) {
       container.innerHTML = `
-        <div class="bg-white rounded-2xl border border-slate-200/90 p-8 text-center text-slate-400 text-xs">
-          No breakdown elements match the active category, scene, or search filters.
+        <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center flex flex-col items-center justify-center gap-2.5">
+          <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span class="material-symbols-outlined text-2xl">dataset</span>
+          </div>
+          <h4 class="font-heading font-bold text-sm text-slate-900">${list.length === 0 ? 'No Breakdown Elements Yet' : 'No Matching Elements'}</h4>
+          <p class="text-xs text-slate-500 max-w-sm">
+            ${!scriptId
+              ? 'Select or create a screenplay in your Workspace to start tracking cast, props, locations, and practical elements.'
+              : list.length === 0
+                ? 'Add your first cast, prop, location, or department element using the Add Element button.'
+                : 'No breakdown elements match the active category, scene, or search filters.'}
+          </p>
         </div>
       `;
       return;
@@ -746,7 +759,7 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
           <div class="flex flex-col gap-1.5 mt-1 pt-2 border-t border-slate-100">
             ${item.sourceSnippet ? `
               <div class="text-[11px] font-mono text-slate-600 bg-slate-50/80 border border-slate-200/60 rounded-xl p-2 leading-relaxed">
-                <span class="text-slate-400 font-sans font-bold text-[10px] uppercase tracking-wider block mb-0.5">Screenplay Evidence (Draft 4.2):</span>
+                <span class="text-slate-400 font-sans font-bold text-[10px] uppercase tracking-wider block mb-0.5">Screenplay Evidence:</span>
                 "${item.sourceSnippet}"
               </div>
             ` : ''}
@@ -801,9 +814,9 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
         const formData = new FormData(form);
 
         // Parse scenes comma separated
-        const scenesStr = formData.get('scenes') || '18';
+        const scenesStr = formData.get('scenes') || '1';
         const scenes = scenesStr.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
-        const sceneNum = scenes.length > 0 ? scenes[0] : 18;
+        const sceneNum = scenes.length > 0 ? scenes[0] : 1;
 
         const updates = {
           name: formData.get('name'),
@@ -1142,9 +1155,10 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
     exportBreakdownBtn.onclick = async () => {
       try {
         const list = await api.getProductionBreakdown(scriptId, currentCategory, currentScene);
+        const activeScript = store.state.scripts?.find(s => s.id === scriptId) || store.state.activeScript;
         exportBreakdownPdf(list, {
-          title: 'Chronicles of Dust',
-          draft: 'Draft 4.2'
+          title: activeScript?.title || 'Screenplay',
+          draft: activeScript?.draft || 'Draft 1.0'
         });
         showToast(`Exported Breakdown Report (${list.length} elements) PDF`);
       } catch (err) {
@@ -1159,14 +1173,14 @@ export async function attachBreakdownEvents(navigate, fromParam = null, scriptPa
       e.preventDefault();
       const name = document.getElementById('elem-name')?.value;
       const category = document.getElementById('elem-cat')?.value;
-      const scenesInput = document.getElementById('elem-scenes')?.value || '18';
+      const scenesInput = document.getElementById('elem-scenes')?.value || '1';
       const status = document.getElementById('elem-status')?.value || 'Confirmed';
       const desc = document.getElementById('elem-desc')?.value;
 
       if (!name) return;
 
       const scenes = scenesInput.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n));
-      const sceneNum = scenes.length > 0 ? scenes[0] : 18;
+      const sceneNum = scenes.length > 0 ? scenes[0] : 1;
 
       const itemPayload = {
         name,

@@ -20,8 +20,8 @@ export function getScriptsForUser(user) {
       return true;
     }
 
-    // 3. Backward compatibility for legacy test runner (user-1)
-    if (uid === 'user-1' && (!s.ownerId || s.ownerId === 'user-1' || s.isTemplate)) {
+    // 3. Backward compatibility for test runner (test-user)
+    if (uid === 'test-user' && (!s.ownerId || s.ownerId === 'test-user')) {
       return true;
     }
 
@@ -37,13 +37,13 @@ export function createScript(data, ownerUser = null) {
   const title = (data.title || "Untitled Screenplay").trim();
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
   
-  const resolvedOwnerId = ownerUser?.id || data.ownerId || (process.env.NODE_ENV === 'test' ? 'user-1' : null);
+  const resolvedOwnerId = ownerUser?.id || data.ownerId || (process.env.NODE_ENV === 'test' ? 'test-user' : null);
   if (!resolvedOwnerId) {
     throw new Error('Authentication required to create a screenplay.');
   }
 
-  const ownerEmail = ownerUser?.email || data.ownerEmail || (resolvedOwnerId === 'user-1' ? 'arun.kumar@scriptora.studio' : '');
-  const ownerName = ownerUser?.displayName || ownerUser?.name || data.ownerName || (resolvedOwnerId === 'user-1' ? 'Arun Kumar' : 'Screenplay Writer');
+  const ownerEmail = ownerUser?.email || data.ownerEmail || (ownerUser?.id ? `${ownerUser.id}@scriptora.studio` : '');
+  const ownerName = ownerUser?.displayName || ownerUser?.name || data.ownerName || 'Screenplay Writer';
 
   const newScript = {
     id,
@@ -70,17 +70,17 @@ export function createScript(data, ownerUser = null) {
       plannedDuration: "01:45:00"
     },
     analysisScores: {
-      overall: 78,
-      pacing: 75,
-      dialogue: 80,
-      emotion: 76,
-      characterArc: 74,
-      continuity: 82,
-      storyStructure: 78,
-      theme: 80,
-      cinema: 79,
-      formatting: 92,
-      production: 75
+      overall: 0,
+      pacing: 0,
+      dialogue: 0,
+      emotion: 0,
+      characterArc: 0,
+      continuity: 0,
+      storyStructure: 0,
+      theme: 0,
+      cinema: 0,
+      formatting: 0,
+      production: 0
     }
   };
 
@@ -145,7 +145,7 @@ export function duplicateScript(id, user = null) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
 
-  const resolvedOwnerId = user?.id || script.ownerId || (process.env.NODE_ENV === 'test' ? 'user-1' : null);
+  const resolvedOwnerId = user?.id || script.ownerId || (process.env.NODE_ENV === 'test' ? 'test-user' : null);
   const resolvedOwnerEmail = user?.email || script.ownerEmail || '';
   const resolvedOwnerName = user?.displayName || user?.name || script.ownerName || 'Screenplay Writer';
 
