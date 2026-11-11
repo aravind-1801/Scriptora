@@ -43,7 +43,7 @@ jobs:
         run: npm --prefix frontend run build
         env:
           BASE_URL: ${{ steps.pages.outputs.base_path || '/Scriptora/' }}
-          VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || '' }}
+          VITE_API_URL: ${{ vars.VITE_API_URL || secrets.VITE_API_URL || 'https://scriptora-vbxx.onrender.com/api' }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
