@@ -65,13 +65,45 @@ export function saveImageToPersistentStorage(buffer, extension = 'jpg') {
   return `/production/storyboard/images/${filename}`;
 }
 
+export async function createSignedImageUrl(storagePath, expiresIn = 3600) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !secretKey || !storagePath) return null;
+
+  // Clean storage path to ensure it starts with bucket subpath
+  const cleanPath = storagePath.replace(/^storyboards\//, '');
+  const signUrl = `${supabaseUrl}/storage/v1/object/sign/storyboards/${cleanPath}`;
+  try {
+    const res = await fetch(signUrl, {
+      method: 'POST',
+      headers: {
+        'apikey': secretKey,
+        'Authorization': `Bearer ${secretKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ expiresIn })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.signedURL) {
+        return `${supabaseUrl}/storage/v1${data.signedURL}`;
+      }
+    }
+  } catch (err) {
+    console.warn('[Supabase Storage] Failed to generate signed URL:', err.message);
+  }
+  return null;
+}
+
 export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chronicles-of-dust') {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !secretKey) return null;
 
+  const objectKey = `${scriptId}/${filename}`;
+  const storagePath = `storyboards/${scriptId}/${filename}`;
   try {
-    const uploadUrl = `${supabaseUrl}/storage/v1/object/storyboards/storyboards/${scriptId}/${filename}`;
+    const uploadUrl = `${supabaseUrl}/storage/v1/object/storyboards/${objectKey}`;
     const res = await fetch(uploadUrl, {
       method: 'POST',
       headers: {
@@ -83,7 +115,12 @@ export async function uploadToSupabaseStorage(buffer, filename, scriptId = 'chro
       body: buffer
     });
     if (res.ok) {
-      return `${supabaseUrl}/storage/v1/object/public/storyboards/storyboards/${scriptId}/${filename}`;
+      const signedUrl = await createSignedImageUrl(objectKey, 3600);
+      return {
+        storagePath,
+        signedUrl,
+        filename
+      };
     }
   } catch (err) {
     console.warn('[Supabase Storage] Notice:', err.message);
@@ -102,12 +139,16 @@ export async function uploadShotImage(buffer, extension = 'jpg', scriptId = 'chr
   const persistentUrl = saveImageToPersistentStorage(buffer, ext);
   const filename = path.basename(persistentUrl);
 
-  const supabaseUrl = await uploadToSupabaseStorage(buffer, filename, scriptId);
+  const supabaseResult = await uploadToSupabaseStorage(buffer, filename, scriptId);
+  const storagePath = supabaseResult?.storagePath || null;
+  const signedUrl = supabaseResult?.signedUrl || null;
 
   return {
     success: true,
-    imageUrl: supabaseUrl || persistentUrl,
-    cloudStorageUrl: supabaseUrl || null,
+    imageUrl: signedUrl || persistentUrl,
+    cloudStorageUrl: signedUrl || null,
+    storagePath,
+    signedUrl,
     persistentUrl,
     filename,
     bytes: buffer.length
@@ -937,12 +978,16 @@ export async function generateShotImage(params = {}) {
       const base64Data = buf.toString("base64");
       const dataUri = `data:${mime};base64,${base64Data}`;
 
-      const supabaseUrl = await uploadToSupabaseStorage(buf, filename, params.scriptId || 'chronicles-of-dust');
+      const supabaseResult = await uploadToSupabaseStorage(buf, filename, params.scriptId || 'chronicles-of-dust');
+      const storagePath = supabaseResult?.storagePath || null;
+      const signedUrl = supabaseResult?.signedUrl || null;
 
       return {
-        imageUrl: supabaseUrl || persistentUrl,
+        imageUrl: signedUrl || persistentUrl,
         persistentUrl,
-        cloudStorageUrl: supabaseUrl || null,
+        cloudStorageUrl: signedUrl || null,
+        storagePath,
+        signedUrl,
         filename,
         sourceUrl: url,
         cdnUrl: url,

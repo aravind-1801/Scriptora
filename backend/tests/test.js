@@ -78,6 +78,13 @@ server.listen(PORT, async () => {
     });
     console.log('✓ Google Auth Login:', googleLogin.status, googleLogin.body.user?.email === 'maya.lin@scriptora.studio' && googleLogin.body.user?.avatarUrl?.length > 0 ? 'PASS' : 'FAIL');
 
+    // Restore session to Arun Kumar (project owner) for storyboard suite
+    await request('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { email: 'arun.kumar@scriptora.studio', name: 'Arun Kumar' }
+    });
+
     // 8. Storyboard AI Providers List
     const providers = await request('/api/production/ai/providers');
     const hasNvidia = providers.body.providers?.some(p => p.id === 'nvidia-nim' && p.model === 'black-forest-labs/flux.1-dev');

@@ -41,9 +41,13 @@ const BASE_ASSET_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
 async function request(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
+  const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
+
   const config = {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeader,
       ...options.headers
     },
     ...options
@@ -3524,6 +3528,19 @@ export function safeSetStoredStoryboard(scriptId, sceneId, storyboard) {
 // Auto-run legacy storage migration on startup
 if (typeof window !== 'undefined') {
   setTimeout(cleanupLegacyStoryboardStorage, 100);
+}
+
+export async function getStoryboardSignedUrl(scriptId, storagePath) {
+  try {
+    const data = await request(`/production/${scriptId}/storyboard/signed-url`, {
+      method: 'POST',
+      body: JSON.stringify({ storagePath })
+    });
+    return data.signedUrl || null;
+  } catch (err) {
+    console.warn('[Storyboard] Failed to fetch signed URL:', err.message);
+    return null;
+  }
 }
 
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {

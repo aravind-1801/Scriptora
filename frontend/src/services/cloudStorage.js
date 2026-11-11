@@ -338,7 +338,17 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
 
   // Also sync to Firebase Realtime Database (guaranteed active on project scriptora-1801)
   try {
-    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json`;
+    let authToken = null;
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      if (auth?.currentUser) {
+        authToken = await auth.currentUser.getIdToken();
+      }
+    } catch (_) {}
+
+    const authQuery = authToken ? `?auth=${encodeURIComponent(authToken)}` : '';
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
     await fetch(rtdbUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -352,9 +362,6 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
   return firestoreSynced ? { success: true, provider: 'firestore', id: `${scriptId}_${sceneId}` } : null;
 }
 
-/**
- * Fetch storyboard document from Firestore / Firebase cloud database
- */
 /**
  * Fetch storyboard document from Firestore / Firebase cloud database
  */
@@ -374,7 +381,17 @@ export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
 
   // 2. Try Firebase Realtime Database
   try {
-    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json`;
+    let authToken = null;
+    try {
+      const { getAuth } = await import('firebase/auth');
+      const auth = getAuth();
+      if (auth?.currentUser) {
+        authToken = await auth.currentUser.getIdToken();
+      }
+    } catch (_) {}
+
+    const authQuery = authToken ? `?auth=${encodeURIComponent(authToken)}` : '';
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
     const res = await fetch(rtdbUrl);
     if (res.ok) {
       const data = await res.json();

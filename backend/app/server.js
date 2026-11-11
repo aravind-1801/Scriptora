@@ -961,9 +961,40 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, job);
     }
 
+    // Storyboard Signed URL Generation Endpoint (Private Object Storage)
+    const prodSbSignedUrlMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/signed-url$/);
+    if (prodSbSignedUrlMatch && method === 'POST') {
+      const scriptId = prodSbSignedUrlMatch[1];
+      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
+
+      const body = await readBody(req);
+      if (!body.storagePath) {
+        return sendJson(res, 400, { error: "Missing storagePath in request body" });
+      }
+
+      try {
+        const signedUrl = await storyboardService.createSignedImageUrl(body.storagePath, body.expiresIn || 3600);
+        if (!signedUrl) {
+          return sendJson(res, 404, { error: "Failed to generate signed URL for storage path" });
+        }
+        return sendJson(res, 200, { success: true, signedUrl, storagePath: body.storagePath, expiresIn: body.expiresIn || 3600 });
+      } catch (err) {
+        return sendJson(res, 500, { error: err.message });
+      }
+    }
+
     const prodSbGenShotMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-shot$/);
     if (prodSbGenShotMatch && method === 'POST') {
       const scriptId = prodSbGenShotMatch[1];
+      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       try {
         const result = await storyboardService.generateShotImage({ ...body, scriptId });
@@ -976,6 +1007,11 @@ export const server = http.createServer(async (req, res) => {
     const prodSbGenSeqMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/generate-sequence$/);
     if (prodSbGenSeqMatch && method === 'POST') {
       const scriptId = prodSbGenSeqMatch[1];
+      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       try {
         const result = await storyboardService.generateSceneSequence(scriptId, body.sceneId, body);
@@ -989,6 +1025,11 @@ export const server = http.createServer(async (req, res) => {
     const prodSbUploadMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/upload$/);
     if (prodSbUploadMatch && method === 'POST') {
       const scriptId = prodSbUploadMatch[1];
+      const user = authService.verifyAuthToken(req.headers['authorization']);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       if (!body.imageData) {
         return sendJson(res, 400, { error: "Missing imageData in request body" });
