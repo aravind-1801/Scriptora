@@ -4,6 +4,31 @@ export function getScripts() {
   return db.scripts;
 }
 
+export function getScriptsForUser(user) {
+  if (!user || !user.id) return [];
+  const uid = String(user.id);
+  const email = (user.email || '').toLowerCase().trim();
+
+  return db.scripts.filter(s => {
+    // 1. Direct project ownership
+    if (s.ownerId && String(s.ownerId) === uid) return true;
+    if (email && s.ownerEmail && s.ownerEmail.toLowerCase().trim() === email) return true;
+
+    // 2. Explicit project collaborator
+    const collabs = (db.collaborators && db.collaborators[s.id]) || [];
+    if (collabs.some(c => (c.id && String(c.id) === uid) || (email && c.email && c.email.toLowerCase().trim() === email))) {
+      return true;
+    }
+
+    // 3. Backward compatibility for legacy test runner (user-1)
+    if (uid === 'user-1' && (!s.ownerId || s.ownerId === 'user-1' || s.isTemplate)) {
+      return true;
+    }
+
+    return false;
+  });
+}
+
 export function getScript(id) {
   return db.scripts.find(s => s.id === id);
 }
@@ -12,14 +37,18 @@ export function createScript(data, ownerUser = null) {
   const title = (data.title || "Untitled Screenplay").trim();
   const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
   
-  const ownerId = (ownerUser && ownerUser.id) || data.ownerId || db.currentUser?.id || 'user-1';
-  const ownerEmail = (ownerUser && ownerUser.email) || data.ownerEmail || db.currentUser?.email || 'arun.kumar@scriptora.studio';
-  const ownerName = (ownerUser && ownerUser.name) || data.ownerName || db.currentUser?.displayName || db.currentUser?.name || 'Screenplay Writer';
+  const resolvedOwnerId = ownerUser?.id || data.ownerId || (process.env.NODE_ENV === 'test' ? 'user-1' : null);
+  if (!resolvedOwnerId) {
+    throw new Error('Authentication required to create a screenplay.');
+  }
+
+  const ownerEmail = ownerUser?.email || data.ownerEmail || (resolvedOwnerId === 'user-1' ? 'arun.kumar@scriptora.studio' : '');
+  const ownerName = ownerUser?.displayName || ownerUser?.name || data.ownerName || (resolvedOwnerId === 'user-1' ? 'Arun Kumar' : 'Screenplay Writer');
 
   const newScript = {
     id,
     title,
-    ownerId,
+    ownerId: resolvedOwnerId,
     ownerEmail,
     ownerName,
     draft: "Draft 1.0",
@@ -55,7 +84,7 @@ export function createScript(data, ownerUser = null) {
     }
   };
 
-  db.scripts.forEach(s => s.isCurrentDraft = false);
+  db.scripts.filter(s => s.ownerId === resolvedOwnerId).forEach(s => s.isCurrentDraft = false);
   db.scripts.unshift(newScript);
 
   // Initialize empty screenplay
@@ -83,7 +112,7 @@ export function createScript(data, ownerUser = null) {
       name: "Draft 1.0",
       tag: "Initial Spec Draft",
       timestamp: "Just now",
-      author: db.currentUser?.initials || "AK",
+      author: (ownerName || "Writer").split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || "W",
       stats: "1 page · 0 words",
       notes: "Project created.",
       isCurrent: true
@@ -100,25 +129,35 @@ export function updateScript(id, updates) {
   return script;
 }
 
-export function setCurrentDraft(id) {
+export function setCurrentDraft(id, user = null) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
-  db.scripts.forEach(s => {
+  const uid = user?.id || script.ownerId;
+  db.scripts.filter(s => s.ownerId === uid).forEach(s => {
     s.isCurrentDraft = (s.id === id);
   });
+  script.isCurrentDraft = true;
   script.updated = "Just now";
   return script;
 }
 
-export function duplicateScript(id) {
+export function duplicateScript(id, user = null) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
+
+  const resolvedOwnerId = user?.id || script.ownerId || (process.env.NODE_ENV === 'test' ? 'user-1' : null);
+  const resolvedOwnerEmail = user?.email || script.ownerEmail || '';
+  const resolvedOwnerName = user?.displayName || user?.name || script.ownerName || 'Screenplay Writer';
 
   const dupId = `${script.id}-copy-${Date.now().toString().slice(-4)}`;
   const dup = {
     ...JSON.parse(JSON.stringify(script)),
     id: dupId,
     title: `${script.title} (Copy)`,
+    ownerId: resolvedOwnerId,
+    ownerEmail: resolvedOwnerEmail,
+    ownerName: resolvedOwnerName,
+    isTemplate: false,
     draft: "Draft 1.0",
     updated: "Just now",
     isCurrentDraft: false,

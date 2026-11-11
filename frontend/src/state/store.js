@@ -9,7 +9,7 @@ class Store {
 
     this.state = {
       currentUser: null,
-      selectedScriptId: localStorage.getItem('scriptora_selected_script') || 'chronicles-of-dust',
+      selectedScriptId: localStorage.getItem('scriptora_selected_script') || null,
       selectedVersionId: 'Draft 4.2',
       currentSceneId: 18,
       unreadNotifications: 3,
@@ -86,7 +86,7 @@ class Store {
       activeScript: null,
       screenplay: null,
       historyStack: [],
-      selectedScriptId: 'chronicles-of-dust',
+      selectedScriptId: null,
       unreadNotifications: 0
     });
     this.clearHistory();

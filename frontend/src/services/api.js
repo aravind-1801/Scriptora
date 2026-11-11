@@ -291,109 +291,83 @@ export async function getCurrentUser() {
   }
 }
 
+export function getUserStorageKey(key) {
+  let uid = 'anon';
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const u = JSON.parse(localStorage.getItem('scriptora_user') || '{}');
+      if (u?.id) uid = String(u.id);
+    } catch (_) {}
+  }
+  return `scriptora_u_${uid}_${key}`;
+}
+
 export async function login(credentials) {
-  try {
-    const data = await request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials)
-    });
+  const data = await request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify(credentials)
+  });
+  if (data?.token || data?.user?.token) {
+    localStorage.setItem('scriptora_auth_token', data.token || data.user.token);
+  }
+  if (data?.user) {
     localStorage.setItem('scriptora_user', JSON.stringify(data.user));
     return data.user;
-  } catch {
-    const user = {
-      id: "user-1",
-      name: credentials.email ? credentials.email.split('@')[0] : "Arun Kumar",
-      displayName: credentials.email ? credentials.email.split('@')[0] : "Arun Kumar",
-      email: credentials.email || "arun.kumar@scriptora.studio",
-      headline: "Screenwriter & Narrative Director",
-      badge: "Member Pro",
-      initials: "AK",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
-    };
-    localStorage.setItem('scriptora_user', JSON.stringify(user));
-    return user;
   }
+  throw new Error('Invalid login response from server');
 }
 
 export async function googleLogin(payload = {}) {
-  try {
-    const data = await request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ ...payload, provider: 'google' })
-    });
+  const data = await request('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ ...payload, provider: 'google' })
+  });
+  const token = payload.token || data?.token || data?.user?.token;
+  if (token) {
+    localStorage.setItem('scriptora_auth_token', token);
+  }
+  if (data?.user) {
     localStorage.setItem('scriptora_user', JSON.stringify(data.user));
     return data.user;
-  } catch {
-    const resolvedName = payload.displayName || payload.name || (payload.email ? payload.email.split('@')[0] : "Google Filmmaker");
-    const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "GF";
-    const user = {
-      id: payload.sub || `google-${Date.now()}`,
-      name: resolvedName,
-      displayName: resolvedName,
-      email: payload.email || "arun.kumar@scriptora.studio",
-      headline: "Screenwriter & Film Director",
-      badge: "Member Pro",
-      initials,
-      avatar: payload.picture || payload.photoURL || null,
-      avatarUrl: payload.picture || payload.photoURL || null,
-      provider: "google",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
-    };
-    localStorage.setItem('scriptora_user', JSON.stringify(user));
-    return user;
   }
+  throw new Error('Google authentication failed');
 }
 
 export async function register(data) {
-  try {
-    const res = await request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
+  const res = await request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  if (res?.token || res?.user?.token) {
+    localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
+  }
+  if (res?.user) {
     localStorage.setItem('scriptora_user', JSON.stringify(res.user));
     return res.user;
-  } catch {
-    const user = {
-      id: `user-${Date.now()}`,
-      name: data.name || "New Writer",
-      displayName: data.name || "New Writer",
-      email: data.email || "writer@scriptora.studio",
-      headline: "Screenwriter",
-      badge: "Member Pro",
-      initials: (data.name || "NW").slice(0, 2).toUpperCase(),
-      stats: { drafts: 1, coAuthors: 0, healthIndex: "100%" }
-    };
-    localStorage.setItem('scriptora_user', JSON.stringify(user));
-    return user;
   }
+  throw new Error('Registration failed');
 }
 
 export async function verifyOtp(phone) {
-  try {
-    const res = await request('/auth/otp', {
-      method: 'POST',
-      body: JSON.stringify({ phone })
-    });
+  const res = await request('/auth/otp', {
+    method: 'POST',
+    body: JSON.stringify({ phone })
+  });
+  if (res?.token || res?.user?.token) {
+    localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
+  }
+  if (res?.user) {
     localStorage.setItem('scriptora_user', JSON.stringify(res.user));
     return res.user;
-  } catch {
-    const user = {
-      id: "user-phone",
-      name: "Verified Writer",
-      displayName: "Verified Writer",
-      headline: "Screenwriter",
-      email: phone,
-      badge: "Member Pro",
-      initials: "VW",
-      stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
-    };
-    localStorage.setItem('scriptora_user', JSON.stringify(user));
-    return user;
   }
+  throw new Error('OTP verification failed');
 }
 
 export function clearLocalUserData() {
+  if (typeof localStorage === 'undefined') return;
   localStorage.removeItem('scriptora_user');
+  localStorage.removeItem('scriptora_auth_token');
+  localStorage.removeItem('scriptora_token');
   localStorage.removeItem('scriptora_scripts');
   localStorage.removeItem('scriptora_selected_script');
 
@@ -405,7 +379,10 @@ export function clearLocalUserData() {
       if (key && (
         key.startsWith('scriptora_screenplay_') ||
         key.startsWith('scriptora_prod_') ||
-        key.startsWith('scriptora_storyboard_')
+        key.startsWith('scriptora_storyboard_') ||
+        key.startsWith('scriptora_u_') ||
+        key.startsWith('scriptora_collaborators_') ||
+        key.startsWith('scriptora_invitations_')
       )) {
         keysToRemove.push(key);
       }
@@ -466,11 +443,14 @@ export async function deleteAccount(confirmation) {
 
 // 2. SCRIPTS API
 export async function getScripts(query = '') {
+  const storageKey = getUserStorageKey('scripts');
   try {
     const endpoint = query ? `/scripts?q=${encodeURIComponent(query)}` : '/scripts';
     const data = await request(endpoint);
     if (data.scripts && Array.isArray(data.scripts)) {
-      localStorage.setItem('scriptora_scripts', JSON.stringify(data.scripts));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(storageKey, JSON.stringify(data.scripts));
+      }
       let list = data.scripts;
       if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
       return list;
@@ -479,22 +459,15 @@ export async function getScripts(query = '') {
     // Backend offline / static deploy fallback
   }
 
-  const saved = localStorage.getItem('scriptora_scripts');
-  let list;
+  const saved = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
+  let list = [];
   if (saved !== null) {
     try {
       list = JSON.parse(saved);
-      if (!Array.isArray(list)) {
-        list = [...DEFAULT_SCRIPTS];
-        localStorage.setItem('scriptora_scripts', JSON.stringify(list));
-      }
+      if (!Array.isArray(list)) list = [];
     } catch {
-      list = [...DEFAULT_SCRIPTS];
-      localStorage.setItem('scriptora_scripts', JSON.stringify(list));
+      list = [];
     }
-  } else {
-    list = [...DEFAULT_SCRIPTS];
-    localStorage.setItem('scriptora_scripts', JSON.stringify(list));
   }
   if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
   return list;
@@ -3393,15 +3366,18 @@ export async function getAiImageProviders() {
 }
 
 export async function getStoryboards(scriptId = 'chronicles-of-dust') {
+  const storageKey = getUserStorageKey(`storyboards_${scriptId}`);
   try {
     const data = await request(`/production/${scriptId}/storyboards`);
     if (data?.storyboards) {
-      localStorage.setItem(`scriptora_storyboards_${scriptId}`, JSON.stringify(data.storyboards));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(storageKey, JSON.stringify(data.storyboards));
+      }
       return data.storyboards;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_storyboards_${scriptId}`);
+  const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -3537,7 +3513,8 @@ export function safeStorageSetItem(key, value) {
 export function safeSetStoredStoryboard(scriptId, sceneId, storyboard) {
   if (!storyboard) return;
   const sanitized = sanitizeStoryboard(storyboard);
-  safeStorageSetItem(`scriptora_storyboard_${scriptId}_${sceneId}`, JSON.stringify(sanitized));
+  const storageKey = getUserStorageKey(`storyboard_${scriptId}_${sceneId}`);
+  safeStorageSetItem(storageKey, JSON.stringify(sanitized));
 }
 
 // Auto-run legacy storage migration on startup
@@ -3716,8 +3693,9 @@ export async function downloadStoryboardImage(imageUrl, options = {}) {
 }
 
 export async function getStoryboard(scriptId = 'chronicles-of-dust', sceneId = 'scene-1') {
-  // Read local cache first to compare timestamps / shot counts
-  const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(`scriptora_storyboard_${scriptId}_${sceneId}`) : null;
+  // Read user-scoped local cache first to compare timestamps / shot counts
+  const storageKey = getUserStorageKey(`storyboard_${scriptId}_${sceneId}`);
+  const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
   let cachedSb = null;
   if (cachedRaw) {
     try { cachedSb = sanitizeStoryboard(JSON.parse(cachedRaw)); } catch (_) {}

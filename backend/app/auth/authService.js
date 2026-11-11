@@ -1,8 +1,12 @@
 import crypto from 'crypto';
 import { db } from '../models/db.js';
 
-export function getCurrentUser() {
-  return db.currentUser;
+export function getCurrentUser(user = null) {
+  if (user) return user;
+  if (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH) {
+    return db.currentUser || { id: "user-1", name: "Arun Kumar", email: "arun.kumar@scriptora.studio" };
+  }
+  return null;
 }
 
 export function login(credentials) {
@@ -11,13 +15,27 @@ export function login(credentials) {
   const resolvedName = displayName || name || (email ? email.split('@')[0] : "Arun Kumar");
   const initials = resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "AK";
 
-  const avatarUrl = picture || photoURL || credentials.avatarUrl || null;
+  let userId = sub || credentials?.uid || credentials?.id;
+  if (!userId) {
+    if (isGoogle) {
+      userId = `google-${Date.now()}`;
+    } else if (email && email.toLowerCase().trim() === 'arun.kumar@scriptora.studio') {
+      userId = "user-1";
+    } else if (email) {
+      userId = `user-${crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 12)}`;
+    } else {
+      userId = `user-${Date.now()}`;
+    }
+  }
+
+  const avatarUrl = picture || photoURL || credentials?.avatarUrl || null;
   const user = {
-    id: sub || (isGoogle ? `google-${Date.now()}` : "user-1"),
+    id: userId,
+    uid: userId,
     name: resolvedName,
     displayName: resolvedName,
     headline: isGoogle ? "Screenwriter & Film Director" : "Screenwriter & Narrative Director",
-    email: email || "arun.kumar@scriptora.studio",
+    email: email ? email.toLowerCase().trim() : (userId === 'user-1' ? "arun.kumar@scriptora.studio" : `${userId}@scriptora.studio`),
     badge: "Member Pro",
     initials,
     avatar: avatarUrl,
@@ -25,50 +43,83 @@ export function login(credentials) {
     provider: provider || "credentials",
     stats: { drafts: 14, coAuthors: 3, healthIndex: "98%" }
   };
-  db.currentUser = user;
+
+  const authToken = token || `token-${userId}-${Date.now()}`;
+  user.token = authToken;
+
+  // In legacy test mode only, preserve db.currentUser for compatibility if test user
+  if (process.env.NODE_ENV === 'test' && (userId === 'user-1' || email === 'arun.kumar@scriptora.studio')) {
+    db.currentUser = user;
+  }
+
   return user;
 }
 
 export function register(data) {
-  const { name, email } = data || {};
+  const { name, email, sub } = data || {};
+  let userId = sub || data?.uid || data?.id;
+  if (!userId) {
+    if (email) {
+      userId = `user-${crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex').slice(0, 12)}`;
+    } else {
+      userId = `user-${Date.now()}`;
+    }
+  }
+  const resolvedName = name || "New Writer";
   const user = {
-    id: `user-${Date.now()}`,
-    name: name || "New Writer",
-    displayName: name || "New Writer",
+    id: userId,
+    uid: userId,
+    name: resolvedName,
+    displayName: resolvedName,
     headline: "Screenwriter",
-    email: email || "writer@scriptora.studio",
+    email: email ? email.toLowerCase().trim() : `${userId}@scriptora.studio`,
     badge: "Member Pro",
-    initials: (name || "NW").slice(0, 2).toUpperCase(),
+    initials: resolvedName.split(' ').map(s => s[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || "NW",
     stats: { drafts: 1, coAuthors: 0, healthIndex: "100%" }
   };
-  db.currentUser = user;
+  user.token = `token-${userId}-${Date.now()}`;
+
+  if (process.env.NODE_ENV === 'test' && !db.currentUser) {
+    db.currentUser = user;
+  }
+
   return user;
 }
 
 export function verifyOtp(phone) {
+  const phoneHash = crypto.createHash('sha256').update(phone || '+1-555-0192').digest('hex').slice(0, 8);
+  const userId = `user-phone-${phoneHash}`;
   const user = {
-    id: "user-phone",
+    id: userId,
+    uid: userId,
     name: "Verified Writer",
     displayName: "Verified Writer",
     headline: "Screenwriter",
     phone: phone || "+1-555-0192",
-    email: "phone.writer@scriptora.studio",
+    email: `${userId}@scriptora.studio`,
     badge: "Member Pro",
     initials: "VW",
     stats: { drafts: 3, coAuthors: 1, healthIndex: "95%" }
   };
-  db.currentUser = user;
+  user.token = `token-${userId}-${Date.now()}`;
+
+  if (process.env.NODE_ENV === 'test') {
+    db.currentUser = user;
+  }
+
   return user;
 }
 
 export function signOut() {
-  db.currentUser = null;
+  if (process.env.NODE_ENV === 'test') {
+    db.currentUser = null;
+  }
   return { success: true };
 }
 
-export function deleteAccount(confirmationText) {
-  const currentUser = db.currentUser;
-  if (!currentUser) {
+export function deleteAccount(confirmationText, currentUser = null) {
+  const targetUser = currentUser || (process.env.NODE_ENV === 'test' ? db.currentUser : null);
+  if (!targetUser || !targetUser.id) {
     throw new Error('Authentication required to delete account.');
   }
 
@@ -77,16 +128,23 @@ export function deleteAccount(confirmationText) {
     throw new Error('Confirmation mismatch. Please type "DELETE MY ACCOUNT" exactly to confirm account deletion.');
   }
 
-  const deletingEmail = currentUser.email;
-  const deletingId = currentUser.id;
+  const deletingEmail = (targetUser.email || '').toLowerCase();
+  const deletingId = String(targetUser.id);
 
   // Preserve shared scripts with remaining collaborators; delete sole-owned scripts
   const scriptsToKeep = [];
   const scriptsToDelete = [];
 
-  for (const script of db.scripts) {
+  for (const script of (db.scripts || [])) {
+    const isOwned = (script.ownerId && String(script.ownerId) === deletingId) ||
+                    (deletingEmail && script.ownerEmail && script.ownerEmail.toLowerCase() === deletingEmail);
+    if (!isOwned) {
+      scriptsToKeep.push(script);
+      continue;
+    }
+
     const collabs = db.collaborators[script.id] || [];
-    const remainingCollabs = collabs.filter(c => c.email !== deletingEmail && c.id !== deletingId);
+    const remainingCollabs = collabs.filter(c => (c.email || '').toLowerCase() !== deletingEmail && String(c.id) !== deletingId);
 
     if (remainingCollabs.length > 0) {
       // Transfer ownership to the first remaining collaborator
@@ -113,14 +171,15 @@ export function deleteAccount(confirmationText) {
   // De-identify personal signatures in production records
   if (Array.isArray(db.callSheets)) {
     for (const cs of db.callSheets) {
-      if (cs.approvedBy && (cs.approvedBy.includes(currentUser.name) || cs.approvedBy.includes(currentUser.displayName))) {
+      if (cs.approvedBy && (cs.approvedBy.includes(targetUser.name) || cs.approvedBy.includes(targetUser.displayName))) {
         cs.approvedBy = 'Former Member (Deleted)';
       }
     }
   }
 
-  // Invalidate server session
-  db.currentUser = null;
+  if (process.env.NODE_ENV === 'test') {
+    db.currentUser = null;
+  }
 
   return {
     success: true,
@@ -243,22 +302,35 @@ export async function verifyAuthToken(authHeader, allowSessionFallback = true) {
     const match = authHeader.match(/^Bearer\s+(.+)$/i);
     const token = match ? match[1].trim() : authHeader.trim();
     if (token) {
-      // In isolated test/development mode ONLY, allow test tokens
-      if (!isProd && isTestOrDev) {
-        if (token === 'dev-token' || token === 'test-token') {
-          return db.currentUser || { id: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' };
-        }
-        if (db.currentUser && (token === db.currentUser.id || token === db.currentUser.email)) {
-          return db.currentUser;
-        }
-        // Support test collaborator lookup from db in test mode
+      // In isolated test/development mode ONLY, allow mock/test tokens
+      if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
         if (token.startsWith('mock-user:')) {
           const parts = token.split(':');
           return { id: parts[1], uid: parts[1], email: parts[2] || '', name: parts[3] || 'Mock User' };
         }
-        for (const list of Object.values(db.collaborators || {})) {
-          const found = list.find(c => c.id === token || c.email === token);
-          if (found) return found;
+        if (!process.env.STRICT_AUTH) {
+          if (token === 'dev-token' || token === 'test-token') {
+            return db.currentUser || { id: 'user-1', uid: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' };
+          }
+          if (token.startsWith('token-')) {
+            const parts = token.split('-');
+            const tokenUid = parts[1];
+            if (tokenUid) {
+              return {
+                id: tokenUid,
+                uid: tokenUid,
+                email: `${tokenUid}@scriptora.studio`,
+                name: `Writer ${tokenUid.slice(0, 6)}`
+              };
+            }
+          }
+          if (db.currentUser && (token === db.currentUser.id || token === db.currentUser.email)) {
+            return db.currentUser;
+          }
+          for (const list of Object.values(db.collaborators || {})) {
+            const found = list.find(c => c.id === token || c.email === token);
+            if (found) return found;
+          }
         }
       }
 
@@ -273,7 +345,7 @@ export async function verifyAuthToken(authHeader, allowSessionFallback = true) {
     }
   }
 
-  // Session fallback strictly isolated to test/dev environment
+  // Session fallback strictly isolated to test environment when specifically permitted
   if (allowSessionFallback && isTestOrDev && db.currentUser) {
     return db.currentUser;
   }
@@ -291,15 +363,27 @@ export function checkScriptAccess(user, scriptId, requiredRole = 'Viewer') {
 
   // Check script in db
   const script = (db.scripts || []).find(s => s.id === scriptId);
+  if (!script) {
+    return { allowed: false, status: 404, error: 'Script not found' };
+  }
 
-  // Ownership check: If script specifies ownerId, only that user or their verified email is the owner.
-  // Default legacy/demo scripts without explicit ownerId belong to user-1 (Arun Kumar).
-  const isOwner = (script && script.ownerId)
-    ? (script.ownerId === user.id || (user.email && script.ownerEmail === user.email))
-    : (user.id === 'user-1' || user.email === 'arun.kumar@scriptora.studio');
+  const uid = String(user.id);
+  const email = (user.email || '').toLowerCase().trim();
+
+  // Ownership check: If script specifies ownerId or ownerEmail matching user
+  const isOwner = (script.ownerId && String(script.ownerId) === uid) ||
+                  (email && script.ownerEmail && script.ownerEmail.toLowerCase().trim() === email);
 
   if (isOwner) {
     return { allowed: true, role: 'Owner' };
+  }
+
+  // If script is a read-only template and caller is not owner
+  if (script.isTemplate) {
+    if (requiredRole === 'Viewer') {
+      return { allowed: true, role: 'Viewer', isTemplate: true };
+    }
+    return { allowed: false, status: 403, error: 'Template is read-only. Please create your own screenplay or duplicate this template to edit.' };
   }
 
   if (requiredRole === 'Owner') {
@@ -308,7 +392,7 @@ export function checkScriptAccess(user, scriptId, requiredRole = 'Viewer') {
 
   // Collaborator check
   const collabs = (db.collaborators && db.collaborators[scriptId]) || [];
-  const collab = collabs.find(c => c.id === user.id || c.email === user.email);
+  const collab = collabs.find(c => (c.id && String(c.id) === uid) || (email && c.email && c.email.toLowerCase().trim() === email));
   if (collab) {
     if (requiredRole === 'Editor' && collab.role === 'Viewer') {
       return { allowed: false, status: 403, error: 'Write permission denied: Viewer role is read-only' };

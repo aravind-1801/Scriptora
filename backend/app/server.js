@@ -63,7 +63,7 @@ async function getAuthUser(req, allowFallback = true) {
   if (req.headers['authorization']) {
     return await authService.verifyAuthToken(req.headers['authorization'], false);
   }
-  if (allowFallback && (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && !process.env.STRICT_AUTH) {
+  if (allowFallback && process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH) {
     return db.currentUser;
   }
   return null;
@@ -90,7 +90,8 @@ export const server = http.createServer(async (req, res) => {
 
     // 1. AUTH
     if (pathname === '/auth/me' && method === 'GET') {
-      return sendJson(res, 200, { user: authService.getCurrentUser() });
+      const user = await getAuthUser(req, true);
+      return sendJson(res, 200, { user: user ? authService.getCurrentUser(user) : null });
     }
     if ((pathname === '/auth/login' || pathname === '/auth/google') && method === 'POST') {
       const body = await readBody(req);
@@ -108,13 +109,13 @@ export const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, authService.signOut());
     }
     if ((pathname === '/auth/delete-account' && method === 'POST') || (pathname === '/auth/account' && method === 'DELETE')) {
-      const currentUser = authService.getCurrentUser();
+      const currentUser = await getAuthUser(req, true);
       if (!currentUser) {
         return sendJson(res, 401, { error: 'Authentication required to delete account.' });
       }
       const body = await readBody(req);
       try {
-        const result = authService.deleteAccount(body.confirmation || body.confirmPhrase);
+        const result = authService.deleteAccount(body.confirmation || body.confirmPhrase, currentUser);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -123,23 +124,29 @@ export const server = http.createServer(async (req, res) => {
 
     // 2. SCRIPTS
     if (pathname === '/scripts' && method === 'GET') {
-      const user = await getAuthUser(req, true);
-      const allScripts = scriptService.getScripts();
-      if (user && user.id && user.id !== 'user-1') {
-        const userScripts = allScripts.filter(s => 
-          s.ownerId === user.id || 
-          (user.email && s.ownerEmail === user.email) ||
-          ((db.collaborators && db.collaborators[s.id]) || []).some(c => c.id === user.id || (user.email && c.email === user.email))
-        );
-        return sendJson(res, 200, { scripts: userScripts });
+      const user = await getAuthUser(req, false);
+      if (!user) {
+        if (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH) {
+          const testUser = { id: 'user-1', uid: 'user-1', email: 'arun.kumar@scriptora.studio' };
+          return sendJson(res, 200, { scripts: scriptService.getScriptsForUser(testUser) });
+        }
+        return sendJson(res, 401, { error: 'Authentication required to access screenplays' });
       }
-      return sendJson(res, 200, { scripts: allScripts });
+      const userScripts = scriptService.getScriptsForUser(user);
+      return sendJson(res, 200, { scripts: userScripts });
     }
     if (pathname === '/scripts' && method === 'POST') {
-      const user = await getAuthUser(req, true);
+      const user = await getAuthUser(req, false) || (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH && { id: 'user-1', uid: 'user-1', name: 'Arun Kumar', email: 'arun.kumar@scriptora.studio' });
+      if (!user) {
+        return sendJson(res, 401, { error: 'Authentication required to create a screenplay' });
+      }
       const body = await readBody(req);
-      const newScript = scriptService.createScript(body, user);
-      return sendJson(res, 201, { script: newScript });
+      try {
+        const newScript = scriptService.createScript(body, user);
+        return sendJson(res, 201, { script: newScript });
+      } catch (err) {
+        return sendJson(res, 400, { error: err.message });
+      }
     }
 
     const scriptMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)$/);
@@ -183,7 +190,7 @@ export const server = http.createServer(async (req, res) => {
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
       }
-      const script = scriptService.setCurrentDraft(currentDraftMatch[1]);
+      const script = scriptService.setCurrentDraft(currentDraftMatch[1], user);
       if (!script) return sendJson(res, 404, { error: "Script not found" });
       return sendJson(res, 200, { script });
     }
@@ -195,7 +202,7 @@ export const server = http.createServer(async (req, res) => {
       if (!access.allowed) {
         return sendJson(res, access.status, { error: access.error });
       }
-      const dup = scriptService.duplicateScript(dupMatch[1]);
+      const dup = scriptService.duplicateScript(dupMatch[1], user);
       return sendJson(res, 201, { script: dup });
     }
 
@@ -279,7 +286,8 @@ export const server = http.createServer(async (req, res) => {
     // Collaborator permissions for current user
     const collabPermMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/permissions$/);
     if (collabPermMatch && method === 'GET') {
-      const data = collaborationService.getUserPermissions(collabPermMatch[1], db.currentUser);
+      const user = await getAuthUser(req, true);
+      const data = collaborationService.getUserPermissions(collabPermMatch[1], user);
       return sendJson(res, 200, data);
     }
 
@@ -300,8 +308,9 @@ export const server = http.createServer(async (req, res) => {
     const revokeInviteMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)$/);
     if (revokeInviteMatch && method === 'DELETE') {
       const [, scriptId, inviteId] = revokeInviteMatch;
+      const user = await getAuthUser(req, true);
       try {
-        collaborationService.revokeInvitation(scriptId, inviteId, db.currentUser);
+        collaborationService.revokeInvitation(scriptId, inviteId, user);
         return sendJson(res, 200, { success: true });
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -318,9 +327,10 @@ export const server = http.createServer(async (req, res) => {
     const approveReqMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests\/([a-zA-Z0-9_-]+)\/approve$/);
     if (approveReqMatch && method === 'POST') {
       const [, scriptId, requestId] = approveReqMatch;
+      const user = await getAuthUser(req, true);
       const body = await readBody(req);
       try {
-        const result = collaborationService.approveAccessRequest(scriptId, requestId, body.role, db.currentUser);
+        const result = collaborationService.approveAccessRequest(scriptId, requestId, body.role, user);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -330,8 +340,9 @@ export const server = http.createServer(async (req, res) => {
     const rejectReqMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests\/([a-zA-Z0-9_-]+)\/reject$/);
     if (rejectReqMatch && method === 'POST') {
       const [, scriptId, requestId] = rejectReqMatch;
+      const user = await getAuthUser(req, true);
       try {
-        const result = collaborationService.rejectAccessRequest(scriptId, requestId, db.currentUser);
+        const result = collaborationService.rejectAccessRequest(scriptId, requestId, user);
         return sendJson(res, 200, result);
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -341,15 +352,17 @@ export const server = http.createServer(async (req, res) => {
     // End-to-End Encryption (E2EE) settings & key rotation
     const e2eeMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee$/);
     if (e2eeMatch && method === 'GET') {
-      const settings = collaborationService.getE2EESettings(e2eeMatch[1], db.currentUser);
+      const user = await getAuthUser(req, true);
+      const settings = collaborationService.getE2EESettings(e2eeMatch[1], user);
       return sendJson(res, 200, { e2ee: settings });
     }
 
     const e2eeEnableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/enable$/);
     if (e2eeEnableMatch && method === 'POST') {
+      const user = await getAuthUser(req, true);
       const body = await readBody(req);
       try {
-        const result = collaborationService.enableE2EE(e2eeEnableMatch[1], body, db.currentUser);
+        const result = collaborationService.enableE2EE(e2eeEnableMatch[1], body, user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -358,9 +371,10 @@ export const server = http.createServer(async (req, res) => {
 
     const e2eeRotateMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/rotate$/);
     if (e2eeRotateMatch && method === 'POST') {
+      const user = await getAuthUser(req, true);
       const body = await readBody(req);
       try {
-        const result = collaborationService.rotateE2EEKey(e2eeRotateMatch[1], body, db.currentUser);
+        const result = collaborationService.rotateE2EEKey(e2eeRotateMatch[1], body, user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -369,8 +383,9 @@ export const server = http.createServer(async (req, res) => {
 
     const e2eeDisableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/disable$/);
     if (e2eeDisableMatch && method === 'POST') {
+      const user = await getAuthUser(req, true);
       try {
-        const result = collaborationService.disableE2EE(e2eeDisableMatch[1], db.currentUser);
+        const result = collaborationService.disableE2EE(e2eeDisableMatch[1], user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
         return sendJson(res, 400, { error: err.message });
@@ -573,12 +588,16 @@ export const server = http.createServer(async (req, res) => {
 
     // 8. PROFILE & SETTINGS
     if (pathname === '/profile' && method === 'GET') {
-      return sendJson(res, 200, { profile: db.currentUser });
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      return sendJson(res, 200, { profile: user });
     }
     if (pathname === '/profile' && method === 'PUT') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
-      Object.assign(db.currentUser, body);
-      return sendJson(res, 200, { profile: db.currentUser });
+      Object.assign(user, body);
+      return sendJson(res, 200, { profile: user });
     }
     if (pathname === '/settings' && method === 'GET') {
       return sendJson(res, 200, { settings: db.settings });
@@ -892,6 +911,9 @@ export const server = http.createServer(async (req, res) => {
     const prodSbRbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin$/);
     if (prodSbRbMatch && method === 'GET') {
       const scriptId = prodSbRbMatch[1];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Viewer');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const items = storyboardService.getRecycleBin(scriptId);
       return sendJson(res, 200, { items });
     }
@@ -899,6 +921,9 @@ export const server = http.createServer(async (req, res) => {
     const prodSbRbRestoreMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin\/restore$/);
     if (prodSbRbRestoreMatch && method === 'POST') {
       const scriptId = prodSbRbRestoreMatch[1];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
       const result = storyboardService.restoreRecycleBinItem(scriptId, body.itemId);
       return sendJson(res, 200, result);
@@ -907,6 +932,9 @@ export const server = http.createServer(async (req, res) => {
     const prodSbRbEmptyMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin\/empty$/);
     if (prodSbRbEmptyMatch && method === 'POST') {
       const scriptId = prodSbRbEmptyMatch[1];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const result = storyboardService.emptyRecycleBin(scriptId);
       return sendJson(res, 200, result);
     }
@@ -915,6 +943,9 @@ export const server = http.createServer(async (req, res) => {
     if (prodSbRbItemMatch && method === 'DELETE') {
       const scriptId = prodSbRbItemMatch[1];
       const itemId = prodSbRbItemMatch[2];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const result = storyboardService.permanentlyDeleteRecycleBinItem(scriptId, itemId);
       return sendJson(res, 200, result);
     }
@@ -923,6 +954,9 @@ export const server = http.createServer(async (req, res) => {
     if (prodSbSceneDeleteMatch && method === 'POST') {
       const scriptId = prodSbSceneDeleteMatch[1];
       const sceneId = prodSbSceneDeleteMatch[2];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const result = storyboardService.softDeleteScene(scriptId, sceneId);
       return sendJson(res, 200, result);
     }
@@ -1003,8 +1037,11 @@ export const server = http.createServer(async (req, res) => {
       const scriptId = prodSbRestoreMatch[1];
       const sceneId = prodSbRestoreMatch[2];
       const shotId = prodSbRestoreMatch[3];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
-      const result = storyboardService.restoreShotVersion(scriptId, sceneId, shotId, body.historyIndex);
+      const result = storyboardService.restoreShotVersion(scriptId, sceneId, shotId, body.historyIndex, user);
       return sendJson(res, 200, result);
     }
 
@@ -1012,6 +1049,9 @@ export const server = http.createServer(async (req, res) => {
     if (prodSbReorderMatch && method === 'POST') {
       const scriptId = prodSbReorderMatch[1];
       const sceneId = prodSbReorderMatch[2];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
       const result = storyboardService.reorderShots(scriptId, sceneId, body.shotIds);
       return sendJson(res, 200, result);
@@ -1022,8 +1062,11 @@ export const server = http.createServer(async (req, res) => {
       const scriptId = prodSbApproveMatch[1];
       const sceneId = prodSbApproveMatch[2];
       const shotId = prodSbApproveMatch[3];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
-      const result = storyboardService.approveShot(scriptId, sceneId, shotId, body.status, body.notes);
+      const result = storyboardService.approveShot(scriptId, sceneId, shotId, body.status, body.notes, user, access.role);
       return sendJson(res, 200, result);
     }
 
@@ -1031,8 +1074,11 @@ export const server = http.createServer(async (req, res) => {
     if (prodSbBatchApproveMatch && method === 'POST') {
       const scriptId = prodSbBatchApproveMatch[1];
       const sceneId = prodSbBatchApproveMatch[2];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
-      const result = storyboardService.batchApproveShots(scriptId, sceneId, body.shotIds, body.status, body.notes);
+      const result = storyboardService.batchApproveShots(scriptId, sceneId, body.shotIds, body.status, body.notes, user, access.role);
       return sendJson(res, 200, result);
     }
 

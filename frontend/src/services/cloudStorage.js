@@ -306,16 +306,31 @@ async function callFirestoreWithTimeout(fn, timeoutMs = 2500) {
   }
 }
 
+function resolveCurrentUserId() {
+  if (typeof window !== 'undefined') {
+    if (window.scriptoraState?.user?.id) return window.scriptoraState.user.id;
+    try {
+      const u = JSON.parse(localStorage.getItem('scriptora_user') || '{}');
+      if (u?.id) return u.id;
+    } catch (_) {}
+  }
+  return null;
+}
+
 /**
- * Persist storyboard document to Firestore / Firebase cloud database
+ * Persist storyboard document to Firestore / Firebase cloud database (User-Scoped)
  */
 export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
-  const currentUserId = (typeof window !== 'undefined' && window.scriptoraState?.user?.id) || 'user-1';
+  const currentUserId = resolveCurrentUserId();
+  if (!currentUserId) {
+    return null; // Do not sync unauthenticated user data to shared cloud locations
+  }
+
   const payload = {
     ...storyboard,
     scriptId,
     sceneId,
-    userId: storyboard.userId || currentUserId,
+    userId: currentUserId,
     syncedAt: new Date().toISOString()
   };
 
@@ -324,7 +339,7 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
   if (db && firestoreApiAvailable !== false) {
     try {
       const { doc, setDoc } = await import('firebase/firestore');
-      const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
+      const docRef = doc(db, 'users', currentUserId, 'storyboards', `${scriptId}_${sceneId}`);
       await callFirestoreWithTimeout(() => setDoc(docRef, payload, { merge: true }), 2500);
       firestoreSynced = true;
     } catch (err) {
@@ -348,7 +363,7 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
     } catch (_) {}
 
     const authQuery = authToken ? `?auth=${encodeURIComponent(authToken)}` : '';
-    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/users/${currentUserId}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
     await fetch(rtdbUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -363,15 +378,18 @@ export async function syncStoryboardToFirestore(scriptId, sceneId, storyboard) {
 }
 
 /**
- * Fetch storyboard document from Firestore / Firebase cloud database
+ * Fetch storyboard document from Firestore / Firebase cloud database (User-Scoped)
  */
 export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
+  const currentUserId = resolveCurrentUserId();
+  if (!currentUserId) return null;
+
   // 1. First try Firestore
   const db = await getFirestore();
   if (db && firestoreApiAvailable !== false) {
     try {
       const { doc, getDoc } = await import('firebase/firestore');
-      const docRef = doc(db, 'storyboards', `${scriptId}_${sceneId}`);
+      const docRef = doc(db, 'users', currentUserId, 'storyboards', `${scriptId}_${sceneId}`);
       const snap = await callFirestoreWithTimeout(() => getDoc(docRef), 2500);
       if (snap?.exists()) {
         return snap.data();
@@ -391,7 +409,7 @@ export async function fetchStoryboardFromFirestore(scriptId, sceneId) {
     } catch (_) {}
 
     const authQuery = authToken ? `?auth=${encodeURIComponent(authToken)}` : '';
-    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
+    const rtdbUrl = `${firebaseConfig.databaseURL || `https://${firebaseConfig.projectId}-default-rtdb.firebaseio.com`}/users/${currentUserId}/storyboards/${scriptId}/${sceneId}.json${authQuery}`;
     const res = await fetch(rtdbUrl);
     if (res.ok) {
       const data = await res.json();

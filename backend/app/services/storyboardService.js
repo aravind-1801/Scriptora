@@ -454,7 +454,7 @@ export function addShot(scriptId, sceneId, shotData) {
   return { storyboard: sb, shot: newShot };
 }
 
-export function updateShot(scriptId, sceneId, shotId, updates) {
+export function updateShot(scriptId, sceneId, shotId, updates, user = null) {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const shot = sb.shots.find(s => s.id === shotId);
   if (!shot) throw new Error("Shot not found");
@@ -462,6 +462,8 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
   if (!Array.isArray(shot.history)) {
     shot.history = [];
   }
+
+  const updaterName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
 
   // Track revision history if image or prompt changes
   if ((updates.imageUrl && updates.imageUrl !== shot.imageUrl) || (updates.prompt && updates.prompt !== shot.prompt)) {
@@ -477,7 +479,7 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
       approvalStatus: shot.approvalStatus || "draft",
       sourceVersion: sb.sourceVersion || "Draft 4.2",
       timestamp: new Date().toISOString(),
-      updatedBy: db.currentUser.name
+      updatedBy: updaterName
     });
   }
 
@@ -492,7 +494,7 @@ export function updateShot(scriptId, sceneId, shotId, updates) {
   return { storyboard: sb, shot };
 }
 
-export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
+export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex, user = null) {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const shot = sb.shots.find(s => s.id === shotId);
   if (!shot) throw new Error("Shot not found");
@@ -500,6 +502,7 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
     throw new Error("Historical version not found");
   }
 
+  const updaterName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
   const hist = shot.history[historyIndex];
   // Retain current image before restoring
   shot.history.push({
@@ -510,7 +513,7 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
     approvalStatus: shot.approvalStatus || "draft",
     sourceVersion: sb.sourceVersion || "Draft 4.2",
     timestamp: new Date().toISOString(),
-    updatedBy: db.currentUser.name
+    updatedBy: updaterName
   });
 
   shot.imageUrl = hist.previousImageUrl;
@@ -520,7 +523,6 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex) {
   shot.updatedAt = new Date().toISOString();
   sb.updatedAt = new Date().toISOString();
   persistStoryboardDb();
-
   return { storyboard: sb, shot };
 }
 
@@ -712,14 +714,15 @@ export function reorderShots(scriptId, sceneId, shotIds = []) {
   return { storyboard: sb };
 }
 
-export function approveShot(scriptId, sceneId, shotId, status = 'approved', notes = '') {
+export function approveShot(scriptId, sceneId, shotId, status = 'approved', notes = '', user = null, role = 'Owner') {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const shot = sb.shots.find(s => s.id === shotId);
   if (!shot) throw new Error("Shot not found");
 
+  const approverName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
   shot.approvalStatus = status;
   shot.approvalNotes = notes || shot.approvalNotes || "";
-  shot.approvedBy = db.currentUser.name + " (Owner)";
+  shot.approvedBy = `${approverName} (${role || 'Editor'})`;
   shot.approvedAt = new Date().toISOString();
   shot.updatedAt = new Date().toISOString();
   sb.updatedAt = new Date().toISOString();
@@ -728,15 +731,16 @@ export function approveShot(scriptId, sceneId, shotId, status = 'approved', note
   return { storyboard: sb, shot };
 }
 
-export function batchApproveShots(scriptId, sceneId, shotIds = [], status = 'approved', notes = '') {
+export function batchApproveShots(scriptId, sceneId, shotIds = [], status = 'approved', notes = '', user = null, role = 'Owner') {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const affected = [];
+  const approverName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
 
   for (const s of sb.shots) {
     if (shotIds.includes(s.id)) {
       s.approvalStatus = status;
       if (notes) s.approvalNotes = notes;
-      s.approvedBy = db.currentUser.name + " (Owner)";
+      s.approvedBy = `${approverName} (${role || 'Editor'})`;
       s.approvedAt = new Date().toISOString();
       s.updatedAt = new Date().toISOString();
       affected.push(s.id);

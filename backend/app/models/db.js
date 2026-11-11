@@ -56,6 +56,10 @@ export const db = {
     {
       id: "chronicles-of-dust",
       title: "Chronicles of Dust",
+      ownerId: "user-1",
+      ownerEmail: "arun.kumar@scriptora.studio",
+      ownerName: "Arun Kumar",
+      isTemplate: true,
       draft: "Draft 4.2",
       genre: "Drama",
       format: "Feature",
@@ -93,6 +97,10 @@ export const db = {
     {
       id: "the-neon-horizon",
       title: "The Neon Horizon",
+      ownerId: "user-1",
+      ownerEmail: "arun.kumar@scriptora.studio",
+      ownerName: "Arun Kumar",
+      isTemplate: true,
       draft: "Draft 2.1",
       genre: "Sci-Fi",
       format: "Pilot",
@@ -128,6 +136,10 @@ export const db = {
     {
       id: "velvet-shadows",
       title: "Velvet Shadows",
+      ownerId: "user-1",
+      ownerEmail: "arun.kumar@scriptora.studio",
+      ownerName: "Arun Kumar",
+      isTemplate: true,
       draft: "Draft 1.0",
       genre: "Noir",
       format: "Feature",
@@ -142,6 +154,10 @@ export const db = {
     {
       id: "silent-echoes",
       title: "Silent Echoes",
+      ownerId: "user-1",
+      ownerEmail: "arun.kumar@scriptora.studio",
+      ownerName: "Arun Kumar",
+      isTemplate: true,
       draft: "Draft 3.0",
       genre: "Psychological Thriller",
       format: "Feature",
