@@ -1,7 +1,67 @@
 import { renderHeader } from '../components/header.js';
 import { renderBottomNav } from '../components/bottomNav.js';
 import { store } from '../state/store.js';
+import * as api from '../services/api.js';
 import { showToast } from '../components/toast.js';
+
+function parseImportedScreenplayText(rawText, fallbackTitle = 'Imported Screenplay') {
+  const cleanText = String(rawText || '').replace(/\r\n/g, '\n');
+  const lines = cleanText.split('\n');
+  const scenes = [];
+  let currentScene = null;
+  let blockCounter = 1;
+
+  const ensureScene = (slug = 'INT. IMPORTED SCENE - DAY') => {
+    const num = scenes.length + 1;
+    currentScene = {
+      id: `scene-${num}`,
+      number: num,
+      slugline: slug,
+      blocks: [{ id: `b-${Date.now()}-${blockCounter++}`, type: 'scene', content: slug }]
+    };
+    scenes.push(currentScene);
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (/^(INT\.|EXT\.|INT\.\/EXT\.|INT\/EXT\.|I\/E\.)/i.test(line)) {
+      ensureScene(line.toUpperCase());
+      continue;
+    }
+    if (!currentScene) ensureScene();
+    const isParenthetical = line.startsWith('(') && line.endsWith(')');
+    const isTransition = /(?:TO:|FADE OUT\.|CUT TO:)$/i.test(line) && line === line.toUpperCase();
+    const isCharacter = !isTransition && line.length <= 36 && line === line.toUpperCase() && /[A-Z]/.test(line);
+    const prevBlock = currentScene.blocks[currentScene.blocks.length - 1];
+    const type = isTransition
+      ? 'transition'
+      : isParenthetical
+        ? 'parenthetical'
+        : isCharacter
+          ? 'character'
+          : (prevBlock && (prevBlock.type === 'character' || prevBlock.type === 'parenthetical') ? 'dialogue' : 'action');
+
+    currentScene.blocks.push({
+      id: `b-${Date.now()}-${blockCounter++}`,
+      type,
+      content: line
+    });
+  }
+
+  if (scenes.length === 0) {
+    ensureScene('INT. IMPORTED SCENE - DAY');
+  }
+
+  const wordCount = cleanText.trim() ? cleanText.trim().split(/\s+/).length : 0;
+  return {
+    title: fallbackTitle,
+    draft: 'Imported 1.0',
+    pageCount: Math.max(1, Math.ceil(lines.length / 45)),
+    wordCount,
+    scenes
+  };
+}
 export function renderIntelligenceSelectorScreen() {
   const scripts = store.state.scripts || [];
   const selectedId = store.state.selectedScriptId || scripts[0]?.id || null;
@@ -85,13 +145,16 @@ export function renderIntelligenceSelectorScreen() {
 
       </div>
 
+      <!-- Hidden File Input for Direct Local Screenplay Import -->
+      <input type="file" id="intel-import-file-input" accept=".txt,.fountain,.fdx,.md,.screenplay" class="hidden" />
+
       <!-- Sticky Bottom Action Tray -->
       <div class="fixed left-0 right-0 z-30 bg-surface/90 backdrop-blur-md px-4 pt-2.5 pb-2 border-t border-slate-100 flex flex-col items-center gap-1 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] max-w-2xl mx-auto" style="bottom: calc(3.5rem + 16px + env(safe-area-inset-bottom, 0px));">
         <button type="button" id="submit-continue-analysis-btn" class="w-full h-11 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-[0.99] transition-all text-white font-medium text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-          <span class="truncate font-semibold" id="selector-btn-label">Continue to Context (${active.title})</span>
+          <span class="truncate font-semibold" id="selector-btn-label">${active ? `Continue to Context (${active.title})` : 'Import Screenplay to Analyze'}</span>
           <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
         </button>
-        <span class="text-[10px] text-slate-400 tracking-tight">Establishes selectedScriptId for Script Analysis</span>
+        <span class="text-[10px] text-slate-400 tracking-tight">${active ? 'Establishes selectedScriptId for Script Analysis' : 'Import a local script file or create one in Workspace'}</span>
         <!-- One empty line below for visual spacing and professional breathing room -->
         <div class="h-4 w-full select-none pointer-events-none" aria-hidden="true"></div>
       </div>
@@ -104,6 +167,7 @@ export function renderIntelligenceSelectorScreen() {
 
 export function attachIntelligenceSelectorEvents(navigate) {
   let selectedId = store.state.selectedScriptId || (store.state.scripts && store.state.scripts[0]?.id) || null;
+  const importInput = document.getElementById('intel-import-file-input');
 
   document.querySelectorAll('.script-select-card').forEach(card => {
     card.onclick = () => {
@@ -137,15 +201,58 @@ export function attachIntelligenceSelectorEvents(navigate) {
   const continueBtn = document.getElementById('submit-continue-analysis-btn');
   if (continueBtn) {
     continueBtn.onclick = () => {
-      store.selectScript(selectedId);
-      navigate('/intelligence/context');
+      if (selectedId) {
+        store.selectScript(selectedId);
+        navigate('/intelligence/context');
+        return;
+      }
+      if (importInput) {
+        importInput.click();
+      } else {
+        showToast('Import a screenplay file or create one in Workspace first', 'info');
+      }
     };
   }
 
   const importBtn = document.getElementById('btn-import-script-modal');
   if (importBtn) {
     importBtn.onclick = () => {
-      showToast('Select screenplay file (.fountain, .fdx, .pdf) to parse', 'info');
+      if (importInput) {
+        importInput.value = '';
+        importInput.click();
+      } else {
+        showToast('Select screenplay file (.fountain, .fdx, .txt) to parse', 'info');
+      }
+    };
+  }
+
+  if (importInput) {
+    importInput.onchange = async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const title = file.name.replace(/\.[^.]+$/, '') || 'Imported Screenplay';
+        const parsed = parseImportedScreenplayText(text, title);
+        const created = await api.createScript({
+          title,
+          format: 'Feature Film',
+          draft: 'Imported 1.0',
+          logline: `Imported from ${file.name}`
+        });
+        await api.saveScreenplay(created.id, {
+          ...parsed,
+          id: created.id,
+          title: created.title || title
+        });
+        await store.refreshScripts();
+        store.selectScript(created.id);
+        showToast(`Imported "${title}" for Intelligence analysis`);
+        navigate('/intelligence/context');
+      } catch (err) {
+        console.error('Intelligence import failed:', err);
+        showToast(err?.message || 'Failed to import screenplay file', 'error');
+      }
     };
   }
 }

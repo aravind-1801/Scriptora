@@ -457,9 +457,15 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
   const urlParams = new URLSearchParams(window.location.search || '');
   const from = fromParam || urlParams.get('from') || (sessionStorage.getItem('scriptora_from_editor') === 'true' ? 'editor' : null);
   const scriptsList = store.state.scripts || [];
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || scriptsList[0]?.id || null;
+  const rawScript = scriptParam || urlParams.get('scriptId') || store.state.editorReturnScriptId || store.state.selectedScriptId || scriptsList[0]?.id || null;
+  const scriptId = rawScript && rawScript !== 'null' && rawScript !== 'undefined' ? rawScript : null;
+  const activeScript = scriptId ? scriptsList.find(s => s.id === scriptId) || null : null;
   const isFromEditor = from === 'editor';
   const returnUrl = isFromEditor && scriptId ? (sessionStorage.getItem('scriptora_editor_return') || `/editor/${scriptId}`) : '/profile';
+
+  if (!activeScript) {
+    return;
+  }
 
   // Back button handling
   const backBtn = document.getElementById('collab-back-btn');

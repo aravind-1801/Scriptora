@@ -1,6 +1,6 @@
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
-import { renderProdSubNav } from './prodNav.js';
+import { renderProdSubNav, cleanScriptParam, renderRequiresScriptScreen } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
@@ -8,9 +8,16 @@ import { exportDialogueSheetPdf, exportActorSidesPdf } from '../../services/pdfE
 
 export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
-  const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
   const from = fromParam || urlParams.get('from');
+
+  if (!scriptId) {
+    return renderRequiresScriptScreen('Dialogue Sheets & Actor Sides', 'Dialogue Sheets & Sides', 'theater_comedy', from || '/production');
+  }
+  const initialMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
   const mainProductionUrl = from || (scriptId ? `/production?scriptId=${scriptId}` : '/production');
 
   return `
@@ -59,7 +66,11 @@ export function renderDialogueSidesScreen(fromParam = null, scriptParam = null) 
 
 export async function attachDialogueSidesEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
+  if (!scriptId) return;
   let activeMode = urlParams.get('mode') || 'dialogue'; // 'dialogue' or 'sides'
   let selectedChar = '';
   let selectedScene = urlParams.get('scene') || '1';

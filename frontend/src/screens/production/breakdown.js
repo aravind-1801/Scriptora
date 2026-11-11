@@ -1,6 +1,6 @@
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
-import { renderProdSubNav } from './prodNav.js';
+import { renderProdSubNav, cleanScriptParam, renderRequiresScriptScreen } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
@@ -22,8 +22,15 @@ const CATEGORY_CONFIG = {
 
 export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
   const from = fromParam || urlParams.get('from');
+
+  if (!scriptId) {
+    return renderRequiresScriptScreen('Script Breakdown Workspace', 'Script Breakdown', 'dataset', from || '/production');
+  }
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -244,7 +251,11 @@ export function renderBreakdownScreen(fromParam = null, scriptParam = null) {
 
 export async function attachBreakdownEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
+  if (!scriptId) return;
 
   let currentCategory = urlParams.get('category') || 'all';
   let currentScene = urlParams.get('scene') || 'all';

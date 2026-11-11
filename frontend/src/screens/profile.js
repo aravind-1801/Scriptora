@@ -1630,7 +1630,8 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
             await store.init();
             closeModal(actionModal);
             showToast(result.message || 'Local browser workspace cleared');
-            navigate('/workspace');
+            window.scriptoraRouter?.clearHistory?.();
+            navigate('/auth', true);
             return;
           }
           if (window.scriptoraRouter?.clearHistory) {

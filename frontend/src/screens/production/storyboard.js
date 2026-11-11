@@ -92,9 +92,21 @@ export const STYLE_PRESETS = [
 
 const QUALITY_OPTIONS = ["Standard Draft", "High Definition Production"];
 
+function resolveStoryboardScriptContext(scriptParam = null) {
+  const urlParams = new URLSearchParams(window.location.search || '');
+  const candidate = [scriptParam, urlParams.get('scriptId'), store.state.selectedScriptId].find(v => v && v !== 'null' && v !== 'undefined');
+  const scripts = store.state.scripts || [];
+  const activeScript = scripts.find(s => s.id === candidate) || scripts[0] || null;
+  return {
+    scriptId: activeScript?.id || 'standalone',
+    activeScript,
+    isStandalone: !activeScript
+  };
+}
+
 export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const { scriptId, isStandalone } = resolveStoryboardScriptContext(scriptParam);
   const from = fromParam || urlParams.get('from');
 
   return `
@@ -164,7 +176,7 @@ export function renderStoryboardScreen(fromParam = null, scriptParam = null) {
               </div>
 
               <!-- Shooting Schedule Context Link -->
-              <a id="btn-view-in-schedule" href="/production/schedule?scriptId=${scriptId}" class="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-600 transition-colors" title="View shoot day in Shooting Schedule">
+              <a id="btn-view-in-schedule" href="${isStandalone ? '/production/schedule' : `/production/schedule?scriptId=${scriptId}`}" class="${isStandalone ? 'hidden ' : ''}p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-blue-600 transition-colors" title="View shoot day in Shooting Schedule">
                 <span class="material-symbols-outlined text-[18px]">calendar_month</span>
               </a>
             </div>
@@ -1134,7 +1146,7 @@ function buildStructuredPrompt(params, userPrefs = null, projectOverrides = null
 
 export function attachStoryboardEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const { scriptId, isStandalone } = resolveStoryboardScriptContext(scriptParam);
   let currentSceneId = urlParams.get('sceneId') || 'scene-1';
   let currentView = 'contact'; // 'contact' | 'sequence'
   let activeEditingShotId = null;
@@ -3598,9 +3610,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     if (dayNightEl) dayNightEl.textContent = scene.dayNight || (allScenes.length ? 'DAY' : '--');
     if (pagesEl) pagesEl.textContent = `${scene.pages || (allScenes.length ? '1.0' : '0')} pgs`;
     if (shootDayEl) shootDayEl.textContent = scene.shootDay || 'Unscheduled';
-    if (snippetEl) snippetEl.textContent = scene.snippet || (allScenes.length ? 'Scene awaiting visual direction.' : 'Create scenes in the Screenplay Editor to storyboard your screenplay.');
+    if (snippetEl) snippetEl.textContent = scene.snippet || (allScenes.length ? 'Scene awaiting visual direction.' : (isStandalone ? 'Standalone Prompt Mode — enter visual prompts directly via Generate Sequence or Add Shot.' : 'Create scenes in the Screenplay Editor to storyboard your screenplay.'));
 
-    if (btnScheduleLink) {
+    if (btnScheduleLink && !isStandalone) {
       const dayNum = String(scene.shootDay || '1').match(/\d+/)?.[0] || '1';
       btnScheduleLink.href = `/production/schedule?scriptId=${scriptId}&day=${dayNum}&sceneId=${scene.id}`;
     }
@@ -3664,7 +3676,9 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
           <div class="max-w-md">
             <h4 class="font-heading font-bold text-sm text-slate-900">No Storyboard Frames Yet</h4>
             <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-              This scene does not have a visual storyboard. Generate an AI proposed sequence grounded in the screenplay or add shots manually.
+              ${isStandalone
+                ? 'Standalone prompt mode is ready. Describe any visual shot sequence with a prompt or add shots manually without needing a screenplay.'
+                : 'This scene does not have a visual storyboard. Generate an AI proposed sequence grounded in the screenplay or add shots manually.'}
             </p>
           </div>
           <div class="flex items-center gap-2 mt-2">
@@ -4583,7 +4597,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
     updateRecycleBinBadge();
     try {
       const [fetchedScenes, fetchedProviders] = await Promise.all([
-        api.getProductionScenes(scriptId),
+        isStandalone ? Promise.resolve([]) : api.getProductionScenes(scriptId),
         api.getAiImageProviders()
       ]);
       allScenes = fetchedScenes || [];
@@ -4592,11 +4606,26 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
       console.warn("Using offline fallback data for storyboard:", e);
     }
 
+    if (isStandalone && allScenes.length === 0) {
+      allScenes = [
+        {
+          id: 'scene-1',
+          sceneNumber: 1,
+          heading: 'STANDALONE PROMPT BOARD',
+          intExt: 'PROMPT',
+          dayNight: 'STUDIO',
+          pages: '0',
+          shootDay: 'Standalone',
+          snippet: 'No screenplay required — describe any shot sequence with a prompt or add frames manually.'
+        }
+      ];
+    }
+
     // Populate scene dropdown
     if (sceneSelect && allScenes.length) {
       sceneSelect.innerHTML = allScenes.map(s => `
         <option value="${s.id}" ${s.id === currentSceneId ? 'selected' : ''}>
-          Scene ${s.sceneNumber}: ${s.heading}
+          ${isStandalone ? 'Prompt Board (No Screenplay Required)' : `Scene ${s.sceneNumber}: ${s.heading}`}
         </option>
       `).join('');
 
@@ -4606,7 +4635,7 @@ export function attachStoryboardEvents(navigate, fromParam = null, scriptParam =
         loadStoryboardData();
       };
     } else if (sceneSelect) {
-      sceneSelect.innerHTML = `<option value="">${scriptId ? 'No screenplay scenes yet' : 'No screenplay selected'}</option>`;
+      sceneSelect.innerHTML = `<option value="">${isStandalone ? 'Prompt Board (Standalone)' : 'No screenplay scenes yet'}</option>`;
     }
 
     // Load initial storyboard shots

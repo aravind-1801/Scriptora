@@ -1,6 +1,6 @@
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
-import { renderProdSubNav } from './prodNav.js';
+import { renderProdSubNav, cleanScriptParam, renderRequiresScriptScreen } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { showToast } from '../../components/toast.js';
@@ -24,8 +24,15 @@ const CATEGORY_ICONS = {
 
 export function renderScheduleScreen(fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
   const from = fromParam || urlParams.get('from');
+
+  if (!scriptId) {
+    return renderRequiresScriptScreen('Master Shooting Schedule', 'Shooting Schedule', 'calendar_month', from || '/production');
+  }
 
   return `
     <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
@@ -203,7 +210,11 @@ export function renderScheduleScreen(fromParam = null, scriptParam = null) {
 
 export async function attachScheduleEvents(navigate, fromParam = null, scriptParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
+  if (!scriptId) return;
 
   const calendarContainer = document.getElementById('schedule-calendar-container');
   const dayModal = document.getElementById('day-detail-modal');
@@ -291,8 +302,8 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
             <h4 class="font-heading font-bold text-sm text-slate-900">No Shoot Days Scheduled Yet</h4>
             <p class="text-xs text-slate-500 max-w-sm">
               ${scriptId
-                ? 'Click Add Date above to add shoot days and assign screenplay scenes to your calendar.'
-                : 'Select or create a screenplay in your Workspace to build a master shooting schedule.'}
+          ? 'Click Add Date above to add shoot days and assign screenplay scenes to your calendar.'
+          : 'Select or create a screenplay in your Workspace to build a master shooting schedule.'}
             </p>
           </div>
         ` : `
@@ -583,17 +594,17 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
         <!-- Concise Scene List with Inline Expansion & Inline Quick-Edit -->
         <div class="flex flex-col gap-2">
           ${dayScenes.length > 0 ? dayScenes.map((s, idx) => {
-            const isExpanded = expandedSceneIds.has(s.id);
-            const isMoreOpen = openMoreDetailsIds.has(s.id);
-            const isEditingNotes = editingNotesSceneIds.has(s.id);
-            const isEditingCard = editingSceneCards.has(s.id);
-            const isEditingSnippet = editingSnippetSceneIds.has(s.id);
-            const isAddingCast = addingCastSceneIds.has(s.id);
+        const isExpanded = expandedSceneIds.has(s.id);
+        const isMoreOpen = openMoreDetailsIds.has(s.id);
+        const isEditingNotes = editingNotesSceneIds.has(s.id);
+        const isEditingCard = editingSceneCards.has(s.id);
+        const isEditingSnippet = editingSnippetSceneIds.has(s.id);
+        const isAddingCast = addingCastSceneIds.has(s.id);
 
-            // Fetch elements for this scene from cached breakdown
-            const sElements = breakdown.filter(b => b.sceneId === s.id || b.sceneNumber === s.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(s.sceneNumber)));
+        // Fetch elements for this scene from cached breakdown
+        const sElements = breakdown.filter(b => b.sceneId === s.id || b.sceneNumber === s.sceneNumber || (Array.isArray(b.scenes) && b.scenes.includes(s.sceneNumber)));
 
-            return `
+        return `
               <div class="scene-item-card rounded-xl border border-slate-200/90 bg-white overflow-hidden shadow-2xs transition-all" data-scene-num="${s.sceneNumber}" data-scene-id="${s.id}">
                 ${isEditingCard ? `
                   <!-- Inline Edit Scene Mode -->
@@ -840,7 +851,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
                 </div>
               </div>
             `;
-          }).join('') : `
+      }).join('') : `
             <div class="text-center py-4 text-slate-400 text-xs italic">No scenes assigned to this day.</div>
           `}
         </div>
@@ -1413,7 +1424,7 @@ export async function attachScheduleEvents(navigate, fromParam = null, scriptPar
     if (inputDate) {
       const baseDate = new Date();
       baseDate.setDate(baseDate.getDate() + nextDayNum - 1);
-      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       inputDate.value = `${months[baseDate.getMonth()]} ${baseDate.getDate()}, ${baseDate.getFullYear()}`;
     }
     if (inputTitle) inputTitle.value = `Day ${nextDayNum}`;

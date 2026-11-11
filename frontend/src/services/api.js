@@ -369,6 +369,7 @@ export async function deleteAccount(confirmation) {
   if (isLocalMode()) {
     await localRepo.saveProfile(null);
     await resetLocalWorkspace();
+    await localRepo.setLocalSignedOut(true);
     return {
       success: true,
       localOnly: true,

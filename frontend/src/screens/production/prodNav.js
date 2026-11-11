@@ -1,5 +1,40 @@
+import { renderHeader } from '../../components/header.js';
+import { renderBottomNav } from '../../components/bottomNav.js';
+
 // Shared Pre-Production Navigation Bar for all Dedicated Tool Screens
 // Preserves context: selected screenplay, pinned source version, and user role.
+
+export function cleanScriptParam(val) {
+  if (!val || val === 'null' || val === 'undefined') return null;
+  return val;
+}
+
+export function renderRequiresScriptScreen(sectionSubtitle, toolName, iconName = 'movie_creation', backUrl = '/production') {
+  return `
+    <div class="min-h-screen bg-surface flex flex-col font-body text-slate-800 pb-20 select-none">
+      ${renderHeader('Pre-Production', sectionSubtitle)}
+
+      <main class="flex-1 w-full max-w-2xl mx-auto px-4 pt-16 pb-20 flex flex-col">
+        ${renderProdSubNav(toolName, iconName, backUrl, '', null, 'Screenplay required from Workspace.')}
+        <div class="flex flex-col items-center justify-center flex-1 max-w-md mx-auto px-4 text-center py-12">
+          <div class="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 mb-4">
+            <span class="material-symbols-outlined text-3xl">${iconName}</span>
+          </div>
+          <h2 class="text-xl font-bold text-slate-900 mb-1">No Screenplay Selected</h2>
+          <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+            Create or select a screenplay in your Workspace to use ${toolName}. Storyboard Studio works standalone via prompt without a script.
+          </p>
+          <a href="/workspace" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm transition-all no-underline">
+            <span class="material-symbols-outlined text-[18px]">add</span>
+            Go to Workspace
+          </a>
+        </div>
+      </main>
+
+      ${renderBottomNav('production')}
+    </div>
+  `;
+}
 
 export function getBackLabelFromUrl(url) {
   if (!url) return 'Studio';

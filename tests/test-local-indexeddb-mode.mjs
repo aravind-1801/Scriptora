@@ -367,4 +367,13 @@ assert.ok(restoredScripts.some(s => s.title === 'DEVICE A TEST'), 'Restored back
 const restoredSb = await api.getStoryboard(created.id, 'scene-1');
 assert.ok(localRepo.resolveBlobUriSync(restoredSb.shots[0].imageUrl).startsWith('blob:mock-origin/'), 'Restored backup must rehydrate image Blob');
 
+// Test 8: deleteAccount in local mode clears workspace and marks session signed out -> /auth gate
+await api.deleteAccount('DELETE MY ACCOUNT');
+assert.equal(localRepo.isLocalSignedOutSync(), true, 'deleteAccount must mark local session signed out');
+assert.equal(await api.getCurrentUser(), null, 'getCurrentUser must be null after deleteAccount');
+assert.equal((await api.getScripts()).length, 0, 'deleteAccount must wipe scripts in local workspace');
+await api.register({ name: 'Fresh Account', email: 'fresh@local.test', password: 'pw123' });
+assert.equal(localRepo.isLocalSignedOutSync(), false, 'register after deleteAccount must clear signedOut flag');
+assert.equal((await api.getScripts()).length, 0, 'Newly registered account after deleteAccount must have empty workspace');
+
 console.log('ALL LOCAL INDEXEDDB MODE TESTS PASSED!');

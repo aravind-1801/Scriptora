@@ -1,6 +1,6 @@
 import { renderHeader } from '../../components/header.js';
 import { renderBottomNav } from '../../components/bottomNav.js';
-import { renderProdSubNav } from './prodNav.js';
+import { renderProdSubNav, cleanScriptParam, renderRequiresScriptScreen } from './prodNav.js';
 import { store } from '../../state/store.js';
 import * as api from '../../services/api.js';
 import { isLocalMode } from '../../services/dataMode.js';
@@ -9,11 +9,18 @@ import { exportCallSheetPdf } from '../../services/pdfExport.js';
 
 export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
+  const from = fromParam || urlParams.get('from');
+
+  if (!scriptId) {
+    return renderRequiresScriptScreen('Call Sheets Workspace', 'Call Sheets', 'assignment', from || '/production');
+  }
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
   const isEdit = urlParams.get('action') === 'edit';
-  const from = fromParam || urlParams.get('from');
   let defaultBack = '/production';
   if (isEdit) {
     defaultBack = `/production/call-sheets?scriptId=${scriptId}&csId=${csId}`;
@@ -55,7 +62,11 @@ export function renderCallSheetsScreen(fromParam = null, scriptParam = null, csI
 
 export async function attachCallSheetsEvents(navigate, fromParam = null, scriptParam = null, csIdParam = null) {
   const urlParams = new URLSearchParams(window.location.search || '');
-  const scriptId = scriptParam || urlParams.get('scriptId') || store.state.selectedScriptId || store.state.scripts?.[0]?.id || null;
+  const scripts = store.state.scripts || [];
+  const requestedId = cleanScriptParam(scriptParam) || cleanScriptParam(urlParams.get('scriptId')) || cleanScriptParam(store.state.selectedScriptId);
+  const activeScript = scripts.find(s => s.id === requestedId) || scripts[0] || null;
+  const scriptId = activeScript?.id || null;
+  if (!scriptId) return;
   const csId = csIdParam || urlParams.get('csId');
   const isNew = urlParams.get('action') === 'new';
   const isEdit = urlParams.get('action') === 'edit';

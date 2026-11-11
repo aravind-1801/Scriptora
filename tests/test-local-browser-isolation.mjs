@@ -422,6 +422,33 @@ async function run() {
     const bodyTextB = await tabB1.evaluate(`document.body.innerText`);
     assert.equal(bodyTextB.includes('DEVICE A TEST'), false, 'Profile B DOM must never display Profile A scripts');
 
+    // --- 4B. Fresh 0-Script Account Navigation & Empty-Workspace Guarantees ---
+    await tabB1.evaluate(`window.location.hash = '#/intelligence'`);
+    await waitForCondition(tabB1, `document.getElementById('btn-import-script-modal') && document.getElementById('submit-continue-analysis-btn')`);
+
+    await tabB1.evaluate(`window.location.hash = '#/production'`);
+    await waitForCondition(tabB1, `document.querySelectorAll('.tool-card').length === 5`);
+    await tabB1.evaluate(`document.querySelector('.tool-card[data-tool="script-breakdown"]').click()`);
+    await waitForCondition(tabB1, `!document.getElementById('prod-needs-script-modal').classList.contains('hidden') && document.getElementById('prod-modal-go-workspace')`);
+    await tabB1.evaluate(`document.getElementById('prod-modal-cancel').click()`);
+
+    await tabB1.evaluate(`window.location.hash = '#/production/breakdown'`);
+    await waitForCondition(tabB1, `document.body.innerText.includes('No Screenplay Selected') && document.body.innerText.includes('Go to Workspace')`);
+
+    await tabB1.evaluate(`window.location.hash = '#/production'`);
+    await waitForCondition(tabB1, `document.querySelector('.tool-card[data-tool="storyboard-studio"]')`);
+    await tabB1.evaluate(`document.querySelector('.tool-card[data-tool="storyboard-studio"]').click()`);
+    await waitForCondition(tabB1, `document.getElementById('storyboard-view-container') && document.getElementById('btn-empty-generate')`);
+
+    await tabB1.evaluate(`window.location.hash = '#/profile'`);
+    await waitForCondition(tabB1, `document.getElementById('btn-trigger-signout') && document.getElementById('btn-trigger-delete-acc')`);
+
+    await tabB1.evaluate(`window.location.hash = '#/profile/collaborators'`);
+    await waitForCondition(tabB1, `document.body.innerText.includes('No Screenplay Selected') && document.body.innerText.includes('Go to Workspace')`);
+
+    await tabB1.evaluate(`window.location.hash = '#/workspace'`);
+    await waitForCondition(tabB1, `document.getElementById('btn-new-screenplay-card')`);
+
     await createScriptInUI(tabB1, 'DEVICE B TEST');
     await tabB1.evaluate(`window.location.hash = '#/workspace'`);
     await waitForCondition(tabB1, `document.body.innerText.includes('DEVICE B TEST')`);
@@ -435,6 +462,23 @@ async function run() {
     const finalStateA = await inspectIndexedDB(tabA4);
     assert.equal(finalStateA.scriptTitles.includes('DEVICE B TEST'), false, 'Profile A must never see Profile B scripts');
     assert.ok(finalStateA.scriptTitles.includes('DEVICE A TEST'), 'Profile A must retain its own scripts');
+
+    // --- 5. Delete Account in Local Mode -> clears data and returns to /auth login page ---
+    await tabA4.evaluate(`window.location.hash = '#/profile'`);
+    await waitForCondition(tabA4, `document.getElementById('btn-trigger-delete-acc')`);
+    await tabA4.evaluate(`document.getElementById('btn-trigger-delete-acc').click()`);
+    await waitForCondition(tabA4, `document.getElementById('action-modal-confirm') && !document.getElementById('action-modal-input-wrap').classList.contains('hidden')`);
+    await tabA4.evaluate(`
+      (() => {
+        document.getElementById('action-modal-phrase-input').value = 'DELETE MY ACCOUNT';
+        document.getElementById('action-modal-confirm').click();
+      })()
+    `);
+    await waitForCondition(tabA4, `(window.location.pathname.endsWith('/auth') || window.location.hash.includes('#/auth')) && document.getElementById('form-signin')`);
+    await tabA4.send('Page.reload', { ignoreCache: false });
+    await waitForCondition(tabA4, `document.getElementById('form-signin')`);
+    const postDeleteState = await inspectIndexedDB(tabA4);
+    assert.equal(postDeleteState.scriptCount, 0, 'Deleted local workspace must have 0 scripts');
     tabA4.close();
 
     assertZeroCloudTraffic(networkUrls, 'End-to-End Local Mode Browser Isolation');
