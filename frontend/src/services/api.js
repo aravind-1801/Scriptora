@@ -118,7 +118,8 @@ export const DEFAULT_SCRIPTS = [];
 
 export async function getCurrentUser() {
   if (isLocalMode()) {
-    return await localRepo.getProfile();
+    const profile = await localRepo.getProfile();
+    return localRepo.isLocalSignedOutSync() ? null : profile;
   }
   try {
     const data = await request('/auth/me');
@@ -173,6 +174,7 @@ export async function login(credentials) {
       role: existing.role || 'Screenwriter & Director',
       mode: 'local'
     };
+    await localRepo.setLocalSignedOut(false);
     return await localRepo.saveProfile(localUser);
   }
   const data = await request('/auth/login', {
@@ -204,6 +206,7 @@ export async function googleLogin(payload = {}) {
       role: existing.role || 'Screenwriter & Director',
       mode: 'local'
     };
+    await localRepo.setLocalSignedOut(false);
     return await localRepo.saveProfile(localUser);
   }
   const data = await request('/auth/google', {
@@ -233,6 +236,7 @@ export async function register(data) {
       role: 'Screenwriter & Director',
       mode: 'local'
     };
+    await localRepo.setLocalSignedOut(false);
     return await localRepo.saveProfile(localUser);
   }
   const res = await request('/auth/register', {
@@ -261,6 +265,7 @@ export async function verifyOtp(phone) {
       phone: typeof phone === 'object' ? phone.phone : phone,
       mode: 'local'
     };
+    await localRepo.setLocalSignedOut(false);
     return await localRepo.saveProfile(localUser);
   }
   const res = await request('/auth/otp', {
@@ -342,8 +347,9 @@ export async function resetLocalWorkspace() {
 
 export async function signOut() {
   if (isLocalMode()) {
+    await localRepo.setLocalSignedOut(true);
     clearLocalUserData();
-    return { success: true, mode: 'local', workspacePreserved: true };
+    return { success: true, mode: 'local', workspacePreserved: true, signedOut: true };
   }
   try {
     await request('/auth/logout', { method: 'POST' });

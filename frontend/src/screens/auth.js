@@ -1,4 +1,5 @@
 import * as api from '../services/api.js';
+import { isLocalMode } from '../services/dataMode.js';
 import { store } from '../state/store.js';
 import { showToast } from '../components/toast.js';
 import { LOGO_URL } from '../utils/brand.js';
@@ -237,7 +238,11 @@ export function attachAuthEvents(navigate) {
     });
     await store.init().catch(() => {});
     if (message) showToast(message);
-    navigate('/welcome');
+    if (isLocalMode()) {
+      navigate('/workspace', true);
+    } else {
+      navigate('/welcome');
+    }
   }
 
   async function handleGoogleAuthSuccess(profile) {

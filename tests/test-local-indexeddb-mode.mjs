@@ -337,10 +337,18 @@ assert.equal(reloadedBreakdown.length, 1);
 assert.equal(reloadedBreakdown[0].name, 'Umbrella');
 assert.equal((await api.getProfile()).name, 'Director Alpha');
 
-// Test 6: SignOut preserves local workspace data
+// Test 6: SignOut marks session signed out while preserving local IndexedDB workspace data, and login clears signed-out flag
 await api.signOut();
+assert.equal(localRepo.isLocalSignedOutSync(), true, 'signOut must mark local session signed out');
+assert.equal(await api.getCurrentUser(), null, 'getCurrentUser must return null while signed out');
 const afterSignoutScripts = await api.getScripts();
 assert.ok(afterSignoutScripts.some(s => s.title === 'DEVICE A TEST'), 'signOut must preserve IndexedDB workspace in local mode');
+
+// Signing back in clears signedOut flag without losing existing local data
+await api.login({ email: 'director@local.test', password: 'secret' });
+assert.equal(localRepo.isLocalSignedOutSync(), false, 'login must clear local signed-out flag');
+assert.ok((await api.getCurrentUser()) !== null, 'getCurrentUser must restore after login');
+assert.ok((await api.getScripts()).some(s => s.title === 'DEVICE A TEST'), 'login must retain existing local scripts');
 
 // Test 7: Export JSON backup -> resetLocalWorkspace -> verify empty -> validate & restore backup
 const exported = await backup.exportWorkspaceBackupPayload();

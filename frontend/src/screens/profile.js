@@ -21,15 +21,16 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
       const saved = localStorage.getItem('scriptora_user');
       if (saved) return JSON.parse(saved);
     } catch (_) {}
-    return {
-      name: "Screenwriter",
-      headline: "Screenwriter & Narrative Director",
-      email: "",
-      badge: "Member Pro",
-      initials: "SW",
-      stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
-    };
-  })());
+    return null;
+  })()) || {
+    name: isLocalMode() ? "Local Writer" : "Screenwriter",
+    headline: "Screenwriter & Narrative Director",
+    email: "",
+    badge: isLocalMode() ? "Local Workspace" : "Member Pro",
+    initials: isLocalMode() ? "LW" : "SW",
+    avatarColor: "bg-blue-600",
+    stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
+  };
 
   const settings = store.state.settings || (isLocalMode() ? (localRepo.getCachedSettings() || {}) : (() => {
     try {
@@ -809,16 +810,16 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       const saved = localStorage.getItem('scriptora_user');
       if (saved) return JSON.parse(saved);
     } catch (_) {}
-    return {
-      name: "Screenwriter",
-      headline: "Screenwriter & Narrative Director",
-      email: "",
-      badge: "Member Pro",
-      initials: "SW",
-      avatarColor: "bg-blue-600",
-      stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
-    };
-  })());
+    return null;
+  })()) || {
+    name: isLocalMode() ? "Local Writer" : "Screenwriter",
+    headline: "Screenwriter & Narrative Director",
+    email: "",
+    badge: isLocalMode() ? "Local Workspace" : "Member Pro",
+    initials: isLocalMode() ? "LW" : "SW",
+    avatarColor: "bg-blue-600",
+    stats: { drafts: store.state.scripts?.length || 0, coAuthors: 0, healthIndex: "100%" }
+  };
 
   const bottomReturnBtn = document.getElementById('profile-bottom-return-btn');
   if (bottomReturnBtn) {
@@ -1529,9 +1530,9 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
     }
 
     if (action === 'signout') {
-      actionTitle.textContent = isLocalMode() ? 'Reset Session View' : 'Sign Out';
+      actionTitle.textContent = isLocalMode() ? 'Sign Out' : 'Sign Out';
       actionDesc.textContent = isLocalMode()
-        ? 'Your Local Workspace is stored safely in this browser profile (IndexedDB). Signing out will not delete your local scripts or storyboards.'
+        ? 'Your Local Workspace data stays saved safely in this browser profile (IndexedDB). Signing out will return you to the login screen without deleting your scripts or storyboards.'
         : 'Are you sure you want to end your active session on this device? Unsaved changes in your draft have been synchronized.';
       actionIcon.textContent = 'logout';
       actionIconBox.className = 'w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center';
@@ -1605,9 +1606,12 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
           if (isLocalMode()) {
             await api.signOut();
             store.resetUserSession();
+            if (window.scriptoraRouter?.clearHistory) {
+              window.scriptoraRouter.clearHistory();
+            }
             closeModal(actionModal);
-            showToast('Local workspace preserved on this device');
-            navigate('/workspace');
+            showToast('Signed out. Local workspace kept on this device.');
+            navigate('/auth', true);
             return;
           }
           await api.signOut();

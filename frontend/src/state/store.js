@@ -121,7 +121,7 @@ class Store {
       await localRepo.initLocalRepository();
       if (!this._localChangeUnsub) {
         this._localChangeUnsub = localRepo.onLocalWorkspaceChange(async ({ area }) => {
-          if (['scripts', 'reset', 'backup-restored', 'reload', 'profile', 'settings', 'notifications', 'selectedScriptId'].includes(area)) {
+          if (['auth', 'scripts', 'reset', 'backup-restored', 'reload', 'profile', 'settings', 'notifications', 'selectedScriptId'].includes(area)) {
             await this.syncFromLocalSnapshot();
           }
         });
@@ -202,7 +202,7 @@ class Store {
       dataMode: 'local',
       installationId: localRepo.getInstallationId(),
       storageError: null,
-      currentUser: user,
+      currentUser: localRepo.isLocalSignedOutSync() ? null : user,
       scripts: scripts || [],
       selectedScriptId: selectedId,
       activeScript,

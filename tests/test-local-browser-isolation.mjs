@@ -160,8 +160,16 @@ async function launchChrome(profileDir, port) {
 
 async function stopChrome(proc) {
   if (!proc) return;
-  try { proc.kill(); } catch (_) {}
-  await new Promise((r) => setTimeout(r, 600));
+  const exited = new Promise((resolve) => {
+    if (proc.exitCode !== null || proc.signalCode !== null) return resolve();
+    proc.once('exit', resolve);
+    setTimeout(resolve, 4000);
+  });
+  try {
+    proc.kill('SIGTERM');
+  } catch (_) {}
+  await exited;
+  await new Promise((r) => setTimeout(r, 400));
 }
 
 async function openTab(port, url, networkUrls) {
@@ -374,6 +382,34 @@ async function run() {
     await waitForCondition(tabA3, `document.querySelector('#storyboard-view-container img[src^="blob:"]')`);
     const restartedImgSrc = await tabA3.evaluate(`document.querySelector('#storyboard-view-container img')?.getAttribute('src') || ''`);
     assert.ok(restartedImgSrc.startsWith('blob:'), 'Restarted browser must rehydrate storyboard image blob:');
+
+    // --- 3B. Sign Out ("Keep Local & Reload") -> returns to /auth, keeps data on reload, sign back in restores /workspace ---
+    await tabA3.evaluate(`window.location.hash = '#/profile'`);
+    await waitForCondition(tabA3, `document.getElementById('btn-trigger-signout')`);
+    await tabA3.evaluate(`document.getElementById('btn-trigger-signout').click()`);
+    await waitForCondition(tabA3, `document.getElementById('action-modal-confirm')`);
+    await tabA3.evaluate(`document.getElementById('action-modal-confirm').click()`);
+    await waitForCondition(tabA3, `(window.location.pathname.endsWith('/auth') || window.location.hash.includes('#/auth')) && document.getElementById('form-signin')`);
+
+    // Even after a full page reload and attempting #/workspace, user remains on /auth while IndexedDB retains scripts + blobs
+    await tabA3.send('Page.reload', { ignoreCache: false });
+    await waitForCondition(tabA3, `document.getElementById('form-signin')`);
+    await tabA3.evaluate(`window.location.hash = '#/workspace'`);
+    await waitForCondition(tabA3, `(window.location.pathname.endsWith('/auth') || window.location.hash.includes('#/auth')) && document.getElementById('form-signin')`);
+
+    const whileSignedOutState = await inspectIndexedDB(tabA3);
+    assert.ok(whileSignedOutState.scriptTitles.includes('DEVICE A TEST'), 'Signed-out local workspace must preserve scripts in IndexedDB');
+    assert.equal(whileSignedOutState.blobsAreRealBlobs, true, 'Signed-out local workspace must preserve storyboard blobs in IndexedDB');
+
+    // Sign back in on /auth and verify immediate return to /workspace with preserved data
+    await tabA3.evaluate(`
+      (() => {
+        document.getElementById('signin-email').value = 'director@local.test';
+        document.getElementById('signin-password').value = 'password123';
+        document.getElementById('form-signin').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      })()
+    `);
+    await waitForCondition(tabA3, `(window.location.pathname.endsWith('/workspace') || window.location.hash.includes('#/workspace')) && document.body.innerText.includes('DEVICE A TEST')`);
     tabA3.close();
 
     // --- 4. Profile B: Launch completely independent Chrome profile -> strict isolation ---

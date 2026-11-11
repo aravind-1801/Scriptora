@@ -29,6 +29,7 @@ import { migrateLegacyLocalStorageIfNeeded, dataUrlToBlob } from './localMigrati
 const cache = {
   initialized: false,
   installationId: null,
+  signedOut: false,
   profile: null,
   settings: null,
   selectedScriptId: null,
@@ -178,6 +179,7 @@ async function loadSnapshotFromIndexedDB() {
     chatHistory,
     notifications,
     storyboardPreferences,
+    signedOutFlag,
     scripts,
     screenplays,
     versions,
@@ -197,6 +199,7 @@ async function loadSnapshotFromIndexedDB() {
     getKv('chatHistory', []),
     getKv('notifications', []),
     getKv('storyboardPreferences', null),
+    getKv('session:signedOut', false),
     getAllRecords(STORES.SCRIPTS),
     getAllRecords(STORES.SCREENPLAYS),
     getAllRecords(STORES.VERSIONS),
@@ -209,6 +212,7 @@ async function loadSnapshotFromIndexedDB() {
   ]);
 
   cache.installationId = meta?.installationId || null;
+  cache.signedOut = Boolean(signedOutFlag);
   cache.profile = profile || null;
   cache.settings = settings ? { ...DEFAULT_SETTINGS, ...settings, syncCloud: false } : { ...DEFAULT_SETTINGS };
   cache.selectedScriptId = selectedScriptId || null;
@@ -320,7 +324,22 @@ export function isLocalRepoInitialized() {
 }
 
 export function getCachedProfile() {
+  if (cache.signedOut) return null;
   return cache.profile ? { ...cache.profile } : null;
+}
+
+export function isLocalSignedOutSync() {
+  return Boolean(cache.signedOut);
+}
+
+export async function setLocalSignedOut(signedOut) {
+  await initLocalRepository();
+  const next = Boolean(signedOut);
+  await setKv('session:signedOut', next);
+  cache.signedOut = next;
+  notifyWorkspaceUpdated('auth', { signedOut: next });
+  emitWorkspaceChange('auth', { signedOut: next });
+  return next;
 }
 
 export function getCachedSettings() {
@@ -1441,6 +1460,7 @@ export async function resetLocalWorkspace() {
   await clearAllWorkspaceStores();
 
   cache.profile = null;
+  cache.signedOut = false;
   cache.settings = { ...DEFAULT_SETTINGS };
   cache.selectedScriptId = null;
   cache.autoSaveEnabled = true;

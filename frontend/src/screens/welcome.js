@@ -93,9 +93,10 @@ export function attachWelcomeEvents(navigate) {
   if (signOutBtn) {
     signOutBtn.onclick = async () => {
       await api.signOut();
-      store.setState({ currentUser: null });
+      store.resetUserSession();
+      window.scriptoraRouter?.clearHistory?.();
       showToast('Signed out successfully');
-      navigate('/auth');
+      navigate('/auth', true);
     };
   }
 }
