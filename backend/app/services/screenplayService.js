@@ -1,4 +1,4 @@
-import { db } from '../models/db.js';
+import { db, persistScriptState } from '../models/db.js';
 
 export function getScreenplay(scriptId) {
   return db.screenplays[scriptId] || {
@@ -26,11 +26,13 @@ export function saveScreenplay(scriptId, data) {
     ...updates
   };
 
-  // Update last modified in script metadata
   const script = db.scripts.find(s => s.id === scriptId);
   if (script) {
     script.updated = "Just now";
+    script.updatedAt = new Date().toISOString();
+    if (updates.pageCount) script.pages = updates.pageCount;
   }
 
+  persistScriptState(scriptId);
   return db.screenplays[scriptId];
 }

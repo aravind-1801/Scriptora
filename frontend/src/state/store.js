@@ -9,7 +9,7 @@ class Store {
 
     this.state = {
       currentUser: null,
-      selectedScriptId: localStorage.getItem('scriptora_selected_script') || null,
+      selectedScriptId: localStorage.getItem(api.getUserStorageKey('selected_script')) || null,
       selectedVersionId: null,
       currentSceneId: null,
       unreadNotifications: 0,
@@ -40,7 +40,7 @@ class Store {
   setState(partial) {
     this.state = { ...this.state, ...partial };
     if (partial.selectedScriptId) {
-      localStorage.setItem('scriptora_selected_script', partial.selectedScriptId);
+      localStorage.setItem(api.getUserStorageKey('selected_script'), partial.selectedScriptId);
     }
     this.notify();
   }
@@ -81,7 +81,7 @@ class Store {
 
   resetUserSession() {
     try {
-      localStorage.removeItem('scriptora_selected_script');
+      localStorage.removeItem(api.getUserStorageKey('selected_script'));
     } catch (_) {}
     this.setState({
       currentUser: null,
@@ -104,7 +104,7 @@ class Store {
       const unreadCount = await api.getUnreadNotificationCount();
       const settings = await api.getSettings();
 
-      let selectedId = localStorage.getItem('scriptora_selected_script');
+      let selectedId = localStorage.getItem(api.getUserStorageKey('selected_script'));
       const currentDraft = (scripts && scripts.length > 0) ? scripts.find(s => s.isCurrentDraft) : null;
       if (currentDraft) {
         selectedId = currentDraft.id;
@@ -117,9 +117,9 @@ class Store {
       }
 
       if (selectedId) {
-        localStorage.setItem('scriptora_selected_script', selectedId);
+        localStorage.setItem(api.getUserStorageKey('selected_script'), selectedId);
       } else {
-        localStorage.removeItem('scriptora_selected_script');
+        localStorage.removeItem(api.getUserStorageKey('selected_script'));
       }
 
       const activeScript = (scripts && scripts.length > 0)
@@ -168,9 +168,9 @@ class Store {
     }
     const active = (scripts && scripts.length > 0) ? (scripts.find(s => s.id === selectedId) || scripts[0]) : null;
     if (selectedId) {
-      localStorage.setItem('scriptora_selected_script', selectedId);
+      localStorage.setItem(api.getUserStorageKey('selected_script'), selectedId);
     } else {
-      localStorage.removeItem('scriptora_selected_script');
+      localStorage.removeItem(api.getUserStorageKey('selected_script'));
     }
     this.setState({ scripts: scripts || [], selectedScriptId: selectedId, activeScript: active });
     return scripts;

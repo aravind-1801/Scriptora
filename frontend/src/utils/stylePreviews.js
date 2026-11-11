@@ -649,7 +649,7 @@ export function resolveAssetUrl(url, fallbackNum = '') {
       if (match && match[1]) {
         return `${BASE}assets/storyboard/${match[1]}`;
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   // 2. Preserve inline SVG data URIs directly
@@ -657,18 +657,22 @@ export function resolveAssetUrl(url, fallbackNum = '') {
     return url;
   }
 
-  // 3. If it's an external URL (http / https) or base64 data URL
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/png') || url.startsWith('data:image/jpeg') || url.startsWith('data:image/webp')) {
-    return url;
+  // 3. If it's a persistent server image endpoint (/production/storyboard/images/... or /api/v1/storage/...)
+  if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
+    const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
+    let fullUrl = (url.startsWith('http://') || url.startsWith('https://'))
+      ? url
+      : (baseClean ? `${baseClean}${url.startsWith('/') ? '' : '/'}${url}` : url);
+    const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
+    if (token && !fullUrl.includes('token=')) {
+      const sep = fullUrl.includes('?') ? '&' : '?';
+      fullUrl = `${fullUrl}${sep}token=${encodeURIComponent(token)}`;
+    }
+    return fullUrl;
   }
 
-  // 4. If it's a persistent server image endpoint (/production/storyboard/images/... or /api/v1/storage/...)
-  if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
-    if (baseClean) {
-      return `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
-    }
+  // 4. If it's an external URL (http / https) or base64 data URL
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/png') || url.startsWith('data:image/jpeg') || url.startsWith('data:image/webp')) {
     return url;
   }
 

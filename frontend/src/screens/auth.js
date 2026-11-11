@@ -224,13 +224,27 @@ export function attachAuthEvents(navigate) {
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '756924881120-0qngpm230nq3k8bb61ttt1de7jv28fui.apps.googleusercontent.com';
   let googleTokenClient = null;
 
+  async function completeAuthenticatedSession(user, message) {
+    store.setState({
+      currentUser: user,
+      scripts: [],
+      selectedScriptId: null,
+      activeScript: null,
+      screenplay: null,
+      notifications: [],
+      unreadNotifications: 0,
+      initialized: false
+    });
+    await store.init().catch(() => {});
+    if (message) showToast(message);
+    navigate('/welcome');
+  }
+
   async function handleGoogleAuthSuccess(profile) {
     showToast('Connecting with Google...');
     try {
       const user = await api.googleLogin(profile);
-      store.setState({ currentUser: user });
-      showToast(`Welcome back, ${user.displayName || user.name}`);
-      navigate('/welcome');
+      await completeAuthenticatedSession(user, `Welcome back, ${user.displayName || user.name}`);
     } catch (err) {
       showToast(err.message || 'Google sign-in error', 'error');
     }
@@ -346,9 +360,7 @@ export function attachAuthEvents(navigate) {
       const password = signinPwInput.value;
       try {
         const user = await api.login({ email, password });
-        store.setState({ currentUser: user });
-        showToast(`Welcome back, ${user.displayName || user.name}`);
-        navigate('/welcome');
+        await completeAuthenticatedSession(user, `Welcome back, ${user.displayName || user.name}`);
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -365,9 +377,7 @@ export function attachAuthEvents(navigate) {
       const password = document.getElementById('reg-password').value;
       try {
         const user = await api.register({ name, email, password });
-        store.setState({ currentUser: user });
-        showToast('Account created successfully');
-        navigate('/welcome');
+        await completeAuthenticatedSession(user, 'Account created successfully');
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -382,9 +392,7 @@ export function attachAuthEvents(navigate) {
       const phone = document.getElementById('otp-phone').value;
       try {
         const user = await api.verifyOtp(phone);
-        store.setState({ currentUser: user });
-        showToast('Phone verified successfully');
-        navigate('/welcome');
+        await completeAuthenticatedSession(user, 'Phone verified successfully');
       } catch (err) {
         showToast(err.message, 'error');
       }

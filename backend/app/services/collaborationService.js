@@ -1,4 +1,10 @@
-import { db } from '../models/db.js';
+import {
+  db,
+  persistScriptState,
+  persistUserKeyState,
+  addNotificationForUser,
+  resolveUserIdByEmail
+} from '../models/db.js';
 
 // Centralized SCRIPTORA Permission Matrix
 export const ROLES = {
@@ -142,19 +148,24 @@ export function getScriptOwner(scriptId) {
 }
 
 export function isScriptOwner(scriptId, user) {
-  if (!user) {
-    return (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') && !process.env.STRICT_AUTH;
+  if (!user || !user.id) {
+    return false;
   }
   const owner = getScriptOwner(scriptId);
-  return (user.id && user.id === owner.id) || (user.email && user.email === owner.email);
+  return (owner.id && (String(user.id) === String(owner.id) || (user.firebaseUid && String(user.firebaseUid) === String(owner.id)))) ||
+    (owner.email && user.email && user.email.toLowerCase() === owner.email.toLowerCase());
 }
 
-export function getUserRole(scriptId, user = db.currentUser) {
-  if (!user) return ROLES.OWNER;
+export function getUserRole(scriptId, user = null) {
+  if (!user || !user.id) return null;
   if (isScriptOwner(scriptId, user)) return ROLES.OWNER;
 
+  const fbUid = user.firebaseUid ? String(user.firebaseUid) : null;
   const targetList = db.collaborators[scriptId] || [];
-  const member = targetList.find(c => c.email === user.email || c.id === user.id);
+  const member = targetList.find(c =>
+    (c.id && (String(c.id) === String(user.id) || (fbUid && String(c.id) === fbUid))) ||
+    (c.email && user.email && c.email.toLowerCase() === user.email.toLowerCase())
+  );
   if (member) return normalizeRole(member.role);
   return null;
 }
@@ -187,8 +198,8 @@ function logSecurityEvent(scriptId, { type, title, actor, target, details, outco
     type,
     title,
     actor: actor || {
-      name: db.currentUser?.name || 'Screenplay Owner',
-      email: db.currentUser?.email || 'owner@scriptora.studio'
+      name: 'Screenplay Owner',
+      email: ''
     },
     target: target || null,
     details: details || '',
@@ -202,6 +213,7 @@ function logSecurityEvent(scriptId, { type, title, actor, target, details, outco
   if (db.securityActivity[scriptId].length > 50) {
     db.securityActivity[scriptId].pop();
   }
+  persistScriptState(scriptId);
   return evt;
 }
 
@@ -259,19 +271,26 @@ export function inviteCollaborator(scriptId, data, actorUser = db.currentUser) {
     details: `Sent invitation to ${email} with assigned role '${assignedRole}' (Expires in 7 days).`
   });
 
-  // Push into notifications
-  if (db.notifications) {
-    db.notifications.unshift({
-      id: `notif-${Date.now()}`,
+  // Push scoped notifications to actor & invited recipient (if registered)
+  if (actorUser?.id) {
+    addNotificationForUser(actorUser.id, {
       title: 'Invitation Dispatched',
       message: `Invitation sent to ${email} for role '${assignedRole}'.`,
-      timestamp: 'Just now',
-      read: false,
+      type: 'collaboration',
+      actionRoute: `/profile/collaborators?scriptId=${scriptId}`
+    });
+  }
+  const recipientUserId = resolveUserIdByEmail(email);
+  if (recipientUserId && recipientUserId !== actorUser?.id) {
+    addNotificationForUser(recipientUserId, {
+      title: 'Project Invitation Received',
+      message: `You were invited as ${assignedRole}.`,
       type: 'collaboration',
       actionRoute: `/profile/collaborators?scriptId=${scriptId}`
     });
   }
 
+  persistScriptState(scriptId);
   return newInvitation;
 }
 
@@ -348,7 +367,10 @@ export function getInvitationByToken(token) {
   return null;
 }
 
-export function acceptInvitation(token, user = db.currentUser) {
+export function acceptInvitation(token, user = null) {
+  if (!user || !user.id) {
+    throw new Error('Authentication required to accept an invitation.');
+  }
   if (!token || !db.invitations) {
     throw new Error('Invalid or missing invitation token.');
   }
@@ -377,26 +399,36 @@ export function acceptInvitation(token, user = db.currentUser) {
     throw new Error('This invitation has expired. Please ask the owner to send a new invitation.');
   }
 
+  const userEmail = (user.email || '').toLowerCase().trim();
+  const inviteEmail = (foundInvite.email || '').toLowerCase().trim();
+  if (inviteEmail && userEmail !== inviteEmail) {
+    throw new Error('Unauthorized: This invitation was issued to a different email address.');
+  }
+
   if (!db.collaborators[foundScriptId]) db.collaborators[foundScriptId] = [];
   const collabs = db.collaborators[foundScriptId];
 
   // Check if user is already a collaborator
-  const userEmail = (user?.email || foundInvite.email).toLowerCase();
-  let existing = collabs.find(c => (c.email || '').toLowerCase() === userEmail);
+  let existing = collabs.find(c =>
+    (c.email && c.email.toLowerCase() === (userEmail || inviteEmail)) ||
+    (c.id && String(c.id) === String(user.id))
+  );
 
   if (existing) {
     existing.role = foundInvite.role;
+    existing.id = user.id;
     foundInvite.status = 'accepted';
+    persistScriptState(foundScriptId);
     return { success: true, scriptId: foundScriptId, collaborator: existing, alreadyMember: true };
   }
 
   const newCollaborator = {
-    id: user?.id || `user-${Date.now()}`,
-    name: user?.name || foundInvite.email.split('@')[0],
-    email: foundInvite.email,
+    id: user.id,
+    name: user.displayName || user.name || (userEmail || inviteEmail).split('@')[0],
+    email: userEmail || inviteEmail,
     role: foundInvite.role,
-    avatar: (user?.name || foundInvite.email.split('@')[0]).substring(0, 2).toUpperCase(),
-    avatarColor: getAvatarColor(foundInvite.email),
+    avatar: (user.displayName || user.name || (userEmail || inviteEmail).split('@')[0]).substring(0, 2).toUpperCase(),
+    avatarColor: getAvatarColor(userEmail || inviteEmail),
     joinedAt: new Date().toISOString()
   };
 
@@ -421,6 +453,17 @@ export function acceptInvitation(token, user = db.currentUser) {
     details: `${newCollaborator.name} (${newCollaborator.email}) accepted invitation with role '${newCollaborator.role}'.`
   });
 
+  const owner = getScriptOwner(foundScriptId);
+  if (owner?.id) {
+    addNotificationForUser(owner.id, {
+      title: 'Collaborator Joined',
+      message: `${newCollaborator.name} (${newCollaborator.email}) accepted your ${newCollaborator.role} invitation.`,
+      type: 'collaboration',
+      actionRoute: `/profile/collaborators?scriptId=${foundScriptId}`
+    });
+  }
+
+  persistScriptState(foundScriptId);
   return { success: true, scriptId: foundScriptId, collaborator: newCollaborator };
 }
 
@@ -431,7 +474,9 @@ export function updateRole(scriptId, memberId, newRoleInput, actorUser = db.curr
   }
 
   const collabs = db.collaborators[scriptId] || [];
-  const member = collabs.find(c => c.id === memberId);
+  const member = collabs.find(
+    c => c.id === memberId || (c.email && c.email.toLowerCase() === String(memberId).toLowerCase())
+  );
   if (!member) {
     throw new Error('Collaborator not found.');
   }
@@ -454,18 +499,25 @@ export function updateRole(scriptId, memberId, newRoleInput, actorUser = db.curr
     details: `Changed permission role of ${member.name} from '${previousRole}' to '${targetRole}'.`
   });
 
-  if (db.notifications) {
-    db.notifications.unshift({
-      id: `notif-${Date.now()}`,
+  if (actorUser?.id) {
+    addNotificationForUser(actorUser.id, {
       title: 'Role Updated',
       message: `${member.name}'s role was updated to ${targetRole}.`,
-      timestamp: 'Just now',
-      read: false,
+      type: 'collaboration',
+      actionRoute: `/profile/collaborators?scriptId=${scriptId}`
+    });
+  }
+  const targetUserId = resolveUserIdByEmail(member.email);
+  if (targetUserId && targetUserId !== actorUser?.id) {
+    addNotificationForUser(targetUserId, {
+      title: 'Role Updated',
+      message: `Your project role was updated to ${targetRole}.`,
       type: 'collaboration',
       actionRoute: `/profile/collaborators?scriptId=${scriptId}`
     });
   }
 
+  persistScriptState(scriptId);
   return {
     ...member,
     permissions: ROLE_PERMISSIONS[targetRole]
@@ -691,18 +743,16 @@ export function requestJoinAccess(code, requestData = {}, user = db.currentUser)
     details: `${userName} requested '${requestedRole}' access via join code.`
   });
 
-  if (db.notifications) {
-    db.notifications.unshift({
-      id: `notif-${Date.now()}`,
+  if (owner?.id) {
+    addNotificationForUser(owner.id, {
       title: 'New Access Request',
       message: `${userName} (${userEmail}) requested to join '${script.title}' as ${requestedRole}.`,
-      timestamp: 'Just now',
-      read: false,
       type: 'collaboration',
       actionRoute: `/profile/collaborators?scriptId=${scriptId}`
     });
   }
 
+  persistScriptState(scriptId);
   return {
     success: true,
     requestId: newRequest.id,
@@ -901,16 +951,18 @@ export function disableE2EE(scriptId, user = db.currentUser) {
 export function registerUserPublicKey(user, { publicKeyJwk }) {
   if (!user || !user.email) throw new Error('Authentication required.');
   if (!db.userKeys) db.userKeys = {};
-  db.userKeys[user.email] = {
+  const emailKey = user.email.toLowerCase();
+  db.userKeys[emailKey] = {
     userId: user.id,
-    email: user.email,
+    email: emailKey,
     publicKeyJwk,
     updatedAt: new Date().toISOString()
   };
+  persistUserKeyState(emailKey, db.userKeys[emailKey]);
   return { success: true };
 }
 
 export function getUserPublicKey(email) {
-  if (!db.userKeys) return null;
-  return db.userKeys[email] || null;
+  if (!db.userKeys || !email) return null;
+  return db.userKeys[String(email).toLowerCase()] || db.userKeys[email] || null;
 }

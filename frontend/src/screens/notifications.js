@@ -7,7 +7,7 @@ import { LOGO_URL } from '../utils/brand.js';
 import { setupPopupToggle } from '../utils/popupPosition.js';
 
 export function renderNotificationsScreen() {
-  const userInitials = store.state.currentUser?.initials || 'JD';
+  const userInitials = store.state.currentUser?.initials || (store.state.currentUser?.displayName || store.state.currentUser?.name || store.state.currentUser?.email || 'U').slice(0, 2).toUpperCase();
 
   return `
     <div class="flex flex-col min-h-screen bg-surface w-full relative">

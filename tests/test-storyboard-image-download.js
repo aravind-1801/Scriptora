@@ -165,12 +165,27 @@ async function stopServer() {
 
 await startServer();
 
-// Setup test script and collaborator state in db
+// Setup test script, owner, and collaborator state in db using signed JWTs
 const scriptId = 'chronicles-of-dust';
+const ownerUser = { id: 'owner-user-1', email: 'owner@scriptora.studio', name: 'Script Owner' };
 const viewerUser = { id: 'viewer-user-42', email: 'viewer@scriptora.studio', name: 'Script Viewer' };
 const outsiderUser = { id: 'outsider-user-99', email: 'intruder@external.com', name: 'Intruder' };
 
-// Add viewer as authorized collaborator on chronicles-of-dust
+if (!db.scripts.some(s => s.id === scriptId)) {
+  db.scripts.push({
+    id: scriptId,
+    title: 'Download Security Test Script',
+    ownerId: ownerUser.id,
+    ownerEmail: ownerUser.email,
+    createdAt: new Date().toISOString()
+  });
+}
+
+const ownerToken = authService.signSessionJwt(ownerUser);
+const viewerToken = authService.signSessionJwt(viewerUser);
+const outsiderToken = authService.signSessionJwt(outsiderUser);
+
+// Add viewer as authorized collaborator on test script
 if (!db.collaborators[scriptId]) db.collaborators[scriptId] = [];
 db.collaborators[scriptId] = db.collaborators[scriptId].filter(c => c.id !== viewerUser.id);
 db.collaborators[scriptId].push({
@@ -186,8 +201,7 @@ await asyncTest('Unauthenticated download request is rejected (401)', async () =
 });
 
 await asyncTest('Unrelated / unauthorized user cannot download project images (403)', async () => {
-  // Authenticated outsider user who has no permissions on chronicles-of-dust
-  const outsiderToken = `mock-user:${outsiderUser.id}:${outsiderUser.email}:${outsiderUser.name}`;
+  // Authenticated outsider user who has no permissions on test script
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?filename=shot_1a_wide_outpost.jpg`, {
     headers: { 'Authorization': `Bearer ${outsiderToken}` }
   });
@@ -195,10 +209,10 @@ await asyncTest('Unrelated / unauthorized user cannot download project images (4
 });
 
 await asyncTest('Cross-project storage path request is blocked (403)', async () => {
-  // Chronicles of Dust viewer tries to request another project's storage path
+  // Script viewer tries to request another project's storage path
   const crossPath = encodeURIComponent('storyboards/classified-project-x/leaked_shot.jpg');
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?storagePath=${crossPath}`, {
-    headers: { 'Authorization': `Bearer ${viewerUser.id}` }
+    headers: { 'Authorization': `Bearer ${viewerToken}` }
   });
   assert.strictEqual(res.status, 403, `Expected 403 Forbidden for cross-project storage path, got ${res.status}`);
 });
@@ -206,13 +220,13 @@ await asyncTest('Cross-project storage path request is blocked (403)', async () 
 await asyncTest('Path traversal attempt in storagePath or filename is rejected (400)', async () => {
   const traversalPath = encodeURIComponent('storyboards/chronicles-of-dust/../../../etc/passwd');
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?storagePath=${traversalPath}`, {
-    headers: { 'Authorization': `Bearer ${viewerUser.id}` }
+    headers: { 'Authorization': `Bearer ${viewerToken}` }
   });
   assert.strictEqual(res.status, 400, `Expected 400 Bad Request for path traversal, got ${res.status}`);
 
   const traversalFile = encodeURIComponent('../../../etc/shadow');
   const res2 = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?filename=${traversalFile}`, {
-    headers: { 'Authorization': `Bearer ${viewerUser.id}` }
+    headers: { 'Authorization': `Bearer ${viewerToken}` }
   });
   assert.strictEqual(res2.status, 400, `Expected 400 Bad Request for filename traversal, got ${res2.status}`);
 });
@@ -221,7 +235,7 @@ await asyncTest('Cross-project signed-URL generation is blocked (403)', async ()
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/signed-url`, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${viewerUser.id}`,
+      'Authorization': `Bearer ${viewerToken}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -232,9 +246,8 @@ await asyncTest('Cross-project signed-URL generation is blocked (403)', async ()
 });
 
 await asyncTest('Legitimate project Owner can download project image with Content-Disposition', async () => {
-  // Owner is user-1 (Arun Kumar)
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?filename=shot_1a_wide_outpost.jpg`, {
-    headers: { 'Authorization': 'Bearer user-1' }
+    headers: { 'Authorization': `Bearer ${ownerToken}` }
   });
   assert.strictEqual(res.status, 200, `Expected 200 OK, got ${res.status}`);
   assert.strictEqual(res.headers.get('content-type'), 'image/jpeg');
@@ -245,7 +258,7 @@ await asyncTest('Legitimate project Owner can download project image with Conten
 
 await asyncTest('Authorized Viewer can download project image with Content-Disposition', async () => {
   const res = await fetch(`http://127.0.0.1:${PORT}/api/production/${scriptId}/storyboard/download?filename=shot_1a_wide_outpost.jpg`, {
-    headers: { 'Authorization': `Bearer ${viewerUser.id}` }
+    headers: { 'Authorization': `Bearer ${viewerToken}` }
   });
   assert.strictEqual(res.status, 200, `Expected 200 OK, got ${res.status}`);
   assert.ok(res.headers.get('content-disposition').includes('attachment; filename="shot_1a_wide_outpost.jpg"'));

@@ -1,4 +1,4 @@
-import { db } from '../models/db.js';
+import { db, persistScriptState } from '../models/db.js';
 
 export function getIntelligence(scriptId) {
   const script = db.scripts.find(s => s.id === scriptId);
@@ -27,6 +27,8 @@ export function updateContext(scriptId, context) {
   };
   if (context.format) script.format = context.format;
   if (context.industry) script.industry = context.industry;
+  script.updated = "Just now";
+  persistScriptState(scriptId);
   return script.context;
 }
 

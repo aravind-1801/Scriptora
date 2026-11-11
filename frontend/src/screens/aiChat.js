@@ -128,7 +128,7 @@ export function attachAiChatEvents(navigate) {
   }
 
   // Load saved history if any
-  const saved = localStorage.getItem('scriptora_chat_history');
+  const saved = localStorage.getItem(api.getUserStorageKey('chat_history'));
   if (saved) {
     try {
       const messages = JSON.parse(saved);
@@ -168,9 +168,9 @@ export function attachAiChatEvents(navigate) {
 
     if (save) {
       try {
-        const history = JSON.parse(localStorage.getItem('scriptora_chat_history') || '[]');
+        const history = JSON.parse(localStorage.getItem(api.getUserStorageKey('chat_history')) || '[]');
         history.push({ role, text, timestamp: new Date().toISOString() });
-        localStorage.setItem('scriptora_chat_history', JSON.stringify(history.slice(-30)));
+        localStorage.setItem(api.getUserStorageKey('chat_history'), JSON.stringify(history.slice(-30)));
       } catch (_) {}
     }
   }
@@ -241,7 +241,7 @@ export function attachAiChatEvents(navigate) {
 
   if (clearBtn) {
     clearBtn.onclick = () => {
-      localStorage.removeItem('scriptora_chat_history');
+      localStorage.removeItem(api.getUserStorageKey('chat_history'));
       container.innerHTML = `
         <div class="flex items-start gap-2.5 max-w-[88%]">
           <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs mt-0.5">

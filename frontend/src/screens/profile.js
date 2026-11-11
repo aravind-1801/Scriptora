@@ -30,7 +30,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
 
   const settings = store.state.settings || (() => {
     try {
-      const saved = localStorage.getItem('scriptora_settings');
+      const saved = localStorage.getItem(api.getUserStorageKey('settings'));
       if (saved) return JSON.parse(saved);
     } catch (_) {}
     return {
@@ -95,7 +95,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
               ${user.avatarUrl ? `
                 <img id="user-avatar-img" src="${user.avatarUrl}" class="w-full h-full object-cover" alt="${user.name}" />
               ` : `
-                <span id="user-avatar-initials">${user.initials || 'AK'}</span>
+                <span id="user-avatar-initials">${user.initials || (user.displayName || user.name || user.email || 'U').slice(0, 2).toUpperCase()}</span>
               `}
             </div>
             <button type="button" id="edit-avatar-btn" class="w-6 h-6 bg-white rounded-full border border-slate-200 text-slate-700 flex items-center justify-center absolute -bottom-0.5 -right-0.5 shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors cursor-pointer" title="Add profile picture from local device">
@@ -373,7 +373,7 @@ export function renderProfileScreen(fromParam = null, scriptParam = null) {
                 ${user.avatarUrl ? `
                   <img id="modal-preview-img" src="${user.avatarUrl}" class="w-full h-full object-cover" alt="Preview" />
                 ` : `
-                  <span id="modal-preview-initials">${user.initials || 'AK'}</span>
+                  <span id="modal-preview-initials">${user.initials || (user.displayName || user.name || user.email || 'U').slice(0, 2).toUpperCase()}</span>
                 `}
               </div>
             </div>
@@ -892,11 +892,11 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
   function persistSettings(updater) {
     let current = {};
     try {
-      const saved = localStorage.getItem('scriptora_settings');
+      const saved = localStorage.getItem(api.getUserStorageKey('settings'));
       if (saved) current = JSON.parse(saved);
     } catch (_) {}
     const updated = updater(current);
-    localStorage.setItem('scriptora_settings', JSON.stringify(updated));
+    localStorage.setItem(api.getUserStorageKey('settings'), JSON.stringify(updated));
     store.setState({ settings: updated });
     api.updateSettings(updated).catch(() => {});
     return updated;
@@ -1246,7 +1246,7 @@ export function attachProfileEvents(navigate, fromParam = null, scriptParam = nu
       localStorage.setItem('scriptora_user', JSON.stringify(updatedUser));
       api.updateProfile({ avatarUrl: null }).catch(() => {});
 
-      const initials = updatedUser.initials || 'AK';
+      const initials = updatedUser.initials || (updatedUser.displayName || updatedUser.name || updatedUser.email || 'U').slice(0, 2).toUpperCase();
       const mainAvatar = document.getElementById('user-avatar-circle');
       if (mainAvatar) {
         mainAvatar.innerHTML = `<span id="user-avatar-initials">${initials}</span>`;

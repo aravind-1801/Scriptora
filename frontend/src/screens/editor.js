@@ -175,7 +175,7 @@ export function renderEditorScreen(scriptId, targetScene = null) {
     pages: 1
   };
 
-  const userInitials = store.state.currentUser?.initials || 'AK';
+  const userInitials = store.state.currentUser?.initials || (store.state.currentUser?.displayName || store.state.currentUser?.name || store.state.currentUser?.email || 'U').slice(0, 2).toUpperCase();
 
   let dynamicLabel = null;
   if (window.scriptoraRouter) {

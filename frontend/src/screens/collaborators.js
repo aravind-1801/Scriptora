@@ -1196,12 +1196,12 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           const rawBase64 = await exportRawKeyBase64(masterKey);
           const fingerprint = await computeKeyFingerprint(rawBase64);
 
-          try { localStorage.setItem(`scriptora_screenplay_key_${scriptId}`, rawBase64); } catch {}
+          try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), rawBase64); } catch {}
 
           const currentSp = await api.getScreenplay(scriptId);
           if (currentSp && currentSp.scenes) {
             const encPayload = await encryptScreenplayContent(currentSp, masterKey, 1);
-            try { localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload)); } catch {}
+            try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
           }
 
           btnToggle.innerHTML = `<span class="material-symbols-outlined text-[15px] animate-spin">progress_activity</span><span>Registering Zero-Knowledge Vault...</span>`;
@@ -1250,12 +1250,12 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
           const newFingerprint = await computeKeyFingerprint(newRawBase64);
           const nextVersion = (e2eeData?.keyVersion || 1) + 1;
 
-          try { localStorage.setItem(`scriptora_screenplay_key_${scriptId}`, newRawBase64); } catch {}
+          try { localStorage.setItem(api.getUserStorageKey(`screenplay_key_${scriptId}`), newRawBase64); } catch {}
 
           const currentSp = await api.getScreenplay(scriptId);
           if (currentSp && currentSp.scenes) {
             const encPayload = await encryptScreenplayContent(currentSp, newMasterKey, nextVersion);
-            try { localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload)); } catch {}
+            try { localStorage.setItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload)); } catch {}
           }
 
           const res = await api.rotateE2EEKey(scriptId, {
@@ -1287,8 +1287,8 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
         disableBtn.textContent = 'Deactivating...';
 
         try {
-          const encData = localStorage.getItem(`scriptora_screenplay_enc_${scriptId}`);
-          const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+          const encData = localStorage.getItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
+          const rawKey = localStorage.getItem(api.getUserStorageKey(`screenplay_key_${scriptId}`));
           if (encData && rawKey) {
             try {
               const masterKey = await importRawKeyFromBase64(rawKey);
@@ -1297,7 +1297,7 @@ export function attachCollaboratorsEvents(navigate, fromParam = null, scriptPara
                 await api.saveScreenplay(scriptId, decrypted);
               }
             } catch {}
-            localStorage.removeItem(`scriptora_screenplay_enc_${scriptId}`);
+            localStorage.removeItem(api.getUserStorageKey(`screenplay_enc_${scriptId}`));
           }
 
           await api.disableE2EE(scriptId);

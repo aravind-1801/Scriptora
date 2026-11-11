@@ -11,22 +11,14 @@
 import http from 'http';
 import { server } from '../backend/app/server.js';
 import { db } from '../backend/app/models/db.js';
+import { signSessionJwt } from '../backend/app/auth/authService.js';
 
 const PORT = 8133;
 const BASE_URL = `http://localhost:${PORT}`;
 
-// Helper to create valid mock JWTs (Header.Payload.Signature) for each test account
+// Sign real HS256 JWTs for each test account using server session signing
 function makeToken(user) {
-  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    user_id: user.id,
-    sub: user.id,
-    uid: user.id,
-    email: user.email,
-    name: user.name,
-    exp: Math.floor(Date.now() / 1000) + 3600 // Valid 1 hr
-  })).toString('base64url');
-  return `${header}.${payload}.mock-signature`;
+  return signSessionJwt(user);
 }
 
 const accountA = { id: 'usr-owner-a', name: 'Alice Owner', email: 'alice.owner@scriptora.studio' };

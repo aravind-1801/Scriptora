@@ -1,4 +1,9 @@
-import { db } from '../models/db.js';
+import crypto from 'crypto';
+import {
+  db,
+  persistScriptState,
+  deleteScriptCloudState
+} from '../models/db.js';
 
 export function getScripts() {
   return db.scripts;
@@ -7,21 +12,18 @@ export function getScripts() {
 export function getScriptsForUser(user) {
   if (!user || !user.id) return [];
   const uid = String(user.id);
+  const fbUid = user.firebaseUid ? String(user.firebaseUid) : null;
   const email = (user.email || '').toLowerCase().trim();
 
   return db.scripts.filter(s => {
-    // 1. Direct project ownership
-    if (s.ownerId && String(s.ownerId) === uid) return true;
+    if (s.ownerId && (String(s.ownerId) === uid || (fbUid && String(s.ownerId) === fbUid))) return true;
     if (email && s.ownerEmail && s.ownerEmail.toLowerCase().trim() === email) return true;
 
-    // 2. Explicit project collaborator
     const collabs = (db.collaborators && db.collaborators[s.id]) || [];
-    if (collabs.some(c => (c.id && String(c.id) === uid) || (email && c.email && c.email.toLowerCase().trim() === email))) {
-      return true;
-    }
-
-    // 3. Backward compatibility for test runner (test-user)
-    if (uid === 'test-user' && (!s.ownerId || s.ownerId === 'test-user')) {
+    if (collabs.some(c =>
+      (c.id && (String(c.id) === uid || (fbUid && String(c.id) === fbUid))) ||
+      (email && c.email && c.email.toLowerCase().trim() === email)
+    )) {
       return true;
     }
 
@@ -35,15 +37,28 @@ export function getScript(id) {
 
 export function createScript(data, ownerUser = null) {
   const title = (data.title || "Untitled Screenplay").trim();
-  const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `script-${Date.now()}`;
-  
-  const resolvedOwnerId = ownerUser?.id || data.ownerId || (process.env.NODE_ENV === 'test' ? 'test-user' : null);
+  const baseSlug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'script';
+  let id = data.id && typeof data.id === 'string' && !db.scripts.some(s => s.id === data.id)
+    ? data.id.replace(/[^a-zA-Z0-9_-]/g, '')
+    : baseSlug;
+
+  if (!id || db.scripts.some(s => s.id === id)) {
+    id = `${baseSlug}-${crypto.randomUUID().slice(0, 8)}`;
+  }
+
+  const resolvedOwnerId = ownerUser?.id || (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH ? (data.ownerId || 'test-user') : null);
   if (!resolvedOwnerId) {
     throw new Error('Authentication required to create a screenplay.');
   }
 
-  const ownerEmail = ownerUser?.email || data.ownerEmail || (ownerUser?.id ? `${ownerUser.id}@scriptora.studio` : '');
+  const ownerEmail = (ownerUser?.email || (process.env.NODE_ENV === 'test' ? data.ownerEmail : '') || `${resolvedOwnerId}@scriptora.studio`).toLowerCase();
   const ownerName = ownerUser?.displayName || ownerUser?.name || data.ownerName || 'Screenplay Writer';
+
+  const prevOwnedCurrent = db.scripts.filter(s => s.ownerId === resolvedOwnerId && s.isCurrentDraft);
+  prevOwnedCurrent.forEach(s => {
+    s.isCurrentDraft = false;
+    persistScriptState(s.id);
+  });
 
   const newScript = {
     id,
@@ -57,10 +72,11 @@ export function createScript(data, ownerUser = null) {
     industry: data.industry || "International / Hollywood",
     pages: 1,
     updated: "Just now",
+    updatedAt: new Date().toISOString(),
     currentScene: "Scene 1",
     isCurrentDraft: true,
     archived: false,
-    joinCode: `${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+    joinCode: `${crypto.randomBytes(2).toString('hex').toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`,
     context: {
       format: data.format || "Feature",
       industry: data.industry || "International / Hollywood",
@@ -84,10 +100,8 @@ export function createScript(data, ownerUser = null) {
     }
   };
 
-  db.scripts.filter(s => s.ownerId === resolvedOwnerId).forEach(s => s.isCurrentDraft = false);
   db.scripts.unshift(newScript);
 
-  // Initialize empty screenplay
   db.screenplays[newScript.id] = {
     title: newScript.title,
     draft: "Draft 1.0",
@@ -119,13 +133,27 @@ export function createScript(data, ownerUser = null) {
     }
   ];
 
+  persistScriptState(newScript.id);
   return newScript;
 }
 
-export function updateScript(id, updates) {
+export function updateScript(id, updates = {}) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
-  Object.assign(script, updates);
+
+  // Never allow client payloads to tamper with ownership or primary identifiers
+  const sanitized = { ...updates };
+  delete sanitized.id;
+  delete sanitized.ownerId;
+  delete sanitized.ownerEmail;
+  delete sanitized.ownerName;
+  delete sanitized.isTemplate;
+
+  Object.assign(script, sanitized, {
+    updated: "Just now",
+    updatedAt: new Date().toISOString()
+  });
+  persistScriptState(id);
   return script;
 }
 
@@ -134,10 +162,16 @@ export function setCurrentDraft(id, user = null) {
   if (!script) return null;
   const uid = user?.id || script.ownerId;
   db.scripts.filter(s => s.ownerId === uid).forEach(s => {
-    s.isCurrentDraft = (s.id === id);
+    const next = (s.id === id);
+    if (s.isCurrentDraft !== next) {
+      s.isCurrentDraft = next;
+      persistScriptState(s.id);
+    }
   });
   script.isCurrentDraft = true;
   script.updated = "Just now";
+  script.updatedAt = new Date().toISOString();
+  persistScriptState(id);
   return script;
 }
 
@@ -145,11 +179,14 @@ export function duplicateScript(id, user = null) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
 
-  const resolvedOwnerId = user?.id || script.ownerId || (process.env.NODE_ENV === 'test' ? 'test-user' : null);
-  const resolvedOwnerEmail = user?.email || script.ownerEmail || '';
+  const resolvedOwnerId = user?.id || (process.env.NODE_ENV === 'test' && !process.env.STRICT_AUTH ? script.ownerId : null);
+  if (!resolvedOwnerId) {
+    throw new Error('Authentication required to duplicate screenplay.');
+  }
+  const resolvedOwnerEmail = (user?.email || script.ownerEmail || '').toLowerCase();
   const resolvedOwnerName = user?.displayName || user?.name || script.ownerName || 'Screenplay Writer';
 
-  const dupId = `${script.id}-copy-${Date.now().toString().slice(-4)}`;
+  const dupId = `${script.id}-copy-${crypto.randomUUID().slice(0, 6)}`;
   const dup = {
     ...JSON.parse(JSON.stringify(script)),
     id: dupId,
@@ -160,8 +197,9 @@ export function duplicateScript(id, user = null) {
     isTemplate: false,
     draft: "Draft 1.0",
     updated: "Just now",
+    updatedAt: new Date().toISOString(),
     isCurrentDraft: false,
-    joinCode: `${Math.random().toString(36).substring(2, 6).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+    joinCode: `${crypto.randomBytes(2).toString('hex').toUpperCase()}-${crypto.randomBytes(2).toString('hex').toUpperCase()}`
   };
 
   db.scripts.unshift(dup);
@@ -169,6 +207,10 @@ export function duplicateScript(id, user = null) {
     db.screenplays[dup.id] = JSON.parse(JSON.stringify(db.screenplays[script.id]));
     db.screenplays[dup.id].title = dup.title;
   }
+  db.collaborators[dup.id] = [];
+  db.versions[dup.id] = JSON.parse(JSON.stringify(db.versions[script.id] || []));
+
+  persistScriptState(dup.id);
   return dup;
 }
 
@@ -176,6 +218,8 @@ export function archiveScript(id) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
   script.archived = true;
+  script.updated = "Just now";
+  persistScriptState(id);
   return script;
 }
 
@@ -183,19 +227,48 @@ export function restoreScript(id) {
   const script = db.scripts.find(s => s.id === id);
   if (!script) return null;
   script.archived = false;
+  script.updated = "Just now";
+  persistScriptState(id);
   return script;
 }
 
 export function deleteScript(id) {
   const idx = db.scripts.findIndex(s => s.id === id);
   if (idx === -1) return false;
-  const wasCurrentDraft = db.scripts[idx].isCurrentDraft;
+  const deleted = db.scripts[idx];
+  const wasCurrentDraft = deleted.isCurrentDraft;
+  const ownerId = deleted.ownerId;
   db.scripts.splice(idx, 1);
-  if (wasCurrentDraft && db.scripts.length > 0) {
-    db.scripts[0].isCurrentDraft = true;
+
+  if (wasCurrentDraft && ownerId) {
+    const nextOwned = db.scripts.find(s => s.ownerId === ownerId);
+    if (nextOwned) {
+      nextOwned.isCurrentDraft = true;
+      persistScriptState(nextOwned.id);
+    }
   }
+
   delete db.screenplays[id];
   delete db.collaborators[id];
   delete db.versions[id];
+  delete db.joinCodes[id];
+  delete db.accessRequests[id];
+  delete db.invitations[id];
+  delete db.securityActivity[id];
+  delete db.e2ee[id];
+  db.storyboards = (db.storyboards || []).filter(sb => sb.scriptId !== id);
+  db.storyboardRecycleBin = (db.storyboardRecycleBin || []).filter(item => item.scriptId !== id);
+  db.productionWorkspaces = (db.productionWorkspaces || []).filter(w => w.scriptId !== id);
+  db.productionResources = (db.productionResources || []).filter(r => r.scriptId !== id);
+  db.productionDocuments = (db.productionDocuments || []).filter(d => d.scriptId !== id);
+  db.productionProposals = (db.productionProposals || []).filter(p => p.scriptId !== id);
+  db.productionAudit = (db.productionAudit || []).filter(a => a.scriptId !== id);
+  db.productionScenes = (db.productionScenes || []).filter(s => s.scriptId !== id);
+  db.productionBreakdown = (db.productionBreakdown || []).filter(b => b.scriptId !== id);
+  db.productionCallSheets = (db.productionCallSheets || []).filter(c => c.scriptId !== id);
+  db.productionSchedule = (db.productionSchedule || []).filter(s => s.scriptId !== id);
+  db.productionReadiness = (db.productionReadiness || []).filter(r => r.scriptId !== id);
+
+  deleteScriptCloudState(id);
   return true;
 }

@@ -1,10 +1,18 @@
 {
   "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
     "storyboards": {
       "$scriptId": {
         "$sceneId": {
-          ".read": "auth != null && (data.child('userId').val() === auth.uid || data.child('collaborators').child(auth.uid).exists())",
-          ".write": "auth != null && ((!data.exists() && newData.child('userId').val() === auth.uid) || (data.exists() && (data.child('userId').val() === auth.uid || data.child('collaborators').child(auth.uid).val() === 'Editor' || data.child('collaborators').child(auth.uid).val() === 'Owner')))"
+          ".read": "auth != null && (data.child('ownerId').val() === auth.uid || data.child('collaborators').child(auth.uid).exists())",
+          ".write": "auth != null && ((!data.exists() && newData.child('ownerId').val() === auth.uid) || data.child('ownerId').val() === auth.uid || data.child('editors').child(auth.uid).exists())"
         }
       }
     }

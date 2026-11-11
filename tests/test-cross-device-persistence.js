@@ -22,6 +22,7 @@ import fs from 'fs';
 import path from 'path';
 import * as storyboardService from '../backend/app/services/storyboardService.js';
 import * as authService from '../backend/app/auth/authService.js';
+import { db } from '../backend/app/models/db.js';
 
 const SCRIPT_ID = 'chronicles-of-dust';
 const SCENE_ID = 'scene-18';
@@ -201,6 +202,15 @@ async function runProductionSecurityAndPersistenceTests() {
 
   // --- Step 6: Test Server Authorization & Project Ownership Isolation ---
   console.log('\n--- Step 6: Testing Server Authorization & Ownership Isolation ---');
+  if (!db.scripts.some(s => s.id === SCRIPT_ID)) {
+    db.scripts.push({
+      id: SCRIPT_ID,
+      title: 'Verification Script',
+      ownerId: 'user-1',
+      ownerEmail: 'arun.kumar@scriptora.studio',
+      createdAt: new Date().toISOString()
+    });
+  }
 
   // 6A: Unauthenticated caller requesting signed URL must be rejected (401)
   const unauthCheck = authService.checkScriptAccess(null, SCRIPT_ID, 'Viewer');

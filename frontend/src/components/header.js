@@ -3,7 +3,7 @@ import { LOGO_URL } from '../utils/brand.js';
 
 export function renderHeader(sectionTitle = 'Workspace', subtitle = 'Your writing space.') {
   const unreadCount = store.state.unreadNotifications;
-  const userInitials = store.state.currentUser?.initials || 'JD';
+  const userInitials = store.state.currentUser?.initials || (store.state.currentUser?.displayName || store.state.currentUser?.name || store.state.currentUser?.email || 'U').slice(0, 2).toUpperCase();
 
   return `
     <header class="fixed top-0 left-0 right-0 w-full z-40 pt-safe bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.03)] border-b border-surface-container-high/60 select-none" data-global-header="true">

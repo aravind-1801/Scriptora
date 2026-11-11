@@ -1,4 +1,4 @@
-import { db } from '../models/db.js';
+import { db, persistScriptState } from '../models/db.js';
 
 // Pre-Production Service: Foundational Data Architecture & Operations
 // Supports standalone screenplay production workspaces as well as multi-screenplay projects.
@@ -189,11 +189,12 @@ export function logProductionAudit(scriptId, event) {
     category: event.category || "GENERAL",
     details: event.details,
     sourceVersion: event.sourceVersion || "Draft 1.0",
-    actor: event.actor || db.currentUser?.name || "User",
+    actor: event.actor || "Writer",
     timestamp: "Just now",
     createdAt: new Date().toISOString()
   };
   db.productionAudit.unshift(logItem);
+  persistScriptState(scriptId);
   return logItem;
 }
 
@@ -248,7 +249,7 @@ export function updateBreakdownItem(scriptId, itemId, updates) {
     item.userCorrection = {
       previousName: item.name,
       previousDesc: item.description,
-      correctedBy: (db.currentUser?.name || "Production Owner") + " (Owner)",
+      correctedBy: "Production Owner" + " (Owner)",
       correctedAt: new Date().toISOString()
     };
   }
@@ -256,7 +257,7 @@ export function updateBreakdownItem(scriptId, itemId, updates) {
   Object.assign(item, updates);
   if (updates.status === 'Confirmed') {
     item.isHumanConfirmed = true;
-    item.confirmedBy = (db.currentUser?.name || "Production Owner") + " (Owner)";
+    item.confirmedBy = "Production Owner" + " (Owner)";
     item.confirmedAt = new Date().toISOString();
   } else if (updates.status === 'Needs Review') {
     item.isHumanConfirmed = false;
@@ -299,7 +300,7 @@ export function createBreakdownItem(scriptId, itemData) {
     status: itemData.status || "Confirmed",
     isHumanConfirmed: true,
     confidence: 1.0,
-    confirmedBy: (db.currentUser?.name || "Production Owner") + " (Owner)",
+    confirmedBy: "Production Owner" + " (Owner)",
     confirmedAt: new Date().toISOString(),
     notes: itemData.notes || "",
     // Category-specific attributes
@@ -413,7 +414,7 @@ export function publishProductionCallSheet(scriptId, callSheetId) {
   cs.status = "Confirmed";
   cs.isPublished = true;
   cs.version = "v1.0 (Snapshot)";
-  cs.approvedBy = (db.currentUser?.name || "Production Owner") + " (Owner)";
+  cs.approvedBy = "Production Owner" + " (Owner)";
   cs.publishedAt = new Date().toISOString();
 
   // Create immutable document entry as snapshot
@@ -486,6 +487,7 @@ export function resolveProductionReadiness(scriptId, readinessId) {
   if (item) {
     item.status = "resolved";
     item.severity = "ready";
+    persistScriptState(scriptId);
   }
   return item;
 }

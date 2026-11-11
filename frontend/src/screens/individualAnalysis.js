@@ -103,7 +103,7 @@ export function getScreenplayData(scriptId) {
   if (store.state.screenplay && store.state.screenplay.id === scriptId) {
     return store.state.screenplay;
   }
-  const saved = localStorage.getItem(`scriptora_screenplay_${scriptId}`);
+  const saved = localStorage.getItem(api.getUserStorageKey(`screenplay_${scriptId}`));
   if (saved) {
     try {
       const sp = JSON.parse(saved);
@@ -157,7 +157,7 @@ export function getAvailableCharacters(screenplay) {
     screenplay.characters = cleanedNames;
     if (screenplay.id) {
       try {
-        localStorage.setItem(`scriptora_screenplay_${screenplay.id}`, JSON.stringify(screenplay));
+        localStorage.setItem(api.getUserStorageKey(`screenplay_${screenplay.id}`), JSON.stringify(screenplay));
       } catch (_) {}
     }
   }

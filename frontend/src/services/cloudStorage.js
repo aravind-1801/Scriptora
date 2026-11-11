@@ -141,71 +141,68 @@ async function getFirestore() {
 }
 
 /**
- * Upload genuine image binary/data URI to genuinely free cloud object storage
+ * Upload genuine image binary/data URI through the authenticated SCRIPTORA backend
+ * into private Supabase object storage (no public bucket exposure, per-project access enforced).
  */
 export async function uploadImageToCloud(imageInput, scriptId = null, filename = null) {
   const targetScriptId = scriptId || 'default';
   const finalFilename = filename || `shot_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
 
-  // 1. Supabase Storage (Verified 0-cost, 0-credit-card object storage)
-  if (SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey) {
-    try {
-      let imageBuffer = null;
-      let contentType = 'image/jpeg';
+  const apiBase = (typeof window !== 'undefined' && window.SCRIPTORA_API_BASE) || env.VITE_API_URL || '/api';
+  const authToken = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
 
+  // 1. Authenticated SCRIPTORA Backend -> Private Supabase Storage (with Signed URLs)
+  if (authToken && targetScriptId !== 'default') {
+    try {
+      let base64Payload = '';
       if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
-        const parts = imageInput.split(',');
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        if (mimeMatch) contentType = mimeMatch[1];
-        const binaryStr = atob(parts[1]);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-        imageBuffer = bytes.buffer;
+        base64Payload = imageInput;
       } else if (typeof imageInput === 'string' && imageInput.startsWith('http')) {
         const resp = await fetch(imageInput);
-        imageBuffer = await resp.arrayBuffer();
-      } else if (imageInput instanceof ArrayBuffer || ArrayBuffer.isView(imageInput)) {
-        imageBuffer = imageInput;
+        const blob = await resp.blob();
+        base64Payload = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
       }
 
-      if (imageBuffer) {
-        const uploadUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/${SUPABASE_CONFIG.bucket}/storyboards/${targetScriptId}/${finalFilename}`;
-        const uploadRes = await fetch(uploadUrl, {
+      if (base64Payload) {
+        const res = await fetch(`${apiBase}/production/${targetScriptId}/storyboard/upload`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
-            'apikey': SUPABASE_CONFIG.anonKey,
-            'Content-Type': contentType,
-            'x-upsert': 'true'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
           },
-          body: imageBuffer
+          body: JSON.stringify({
+            imageData: base64Payload,
+            filename: finalFilename,
+            extension: finalFilename.split('.').pop() || 'jpg'
+          })
         });
-
-        if (uploadRes.ok) {
-          const publicUrl = `${SUPABASE_CONFIG.url}/storage/v1/object/public/${SUPABASE_CONFIG.bucket}/storyboards/${targetScriptId}/${finalFilename}`;
+        if (res.ok) {
+          const data = await res.json();
           return {
             success: true,
-            provider: 'supabase-storage',
-            imageUrl: publicUrl,
-            cloudStorageUrl: publicUrl,
-            storagePath: `storyboards/${targetScriptId}/${finalFilename}`,
-            filename: finalFilename
+            provider: data.provider || 'supabase-private',
+            imageUrl: data.imageUrl,
+            cloudStorageUrl: data.imageUrl,
+            storagePath: data.storagePath || null,
+            filename: data.filename || finalFilename
           };
-        } else {
-          console.warn('[CloudStorage] Supabase storage upload response not OK:', uploadRes.status);
         }
       }
-    } catch (sbErr) {
-      console.warn('[CloudStorage] Supabase storage upload failed:', sbErr.message);
+    } catch (backendErr) {
+      console.warn('[CloudStorage] Authenticated backend upload failed:', backendErr.message);
     }
   }
 
-  // 2. Cloudinary (Verified 0-cost, 0-credit-card image hosting)
+  // 2. Cloudinary (if explicitly configured)
   if (CLOUDINARY_CONFIG.cloudName && CLOUDINARY_CONFIG.uploadPreset) {
     try {
       const formData = new FormData();
       formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
-      formData.append('folder', `scriptora/${scriptId}`);
+      formData.append('folder', `scriptora/${targetScriptId}`);
 
       if (typeof imageInput === 'string') {
         formData.append('file', imageInput);
@@ -233,51 +230,10 @@ export async function uploadImageToCloud(imageInput, scriptId = null, filename =
     }
   }
 
-  // 3. SCRIPTORA Dedicated Backend Server
-  const apiBase = (typeof window !== 'undefined' && window.SCRIPTORA_API_BASE) || env.VITE_API_URL || '/api';
-  try {
-    let base64Payload = '';
-    if (typeof imageInput === 'string' && imageInput.startsWith('data:')) {
-      base64Payload = imageInput;
-    } else if (typeof imageInput === 'string' && imageInput.startsWith('http')) {
-      const resp = await fetch(imageInput);
-      const blob = await resp.blob();
-      base64Payload = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-    }
-
-    if (base64Payload) {
-      const res = await fetch(`${apiBase}/production/${scriptId}/storyboard/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          imageData: base64Payload,
-          filename: finalFilename,
-          extension: finalFilename.split('.').pop() || 'jpg'
-        })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        return {
-          success: true,
-          provider: 'backend-server',
-          imageUrl: data.imageUrl,
-          cloudStorageUrl: data.imageUrl,
-          filename: data.filename
-        };
-      }
-    }
-  } catch (backendErr) {
-    // Backend server offline
-  }
-
   return {
     success: false,
     provider: 'local',
-    error: 'No persistent cloud storage available. Set VITE_SUPABASE_URL & VITE_SUPABASE_ANON_KEY (100% free, no credit card) in frontend/.env to enable Cloud Storage.'
+    error: 'Authentication required to upload storyboard images to private cloud storage.'
   };
 }
 

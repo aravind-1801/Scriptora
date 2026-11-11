@@ -7,7 +7,7 @@ import { positionPopup, openModal, closeModal } from '../utils/popupPosition.js'
 function getDraftSceneSnippet(draft) {
   if (!draft) return '';
   try {
-    const saved = localStorage.getItem(`scriptora_screenplay_${draft.id}`);
+    const saved = localStorage.getItem(api.getUserStorageKey(`screenplay_${draft.id}`));
     if (saved) {
       const sp = JSON.parse(saved);
       if (sp && Array.isArray(sp.scenes) && sp.scenes.length > 0) {

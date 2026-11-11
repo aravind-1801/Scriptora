@@ -28,7 +28,15 @@ for (const envFile of envLocations) {
 }
 
 import { handleCors } from './middleware/cors.js';
-import { db } from './models/db.js';
+import {
+  db,
+  ensureDbReady,
+  persistScriptState,
+  persistNotificationsState,
+  getUserSettings,
+  updateUserSettings,
+  getNotificationsForUser
+} from './models/db.js';
 import * as authService from './auth/authService.js';
 import * as scriptService from './services/scriptService.js';
 import * as screenplayService from './services/screenplayService.js';
@@ -69,6 +77,11 @@ async function getAuthUser(req, allowFallback = true) {
   return null;
 }
 
+function sendError(res, err, fallbackStatus = 400) {
+  const status = err?.status || (err?.message && /^Unauthorized/i.test(err.message) ? 403 : fallbackStatus);
+  return sendJson(res, status, { error: err?.message || 'Request failed' });
+}
+
 export const server = http.createServer(async (req, res) => {
   // 1. CORS
   if (handleCors(req, res)) return;
@@ -88,22 +101,49 @@ export const server = http.createServer(async (req, res) => {
       });
     }
 
+    // Ensure durable cloud state is hydrated before processing API routes
+    await ensureDbReady();
+
     // 1. AUTH
     if (pathname === '/auth/me' && method === 'GET') {
       const user = await getAuthUser(req, true);
       return sendJson(res, 200, { user: user ? authService.getCurrentUser(user) : null });
     }
-    if ((pathname === '/auth/login' || pathname === '/auth/google') && method === 'POST') {
+    if (pathname === '/auth/login' && method === 'POST') {
       const body = await readBody(req);
-      return sendJson(res, 200, { user: authService.login(body) });
+      try {
+        const user = await authService.login(body);
+        return sendJson(res, 200, { user });
+      } catch (err) {
+        return sendError(res, err, 401);
+      }
+    }
+    if (pathname === '/auth/google' && method === 'POST') {
+      const body = await readBody(req);
+      try {
+        const user = await authService.loginWithGoogle(body);
+        return sendJson(res, 200, { user });
+      } catch (err) {
+        return sendError(res, err, 401);
+      }
     }
     if (pathname === '/auth/register' && method === 'POST') {
       const body = await readBody(req);
-      return sendJson(res, 201, { user: authService.register(body) });
+      try {
+        const user = authService.register(body);
+        return sendJson(res, 201, { user });
+      } catch (err) {
+        return sendError(res, err, 400);
+      }
     }
     if (pathname === '/auth/otp' && method === 'POST') {
       const body = await readBody(req);
-      return sendJson(res, 200, { user: authService.verifyOtp(body.phone) });
+      try {
+        const user = await authService.verifyOtp(body);
+        return sendJson(res, 200, { user });
+      } catch (err) {
+        return sendError(res, err, 400);
+      }
     }
     if (pathname === '/auth/logout' && method === 'POST') {
       return sendJson(res, 200, authService.signOut());
@@ -118,7 +158,7 @@ export const server = http.createServer(async (req, res) => {
         const result = authService.deleteAccount(body.confirmation || body.confirmPhrase, currentUser);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -207,7 +247,7 @@ export const server = http.createServer(async (req, res) => {
     }
 
     const archMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/archive$/);
-    if (archMatch && method === 'PUT') {
+    if (archMatch && (method === 'PUT' || method === 'POST')) {
       const user = await getAuthUser(req, true);
       const access = authService.checkScriptAccess(user, archMatch[1], 'Owner');
       if (!access.allowed) {
@@ -218,7 +258,7 @@ export const server = http.createServer(async (req, res) => {
     }
 
     const restMatch = pathname.match(/^\/scripts\/([a-zA-Z0-9_-]+)\/restore$/);
-    if (restMatch && method === 'PUT') {
+    if (restMatch && (method === 'PUT' || method === 'POST')) {
       const user = await getAuthUser(req, true);
       const access = authService.checkScriptAccess(user, restMatch[1], 'Owner');
       if (!access.allowed) {
@@ -256,6 +296,11 @@ export const server = http.createServer(async (req, res) => {
     const versionsMatch = pathname.match(/^\/versions\/([a-zA-Z0-9_-]+)$/);
     if (versionsMatch) {
       const id = versionsMatch[1];
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, id, method === 'GET' ? 'Viewer' : 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       if (method === 'GET') {
         return sendJson(res, 200, { versions: db.versions[id] || [] });
       }
@@ -267,26 +312,36 @@ export const server = http.createServer(async (req, res) => {
           name: body.name || `Draft ${db.versions[id].length + 1}.0`,
           tag: "Milestone Snapshot",
           timestamp: "Just now",
-          author: db.currentUser?.initials || "SW",
+          author: user?.initials || (user?.name || "SW").slice(0, 2).toUpperCase(),
           stats: `${body.pageCount || 0} pages · ${body.wordCount || 0} words`,
           notes: body.notes || "Point-in-time snapshot.",
           isCurrent: true
         };
         db.versions[id].forEach(v => v.isCurrent = false);
         db.versions[id].unshift(newV);
+        persistScriptState(id);
         return sendJson(res, 201, { version: newV });
       }
     }
 
     // 5. COLLABORATORS & ROLE MANAGEMENT
     if (pathname === '/collaborators' && method === 'GET') {
-      return sendJson(res, 200, { collaborators: collaborationService.getCollaborators() });
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const userScripts = scriptService.getScriptsForUser(user);
+      const collaborators = userScripts.flatMap(s => collaborationService.getCollaborators(s.id));
+      return sendJson(res, 200, { collaborators });
     }
 
     // Collaborator permissions for current user
     const collabPermMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/permissions$/);
     if (collabPermMatch && method === 'GET') {
       const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const access = authService.checkScriptAccess(user, collabPermMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const data = collaborationService.getUserPermissions(collabPermMatch[1], user);
       return sendJson(res, 200, data);
     }
@@ -294,6 +349,11 @@ export const server = http.createServer(async (req, res) => {
     // Security Activity Audit Log
     const collabSecLogMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/security-activity$/);
     if (collabSecLogMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, collabSecLogMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const activity = collaborationService.getSecurityActivity(collabSecLogMatch[1]);
       return sendJson(res, 200, { activity });
     }
@@ -301,6 +361,11 @@ export const server = http.createServer(async (req, res) => {
     // Pending Invitations
     const collabInvitesMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations$/);
     if (collabInvitesMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, collabInvitesMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const invitations = collaborationService.getInvitations(collabInvitesMatch[1]);
       return sendJson(res, 200, { invitations });
     }
@@ -309,17 +374,26 @@ export const server = http.createServer(async (req, res) => {
     if (revokeInviteMatch && method === 'DELETE') {
       const [, scriptId, inviteId] = revokeInviteMatch;
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
         collaborationService.revokeInvitation(scriptId, inviteId, user);
         return sendJson(res, 200, { success: true });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     // Pending Join Requests
     const collabReqsMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/requests$/);
     if (collabReqsMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, collabReqsMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const requests = collaborationService.getAccessRequests(collabReqsMatch[1]);
       return sendJson(res, 200, { requests });
     }
@@ -328,12 +402,16 @@ export const server = http.createServer(async (req, res) => {
     if (approveReqMatch && method === 'POST') {
       const [, scriptId, requestId] = approveReqMatch;
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       try {
         const result = collaborationService.approveAccessRequest(scriptId, requestId, body.role, user);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -341,11 +419,15 @@ export const server = http.createServer(async (req, res) => {
     if (rejectReqMatch && method === 'POST') {
       const [, scriptId, requestId] = rejectReqMatch;
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
         const result = collaborationService.rejectAccessRequest(scriptId, requestId, user);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -353,6 +435,10 @@ export const server = http.createServer(async (req, res) => {
     const e2eeMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee$/);
     if (e2eeMatch && method === 'GET') {
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, e2eeMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const settings = collaborationService.getE2EESettings(e2eeMatch[1], user);
       return sendJson(res, 200, { e2ee: settings });
     }
@@ -360,40 +446,57 @@ export const server = http.createServer(async (req, res) => {
     const e2eeEnableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/enable$/);
     if (e2eeEnableMatch && method === 'POST') {
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, e2eeEnableMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       try {
         const result = collaborationService.enableE2EE(e2eeEnableMatch[1], body, user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const e2eeRotateMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/rotate$/);
     if (e2eeRotateMatch && method === 'POST') {
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, e2eeRotateMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const body = await readBody(req);
       try {
         const result = collaborationService.rotateE2EEKey(e2eeRotateMatch[1], body, user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const e2eeDisableMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/e2ee\/disable$/);
     if (e2eeDisableMatch && method === 'POST') {
       const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, e2eeDisableMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
         const result = collaborationService.disableE2EE(e2eeDisableMatch[1], user);
         return sendJson(res, 200, { success: true, e2ee: result });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const collabMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)$/);
     if (collabMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, collabMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       return sendJson(res, 200, { collaborators: collaborationService.getCollaborators(collabMatch[1]) });
     }
 
@@ -416,6 +519,11 @@ export const server = http.createServer(async (req, res) => {
 
     const collabInvsMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations$/);
     if (collabInvsMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, collabInvsMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const invitations = collaborationService.getInvitations(collabInvsMatch[1]);
       return sendJson(res, 200, { invitations });
     }
@@ -423,22 +531,32 @@ export const server = http.createServer(async (req, res) => {
     const collabInvResendMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)\/resend$/);
     if (collabInvResendMatch && method === 'POST') {
       const [, scriptId, inviteId] = collabInvResendMatch;
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
-        const result = collaborationService.resendInvitation(scriptId, inviteId, db.currentUser);
+        const result = collaborationService.resendInvitation(scriptId, inviteId, user);
         return sendJson(res, 200, { invitation: result });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const collabInvRevokeMatch = pathname.match(/^\/collaborators\/([a-zA-Z0-9_-]+)\/invitations\/([a-zA-Z0-9_-]+)$/);
     if (collabInvRevokeMatch && method === 'DELETE') {
       const [, scriptId, inviteId] = collabInvRevokeMatch;
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, scriptId, 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
-        const result = collaborationService.revokeInvitation(scriptId, inviteId, db.currentUser);
+        const result = collaborationService.revokeInvitation(scriptId, inviteId, user);
         return sendJson(res, 200, { success: result });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -446,10 +564,11 @@ export const server = http.createServer(async (req, res) => {
     if (invAcceptMatch && method === 'POST') {
       try {
         const user = await getAuthUser(req, true);
+        if (!user) return sendJson(res, 401, { error: 'Authentication required' });
         const result = collaborationService.acceptInvitation(invAcceptMatch[1], user);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -462,10 +581,11 @@ export const server = http.createServer(async (req, res) => {
     if (invTokenMatch && method === 'POST') {
       try {
         const user = await getAuthUser(req, true);
+        if (!user) return sendJson(res, 401, { error: 'Authentication required' });
         const result = collaborationService.acceptInvitation(invTokenMatch[1], user);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
@@ -499,135 +619,206 @@ export const server = http.createServer(async (req, res) => {
     // 6. JOIN CODES & ACCESS REQUESTS
     const genCodeMatch = pathname.match(/^\/join-code\/generate\/([a-zA-Z0-9_-]+)$/);
     if (genCodeMatch && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, genCodeMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
-        const code = collaborationService.generateJoinCode(genCodeMatch[1], db.currentUser);
+        const code = collaborationService.generateJoinCode(genCodeMatch[1], user);
         return sendJson(res, 200, { joinCode: code });
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const revokeCodeMatch = pathname.match(/^\/join-code\/revoke\/([a-zA-Z0-9_-]+)$/);
     if (revokeCodeMatch && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, revokeCodeMatch[1], 'Owner');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
-        const result = collaborationService.revokeJoinCode(revokeCodeMatch[1], db.currentUser);
+        const result = collaborationService.revokeJoinCode(revokeCodeMatch[1], user);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const codeConfigMatch = pathname.match(/^\/join-code\/config\/([a-zA-Z0-9_-]+)$/);
     if (codeConfigMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, codeConfigMatch[1], 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       const config = collaborationService.getJoinCodeConfig(codeConfigMatch[1]);
       return sendJson(res, 200, { config });
     }
 
     if (pathname === '/join-code/validate' && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
       const resData = collaborationService.validateJoinCode(body.code);
       return sendJson(res, resData.valid ? 200 : 400, resData);
     }
 
     if (pathname === '/join-code/request-access' && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
       try {
-        const resData = collaborationService.requestJoinAccess(body.code, body, db.currentUser);
+        const resData = collaborationService.requestJoinAccess(body.code, body, user);
         return sendJson(res, 200, resData);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     if (pathname === '/join-code/redeem' && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
-      const resData = collaborationService.redeemJoinCode(body.code, db.currentUser);
+      const resData = collaborationService.redeemJoinCode(body.code, user);
       return sendJson(res, resData.success ? 200 : 400, resData);
     }
 
     // Public key exchange for E2EE
     if (pathname === '/e2ee/public-key' && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
       try {
-        const result = collaborationService.registerUserPublicKey(db.currentUser, body);
+        const result = collaborationService.registerUserPublicKey(user, body);
         return sendJson(res, 200, result);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const userKeyMatch = pathname.match(/^\/e2ee\/public-key\/([a-zA-Z0-9@._+-]+)$/);
     if (userKeyMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const keyRecord = collaborationService.getUserPublicKey(decodeURIComponent(userKeyMatch[1]));
       return sendJson(res, 200, { keyRecord });
     }
 
-    // 7. NOTIFICATIONS
+    // 7. NOTIFICATIONS (Strictly per-user isolated)
     if (pathname === '/notifications' && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const list = getNotificationsForUser(user);
       return sendJson(res, 200, {
-        notifications: db.notifications,
-        unreadCount: db.notifications.filter(n => !n.read).length
+        notifications: list,
+        unreadCount: list.filter(n => !n.read).length
       });
     }
 
     if (pathname === '/notifications/unread-count' && method === 'GET') {
-      return sendJson(res, 200, { count: db.notifications.filter(n => !n.read).length });
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const list = getNotificationsForUser(user);
+      return sendJson(res, 200, { count: list.filter(n => !n.read).length });
     }
 
     const notifReadMatch = pathname.match(/^\/notifications\/([a-zA-Z0-9_-]+)\/read$/);
     if (notifReadMatch && method === 'PUT') {
-      const notif = db.notifications.find(n => n.id === notifReadMatch[1]);
-      if (notif) notif.read = true;
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const list = getNotificationsForUser(user);
+      const notif = list.find(n => n.id === notifReadMatch[1]);
+      if (notif) {
+        notif.read = true;
+        persistNotificationsState(user.id);
+      }
       return sendJson(res, 200, { success: true, notif });
     }
 
     if (pathname === '/notifications/read-all' && method === 'PUT') {
-      db.notifications.forEach(n => n.read = true);
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const list = getNotificationsForUser(user);
+      list.forEach(n => { n.read = true; });
+      persistNotificationsState(user.id);
       return sendJson(res, 200, { success: true });
     }
 
-    // 8. PROFILE & SETTINGS
+    // 8. PROFILE & SETTINGS (Strictly per-user isolated)
     if (pathname === '/profile' && method === 'GET') {
       const user = await getAuthUser(req, true);
       if (!user) return sendJson(res, 401, { error: 'Authentication required' });
-      return sendJson(res, 200, { profile: user });
+      return sendJson(res, 200, { profile: authService.getCurrentUser(user) });
     }
     if (pathname === '/profile' && method === 'PUT') {
       const user = await getAuthUser(req, true);
       if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
-      Object.assign(user, body);
-      return sendJson(res, 200, { profile: user });
+      const updated = authService.updateProfile(body, user);
+      return sendJson(res, 200, { profile: updated });
     }
     if (pathname === '/settings' && method === 'GET') {
-      return sendJson(res, 200, { settings: db.settings });
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      return sendJson(res, 200, { settings: getUserSettings(user) });
     }
     if (pathname === '/settings' && method === 'PUT') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
-      Object.assign(db.settings, body);
-      return sendJson(res, 200, { settings: db.settings });
+      const updated = updateUserSettings(user, body);
+      return sendJson(res, 200, { settings: updated });
     }
 
     // 9. INTELLIGENCE
     const intelMatch = pathname.match(/^\/intelligence\/([a-zA-Z0-9_-]+)$/);
     if (intelMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, intelMatch[1], 'Viewer');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       return sendJson(res, 200, intelligenceService.getIntelligence(intelMatch[1]));
     }
 
     const intelContextMatch = pathname.match(/^\/intelligence\/([a-zA-Z0-9_-]+)\/context$/);
     if (intelContextMatch && method === 'PUT') {
+      const user = await getAuthUser(req, true);
+      const access = authService.checkScriptAccess(user, intelContextMatch[1], 'Editor');
+      if (!access.allowed) return sendJson(res, access.status, { error: access.error });
       const body = await readBody(req);
       const ctx = intelligenceService.updateContext(intelContextMatch[1], body);
       return sendJson(res, 200, { context: ctx });
     }
 
     if (pathname === '/intelligence/query' && method === 'POST') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const body = await readBody(req);
+      if (body.scriptId) {
+        const access = authService.checkScriptAccess(user, body.scriptId, 'Viewer');
+        if (!access.allowed) return sendJson(res, access.status, { error: access.error });
+      }
       const answer = intelligenceService.queryIntelligence(body.query, body.scriptId);
       return sendJson(res, 200, { answer });
     }
 
-    // 10. PRE-PRODUCTION
+    // 10. PRE-PRODUCTION (Unified Script Authorization Guard)
+    if (pathname.startsWith('/production/')) {
+      const staticSubPaths = ['/production/ai/providers', '/production/storyboard/preferences', '/production/storyboard/preferences/reset'];
+      const isStaticStoryboardImg = /^\/production\/storyboard\/images\//.test(pathname);
+      const prodScopeMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)(?:\/|$)/);
+      if (prodScopeMatch && !staticSubPaths.includes(pathname) && !isStaticStoryboardImg && prodScopeMatch[1] !== 'ai' && prodScopeMatch[1] !== 'storyboard') {
+        const user = await getAuthUser(req, true);
+        const requiredRole = method === 'GET' ? 'Viewer' : 'Editor';
+        const access = authService.checkScriptAccess(user, prodScopeMatch[1], requiredRole);
+        if (!access.allowed) {
+          return sendJson(res, access.status, { error: access.error });
+        }
+      }
+    }
+
     const prodWsMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)$/);
     if (prodWsMatch) {
       const scriptId = prodWsMatch[1];
@@ -887,25 +1078,32 @@ export const server = http.createServer(async (req, res) => {
 
     // 17. STORYBOARD STUDIO ENDPOINTS
     if (pathname === '/production/ai/providers' && method === 'GET') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       const providers = storyboardService.getAiProviders();
       return sendJson(res, 200, { providers });
     }
 
     if (pathname === '/production/storyboard/preferences') {
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
       if (method === 'GET') {
-        const preferences = storyboardService.getStoryboardPreferences();
-        return sendJson(res, 200, { preferences });
+        const settings = getUserSettings(user);
+        return sendJson(res, 200, { preferences: settings.storyboard });
       }
       if (method === 'PUT') {
         const body = await readBody(req);
-        const preferences = storyboardService.saveStoryboardPreferences(body);
-        return sendJson(res, 200, { preferences });
+        const updated = updateUserSettings(user, { storyboard: body });
+        return sendJson(res, 200, { preferences: updated.storyboard });
       }
     }
 
     if (pathname === '/production/storyboard/preferences/reset' && method === 'POST') {
-      const preferences = storyboardService.resetStoryboardPreferences();
-      return sendJson(res, 200, { preferences, success: true });
+      const user = await getAuthUser(req, true);
+      if (!user) return sendJson(res, 401, { error: 'Authentication required' });
+      const defaults = storyboardService.resetStoryboardPreferences();
+      const updated = updateUserSettings(user, { storyboard: defaults });
+      return sendJson(res, 200, { preferences: updated.storyboard, success: true });
     }
 
     const prodSbRbMatch = pathname.match(/^\/production\/([a-zA-Z0-9_-]+)\/storyboard\/recycle-bin$/);
@@ -1085,22 +1283,35 @@ export const server = http.createServer(async (req, res) => {
     // Storyboard Asynchronous Generation Jobs API
     const prodSbJobCreateMatch = pathname.match(/^\/(?:api\/v1|production\/([a-zA-Z0-9_-]+))\/storyboard\/jobs\/generate$/);
     if (prodSbJobCreateMatch && method === 'POST') {
-      const scriptId = prodSbJobCreateMatch[1] || 'default';
+      const user = await getAuthUser(req, true);
       const body = await readBody(req);
+      const scriptId = prodSbJobCreateMatch[1] || body.scriptId;
+      if (!scriptId) {
+        return sendJson(res, 400, { error: 'scriptId is required for storyboard job generation' });
+      }
+      const access = authService.checkScriptAccess(user, scriptId, 'Editor');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
+      }
       try {
         const job = storyboardService.createGenerationJob(scriptId, body);
         return sendJson(res, 202, job);
       } catch (err) {
-        return sendJson(res, 400, { error: err.message });
+        return sendError(res, err, 400);
       }
     }
 
     const prodSbJobStatusMatch = pathname.match(/^\/(?:api\/v1|production\/[a-zA-Z0-9_-]+)\/storyboard\/jobs\/([a-zA-Z0-9_.-]+)$/);
     if (prodSbJobStatusMatch && method === 'GET') {
+      const user = await getAuthUser(req, true);
       const jobId = prodSbJobStatusMatch[1];
       const job = storyboardService.getGenerationJob(jobId);
       if (!job) {
         return sendJson(res, 404, { error: "Job not found" });
+      }
+      const access = authService.checkScriptAccess(user, job.scriptId, 'Viewer');
+      if (!access.allowed) {
+        return sendJson(res, access.status, { error: access.error });
       }
       return sendJson(res, 200, job);
     }
@@ -1277,10 +1488,34 @@ export const server = http.createServer(async (req, res) => {
       }
     }
 
-    // Persistent Storyboard Images Serving
+    // Persistent Storyboard Images Serving (Authenticated & Project-Scoped)
     const prodSbImgMatch = pathname.match(/^\/(?:production\/storyboard\/images|(?:api\/)?v1\/storage\/storyboard)\/([a-zA-Z0-9_.-]+)$/);
     if (prodSbImgMatch && method === 'GET') {
       const filename = prodSbImgMatch[1];
+      const queryToken = url.searchParams.get('token');
+      const user = queryToken
+        ? await authService.verifyAuthToken(`Bearer ${queryToken}`, false)
+        : await getAuthUser(req, true);
+
+      if (!user) {
+        return sendJson(res, 401, { error: 'Authentication required to access storyboard images' });
+      }
+
+      const owningScripts = storyboardService.getScriptsOwningAsset(filename);
+      const requestedScriptId = url.searchParams.get('scriptId');
+      const scriptsToCheck = owningScripts.length > 0
+        ? owningScripts
+        : (requestedScriptId ? [requestedScriptId] : []);
+
+      if (scriptsToCheck.length === 0) {
+        return sendJson(res, 403, { error: 'Access denied: Unable to verify image project ownership' });
+      }
+
+      const hasAccess = scriptsToCheck.some(sid => authService.checkScriptAccess(user, sid, 'Viewer').allowed);
+      if (!hasAccess) {
+        return sendJson(res, 403, { error: 'Access denied: You are not authorized to view this storyboard image' });
+      }
+
       const baseDir = process.cwd().endsWith('backend') ? path.resolve(process.cwd(), '..') : process.cwd();
       const candidates = [
         path.resolve(baseDir, 'backend', 'data', 'storage', 'storyboard', filename),
@@ -1301,7 +1536,7 @@ export const server = http.createServer(async (req, res) => {
         };
         res.statusCode = 200;
         res.setHeader('Content-Type', mimeTypes[ext] || 'image/jpeg');
-        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        res.setHeader('Cache-Control', 'private, max-age=3600');
         fs.createReadStream(found).pipe(res);
         return;
       }

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { db } from '../models/db.js';
+import { db, persistStoryboardState, getPersistenceMode } from '../models/db.js';
 import { buildStoryboardGenerationPrompt } from './promptBuilder.js';
 
 // Pre-Production Service: Storyboard Studio Data & Operations
@@ -80,6 +80,44 @@ export function recordGeneratedAsset(scriptId, filename) {
     const base = path.basename(filename);
     recentGeneratedAssets.add(`${scriptId}/${base}`);
   }
+}
+
+export function getScriptsOwningAsset(filename) {
+  const base = path.basename(filename || '');
+  if (!base) return [];
+  const owningScripts = new Set();
+
+  for (const key of recentGeneratedAssets) {
+    const slash = key.indexOf('/');
+    if (slash > 0 && key.slice(slash + 1) === base) {
+      owningScripts.add(key.slice(0, slash));
+    }
+  }
+
+  for (const sb of (db.storyboards || [])) {
+    for (const shot of (sb.shots || [])) {
+      const candidates = [
+        shot.imageUrl,
+        shot.storagePath,
+        shot.sourceUrl,
+        shot.cdnUrl,
+        ...(Array.isArray(shot.history) ? shot.history.flatMap(h => [h.previousImageUrl, h.previousStoragePath, h.previousSourceUrl]) : [])
+      ];
+      if (candidates.some(c => typeof c === 'string' && c.includes(base))) {
+        owningScripts.add(sb.scriptId);
+        break;
+      }
+    }
+  }
+
+  for (const item of (db.storyboardRecycleBin || [])) {
+    const shot = item.shot || item;
+    if (shot && [shot.imageUrl, shot.storagePath].some(c => typeof c === 'string' && c.includes(base))) {
+      owningScripts.add(item.scriptId);
+    }
+  }
+
+  return Array.from(owningScripts);
 }
 
 /**
@@ -283,7 +321,22 @@ export async function recoverMissingImage(filename) {
   }
 }
 
-export function persistStoryboardDb() {
+export function persistStoryboardDb(targetScriptId = null) {
+  // Always persist per-script storyboard shards to durable cloud store when enabled
+  if (getPersistenceMode() !== 'memory') {
+    if (targetScriptId) {
+      persistStoryboardState(targetScriptId);
+    } else {
+      const scriptIds = new Set([
+        ...(db.storyboards || []).map(sb => sb.scriptId),
+        ...(db.storyboardRecycleBin || []).map(r => r.scriptId)
+      ].filter(Boolean));
+      for (const sid of scriptIds) {
+        persistStoryboardState(sid);
+      }
+    }
+  }
+
   try {
     const filePath = getStoryboardsFilePath();
     const dir = path.dirname(filePath);
@@ -297,6 +350,10 @@ export function persistStoryboardDb() {
 let storyboardsLoadedFromDisk = false;
 export function loadPersistedStoryboards(force = false) {
   if (storyboardsLoadedFromDisk && !force) return;
+  if (getPersistenceMode() !== 'memory') {
+    storyboardsLoadedFromDisk = true;
+    return;
+  }
   try {
     const filePath = getStoryboardsFilePath();
     if (fs.existsSync(filePath)) {
@@ -495,7 +552,7 @@ export function updateShot(scriptId, sceneId, shotId, updates, user = null) {
     shot.history = [];
   }
 
-  const updaterName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
+  const updaterName = user?.displayName || user?.name || "Writer";
 
   // Track revision history if image or prompt changes
   if ((updates.imageUrl && updates.imageUrl !== shot.imageUrl) || (updates.prompt && updates.prompt !== shot.prompt)) {
@@ -534,7 +591,7 @@ export function restoreShotVersion(scriptId, sceneId, shotId, historyIndex, user
     throw new Error("Historical version not found");
   }
 
-  const updaterName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
+  const updaterName = user?.displayName || user?.name || "Writer";
   const hist = shot.history[historyIndex];
   // Retain current image before restoring
   shot.history.push({
@@ -752,7 +809,7 @@ export function approveShot(scriptId, sceneId, shotId, status = 'approved', note
   const shot = sb.shots.find(s => s.id === shotId);
   if (!shot) throw new Error("Shot not found");
 
-  const approverName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
+  const approverName = user?.displayName || user?.name || "Writer";
   shot.approvalStatus = status;
   shot.approvalNotes = notes || shot.approvalNotes || "";
   shot.approvedBy = `${approverName} (${role || 'Editor'})`;
@@ -767,7 +824,7 @@ export function approveShot(scriptId, sceneId, shotId, status = 'approved', note
 export function batchApproveShots(scriptId, sceneId, shotIds = [], status = 'approved', notes = '', user = null, role = 'Owner') {
   const sb = getStoryboardByScene(scriptId, sceneId);
   const affected = [];
-  const approverName = user?.displayName || user?.name || db.currentUser?.name || "Writer";
+  const approverName = user?.displayName || user?.name || "Writer";
 
   for (const s of sb.shots) {
     if (shotIds.includes(s.id)) {

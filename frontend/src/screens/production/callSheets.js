@@ -62,7 +62,10 @@ export async function attachCallSheetsEvents(navigate, fromParam = null, scriptP
   const container = document.getElementById('callsheet-view-container');
   if (!container) return;
 
-  const userRole = localStorage.getItem('scriptora_prod_role') || 'Owner';
+  const resolvedScriptId = store.state.activeScript?.id || store.state.selectedScriptId;
+  const userRole = (typeof localStorage !== 'undefined' && localStorage.getItem(api.getUserStorageKey(`prod_role_${resolvedScriptId}`))) ||
+                   store.state.activeScriptPermissions?.role ||
+                   'Viewer';
   const isOwner = userRole === 'Owner';
 
   if (isEdit && csId) {

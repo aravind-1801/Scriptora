@@ -13,6 +13,8 @@
 import assert from 'node:assert/strict';
 import http from 'http';
 import { startServer, server } from '../backend/app/server.js';
+import { db } from '../backend/app/models/db.js';
+import { signSessionJwt } from '../backend/app/auth/authService.js';
 
 const TEST_PORT = 8123;
 const FRONTEND_ORIGIN = 'https://aravind-1801.github.io';
@@ -90,18 +92,33 @@ async function run() {
 
     // Step 4: Authentication enforcement on private endpoints
     console.log('\n--- Step 4: Verifying Authentication & Project Ownership Guards ---');
+
+    const testScriptId = 'chronicles-of-dust';
+    const ownerUser = { id: 'readiness-owner-1', email: 'owner@readiness.test', name: 'Readiness Owner' };
+    const intruderUser = { id: 'readiness-intruder-2', email: 'intruder@readiness.test', name: 'Intruder' };
+    if (!db.scripts.some(s => s.id === testScriptId)) {
+      db.scripts.push({
+        id: testScriptId,
+        title: 'Readiness Verification Project',
+        ownerId: ownerUser.id,
+        ownerEmail: ownerUser.email,
+        createdAt: new Date().toISOString()
+      });
+    }
+    const ownerToken = signSessionJwt(ownerUser);
+    const intruderToken = signSessionJwt(intruderUser);
     
     // 4A: Unauthenticated signed-url generation must be rejected with 401
-    const unauthSignedUrl = await makeRequest('/api/production/chronicles-of-dust/storyboard/signed-url', {
+    const unauthSignedUrl = await makeRequest(`/api/production/${testScriptId}/storyboard/signed-url`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: { storagePath: 'storyboards/chronicles-of-dust/shot_test.jpg' }
+      body: { storagePath: `storyboards/${testScriptId}/shot_test.jpg` }
     });
     assert.strictEqual(unauthSignedUrl.status, 401, 'Unauthenticated signed URL request must return 401');
     console.log('  ✓ Unauthenticated signed URL request rejected with HTTP 401');
 
     // 4B: Unauthenticated shot generation must be rejected with 401
-    const unauthGen = await makeRequest('/api/production/chronicles-of-dust/storyboard/generate-shot', {
+    const unauthGen = await makeRequest(`/api/production/${testScriptId}/storyboard/generate-shot`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: { prompt: 'Test shot' }
@@ -109,35 +126,46 @@ async function run() {
     assert.strictEqual(unauthGen.status, 401, 'Unauthenticated generation request must return 401');
     console.log('  ✓ Unauthenticated shot generation rejected with HTTP 401');
 
-    // 4C: Cross-user access denial (Intruder trying to access chronicles-of-dust)
-    // Create a fake JWT for an unauthorized user
+    // 4C: Forged unsigned JWT and legacy test-token must both be rejected with 401
     const intruderHeader = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64');
     const intruderPayload = Buffer.from(JSON.stringify({
       user_id: 'user-intruder',
       email: 'intruder@otherdomain.com',
       exp: Math.floor(Date.now() / 1000) + 3600
     })).toString('base64');
-    const intruderToken = `${intruderHeader}.${intruderPayload}.mock_sig`;
+    const forgedToken = `${intruderHeader}.${intruderPayload}.mock_sig`;
 
-    const crossUserReq = await makeRequest('/api/production/chronicles-of-dust/storyboard/signed-url', {
+    const forgedReq = await makeRequest(`/api/production/${testScriptId}/storyboard/signed-url`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${forgedToken}`
+      },
+      body: { storagePath: `storyboards/${testScriptId}/shot_test.jpg` }
+    });
+    assert.strictEqual(forgedReq.status, 401, 'Forged unsigned JWT must return 401 Unauthorized');
+    console.log('  ✓ Forged unsigned JWT rejected with HTTP 401 Unauthorized');
+
+    // 4D: Cross-user access denial (Signed valid JWT of unrelated intruder trying to access owner project)
+    const crossUserReq = await makeRequest(`/api/production/${testScriptId}/storyboard/signed-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${intruderToken}`
       },
-      body: { storagePath: 'storyboards/chronicles-of-dust/shot_test.jpg' }
+      body: { storagePath: `storyboards/${testScriptId}/shot_test.jpg` }
     });
     assert.strictEqual(crossUserReq.status, 403, 'Cross-user project request must return 403 Forbidden');
     console.log('  ✓ Cross-user project access rejected with HTTP 403 Forbidden');
 
-    // 4D: Authorized project owner access granted (test-token or owner token)
-    const ownerReq = await makeRequest('/api/production/chronicles-of-dust/storyboard/signed-url', {
+    // 4E: Authorized project owner access granted with signed JWT
+    const ownerReq = await makeRequest(`/api/production/${testScriptId}/storyboard/signed-url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer test-token'
+        'Authorization': `Bearer ${ownerToken}`
       },
-      body: { storagePath: 'storyboards/chronicles-of-dust/shot_verify_1794374603612.jpg' }
+      body: { storagePath: `storyboards/${testScriptId}/shot_verify_1794374603612.jpg` }
     });
     assert.strictEqual(ownerReq.status, 200, 'Authorized project owner request must return 200');
     assert.ok(ownerReq.body.signedUrl, 'Response must include signedUrl');

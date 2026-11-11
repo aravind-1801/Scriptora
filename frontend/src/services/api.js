@@ -52,11 +52,20 @@ const rawBase = (typeof import.meta !== 'undefined' && import.meta.env && import
   : '/';
 const BASE_ASSET_URL = rawBase.endsWith('/') ? rawBase : `${rawBase}/`;
 
+function shouldFallbackToOfflineCache(err) {
+  return !err || (!err.status && !(err.message && /^HTTP error (400|401|403|404|409|422)/.test(err.message)));
+}
+
+function getAuthToken() {
+  if (typeof localStorage === 'undefined') return null;
+  return localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token') || null;
+}
+
 async function request(endpoint, options = {}) {
   const baseUrl = getApiBaseUrl();
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${baseUrl}${cleanEndpoint}`;
-  const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('scriptora_auth_token') || localStorage.getItem('scriptora_token'))) || null;
+  const token = getAuthToken();
   const authHeader = token ? { 'Authorization': `Bearer ${token}` } : {};
 
   const config = {
@@ -72,11 +81,22 @@ async function request(endpoint, options = {}) {
     const res = await fetch(url, config);
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error ${res.status}`);
+      const err = new Error(errorData.error || `HTTP error ${res.status}`);
+      err.status = res.status;
+
+      if (res.status === 401 && !cleanEndpoint.startsWith('/auth/')) {
+        clearLocalUserData();
+        if (typeof window !== 'undefined' && window.location && !window.location.hash.includes('/auth')) {
+          window.location.hash = '#/auth';
+        }
+      }
+      throw err;
     }
     return await res.json();
   } catch (err) {
-    console.warn(`API call ${endpoint} failed, falling back to local store:`, err.message);
+    if (shouldFallbackToOfflineCache(err)) {
+      console.warn(`API call ${endpoint} unreachable, network fallback check:`, err.message);
+    }
     throw err;
   }
 }
@@ -126,10 +146,11 @@ export async function login(credentials) {
     method: 'POST',
     body: JSON.stringify(credentials)
   });
-  if (data?.token || data?.user?.token) {
-    localStorage.setItem('scriptora_auth_token', data.token || data.user.token);
-  }
   if (data?.user) {
+    clearLocalUserData();
+    if (data?.token || data?.user?.token) {
+      localStorage.setItem('scriptora_auth_token', data.token || data.user.token);
+    }
     localStorage.setItem('scriptora_user', JSON.stringify(data.user));
     return data.user;
   }
@@ -137,15 +158,16 @@ export async function login(credentials) {
 }
 
 export async function googleLogin(payload = {}) {
-  const data = await request('/auth/login', {
+  const data = await request('/auth/google', {
     method: 'POST',
     body: JSON.stringify({ ...payload, provider: 'google' })
   });
-  const token = payload.token || data?.token || data?.user?.token;
-  if (token) {
-    localStorage.setItem('scriptora_auth_token', token);
-  }
   if (data?.user) {
+    clearLocalUserData();
+    const token = data?.token || data?.user?.token || payload.token || payload.firebaseToken;
+    if (token) {
+      localStorage.setItem('scriptora_auth_token', token);
+    }
     localStorage.setItem('scriptora_user', JSON.stringify(data.user));
     return data.user;
   }
@@ -157,10 +179,11 @@ export async function register(data) {
     method: 'POST',
     body: JSON.stringify(data)
   });
-  if (res?.token || res?.user?.token) {
-    localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
-  }
   if (res?.user) {
+    clearLocalUserData();
+    if (res?.token || res?.user?.token) {
+      localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
+    }
     localStorage.setItem('scriptora_user', JSON.stringify(res.user));
     return res.user;
   }
@@ -170,12 +193,13 @@ export async function register(data) {
 export async function verifyOtp(phone) {
   const res = await request('/auth/otp', {
     method: 'POST',
-    body: JSON.stringify({ phone })
+    body: JSON.stringify(typeof phone === 'object' ? phone : { phone })
   });
-  if (res?.token || res?.user?.token) {
-    localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
-  }
   if (res?.user) {
+    clearLocalUserData();
+    if (res?.token || res?.user?.token) {
+      localStorage.setItem('scriptora_auth_token', res.token || res.user.token);
+    }
     localStorage.setItem('scriptora_user', JSON.stringify(res.user));
     return res.user;
   }
@@ -189,6 +213,9 @@ export function clearLocalUserData() {
   localStorage.removeItem('scriptora_token');
   localStorage.removeItem('scriptora_scripts');
   localStorage.removeItem('scriptora_selected_script');
+  localStorage.removeItem('scriptora_settings');
+  localStorage.removeItem('scriptora_storyboard_preferences');
+  localStorage.removeItem('scriptora_chat_history');
 
   // Purge user-specific screenplay drafts, production workspaces, and storyboard states
   const keysToRemove = [];
@@ -201,7 +228,8 @@ export function clearLocalUserData() {
         key.startsWith('scriptora_storyboard_') ||
         key.startsWith('scriptora_u_') ||
         key.startsWith('scriptora_collaborators_') ||
-        key.startsWith('scriptora_invitations_')
+        key.startsWith('scriptora_invitations_') ||
+        key.startsWith('scriptora_e2ee_')
       )) {
         keysToRemove.push(key);
       }
@@ -213,7 +241,6 @@ export function clearLocalUserData() {
     console.warn('Local storage purge notice:', e);
   }
 
-  // Clear in-flight navigation and session buffers
   try {
     sessionStorage.clear();
   } catch {}
@@ -274,7 +301,8 @@ export async function getScripts(query = '') {
       if (query) list = list.filter(s => s.title.toLowerCase().includes(query.toLowerCase()));
       return list;
     }
-  } catch {
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
     // Backend offline / static deploy fallback
   }
 
@@ -296,7 +324,9 @@ export async function getScript(id) {
   try {
     const data = await request(`/scripts/${id}`);
     if (data.script) return data.script;
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const scripts = await getScripts();
   return scripts.find(s => s.id === id) || null;
@@ -330,15 +360,17 @@ export async function createScript(scriptData) {
     if (data.script) {
       emptyScreenplay.id = data.script.id;
       emptyScreenplay.title = data.script.title;
-      localStorage.setItem(`scriptora_screenplay_${data.script.id}`, JSON.stringify(emptyScreenplay));
+      localStorage.setItem(getUserStorageKey(`screenplay_${data.script.id}`), JSON.stringify(emptyScreenplay));
       await saveScreenplay(data.script.id, emptyScreenplay).catch(() => {});
       const scripts = await getScripts();
       const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
-      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
-      localStorage.setItem('scriptora_selected_script', data.script.id);
+      localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify([data.script, ...resetScripts.filter(s => s.id !== data.script.id)]));
+      localStorage.setItem(getUserStorageKey('selected_script'), data.script.id);
       return data.script;
     }
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const newScript = {
     id: newScriptId,
@@ -362,26 +394,26 @@ export async function createScript(scriptData) {
       plannedDuration: "01:30:00"
     },
     analysisScores: {
-      overall: 80,
-      pacing: 78,
-      dialogue: 80,
-      emotion: 80,
-      characterArc: 78,
-      continuity: 80,
-      storyStructure: 80,
-      theme: 80,
-      cinema: 80,
-      formatting: 90,
-      production: 75
+      overall: 0,
+      pacing: 0,
+      dialogue: 0,
+      emotion: 0,
+      characterArc: 0,
+      continuity: 0,
+      storyStructure: 0,
+      theme: 0,
+      cinema: 0,
+      formatting: 0,
+      production: 0
     }
   };
 
-  localStorage.setItem(`scriptora_screenplay_${newScript.id}`, JSON.stringify(emptyScreenplay));
+  localStorage.setItem(getUserStorageKey(`screenplay_${newScript.id}`), JSON.stringify(emptyScreenplay));
   const scripts = await getScripts();
   const resetScripts = scripts.map(s => ({ ...s, isCurrentDraft: false }));
   const updated = [newScript, ...resetScripts.filter(s => s.id !== newScript.id)];
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
-  localStorage.setItem('scriptora_selected_script', newScript.id);
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('selected_script'), newScript.id);
   return newScript;
 }
 
@@ -396,11 +428,13 @@ export async function setCurrentDraft(scriptId) {
         isCurrentDraft: s.id === scriptId,
         updated: s.id === scriptId ? 'Just now' : s.updated
       }));
-      localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
-      localStorage.setItem('scriptora_selected_script', scriptId);
+      localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
+      localStorage.setItem(getUserStorageKey('selected_script'), scriptId);
       return updated;
     }
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const scripts = await getScripts();
   const updated = scripts.map(s => ({
@@ -408,8 +442,8 @@ export async function setCurrentDraft(scriptId) {
     isCurrentDraft: s.id === scriptId,
     updated: s.id === scriptId ? 'Just now' : s.updated
   }));
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
-  localStorage.setItem('scriptora_selected_script', scriptId);
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('selected_script'), scriptId);
   return updated;
 }
 
@@ -422,21 +456,25 @@ export async function updateScript(id, updates) {
     if (data.script) {
       const scripts = await getScripts();
       const updated = scripts.map(s => s.id === id ? data.script : s);
-      localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+      localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
       return data.script;
     }
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const scripts = await getScripts();
   const updated = scripts.map(s => s.id === id ? { ...s, ...updates, updated: "Just now" } : s);
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
   return { id, ...updates, updated: "Just now" };
 }
 
 export async function deleteScript(id) {
   try {
     await request(`/scripts/${id}`, { method: 'DELETE' });
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const scripts = await getScripts();
   const deletedScript = scripts.find(s => s.id === id);
@@ -445,15 +483,15 @@ export async function deleteScript(id) {
   if (wasCurrentDraft && updated.length > 0) {
     updated[0].isCurrentDraft = true;
   }
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
-  localStorage.removeItem(`scriptora_screenplay_${id}`);
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
+  localStorage.removeItem(getUserStorageKey(`screenplay_${id}`));
 
-  const currentSelected = localStorage.getItem('scriptora_selected_script');
+  const currentSelected = localStorage.getItem(getUserStorageKey('selected_script'));
   if (currentSelected === id) {
     if (updated.length > 0) {
-      localStorage.setItem('scriptora_selected_script', updated[0].id);
+      localStorage.setItem(getUserStorageKey('selected_script'), updated[0].id);
     } else {
-      localStorage.removeItem('scriptora_selected_script');
+      localStorage.removeItem(getUserStorageKey('selected_script'));
     }
   }
   return { success: true };
@@ -464,10 +502,12 @@ export async function duplicateScript(id) {
     const data = await request(`/scripts/${id}/duplicate`, { method: 'POST' });
     if (data.script) {
       const scripts = await getScripts();
-      localStorage.setItem('scriptora_scripts', JSON.stringify([data.script, ...scripts]));
+      localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify([data.script, ...scripts]));
       return data.script;
     }
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const orig = await getScript(id);
   const copy = {
@@ -478,18 +518,20 @@ export async function duplicateScript(id) {
   };
   const scripts = await getScripts();
   const updated = [copy, ...scripts];
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
   return copy;
 }
 
 export async function archiveScript(id) {
   try {
     await request(`/scripts/${id}/archive`, { method: 'POST' });
-  } catch {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
 
   const scripts = await getScripts();
   const updated = scripts.map(s => s.id === id ? { ...s, archived: true, updated: "Just now" } : s);
-  localStorage.setItem('scriptora_scripts', JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey('scripts'), JSON.stringify(updated));
   return { success: true };
 }
 
@@ -498,8 +540,8 @@ export async function getScreenplay(scriptId) {
   let screenplay = null;
 
   // If encrypted payload exists for E2EE, decrypt it with local master key
-  const encStored = localStorage.getItem(`scriptora_screenplay_enc_${scriptId}`);
-  const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+  const encStored = localStorage.getItem(getUserStorageKey(`screenplay_enc_${scriptId}`));
+  const rawKey = localStorage.getItem(getUserStorageKey(`screenplay_key_${scriptId}`));
   if (encStored && rawKey) {
     try {
       const masterKey = await importRawKeyFromBase64(rawKey);
@@ -518,11 +560,13 @@ export async function getScreenplay(scriptId) {
       if (data.screenplay && data.screenplay.scenes) {
         screenplay = data.screenplay;
       }
-    } catch {}
+    } catch (err) {
+      if (!shouldFallbackToOfflineCache(err)) throw err;
+    }
   }
 
   if (!screenplay) {
-    const saved = localStorage.getItem(`scriptora_screenplay_${scriptId}`);
+    const saved = localStorage.getItem(getUserStorageKey(`screenplay_${scriptId}`));
     if (saved) {
       try {
         const sp = JSON.parse(saved);
@@ -575,24 +619,24 @@ export async function getScreenplay(scriptId) {
       }
     ]
   };
-  localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(emptyTemplate));
+  localStorage.setItem(getUserStorageKey(`screenplay_${scriptId}`), JSON.stringify(emptyTemplate));
   saveScreenplay(scriptId, emptyTemplate).catch(() => {});
   return emptyTemplate;
 }
 
 export async function saveScreenplay(scriptId, screenplay) {
-  localStorage.setItem(`scriptora_screenplay_${scriptId}`, JSON.stringify(screenplay));
+  localStorage.setItem(getUserStorageKey(`screenplay_${scriptId}`), JSON.stringify(screenplay));
 
   // If E2EE is enabled, also encrypt content locally with the master key
-  const e2eeSetting = localStorage.getItem(`scriptora_e2ee_${scriptId}`);
-  const rawKey = localStorage.getItem(`scriptora_screenplay_key_${scriptId}`);
+  const e2eeSetting = localStorage.getItem(getUserStorageKey(`e2ee_${scriptId}`));
+  const rawKey = localStorage.getItem(getUserStorageKey(`screenplay_key_${scriptId}`));
   if (e2eeSetting && rawKey) {
     try {
       const e2ee = JSON.parse(e2eeSetting);
       if (e2ee.enabled) {
         const masterKey = await importRawKeyFromBase64(rawKey);
         const encPayload = await encryptScreenplayContent(screenplay, masterKey, e2ee.keyVersion || 1);
-        localStorage.setItem(`scriptora_screenplay_enc_${scriptId}`, JSON.stringify(encPayload));
+        localStorage.setItem(getUserStorageKey(`screenplay_enc_${scriptId}`), JSON.stringify(encPayload));
       }
     } catch (e) {
       console.warn('E2EE auto-encrypt on save skipped:', e);
@@ -648,14 +692,14 @@ export async function getCollaborators(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}`);
     if (data.collaborators && Array.isArray(data.collaborators)) {
-      localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(data.collaborators));
+      localStorage.setItem(getUserStorageKey(`collaborators_${scriptId}`), JSON.stringify(data.collaborators));
       return data.collaborators;
     }
   } catch {
     // Fallback to local storage or defaults on static hosts
   }
 
-  const saved = localStorage.getItem(`scriptora_collaborators_${scriptId}`);
+  const saved = localStorage.getItem(getUserStorageKey(`collaborators_${scriptId}`));
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -737,9 +781,9 @@ export async function inviteCollaborator(scriptId, inviteData) {
     expiresAt: new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString()
   };
 
-  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  const invs = JSON.parse(localStorage.getItem(getUserStorageKey(`invitations_${scriptId}`)) || '[]');
   invs.unshift(newInv);
-  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(invs));
+  localStorage.setItem(getUserStorageKey(`invitations_${scriptId}`), JSON.stringify(invs));
   return newInv;
 }
 
@@ -747,14 +791,14 @@ export async function getPendingInvitations(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}/invitations`);
     if (data.invitations && Array.isArray(data.invitations)) {
-      localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(data.invitations));
+      localStorage.setItem(getUserStorageKey(`invitations_${scriptId}`), JSON.stringify(data.invitations));
       return data.invitations;
     }
   } catch {
     // Static / offline fallback
   }
 
-  const saved = localStorage.getItem(`scriptora_invitations_${scriptId}`);
+  const saved = localStorage.getItem(getUserStorageKey(`invitations_${scriptId}`));
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -777,9 +821,9 @@ export async function revokeInvitation(scriptId, inviteId) {
   }
 
   // Local fallback
-  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  const invs = JSON.parse(localStorage.getItem(getUserStorageKey(`invitations_${scriptId}`)) || '[]');
   const updated = invs.filter(i => i.id !== inviteId);
-  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey(`invitations_${scriptId}`), JSON.stringify(updated));
   return { success: true };
 }
 
@@ -796,7 +840,7 @@ export async function resendInvitation(scriptId, inviteId) {
   }
 
   // Local fallback
-  const invs = JSON.parse(localStorage.getItem(`scriptora_invitations_${scriptId}`) || '[]');
+  const invs = JSON.parse(localStorage.getItem(getUserStorageKey(`invitations_${scriptId}`)) || '[]');
   const inv = invs.find(i => i.id === inviteId);
   if (!inv) throw new Error('Invitation not found.');
 
@@ -804,7 +848,7 @@ export async function resendInvitation(scriptId, inviteId) {
   inv.token = `inv_${Math.random().toString(36).substring(2, 10)}_${Date.now()}`;
   inv.createdAt = new Date().toISOString();
   inv.expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
-  localStorage.setItem(`scriptora_invitations_${scriptId}`, JSON.stringify(invs));
+  localStorage.setItem(getUserStorageKey(`invitations_${scriptId}`), JSON.stringify(invs));
   return inv;
 }
 
@@ -832,7 +876,7 @@ export async function acceptInvitation(token) {
         localStorage.setItem(key, JSON.stringify(invs));
 
         // Add to collaborators
-        const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+        const collabs = JSON.parse(localStorage.getItem(getUserStorageKey(`collaborators_${scriptId}`)) || '[]');
         const newCollab = {
           id: `c-${Date.now()}`,
           name: inv.email.split('@')[0],
@@ -844,7 +888,7 @@ export async function acceptInvitation(token) {
           added: 'Just now'
         };
         collabs.push(newCollab);
-        localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(collabs));
+        localStorage.setItem(getUserStorageKey(`collaborators_${scriptId}`), JSON.stringify(collabs));
         return { success: true, scriptId, collaborator: newCollab };
       }
     }
@@ -866,11 +910,11 @@ export async function changeCollaboratorRole(scriptId, memberId, newRole) {
   }
 
   // Local fallback
-  const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+  const collabs = JSON.parse(localStorage.getItem(getUserStorageKey(`collaborators_${scriptId}`)) || '[]');
   const member = collabs.find(c => c.id === memberId);
   if (member) {
     member.role = newRole;
-    localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(collabs));
+    localStorage.setItem(getUserStorageKey(`collaborators_${scriptId}`), JSON.stringify(collabs));
     return member;
   }
   throw new Error('Collaborator not found.');
@@ -889,9 +933,9 @@ export async function removeCollaborator(scriptId, memberId) {
   }
 
   // Local fallback
-  const collabs = JSON.parse(localStorage.getItem(`scriptora_collaborators_${scriptId}`) || '[]');
+  const collabs = JSON.parse(localStorage.getItem(getUserStorageKey(`collaborators_${scriptId}`)) || '[]');
   const updated = collabs.filter(c => c.id !== memberId);
-  localStorage.setItem(`scriptora_collaborators_${scriptId}`, JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey(`collaborators_${scriptId}`), JSON.stringify(updated));
   return { success: true };
 }
 
@@ -986,12 +1030,12 @@ export async function getE2EESettings(scriptId) {
   try {
     const data = await request(`/collaborators/${scriptId}/e2ee`);
     if (data?.e2ee) {
-      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(data.e2ee)); } catch {}
+      try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(data.e2ee)); } catch {}
       return data.e2ee;
     }
   } catch {}
 
-  const stored = localStorage.getItem(`scriptora_e2ee_${scriptId}`);
+  const stored = localStorage.getItem(getUserStorageKey(`e2ee_${scriptId}`));
   if (stored) {
     try { return JSON.parse(stored); } catch {}
   }
@@ -1013,7 +1057,7 @@ export async function enableE2EE(scriptId, payload) {
       body: JSON.stringify(payload)
     });
     if (res?.e2ee) {
-      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+      try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(res.e2ee)); } catch {}
     }
     return res;
   } catch (err) {
@@ -1025,7 +1069,7 @@ export async function enableE2EE(scriptId, payload) {
       lastRotated: new Date().toISOString(),
       wrappedKeys: payload.wrappedKeys || {}
     };
-    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(e2ee)); } catch {}
     return { success: true, e2ee };
   }
 }
@@ -1037,11 +1081,11 @@ export async function rotateE2EEKey(scriptId, payload) {
       body: JSON.stringify(payload)
     });
     if (res?.e2ee) {
-      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+      try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(res.e2ee)); } catch {}
     }
     return res;
   } catch (err) {
-    const prev = JSON.parse(localStorage.getItem(`scriptora_e2ee_${scriptId}`) || '{}');
+    const prev = JSON.parse(localStorage.getItem(getUserStorageKey(`e2ee_${scriptId}`)) || '{}');
     const e2ee = {
       ...prev,
       enabled: true,
@@ -1050,7 +1094,7 @@ export async function rotateE2EEKey(scriptId, payload) {
       lastRotated: new Date().toISOString(),
       wrappedKeys: payload.wrappedKeys || prev.wrappedKeys || {}
     };
-    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(e2ee)); } catch {}
     return { success: true, e2ee };
   }
 }
@@ -1061,17 +1105,17 @@ export async function disableE2EE(scriptId) {
       method: 'POST'
     });
     if (res?.e2ee) {
-      try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(res.e2ee)); } catch {}
+      try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(res.e2ee)); } catch {}
     }
     return res;
   } catch (err) {
-    const prev = JSON.parse(localStorage.getItem(`scriptora_e2ee_${scriptId}`) || '{}');
+    const prev = JSON.parse(localStorage.getItem(getUserStorageKey(`e2ee_${scriptId}`)) || '{}');
     const e2ee = {
       ...prev,
       enabled: false,
       disabledAt: new Date().toISOString()
     };
-    try { localStorage.setItem(`scriptora_e2ee_${scriptId}`, JSON.stringify(e2ee)); } catch {}
+    try { localStorage.setItem(getUserStorageKey(`e2ee_${scriptId}`), JSON.stringify(e2ee)); } catch {}
     return { success: true, e2ee };
   }
 }
@@ -1162,7 +1206,7 @@ export async function getSettings() {
     const data = await request('/settings');
     return data.settings;
   } catch {
-    const saved = localStorage.getItem('scriptora_settings');
+    const saved = localStorage.getItem(getUserStorageKey('settings'));
     if (saved) return JSON.parse(saved);
     return {
       editor: {
@@ -1201,12 +1245,12 @@ export async function updateSettings(updates) {
       method: 'PUT',
       body: JSON.stringify(updates)
     });
-    localStorage.setItem('scriptora_settings', JSON.stringify(data.settings));
+    localStorage.setItem(getUserStorageKey('settings'), JSON.stringify(data.settings));
     return data.settings;
   } catch {
     const current = await getSettings();
     const merged = { ...current, ...updates };
-    localStorage.setItem('scriptora_settings', JSON.stringify(merged));
+    localStorage.setItem(getUserStorageKey('settings'), JSON.stringify(merged));
     return merged;
   }
 }
@@ -1291,14 +1335,14 @@ export async function getProductionWorkspace(scriptId) {
   try {
     const data = await request(`/production/${scriptId}`);
     if (data?.workspace) {
-      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(data.workspace));
       return data.workspace;
     }
   } catch (e) {
     // offline fallback
   }
 
-  const cached = localStorage.getItem(`scriptora_prod_ws_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_ws_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1316,8 +1360,8 @@ export async function getProductionWorkspace(scriptId) {
     pinnedTimestamp: "Just now",
     currentScriptDraft: script.draft || "Draft 1.0",
     isStale: false,
-    mode: localStorage.getItem('scriptora_prod_mode') || 'simple',
-    userRole: localStorage.getItem('scriptora_prod_role') || 'Owner',
+    mode: localStorage.getItem(getUserStorageKey('prod_mode')) || 'simple',
+    userRole: localStorage.getItem(getUserStorageKey('prod_role')) || 'Owner',
     roles: ["Owner", "Director", "Assistant Director", "Production", "Department Member", "Viewer"],
     stats: {
       totalScenes: 0,
@@ -1329,7 +1373,7 @@ export async function getProductionWorkspace(scriptId) {
     },
     updatedAt: new Date().toISOString()
   };
-  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(defaultWs));
+  localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(defaultWs));
   return defaultWs;
 }
 
@@ -1340,7 +1384,7 @@ export async function updateProductionWorkspace(scriptId, updates) {
       body: JSON.stringify(updates)
     });
     if (data?.workspace) {
-      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(data.workspace));
       return data.workspace;
     }
   } catch (e) {}
@@ -1348,7 +1392,7 @@ export async function updateProductionWorkspace(scriptId, updates) {
   const current = await getProductionWorkspace(scriptId);
   if (!current) return updates;
   const updated = { ...current, ...updates, updatedAt: new Date().toISOString() };
-  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(updated));
+  localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(updated));
   return updated;
 }
 
@@ -1359,7 +1403,7 @@ export async function pinProductionSourceVersion(scriptId, newVersion) {
       body: JSON.stringify({ version: newVersion })
     });
     if (data?.workspace) {
-      localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(data.workspace));
+      localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(data.workspace));
       return data.workspace;
     }
   } catch (e) {}
@@ -1369,7 +1413,7 @@ export async function pinProductionSourceVersion(scriptId, newVersion) {
   current.pinnedSourceVersion = newVersion;
   current.pinnedTimestamp = "Just now";
   current.isStale = false;
-  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(current));
+  localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(current));
   return current;
 }
 
@@ -1379,12 +1423,12 @@ export async function getProductionResources(scriptId, category = null) {
     const url = `/production/${scriptId}/resources${category ? `?category=${encodeURIComponent(category)}` : ''}`;
     const data = await request(url);
     if (data?.resources) {
-      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(data.resources));
+      localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(data.resources));
       return data.resources;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_res_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_res_${scriptId}`));
   if (cached) {
     try {
       const list = JSON.parse(cached);
@@ -1403,12 +1447,12 @@ export async function getProductionDocuments(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/documents`);
     if (data?.documents) {
-      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(data.documents));
+      localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(data.documents));
       return data.documents;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_docs_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_docs_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1421,12 +1465,12 @@ export async function getProductionProposals(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/proposals`);
     if (data?.proposals) {
-      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(data.proposals));
+      localStorage.setItem(getUserStorageKey(`prod_props_${scriptId}`), JSON.stringify(data.proposals));
       return data.proposals;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_props_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_props_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1443,7 +1487,7 @@ export async function submitProductionProposal(scriptId, proposal) {
     if (data?.proposal) {
       const list = await getProductionProposals(scriptId);
       list.unshift(data.proposal);
-      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_props_${scriptId}`), JSON.stringify(list));
       return data.proposal;
     }
   } catch (e) {}
@@ -1463,7 +1507,7 @@ export async function submitProductionProposal(scriptId, proposal) {
     createdAt: new Date().toISOString()
   };
   list.unshift(newProp);
-  localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+  localStorage.setItem(getUserStorageKey(`prod_props_${scriptId}`), JSON.stringify(list));
   return newProp;
 }
 
@@ -1477,7 +1521,7 @@ export async function reviewProductionProposal(scriptId, proposalId, action, rev
       const list = await getProductionProposals(scriptId);
       const idx = list.findIndex(p => p.id === proposalId);
       if (idx !== -1) list[idx] = data.proposal;
-      localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_props_${scriptId}`), JSON.stringify(list));
       return data.proposal;
     }
   } catch (e) {}
@@ -1488,7 +1532,7 @@ export async function reviewProductionProposal(scriptId, proposalId, action, rev
     prop.status = action === 'accept' ? 'Accepted' : (action === 'reject' ? 'Rejected' : 'Conflict');
     prop.resolvedAt = new Date().toISOString();
     prop.resolutionNotes = reviewNotes || (action === 'accept' ? 'Accepted by Owner' : 'Declined during review');
-    localStorage.setItem(`scriptora_prod_props_${scriptId}`, JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_props_${scriptId}`), JSON.stringify(list));
   }
   return prop;
 }
@@ -1498,12 +1542,12 @@ export async function getProductionAuditTrail(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/audit`);
     if (data?.auditTrail) {
-      localStorage.setItem(`scriptora_prod_audit_${scriptId}`, JSON.stringify(data.auditTrail));
+      localStorage.setItem(getUserStorageKey(`prod_audit_${scriptId}`), JSON.stringify(data.auditTrail));
       return data.auditTrail;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_audit_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_audit_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1520,12 +1564,12 @@ export async function getProductionScenes(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/scenes`);
     if (data?.scenes) {
-      localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(data.scenes));
+      localStorage.setItem(getUserStorageKey(`prod_scenes_${scriptId}`), JSON.stringify(data.scenes));
       return data.scenes;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_scenes_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_scenes_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1560,7 +1604,7 @@ export async function updateProductionScene(scriptId, sceneId, updates) {
   const scene = scenes.find(s => s.id === sceneId || String(s.sceneNumber) === String(sceneId));
   if (scene) {
     Object.assign(scene, updates);
-    localStorage.setItem(`scriptora_prod_scenes_${scriptId}`, JSON.stringify(scenes));
+    localStorage.setItem(getUserStorageKey(`prod_scenes_${scriptId}`), JSON.stringify(scenes));
     return scene;
   }
   return updates;
@@ -1575,12 +1619,12 @@ export async function getProductionBreakdown(scriptId, category = null, scene = 
     const qs = query.toString() ? `?${query.toString()}` : '';
     const data = await request(`/production/${scriptId}/breakdown${qs}`);
     if (data?.breakdown) {
-      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(data.breakdown));
+      localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(data.breakdown));
       return data.breakdown;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_breakdown_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_breakdown_${scriptId}`));
   let list = [];
   if (cached) {
     try { list = JSON.parse(cached); } catch (_) {}
@@ -1607,7 +1651,7 @@ export async function updateBreakdownItem(scriptId, itemId, updates) {
       const idx = list.findIndex(b => b.id === itemId);
       if (idx !== -1) {
         list[idx] = data.item;
-        localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+        localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
       }
       return data.item;
     }
@@ -1633,7 +1677,7 @@ export async function updateBreakdownItem(scriptId, itemId, updates) {
     } else if (updates.status === 'Needs Review') {
       item.isHumanConfirmed = false;
     }
-    localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
     return item;
   }
   return updates;
@@ -1647,14 +1691,14 @@ export async function deleteBreakdownItem(scriptId, itemId) {
     if (data?.success) {
       const list = await getProductionBreakdown(scriptId);
       const filtered = list.filter(b => b.id !== itemId);
-      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(filtered));
       return data;
     }
   } catch (e) {}
 
   const list = await getProductionBreakdown(scriptId);
   const filtered = list.filter(b => b.id !== itemId);
-  localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(filtered));
   return { success: true, removedId: itemId };
 }
 
@@ -1667,7 +1711,7 @@ export async function createBreakdownItem(scriptId, itemData) {
     if (data?.item) {
       const list = await getProductionBreakdown(scriptId);
       list.unshift(data.item);
-      localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
       return data.item;
     }
   } catch (e) {}
@@ -1718,7 +1762,7 @@ export async function createBreakdownItem(scriptId, itemData) {
     operationalRequirements: itemData.operationalRequirements || ""
   };
   list.unshift(newItem);
-  localStorage.setItem(`scriptora_prod_breakdown_${scriptId}`, JSON.stringify(list));
+  localStorage.setItem(getUserStorageKey(`prod_breakdown_${scriptId}`), JSON.stringify(list));
   return newItem;
 }
 
@@ -1727,12 +1771,12 @@ export async function getProductionCallSheets(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/call-sheets`);
     if (data?.callSheets) {
-      localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(data.callSheets));
+      localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(data.callSheets));
       return data.callSheets;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_callsheets_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_callsheets_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1785,7 +1829,7 @@ export async function createProductionCallSheet(scriptId, data) {
     publishedAt: null
   };
   sheets.push(newCs);
-  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+  localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
   return newCs;
 }
 
@@ -1802,7 +1846,7 @@ export async function updateProductionCallSheet(scriptId, callSheetId, updates) 
   const cs = sheets.find(c => c.id === callSheetId);
   if (cs) {
     Object.assign(cs, updates);
-    localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
     return cs;
   }
   return updates;
@@ -1824,7 +1868,7 @@ export async function publishProductionCallSheet(scriptId, callSheetId) {
     cs.version = "v1.0 (Snapshot)";
     cs.approvedBy = (store.state.currentUser?.name || "Screenplay Owner") + " (Owner)";
     cs.publishedAt = new Date().toISOString();
-    localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(sheets));
+    localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(sheets));
     return cs;
   }
   return null;
@@ -1835,12 +1879,12 @@ export async function getProductionSchedule(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/schedule`);
     if (data?.schedule) {
-      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(data.schedule));
+      localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(data.schedule));
       return data.schedule;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_schedule_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_schedule_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1861,7 +1905,7 @@ export async function updateProductionScheduleDay(scriptId, dayNumber, updates) 
   const day = schedule.find(d => d.dayNumber === Number(dayNumber));
   if (day) {
     Object.assign(day, updates);
-    localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(schedule));
+    localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
     return day;
   }
   return updates;
@@ -1880,7 +1924,7 @@ export async function confirmProductionSchedule(scriptId) {
     day.status = "Confirmed";
     day.isLocked = true;
   });
-  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(schedule));
+  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(schedule));
   return schedule;
 }
 
@@ -1909,12 +1953,12 @@ export async function getProductionReadiness(scriptId) {
   try {
     const data = await request(`/production/${scriptId}/readiness`);
     if (data?.readiness) {
-      localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(data.readiness));
+      localStorage.setItem(getUserStorageKey(`prod_readiness_${scriptId}`), JSON.stringify(data.readiness));
       return data.readiness;
     }
   } catch (e) {}
 
-  const cached = localStorage.getItem(`scriptora_prod_readiness_${scriptId}`);
+  const cached = localStorage.getItem(getUserStorageKey(`prod_readiness_${scriptId}`));
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -1935,7 +1979,7 @@ export async function resolveProductionReadiness(scriptId, readinessId) {
   if (item) {
     item.status = "resolved";
     item.severity = "ready";
-    localStorage.setItem(`scriptora_prod_readiness_${scriptId}`, JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_readiness_${scriptId}`), JSON.stringify(list));
     return item;
   }
   return null;
@@ -1954,7 +1998,7 @@ export async function restoreProductionSnapshot(scriptId, versionTag) {
   ws.pinnedSourceVersion = versionTag;
   ws.pinnedTimestamp = "Just now (Restored)";
   ws.isStale = false;
-  localStorage.setItem(`scriptora_prod_ws_${scriptId}`, JSON.stringify(ws));
+  localStorage.setItem(getUserStorageKey(`prod_ws_${scriptId}`), JSON.stringify(ws));
   return ws;
 }
 
@@ -1964,14 +2008,14 @@ export async function deleteProductionCallSheet(scriptId, csId) {
     if (res?.success) {
       const sheets = await getProductionCallSheets(scriptId);
       const filtered = sheets.filter(c => c.id !== csId);
-      localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(filtered));
       return res;
     }
   } catch (e) {}
 
   const sheets = await getProductionCallSheets(scriptId);
   const filtered = sheets.filter(c => c.id !== csId);
-  localStorage.setItem(`scriptora_prod_callsheets_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_callsheets_${scriptId}`), JSON.stringify(filtered));
   return { success: true, removedId: csId };
 }
 
@@ -1984,7 +2028,7 @@ export async function addProductionScheduleDay(scriptId, dayData) {
     if (res?.day) {
       const days = await getProductionSchedule(scriptId);
       days.push(res.day);
-      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(days));
+      localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(days));
       return res.day;
     }
   } catch (e) {}
@@ -2004,7 +2048,7 @@ export async function addProductionScheduleDay(scriptId, dayData) {
     status: "Draft"
   };
   days.push(newDay);
-  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(days));
+  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(days));
   return newDay;
 }
 
@@ -2015,14 +2059,14 @@ export async function deleteProductionScheduleDay(scriptId, dayNumber) {
     if (res?.success) {
       const days = await getProductionSchedule(scriptId);
       const filtered = days.filter(d => d.dayNumber !== num);
-      localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(filtered));
       return res;
     }
   } catch (e) {}
 
   const days = await getProductionSchedule(scriptId);
   const filtered = days.filter(d => d.dayNumber !== num);
-  localStorage.setItem(`scriptora_prod_schedule_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_schedule_${scriptId}`), JSON.stringify(filtered));
   return { success: true, removedDayNumber: num };
 }
 
@@ -2035,8 +2079,8 @@ export async function createProductionResource(scriptId, resData) {
     if (res?.resource) {
       const list = await getProductionResources(scriptId);
       list.push(res.resource);
-      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
-      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
       return res.resource;
     }
   } catch (e) {}
@@ -2056,8 +2100,8 @@ export async function createProductionResource(scriptId, resData) {
     notes: resData.notes || ""
   };
   list.push(newRes);
-  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
-  localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+  localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+  localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
   return newRes;
 }
 
@@ -2071,8 +2115,8 @@ export async function updateProductionResource(scriptId, resId, updates) {
       const list = await getProductionResources(scriptId);
       const idx = list.findIndex(r => r.id === resId);
       if (idx !== -1) list[idx] = res.resource;
-      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
-      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+      localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
       return res.resource;
     }
   } catch (e) {}
@@ -2081,8 +2125,8 @@ export async function updateProductionResource(scriptId, resId, updates) {
   const item = list.find(r => r.id === resId);
   if (item) {
     Object.assign(item, updates);
-    localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(list));
-    localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(list));
+    localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(list));
     return item;
   }
   return updates;
@@ -2094,16 +2138,16 @@ export async function deleteProductionResource(scriptId, resId) {
     if (res?.success) {
       const list = await getProductionResources(scriptId);
       const filtered = list.filter(r => r.id !== resId);
-      localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(filtered));
-      localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(filtered));
       return res;
     }
   } catch (e) {}
 
   const list = await getProductionResources(scriptId);
   const filtered = list.filter(r => r.id !== resId);
-  localStorage.setItem(`scriptora_prod_res_${scriptId}`, JSON.stringify(filtered));
-  localStorage.setItem(`scriptora_prod_resources_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_res_${scriptId}`), JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_resources_${scriptId}`), JSON.stringify(filtered));
   return { success: true, removedId: resId };
 }
 
@@ -2116,7 +2160,7 @@ export async function createProductionDocument(scriptId, docData) {
     if (res?.document) {
       const docs = await getProductionDocuments(scriptId);
       docs.unshift(res.document);
-      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(docs));
+      localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(docs));
       return res.document;
     }
   } catch (e) {}
@@ -2137,7 +2181,7 @@ export async function createProductionDocument(scriptId, docData) {
     version: docData.version || "v0.9"
   };
   docs.unshift(newDoc);
-  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(docs));
+  localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(docs));
   return newDoc;
 }
 
@@ -2147,14 +2191,14 @@ export async function deleteProductionDocument(scriptId, docId) {
     if (res?.success) {
       const docs = await getProductionDocuments(scriptId);
       const filtered = docs.filter(d => d.id !== docId);
-      localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(filtered));
       return res;
     }
   } catch (e) {}
 
   const docs = await getProductionDocuments(scriptId);
   const filtered = docs.filter(d => d.id !== docId);
-  localStorage.setItem(`scriptora_prod_docs_${scriptId}`, JSON.stringify(filtered));
+  localStorage.setItem(getUserStorageKey(`prod_docs_${scriptId}`), JSON.stringify(filtered));
   return { success: true, removedId: docId };
 }
 
@@ -2298,7 +2342,9 @@ export async function getStoryboards(scriptId) {
       }
       return data.storyboards;
     }
-  } catch (e) {}
+  } catch (e) {
+    if (!shouldFallbackToOfflineCache(e)) throw e;
+  }
 
   const cached = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
   if (cached) {
@@ -2350,9 +2396,14 @@ export function resolveStoryboardAssetUrl(url, shotNumber = '') {
 
   // 5. If it's a server image endpoint path (/production/storyboard/images/... or /api/v1/storage/...)
   if (url.includes('/storyboard/images/') || url.includes('/storage/storyboard/')) {
-    if (url.startsWith('http')) return url;
     const baseClean = API_BASE_URL.replace(/\/api\/?$/, '');
-    return `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
+    let fullUrl = url.startsWith('http') ? url : `${baseClean}${url.startsWith('/') ? '' : '/'}${url}`;
+    const token = getAuthToken();
+    if (token && !fullUrl.includes('token=')) {
+      const sep = fullUrl.includes('?') ? '&' : '?';
+      fullUrl = `${fullUrl}${sep}token=${encodeURIComponent(token)}`;
+    }
+    return fullUrl;
   }
 
   // 4. If it's a path like /assets/... or assets/...
@@ -3335,29 +3386,33 @@ export async function restoreStoryboardShotVersion(scriptId, sceneId, shotId, hi
 
 
 export async function getStoryboardPreferences() {
+  const prefKey = getUserStorageKey('storyboard_preferences');
   try {
     const res = await request('/production/storyboard/preferences');
     if (res?.preferences) {
-      localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(res.preferences));
+      localStorage.setItem(prefKey, JSON.stringify(res.preferences));
       return res.preferences;
     }
-  } catch (_) {}
-  const cached = localStorage.getItem('scriptora_storyboard_preferences');
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
+  const cached = localStorage.getItem(prefKey);
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
   return {
     defaultStyle: "Concept Art",
     defaultAspectRatio: "2.39:1",
-    defaultShotSize: "Medium",
+    defaultShotSize: "Medium Shot",
     defaultCameraAngle: "Eye Level",
-    defaultLens: "50mm",
+    defaultLens: "50mm Prime",
     defaultLighting: "Auto / Scene-based",
     experienceLevel: "Intermediate"
   };
 }
 
 export async function saveStoryboardPreferences(prefs = {}) {
+  const prefKey = getUserStorageKey('storyboard_preferences');
   try {
     const res = await request('/production/storyboard/preferences', {
       method: 'PUT',
@@ -3365,26 +3420,31 @@ export async function saveStoryboardPreferences(prefs = {}) {
       body: JSON.stringify(prefs)
     });
     if (res?.preferences) {
-      localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(res.preferences));
+      localStorage.setItem(prefKey, JSON.stringify(res.preferences));
       return res.preferences;
     }
-  } catch (_) {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
   const current = await getStoryboardPreferences();
   const updated = { ...current, ...prefs };
-  localStorage.setItem('scriptora_storyboard_preferences', JSON.stringify(updated));
+  localStorage.setItem(prefKey, JSON.stringify(updated));
   return updated;
 }
 
 export async function getStoryboardRecycleBin(scriptId) {
   if (!scriptId) return [];
+  const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin`);
     if (res?.items) {
-      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(res.items));
+      localStorage.setItem(rbKey, JSON.stringify(res.items));
       return res.items;
     }
-  } catch (_) {}
-  const cached = localStorage.getItem(`scriptora_storyboard_rb_${scriptId}`);
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
+  const cached = localStorage.getItem(rbKey);
   if (cached) {
     try { return JSON.parse(cached); } catch (_) {}
   }
@@ -3392,6 +3452,7 @@ export async function getStoryboardRecycleBin(scriptId) {
 }
 
 export async function restoreStoryboardRecycleBinItem(scriptId, itemId) {
+  const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/restore`, {
       method: 'POST',
@@ -3401,14 +3462,17 @@ export async function restoreStoryboardRecycleBinItem(scriptId, itemId) {
     if (res?.success) {
       const rb = await getStoryboardRecycleBin(scriptId);
       const filtered = rb.filter(i => i.id !== itemId);
-      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(rbKey, JSON.stringify(filtered));
       return res;
     }
-  } catch (_) {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
   return { success: true };
 }
 
 export async function permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId) {
+  const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/${itemId}`, {
       method: 'DELETE'
@@ -3416,22 +3480,27 @@ export async function permanentlyDeleteStoryboardRecycleBinItem(scriptId, itemId
     if (res?.success) {
       const rb = await getStoryboardRecycleBin(scriptId);
       const filtered = rb.filter(i => i.id !== itemId);
-      localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify(filtered));
+      localStorage.setItem(rbKey, JSON.stringify(filtered));
       return res;
     }
-  } catch (_) {}
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
   return { success: true, removedId: itemId };
 }
 
 export async function emptyStoryboardRecycleBin(scriptId) {
+  const rbKey = getUserStorageKey(`storyboard_rb_${scriptId}`);
   try {
     const res = await request(`/production/${scriptId}/storyboard/recycle-bin/empty`, {
       method: 'POST'
     });
-    localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify([]));
+    localStorage.setItem(rbKey, JSON.stringify([]));
     return res || { success: true };
-  } catch (_) {}
-  localStorage.setItem(`scriptora_storyboard_rb_${scriptId}`, JSON.stringify([]));
+  } catch (err) {
+    if (!shouldFallbackToOfflineCache(err)) throw err;
+  }
+  localStorage.setItem(rbKey, JSON.stringify([]));
   return { success: true };
 }
 
