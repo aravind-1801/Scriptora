@@ -11,9 +11,6 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import pg from 'pg';
-
-const { Pool } = pg;
 
 function getDbPrefix() {
   const custom = (process.env.CLOUD_DB_PREFIX || '').trim().replace(/^\/+|\/+$/g, '');
@@ -285,6 +282,8 @@ export async function loadAllShards() {
 
   if (mode === 'postgres') {
     if (!pgPool) {
+      const pgMod = await import('pg');
+      const Pool = pgMod.default?.Pool || pgMod.Pool;
       pgPool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
