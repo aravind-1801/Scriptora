@@ -334,7 +334,13 @@ export function isLocalSignedOutSync() {
 
 export function hasLocalAuthenticatedSessionSync() {
   if (cache.signedOut) return false;
-  if (cache.profile && typeof cache.profile === 'object') return true;
+  if (
+    cache.profile &&
+    typeof cache.profile === 'object' &&
+    (cache.profile.id || cache.profile.email || cache.profile.name || cache.profile.displayName || cache.profile.phone)
+  ) {
+    return true;
+  }
   // Preserve existing active local workspaces created prior to the initial-entry auth gate
   if (
     (Array.isArray(cache.scripts) && cache.scripts.length > 0) ||

@@ -364,6 +364,8 @@ assert.throws(() => backup.validateWorkspaceBackup({ format: 'wrong' }));
 await api.resetLocalWorkspace();
 assert.equal((await api.getScripts()).length, 0, 'Reset must clear local scripts');
 assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), false, 'Empty workspace with no profile must be unauthenticated');
+await localRepo.saveProfile({});
+assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), false, 'Empty/invalid profile object must not authenticate');
 
 await backup.restoreWorkspaceBackupPayload(exported, { merge: false });
 await localRepo.reloadLocalRepository();

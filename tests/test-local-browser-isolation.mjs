@@ -311,8 +311,10 @@ async function run() {
     assert.equal(initialStateA.scriptCount, 0, 'Fresh Profile A must start completely empty');
     assert.ok(initialStateA.installationId, 'Profile A must assign an installationId in IndexedDB');
 
-    // Register legitimate User A on /auth -> opens own empty Workspace
+    // Register legitimate User A on /auth -> opens own empty Workspace, and refreshing keeps them in Workspace
     await registerUserInUI(tabA1, 'User One', 'user1@local.test', 'password123');
+    await tabA1.send('Page.reload', { ignoreCache: false });
+    await waitForCondition(tabA1, `document.getElementById('btn-new-screenplay-card')`);
 
     const localStorageScriptKeysA = await tabA1.evaluate(`Object.keys(localStorage).filter(k => k.includes('scripts'))`);
     assert.equal(localStorageScriptKeysA.length, 0, 'Scripts must NOT be stored in localStorage');

@@ -20,6 +20,18 @@ function renderFatalStorageError(err) {
 }
 
 async function bootstrap() {
+  const root = document.getElementById('app');
+  if (root && !root.innerHTML.trim()) {
+    root.innerHTML = `
+      <div id="auth-init-loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f9f9f8;font-family:system-ui,-apple-system,sans-serif;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:#475569;">
+          <div style="width:28px;height:28px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:9999px;animation:spin 0.8s linear infinite;"></div>
+          <span style="font-size:12px;font-weight:500;">Restoring session...</span>
+        </div>
+      </div>
+      <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+    `;
+  }
   try {
     // 1. Initialize store strictly from authoritative IndexedDB (local mode) or API (cloud mode)
     await store.init();
