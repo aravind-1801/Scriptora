@@ -11,6 +11,8 @@ class Store {
 
     this.state = {
       dataMode: getDataMode(),
+      authStatus: 'initializing',
+      authError: null,
       installationId: null,
       storageError: null,
       currentUser: null,
@@ -92,6 +94,7 @@ class Store {
   resetUserSession(options = {}) {
     if (isLocalMode() && !options.clearWorkspace) {
       this.setState({
+        authStatus: 'unauthenticated',
         currentUser: null,
         historyStack: []
       });
@@ -103,6 +106,7 @@ class Store {
       localStorage.removeItem(api.getUserStorageKey('selected_script'));
     } catch (_) {}
     this.setState({
+      authStatus: 'unauthenticated',
       currentUser: null,
       scripts: [],
       activeScript: null,
@@ -159,6 +163,8 @@ class Store {
         : null;
 
       this.setState({
+        authStatus: user ? 'authenticated' : 'unauthenticated',
+        authError: null,
         currentUser: user,
         scripts: scripts || [],
         selectedScriptId: selectedId,
@@ -168,11 +174,16 @@ class Store {
       });
     } catch (err) {
       console.error("Init store error:", err);
+      this.setState({
+        authStatus: 'error',
+        authError: err?.message || 'Authentication check failed'
+      });
     }
   }
 
   async syncFromLocalSnapshot() {
     const user = await localRepo.getProfile();
+    const isAuthenticated = localRepo.hasLocalAuthenticatedSessionSync();
     const scripts = await localRepo.getScripts();
     const { unreadCount } = await localRepo.getNotifications();
     const settings = await localRepo.getSettings();
@@ -200,9 +211,11 @@ class Store {
     this.state = {
       ...this.state,
       dataMode: 'local',
+      authStatus: isAuthenticated ? 'authenticated' : 'unauthenticated',
+      authError: null,
       installationId: localRepo.getInstallationId(),
       storageError: null,
-      currentUser: localRepo.isLocalSignedOutSync() ? null : user,
+      currentUser: isAuthenticated ? user : null,
       scripts: scripts || [],
       selectedScriptId: selectedId,
       activeScript,

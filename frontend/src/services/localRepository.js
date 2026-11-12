@@ -332,6 +332,31 @@ export function isLocalSignedOutSync() {
   return Boolean(cache.signedOut);
 }
 
+export function hasLocalAuthenticatedSessionSync() {
+  if (cache.signedOut) return false;
+  if (cache.profile && typeof cache.profile === 'object') return true;
+  // Preserve existing active local workspaces created prior to the initial-entry auth gate
+  if (
+    (Array.isArray(cache.scripts) && cache.scripts.length > 0) ||
+    cache.storyboards.size > 0 ||
+    (Array.isArray(cache.chatHistory) && cache.chatHistory.length > 0)
+  ) {
+    return true;
+  }
+  if (typeof localStorage !== 'undefined') {
+    try {
+      const legacyUser = localStorage.getItem('scriptora_user');
+      if (legacyUser) {
+        const parsed = JSON.parse(legacyUser);
+        if (parsed && (parsed.id || parsed.email || parsed.displayName || parsed.name)) {
+          return true;
+        }
+      }
+    } catch (_) {}
+  }
+  return false;
+}
+
 export async function setLocalSignedOut(signedOut) {
   await initLocalRepository();
   const next = Boolean(signedOut);

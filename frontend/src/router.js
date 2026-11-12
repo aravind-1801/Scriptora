@@ -1,6 +1,6 @@
 import { store } from './state/store.js';
 import { isLocalMode } from './services/dataMode.js';
-import { isLocalSignedOutSync } from './services/localRepository.js';
+import { hasLocalAuthenticatedSessionSync } from './services/localRepository.js';
 import { renderHeader } from './components/header.js';
 import { renderBottomNav, updateBottomNav } from './components/bottomNav.js';
 import { renderAuthScreen, attachAuthEvents } from './screens/auth.js';
@@ -412,11 +412,11 @@ class Router {
       });
     }
 
-    // Check authentication for protected routes
-    // In primary Local Workspace mode, users enter directly unless they explicitly signed out.
+    // Check authentication for protected routes:
+    // Preserve existing authenticated/active sessions, while sending genuinely new visitors to /auth first.
     const localMode = isLocalMode();
-    const isLocalSignedOut = localMode && isLocalSignedOutSync();
-    const isAuth = localMode ? !isLocalSignedOut : !!store.state.currentUser;
+    const isResolved = store.state.authStatus !== 'initializing';
+    const isAuth = isResolved && (localMode ? hasLocalAuthenticatedSessionSync() : !!store.state.currentUser);
     const publicPaths = ['/welcome', '/auth'];
 
     if (!isAuth && !publicPaths.includes(path)) {
@@ -433,10 +433,8 @@ class Router {
     if (path === '/') {
       if (isAuth) {
         this.navigate('/workspace', true);
-      } else if (isLocalSignedOut) {
-        this.navigate('/auth', true);
       } else {
-        this.navigate('/welcome', true);
+        this.navigate('/auth', true);
       }
       return;
     }

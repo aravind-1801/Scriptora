@@ -12,7 +12,8 @@ function renderFatalStorageError(err) {
       <div style="max-width:440px;width:100%;background:#ffffff;border:1px solid #fecdd3;border-radius:16px;padding:24px;box-shadow:0 10px 25px rgba(15,23,42,0.06);">
         <h1 style="margin:0 0 8px 0;font-size:18px;font-weight:700;color:#be123c;">Local Storage Unavailable</h1>
         <p style="margin:0 0 14px 0;font-size:13px;line-height:1.5;color:#475569;">${msg}</p>
-        <p style="margin:0;font-size:12px;color:#64748b;">SCRIPTORA refuses to fall back to temporary memory-only storage so your work is never silently lost. Ensure cookies/site storage and IndexedDB are enabled in this browser profile, then reload.</p>
+        <p style="margin:0 0 16px 0;font-size:12px;color:#64748b;">SCRIPTORA refuses to fall back to temporary memory-only storage so your work is never silently lost. Ensure cookies/site storage and IndexedDB are enabled in this browser profile, then retry.</p>
+        <button type="button" onclick="window.location.reload()" style="padding:10px 16px;border-radius:10px;border:none;background:#2563eb;color:#ffffff;font-size:12px;font-weight:600;cursor:pointer;">Retry Initialization</button>
       </div>
     </div>
   `;

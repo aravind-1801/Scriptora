@@ -190,8 +190,9 @@ async function openTab(port, url, networkUrls) {
     }
   });
 
-  // Wait until workspace or target screen initializes from IndexedDB
+  // Wait until auth, workspace, or target screen initializes from IndexedDB
   await waitForCondition(cdp, `
+    Boolean(document.getElementById('form-signin')) ||
     Boolean(document.getElementById('btn-new-screenplay-card')) ||
     Boolean(document.getElementById('editor-canvas')) ||
     Boolean(document.getElementById('storyboard-view-container')) ||
@@ -199,6 +200,21 @@ async function openTab(port, url, networkUrls) {
   `, 10000);
 
   return { tab, cdp };
+}
+
+async function registerUserInUI(cdp, name, email, password) {
+  await waitForCondition(cdp, `document.getElementById('tab-register') && document.getElementById('form-register')`);
+  await cdp.evaluate(`document.getElementById('tab-register').click()`);
+  await waitForCondition(cdp, `!document.getElementById('flow-register').classList.contains('hidden')`);
+  await cdp.evaluate(`
+    (() => {
+      document.getElementById('reg-name').value = ${JSON.stringify(name)};
+      document.getElementById('reg-email').value = ${JSON.stringify(email)};
+      document.getElementById('reg-password').value = ${JSON.stringify(password)};
+      document.getElementById('form-register').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    })()
+  `);
+  await waitForCondition(cdp, `document.getElementById('btn-new-screenplay-card')`);
 }
 
 async function waitForCondition(cdp, jsExpr, timeoutMs = 8000) {
@@ -284,13 +300,19 @@ async function run() {
   try {
     console.log(`Serving built dist at ${baseUrl}`);
 
-    // --- 1. Profile A: Launch fresh isolated Chrome profile ---
+    // --- 1. Profile A (New Visitor): Launch fresh isolated Chrome profile -> must see Login page first ---
     chromeA = await launchChrome(profileDirA, 9231);
     const { cdp: tabA1 } = await openTab(9231, `${baseUrl}#/workspace`, networkUrls);
+    await waitForCondition(tabA1, `document.getElementById('form-signin')`);
+    const freshAuthBodyA = await tabA1.evaluate(`document.body.innerText`);
+    assert.equal(freshAuthBodyA.includes('Arun Kumar'), false, 'Fresh visitor must never see fake Arun Kumar account');
 
     const initialStateA = await inspectIndexedDB(tabA1);
     assert.equal(initialStateA.scriptCount, 0, 'Fresh Profile A must start completely empty');
     assert.ok(initialStateA.installationId, 'Profile A must assign an installationId in IndexedDB');
+
+    // Register legitimate User A on /auth -> opens own empty Workspace
+    await registerUserInUI(tabA1, 'User One', 'user1@local.test', 'password123');
 
     const localStorageScriptKeysA = await tabA1.evaluate(`Object.keys(localStorage).filter(k => k.includes('scripts'))`);
     assert.equal(localStorageScriptKeysA.length, 0, 'Scripts must NOT be stored in localStorage');
@@ -412,15 +434,20 @@ async function run() {
     await waitForCondition(tabA3, `(window.location.pathname.endsWith('/workspace') || window.location.hash.includes('#/workspace')) && document.body.innerText.includes('DEVICE A TEST')`);
     tabA3.close();
 
-    // --- 4. Profile B: Launch completely independent Chrome profile -> strict isolation ---
+    // --- 4. Profile B (New Visitor): Launch completely independent Chrome profile -> sees Login first & strict isolation ---
     chromeB = await launchChrome(profileDirB, 9232);
-    const { cdp: tabB1 } = await openTab(9232, `${baseUrl}#/workspace`, networkUrls);
+    const { cdp: tabB1 } = await openTab(9232, `${baseUrl}`, networkUrls);
+    await waitForCondition(tabB1, `document.getElementById('form-signin')`);
     const initialStateB = await inspectIndexedDB(tabB1);
     assert.equal(initialStateB.scriptCount, 0, 'Independent Browser Profile B must NEVER see Profile A data');
     assert.notEqual(initialStateB.installationId, initialStateA.installationId, 'Profile B must have its own distinct installationId');
 
     const bodyTextB = await tabB1.evaluate(`document.body.innerText`);
     assert.equal(bodyTextB.includes('DEVICE A TEST'), false, 'Profile B DOM must never display Profile A scripts');
+    assert.equal(bodyTextB.includes('Arun Kumar'), false, 'Profile B must never show fake Arun Kumar account');
+
+    // Register legitimate User B -> lands in clean empty Workspace
+    await registerUserInUI(tabB1, 'User Two', 'user2@local.test', 'password123');
 
     // --- 4B. Fresh 0-Script Account Navigation & Empty-Workspace Guarantees ---
     await tabB1.evaluate(`window.location.hash = '#/intelligence'`);

@@ -350,6 +350,10 @@ assert.equal(localRepo.isLocalSignedOutSync(), false, 'login must clear local si
 assert.ok((await api.getCurrentUser()) !== null, 'getCurrentUser must restore after login');
 assert.ok((await api.getScripts()).some(s => s.title === 'DEVICE A TEST'), 'login must retain existing local scripts');
 
+// Test 6B: Backward compatibility — existing browser with saved scripts stays authenticated even if profile KV was null
+await localRepo.saveProfile(null);
+assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), true, 'Existing workspace scripts must keep session authenticated');
+
 // Test 7: Export JSON backup -> resetLocalWorkspace -> verify empty -> validate & restore backup
 const exported = await backup.exportWorkspaceBackupPayload();
 assert.equal(exported.format, backup.BACKUP_FORMAT);
@@ -359,6 +363,7 @@ assert.throws(() => backup.validateWorkspaceBackup({ format: 'wrong' }));
 
 await api.resetLocalWorkspace();
 assert.equal((await api.getScripts()).length, 0, 'Reset must clear local scripts');
+assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), false, 'Empty workspace with no profile must be unauthenticated');
 
 await backup.restoreWorkspaceBackupPayload(exported, { merge: false });
 await localRepo.reloadLocalRepository();
@@ -370,10 +375,12 @@ assert.ok(localRepo.resolveBlobUriSync(restoredSb.shots[0].imageUrl).startsWith(
 // Test 8: deleteAccount in local mode clears workspace and marks session signed out -> /auth gate
 await api.deleteAccount('DELETE MY ACCOUNT');
 assert.equal(localRepo.isLocalSignedOutSync(), true, 'deleteAccount must mark local session signed out');
+assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), false, 'deleteAccount must mark session unauthenticated');
 assert.equal(await api.getCurrentUser(), null, 'getCurrentUser must be null after deleteAccount');
 assert.equal((await api.getScripts()).length, 0, 'deleteAccount must wipe scripts in local workspace');
 await api.register({ name: 'Fresh Account', email: 'fresh@local.test', password: 'pw123' });
 assert.equal(localRepo.isLocalSignedOutSync(), false, 'register after deleteAccount must clear signedOut flag');
+assert.equal(localRepo.hasLocalAuthenticatedSessionSync(), true, 'register must establish authenticated session');
 assert.equal((await api.getScripts()).length, 0, 'Newly registered account after deleteAccount must have empty workspace');
 
 console.log('ALL LOCAL INDEXEDDB MODE TESTS PASSED!');
